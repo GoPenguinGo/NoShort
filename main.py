@@ -1,32 +1,32 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Callable
+from typing import Callable, Tuple
 from tqdm import tqdm
 
 # TODO: move the function and parameters to different files
 
 
 # @GoPenguinGo: it seems tau is always np.ndarray right?
-def post_var(sigY: float, Vbar: float, tau: np.ndarray) -> np.ndarray:
+def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:
-        sigY (float): _description_ #TODO: @GoPenguinGo
-        Vbar (float): _description_
+        sigma_Y (float): _description_ #TODO: @GoPenguinGo
+        V_hat (float): _description_
         tau (np.ndarray): (t - s) in eq(2), shape (T, )
 
     Returns:
         np.ndarray: shape (T, )
     """
-    V = sigY**2 * Vbar / (sigY**2 * np.ones(len(tau)) + Vbar * tau)
+    V = sigma_Y**2 * V_hat / (sigma_Y**2 * np.ones(len(tau)) + V_hat * tau)
     return V
 
 
-def search_for_theta(
+def solve_theta(
     thetaguess: np.float64, consumptionshare: np.ndarray, Delta_s_t: np.ndarray
 ) -> np.float64:
-    """RHS - LHS of the eq(24), used to iteratively solve theta 
+    """RHS - LHS of the eq(24), used to iteratively solve theta
 
     Args:
         thetaguess (np.float64): _description_ #TODO: GoPenguinGo
@@ -46,19 +46,20 @@ def search_for_theta(
     InvestCons = np.sum(
         invest_consumptionshare
     )  # Constraint component, as defined below eq(24)
-    g = (
-        sigma_Y - DeltabarCondi
+    diff = (
+        sigma_Y
+        - DeltabarCondi  # TODO: GoPenguinGo: make sigma_Y a argument of the function
     ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
-    return g
+    return diff
 
 
 def bisection(
-    optimfun: Callable[[float, np.ndarray, np.ndarray], float],
-    xlow: float,
-    xhigh: float,
+    optimfun: Callable[[float, np.ndarray, np.ndarray], np.float64],
+    xlow: np.float64,
+    xhigh: np.float64,
     arg1: np.ndarray,
     arg2: np.ndarray,
-    convcrit: float=1e-6,
+    convcrit: float = 1e-6,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 
@@ -89,6 +90,8 @@ def bisection(
             flow = fmid
         diff = abs(fhigh - flow)
         iter += 1
+        if iter > 50:
+            print("Warning! It takes more than 50 iteration to converge.")
     return xmid
 
 
@@ -98,41 +101,55 @@ def BuildUpCohortsMAIN(
     dt: float,
     rho: float,
     nu: float,
-    Vbar: float,
+    Vbar: float,  # TODO: @GoPenguinGo: a better name?
     mu_Y: float,
     sigma_Y: float,
     beta: float,
-    That: float,
-):
+    T_hat: float,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.float64,
+    np.float64,
+]:
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
-        dZt (np.ndarray): random shocks of aggregate output for each period, (Nt-1)*1
+        dZt (np.ndarray): random shocks of aggregate output for each period, shape (Nt-1, )
         Nt (int): number of periods
         dt (float): unit of time
         rho (float): rho, discount factor
         nu (float): birth / death rate, each cohort starts at size nu and shrinks at speed of nu
         Vbar (float): initial variance of beliefs
-        mu_Y (float): mean and of aggregate output growth
-        sigma_Y (float): mean and sd of aggregate output growth
+        mu_Y (float): mean of aggregate output growth
+        sigma_Y (float): sd of aggregate output growth
         beta (float): initial consumption of the newborn agents
-        That (float): pre-trading years
+        T_hat (float): pre-trading years
 
     Returns:
         _type_: _description_ #TODO: @GoPenguinGo: add the return type and the description
+        #TODO: @chingyulin: use NamedTuple for the return
     """
 
-    Npre = int(That / dt)  # Number of pre-trading observations
+    Npre: int = int(T_hat / dt)  # Number of pre-trading observations
     Zt = np.insert(np.cumsum(dZt), 0, 0)  # cumulated shocks, Nt * 1
     yg = (mu_Y - 0.5 * sigma_Y**2) * dt * np.ones(
         int(Nt - 1)
-    ) + sigma_Y * dZt  # output in log, (Nt - 1) *1, equation (1)
+    ) + sigma_Y * dZt  # output in log, (Nt - 1) *1, eq(1)
     Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)  # output, Nt *1
     DeltaConditional = np.zeros(Nt)
-    Delta_s_t = np.zeros(1)  # belief bias, Eq(3)
-    MaxDeltaTheta_s_t = np.zeros(1)  # disagreement, Eq(11)
-    Xt = np.ones(Nt) * nu * beta  # similar to consumption share, similar to Eq(18)
+    Delta_s_t = np.zeros(1)  # belief bias, eq(3)
+    MaxDeltaTheta_s_t = np.zeros(1)  # disagreement, eq(11)
+    Xt = np.ones(Nt) * nu * beta  # similar to consumption share, similar to eq(18)
     IntVec = 1 * nu * beta  # consumption share of a newborn cohort
+    # TODO: @GoPenguinGo: why `1` in 1 * nu * beta
     # TODO: @chingyulin: tau can allocate the memory
     tau = np.zeros(1)  # t-s
     tau[0] = dt
@@ -142,7 +159,7 @@ def BuildUpCohortsMAIN(
         Part = IntVec * np.exp(
             -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt
             + MaxDeltaTheta_s_t * dZt[i - 1]
-        )  # Consumption of each cohort, Eq(16), where eta_s_t / eta_s_s follows Eq(11)
+        )  # Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11)
         if i == 1:  # only one cohort in the economy
             Xt[i] = Part
             DeltaConditional[i] = Part * MaxDeltaTheta_s_t
@@ -150,7 +167,7 @@ def BuildUpCohortsMAIN(
             Xt[i] = np.sum(Part)  # total consumption
             DeltaConditional[i] = (
                 np.sum(Part * MaxDeltaTheta_s_t) / Xt[i]
-            )  # Eq(19), consumption weighted max(Delta_s_t, -theta)
+            )  # eq(19), consumption weighted max(Delta_s_t, -theta)
 
         IntVec = reduction * Part
         IntVec = np.append(
@@ -161,23 +178,23 @@ def BuildUpCohortsMAIN(
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vbar, tau) / sigma_Y**2) * (
             -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1]
-        )  # from Eq(5)
+        )  # from eq(5)
         if i < Npre:
-            #TODO: @chingyulin: this can be optimized
+            # TODO: @chingyulin: this can be optimized
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
         else:
-            DELbias = np.sum(dZt[int(i - Npre) : i]) / That
+            DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
 
             Delta_s_t += dDelta_s_t
-            #TODO: @chingyulin: this can be optimized
+            # TODO: @chingyulin: this can be optimized
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
             )  # newborns begin with available earlier observations
 
         # update tau
         tau += dt
-        tau = np.append(tau, 0) #TODO: @chingyulin: this can be optimized
+        tau = np.append(tau, 0)  # TODO: @chingyulin: this can be optimized
 
         # find the market clearing theta, given beliefs and consumption shares
         # need a large enough number of cohorts to make the distribution of beliefs reasonably continuous
@@ -189,16 +206,18 @@ def BuildUpCohortsMAIN(
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             # TODO: @GoPenguinGo: is `10` in the argument of the bisection a hard-coded value?
             # Should it's put as a configurable parameter?
-            theta_t[i] = bisection(search_for_theta, lowest_bound, 10, consumptionshare, Delta_s_t)  # solve for theta
+            theta_t[i] = bisection(
+                solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t
+            )  # solve for theta
             MaxDeltaTheta_s_t = np.maximum(
                 -theta_t[i], Delta_s_t
             )  # update max(Delta_s_t, -theta)
 
-    # similar to LookForTheta function, store the final value of elements in Eq(24)
+    # similar to LookForTheta function, store the final value of elements in eq(24)
     invest = Delta_s_t >= -theta_t[Nt - 1]
     invest_f = invest * consumptionshare
-    DeltabarCondi = np.sum(Delta_s_t * invest_f)  # Eq(24) experience component
-    fCondi = np.sum(invest_f)  # Eq(24) constraint component
+    DeltabarCondi = np.sum(Delta_s_t * invest_f)  # eq(24) experience component
+    fCondi = np.sum(invest_f)  # eq(24) constraint component
 
     return (
         DeltaConditional,
@@ -293,7 +312,7 @@ def SimCohortsMAIN(
 
         # find theta
         A = -max(Delta_s_t)
-        theta_t[i] = bisection(search_for_theta, A, 10, f, Delta_s_t)
+        theta_t[i] = bisection(solve_theta, A, 10, f, Delta_s_t)
         MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)
         invest = Delta_s_t >= -theta_t[i]
         DeltabarCondi = sum(Delta_s_t * invest * f)
@@ -352,6 +371,7 @@ def SimCohortsMAIN(
         dR,
     )
 
+
 #############################################################################################################
 # TODO: move the paramters to a separate config file
 # Parameters
@@ -367,23 +387,23 @@ w = 0.92  # Fraction of total output paid out as endowment
 # Some pre-calculations
 # D = rho ** 2 + 4 * (rho * nu + nu ** 2) * (1 - w)
 D = (rho + nu) * (rho + nu - 4 * nu**2)
-bet = (rho + nu - D**0.5) / (2 * nu)
+beta = (rho + nu - D**0.5) / (2 * nu)
 rlog = rho + mu_Y - sigma_Y**2
 
 # Setting prior variance
-That = 20  # Pre-trading period
+T_hat = 20  # Pre-trading period
 # dt = 1 / 4
 # Tcohort = 100
 dt = 1 / 12  # time incremental
-Npre = int(That / dt)
-Vbar = (sigma_Y**2) / That  # prior variance
-Tcohort = 500  # time horizon to keep track of cohorts
-Nt = int(Tcohort / dt)
+Npre = int(T_hat / dt)
+Vbar = (sigma_Y**2) / T_hat  # prior variance
+T_cohort = 500  # time horizon to keep track of cohorts
+Nt = int(T_cohort / dt)
 
 MC = 1
 fMAT = np.zeros((MC, Nt))
 
-time_tolerance = 4
+time_tolerance = 5
 
 time_s = time.time()
 for i in tqdm(range(MC)):
@@ -400,13 +420,25 @@ for i in tqdm(range(MC)):
         MaxDeltaTheta,
         DeltabarCondi,
         fCondi,
-    ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That)
+    ) = BuildUpCohortsMAIN(
+        dZt=dZt,
+        Nt=Nt,
+        dt=dt,
+        rho=rho,
+        Vbar=Vbar,
+        mu_Y=mu_Y,
+        sigma_Y=sigma_Y,
+        beta=beta,
+        T_hat=T_hat,
+        nu=nu,
+    )
     fMAT[i, :] = f
-assert time.time() - time_s < time_tolerance; print(f"It takes more than {time_tolerance} to build up the cohorts")
+if time.time() - time_s > time_tolerance:
+    print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
 # Initializing some variables
 Mpaths = 100
-Tsample = int(Tcohort / 100)
+Tsample = int(T_cohort / 100)
 Nsamples = 100
 stepcorr = int(Tsample / dt)
 corrZport = np.zeros((Mpaths, Nsamples))
@@ -455,7 +487,7 @@ for k in range(Mpaths):
             MaxDeltaTheta,
             DeltabarCondi,
             fCondi,
-        ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That)
+        ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, beta, T_hat)
     dZforbias = np.diff(Zt)
     biasvec = dZforbias[-Npre:]
     dZt = dt**0.5 * np.random.randn(Nt)
@@ -492,8 +524,8 @@ for k in range(Mpaths):
         mu_Y,
         sigma_Y,
         sigma_S,
-        bet,
-        That,
+        beta,
+        T_hat,
         Npre,
         DeltabarCondi,
         fCondi,
