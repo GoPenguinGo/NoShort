@@ -1,5 +1,5 @@
-# NoShort
-Research project
+# Learning from Experience without Shorting
+Research project at BI Norwegian Business School
 
 # Install dependencies
 ```shell
