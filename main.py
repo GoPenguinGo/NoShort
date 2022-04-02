@@ -12,8 +12,8 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:
-        sigma_Y (float): _description_ #TODO: @GoPenguinGo
-        V_hat (float): _description_
+        sigma_Y (float): sigma_Y in eq(1), sd of Yt growth
+        V_hat (float): V_hat in eq(2)
         tau (np.ndarray): (t - s) in eq(2), shape (T, )
 
     Returns:
@@ -24,14 +24,15 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
 
 
 def solve_theta(
-    thetaguess: np.float64, consumptionshare: np.ndarray, Delta_s_t: np.ndarray
+    thetaguess: np.float64, sigma_Y: float, consumptionshare: np.ndarray, Delta_s_t: np.ndarray
 ) -> np.float64:
     """RHS - LHS of the eq(24), used to iteratively solve theta
 
     Args:
-        thetaguess (np.float64): _description_ #TODO: GoPenguinGo
-        consumptionshare (np.ndarray): shape (T, )
-        Delta_s_t (np.ndarray): shape (T, )
+        thetaguess (np.float64): any potential value of theta
+        sigma_Y (float): sigma_Y in eq(1)
+        consumptionshare (np.ndarray): shape (T, ), fst as in the def for the experience component of eq(24)
+        Delta_s_t (np.ndarray): shape (T, ), delta_s_t as in the def for the experience component of eq(24)
 
     Returns:
         np.float64: RHS - LHS
@@ -48,40 +49,42 @@ def solve_theta(
     )  # Constraint component, as defined below eq(24)
     diff = (
         sigma_Y
-        - DeltabarCondi  # TODO: GoPenguinGo: make sigma_Y a argument of the function
+        - DeltabarCondi
     ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
     return diff
 
 
 def bisection(
-    optimfun: Callable[[float, np.ndarray, np.ndarray], np.float64],
+    optimfun: Callable[[np.float64, float, np.ndarray, np.ndarray], np.float64],
     xlow: np.float64,
-    xhigh: np.float64,
-    arg1: np.ndarray,
+    xhigh: float,
+    arg1: float,
     arg2: np.ndarray,
+    arg3: np.ndarray,
     convcrit: float = 1e-6,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 
     Args:
-        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): _description_
+        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
         xlow (float): lower bound for x
         xhigh (float): upper bound for x
-        arg1 (np.ndarray): second input for optimfun
+        arg1 (float): second input for optimfun
         arg2 (np.ndarray): third input for optimfun
+        arg3 (np.ndarray): fourth input for optimfun
         convcrit (float, optional): converging criteria. Defaults to 1e-6.
 
     Returns:
-        np.float64: _description_ #TODO: GoPenguinGo
+        np.float64: x is a root of optimfun, ie. optimfun(x, arg1, ...) = 0
     """
-    flow = optimfun(xlow, arg1, arg2)
-    fhigh = optimfun(xhigh, arg1, arg2)
+    flow = optimfun(xlow, arg1, arg2, arg3)
+    fhigh = optimfun(xhigh, arg1, arg2, arg3)
     diff = 1
     iter = 0
 
     while diff > convcrit:
         xmid = (xlow + xhigh) / 2
-        fmid = optimfun(xmid, arg1, arg2)
+        fmid = optimfun(xmid, arg1, arg2, arg3)
         if flow * fmid < 0:  # root between flow and fmid
             xhigh = xmid
             fhigh = fmid
@@ -101,7 +104,7 @@ def BuildUpCohortsMAIN(
     dt: float,
     rho: float,
     nu: float,
-    Vbar: float,  # TODO: @GoPenguinGo: a better name?
+    Vhat: float,
     mu_Y: float,
     sigma_Y: float,
     beta: float,
@@ -127,9 +130,9 @@ def BuildUpCohortsMAIN(
         dt (float): unit of time
         rho (float): rho, discount factor
         nu (float): birth / death rate, each cohort starts at size nu and shrinks at speed of nu
-        Vbar (float): initial variance of beliefs
-        mu_Y (float): mean of aggregate output growth
-        sigma_Y (float): sd of aggregate output growth
+        Vhat (float): initial variance of beliefs
+        mu_Y (float): mean of aggregate output growth, eq(1)
+        sigma_Y (float): sd of aggregate output growth, eq(1)
         beta (float): initial consumption of the newborn agents
         T_hat (float): pre-trading years
 
@@ -148,8 +151,7 @@ def BuildUpCohortsMAIN(
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     MaxDeltaTheta_s_t = np.zeros(1)  # disagreement, eq(11)
     Xt = np.ones(Nt) * nu * beta  # similar to consumption share, similar to eq(18)
-    IntVec = 1 * nu * beta  # consumption share of a newborn cohort
-    # TODO: @GoPenguinGo: why `1` in 1 * nu * beta
+    IntVec = nu * beta  # consumption share of a newborn cohort
     # TODO: @chingyulin: tau can allocate the memory
     tau = np.zeros(1)  # t-s
     tau[0] = dt
@@ -176,7 +178,7 @@ def BuildUpCohortsMAIN(
         consumptionshare = IntVec / Xt[i]  # consumption share
 
         # update beliefs
-        dDelta_s_t = (post_var(sigma_Y, Vbar, tau) / sigma_Y**2) * (
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
             -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1]
         )  # from eq(5)
         if i < Npre:
@@ -205,9 +207,10 @@ def BuildUpCohortsMAIN(
         else:
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             # TODO: @GoPenguinGo: is `10` in the argument of the bisection a hard-coded value?
+            # no, I just think it is very very unlikely that theta goes near 10, and bisection method requires an interval
             # Should it's put as a configurable parameter?
             theta_t[i] = bisection(
-                solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t
+                solve_theta, lowest_bound, 10.0, sigma_Y, consumptionshare, Delta_s_t
             )  # solve for theta
             MaxDeltaTheta_s_t = np.maximum(
                 -theta_t[i], Delta_s_t
