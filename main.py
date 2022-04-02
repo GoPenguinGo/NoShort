@@ -2,6 +2,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Callable, Dict
+from tqdm import tqdm
 
 # it is correct now; but much slower than matlab
 #################  Define functions  ####################################################################
@@ -76,7 +77,7 @@ def BuildUpCohortsMAIN(dZt: np.ndarray, Nt: float, dt: float, rho: float, nu: fl
     tau[0] = dt
     reduction = np.exp(-nu * dt)  # cohort size shrink at this rate
     theta_t = np.zeros(Nt)  # market price of risk
-    for i in range(1, Nt):
+    for i in tqdm(range(1, Nt)):
         Part = IntVec * np.exp(
             -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt + MaxDeltaTheta_s_t * dZt[i - 1])  # Consumption of each cohort, Eq(16), where eta_s_t / eta_s_s follows Eq(11)
         if i == 1:  # only one cohort in the economy
@@ -120,7 +121,6 @@ def BuildUpCohortsMAIN(dZt: np.ndarray, Nt: float, dt: float, rho: float, nu: fl
     fCondi = sum(invest * f)  # Eq(24) constraint component
 
     return DeltaConditional, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
-
 
 def SimCohortsMAIN(biasvec, dZt, Nt, tau, IntVec, Delta_s_t, MaxDeltaTheta_s_t, dt, rho, nu, Vbar, mu_Y, sigma_Y,
                    sigma_S, bet, That, Npre, DeltabarCondi, fCondi):
@@ -242,7 +242,7 @@ Nt = int(Tcohort / dt)
 MC = 1
 fMAT = np.zeros((MC, Nt))
 
-for i in range(MC):
+for i in tqdm(range(MC)):
     dZt = np.sqrt(dt) * np.random.randn(int(Nt - 1))
     Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta, DeltabarCondi, fCondi = BuildUpCohortsMAIN(dZt, Nt,
                                                                                                                dt, rho,
