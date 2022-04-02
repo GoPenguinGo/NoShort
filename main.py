@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 # it is correct now; but much slower than matlab
 #################  Define functions  ####################################################################
@@ -60,7 +60,7 @@ def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
     tau[0] = dt
     reduction = np.exp(-nu * dt)
     theta_t = np.zeros(Nt)
-    for i in range(1, Nt):
+    for i in tqdm(range(1, Nt)):
         # for i in range(1, Npre):
         Part = IntVec * np.exp(
             -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt + MaxDeltaTheta_s_t * dZt[i - 1])
@@ -100,7 +100,7 @@ def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
     DeltabarCondi = sum(Delta_s_t * invest * f)
     fCondi = sum(invest * f)
 
-    return Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
+    return DeltabarConditional, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
 
 
 def SimCohortsMAIN(biasvec, dZt, Nt, tau, IntVec, Delta_s_t, MaxDeltaTheta_s_t, dt, rho, nu, Vbar, mu_Y, sigma_Y,
@@ -223,7 +223,7 @@ Nt = int(Tcohort / dt)
 MC = 1
 fMAT = np.zeros((MC, Nt))
 
-for i in range(MC):
+for i in tqdm(range(MC)):
     dZt = np.sqrt(dt) * np.random.randn(int(Nt - 1))
     Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta, DeltabarCondi, fCondi = BuildUpCohortsMAIN(dZt, Nt,
                                                                                                                dt, rho,
