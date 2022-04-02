@@ -12,5 +12,6 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: shape (T, )
     """
+    # TODO: @chingyulin: np.ones can be optimized.
     V = sigma_Y**2 * V_hat / (sigma_Y**2 * np.ones(len(tau)) + V_hat * tau)
     return V
