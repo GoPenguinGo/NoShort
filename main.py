@@ -1,0 +1,344 @@
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# it is correct now; but much slower than matlab
+#################  Define functions  ####################################################################
+
+def PostVar(sigY, Vbar, tau):
+    if type(tau) == np.ndarray:
+        V = sigY ** 2 * Vbar / (sigY ** 2 * np.ones(len(tau)) + Vbar * tau)
+    else:
+        V = sigY ** 2 * Vbar / (sigY ** 2 + Vbar * tau)
+    return V
+
+
+def LookForTheta(thetaguess, consumptionshare, Delta_s_t):
+    invest = (Delta_s_t >= -thetaguess)  # make sure Delta_s_t is a np array
+    DeltabarCondi = sum(Delta_s_t * invest * consumptionshare)
+    InvestCons = sum(invest * consumptionshare)
+    g = (sigma_Y - DeltabarCondi) / InvestCons - thetaguess
+    return g
+
+
+def BiSection(optimfun, A, B, arg1, arg2, convcrit=1E-6):  # make sure fA * fB < 0 to begin with
+    xlow = A
+    flow = optimfun(A, arg1, arg2)
+    xhigh = B
+    fhigh = optimfun(B, arg1, arg2)
+    diff = 1
+    iter = 0
+
+    while diff > convcrit:
+        xmid = (xlow + xhigh) / 2
+        fmid = optimfun(xmid, arg1, arg2)
+        if flow * fmid < 0:
+            xhigh = xmid
+            fhigh = fmid
+        elif fmid * fhigh < 0:
+            xlow = xmid
+            flow = fmid
+        diff = abs(fhigh - flow)
+        iter += 1
+    return xmid
+
+
+def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
+    # builds up a sufficiently large set of cohorts
+    Npre = int(That / dt)  # Number of pre-trading observations
+    Zt = np.insert(np.cumsum(dZt), 0, 0)
+    yg = (mu_Y - 0.5 * sigma_Y ** 2) * dt * np.ones(int(Nt - 1)) + sigma_Y * dZt
+    Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)
+    # Eta_bar_t = np.ones(Nt) * nu * bet  # remove Xt, change it to Eta_bar_t
+    DeltabarConditional = np.zeros(Nt)
+    Delta_s_t = np.zeros(1)
+    MaxDeltaTheta_s_t = np.zeros(1)
+    Xt = np.ones(Nt) * nu * bet
+    IntVec = 1 * nu * bet
+    tau = np.zeros(1)
+    tau[0] = dt
+    reduction = np.exp(-nu * dt)
+    theta_t = np.zeros(Nt)
+    for i in range(1, Nt):
+        # for i in range(1, Npre):
+        Part = IntVec * np.exp(
+            -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt + MaxDeltaTheta_s_t * dZt[i - 1])
+        if i == 1:
+            Xt[i] = Part
+            DeltabarConditional[i] = Part * MaxDeltaTheta_s_t
+        else:
+            Xt[i] = sum(Part)
+            DeltabarConditional[i] = sum(Part * MaxDeltaTheta_s_t) / Xt[i]
+
+        IntVec = reduction * Part
+        IntVec = np.append(IntVec, bet * (1 - reduction) * Xt[i])
+        f = IntVec / Xt[i]  # consumption share
+
+        dDelta_s_t = (PostVar(sigma_Y, Vbar, tau) / sigma_Y ** 2) * (
+                    -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1])
+        if i < Npre:
+            Delta_s_t = Delta_s_t + dDelta_s_t
+            Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
+        else:
+            DELbias = sum(dZt[int(i - Npre):i]) / That
+            Delta_s_t = Delta_s_t + dDelta_s_t
+            Delta_s_t = np.append(Delta_s_t, DELbias)  # newborns begin with available earlier observations
+        tau = tau + dt
+        tau = np.append(tau, 0)
+
+        # find the market clearing theta, given beliefs and consumption shares
+        # need a large enough number of cohorts to make the distribution of beliefs reasonably continuous
+        if i < Npre:
+            MaxDeltaTheta_s_t = Delta_s_t  # relax the short-sale constraint in the beginning
+        else:
+            A = -max(Delta_s_t)
+            theta_t[i] = BiSection(LookForTheta, A, 10, f, Delta_s_t)
+            MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)
+
+    invest = (Delta_s_t >= -theta_t[Nt - 1])
+    DeltabarCondi = sum(Delta_s_t * invest * f)
+    fCondi = sum(invest * f)
+
+    return Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
+
+
+def SimCohortsMAIN(biasvec, dZt, Nt, tau, IntVec, Delta_s_t, MaxDeltaTheta_s_t, dt, rho, nu, Vbar, mu_Y, sigma_Y,
+                   sigma_S, bet, That, Npre, DeltabarCondi, fCondi):
+    # Initializing variables
+    Xt2 = np.ones(Nt)
+    Deltabar2Conditional = np.ones(Nt)
+    Et = np.ones(Nt)
+    Vt = np.ones(Nt)
+
+    part1 = np.zeros(Nt)
+    dR = np.zeros(Nt)
+    # counter = 0
+    reduction = np.exp(-nu * dt)
+    BIGDELTA = np.zeros((Nt, Nt))
+    BIGMAX = np.zeros((Nt, Nt))  # stores max(delta, -theta)
+    BIGF = np.zeros((Nt, Nt))
+    BIGFCONDI = np.zeros((Nt))
+    BIGDELTABARCONDI = np.zeros((Nt))  # different from max(delta, -theta)
+
+    RevNt = np.flip(range(Nt))
+    fhat = reduction ** RevNt * nu * dt
+    fhat = fhat / sum(fhat)
+
+    # Expected returns
+    mu_S = np.zeros(Nt)  # expected return under true measure
+    mu_S_t = np.zeros(Nt)  # expected return under agent-measure
+    muhat_S_t = np.zeros(Nt)  # average belief in the economy
+
+    muC_s_t = np.zeros(Nt)  # drift log consumption
+    sigmaC_s_t = np.zeros(Nt)  # diffusion log consumption
+
+    # Aggregate quantities
+    r_t = np.zeros(Nt)  # interest rate
+    theta_t = np.zeros(Nt)  # market price of risk
+    fst = np.zeros(Nt)  # consumption share
+    for i in range(Nt):
+        BIGDELTA[i, :] = Delta_s_t
+        BIGMAX[i, :] = MaxDeltaTheta_s_t
+        BIGFCONDI[i] = fCondi
+        BIGDELTABARCONDI[i] = DeltabarCondi
+
+        if i < Nt - 1:  # information & belief
+            if i == 0:
+                part1[i] = sum(biasvec) / That
+            else:
+                part1[i] = part1[i - 1] + (PostVar(sigma_Y, Vbar, (i * dt)) / sigma_Y ** 2) * (
+                        - part1[i - 1] * dt + dZt[i - 1])
+
+        Part = IntVec * np.exp(-(0.5 * MaxDeltaTheta_s_t ** 2) * dt + MaxDeltaTheta_s_t * dZt[i])
+
+        Xt2[i] = sum(Part)
+        Deltabar2Conditional[i] = sum(Part * MaxDeltaTheta_s_t) / Xt2[i]
+        f = Part / Xt2[i]  # consumption share
+        BIGF[i, :] = f
+
+        # find theta
+        A = -max(Delta_s_t)
+        theta_t[i] = BiSection(LookForTheta, A, 10, f, Delta_s_t)
+        MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)
+        invest = (Delta_s_t >= -theta_t[i])
+        DeltabarCondi = sum(Delta_s_t * invest * f)
+        fCondi = sum(invest * f)
+
+        r_t[i] = rho + mu_Y + nu * (1 - bet) - (sigma_Y ** 2 - sigma_Y * DeltabarCondi) / fCondi
+
+        mu_S[i] = sigma_S * (sigma_Y - DeltabarCondi) / fCondi + r_t[i]
+        mu_S_t[i] = mu_S[i] + sigma_S * part1[i]  # expected stock return for agent born at t
+        muhat_S_t[i] = mu_S[i] + sigma_S * sum(fhat * Delta_s_t)
+
+        dR[i] = mu_S[i] * dt + sigma_S * dZt[i]  # mu_t^Sdt + sigma_t^Sdz_t
+
+        # Et[i] = sum(f * (Vbar / (1 + (Vbar / sigma_Y ** 2) * dt * RevNt)) * (1 / sigma_Y))
+        # Vt[i] = (sum(f * Delta_s_t ** 2) - Deltabar2[i] ** 2) * sigma_Y
+
+        # Updating:
+        dDelta_s_t = (PostVar(sigma_Y, Vbar, tau) / sigma_Y ** 2) * (
+                -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i])
+        if i < Npre:
+            DELbias = (sum(biasvec[i:]) + sum(dZt[:i])) / That
+        else:
+            DELbias = sum(dZt[i - Npre:i]) / That
+
+        Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
+        Delta_s_t = np.append(Delta_s_t, DELbias)
+        IntVec = reduction * Part[1:]
+        IntVec = np.append(IntVec, bet * (1 - reduction) * Xt2[i])
+
+    Port = np.maximum(Delta_s_t+theta_t[i], 0) / sigma_S
+
+    return Xt2, Deltabar2, part1, mu_S, mu_S_t, muhat_S_t, r_t, theta_t, Port, muC_s_t, sigmaC_s_t, BIGF, BIGDELTA, Et, Vt, dR
+
+
+#############################################################################################################
+
+# Parameters
+rho = 0.001  # Time discount factor
+nu = 0.02  # Death rate
+mu_Y = 0.02  # Growth rate of output
+sigma_Y = 0.033  # Standard deviation of output
+sigma_S = sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
+w = 0.92  # Fraction of total output paid out as endowment
+
+# Some pre-calculations
+# D = rho ** 2 + 4 * (rho * nu + nu ** 2) * (1 - w)
+D = (rho + nu) * (rho + nu - 4 * nu ** 2)
+bet = (rho + nu - D ** 0.5) / (2 * nu)
+rlog = rho + mu_Y - sigma_Y ** 2
+
+# Setting prior variance
+That = 20  # Pre-trading period
+# dt = 1 / 4
+# Tcohort = 100
+dt = 1 / 12  # time incremental
+Npre = int(That / dt)
+Vbar = (sigma_Y ** 2) / That  # prior variance
+Tcohort = 500  # time horizon to keep track of cohorts
+Nt = int(Tcohort / dt)
+
+MC = 1
+fMAT = np.zeros((MC, Nt))
+
+for i in range(MC):
+    dZt = np.sqrt(dt) * np.random.randn(int(Nt - 1))
+    Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta, DeltabarCondi, fCondi = BuildUpCohortsMAIN(dZt, Nt,
+                                                                                                               dt, rho,
+                                                                                                               nu, Vbar,
+                                                                                                               mu_Y,
+                                                                                                               sigma_Y,
+                                                                                                               bet,
+                                                                                                               That)
+    fMAT[i, :] = f
+
+# Initializing some variables
+Mpaths = 100
+Tsample = int(Tcohort / 100)
+Nsamples = 100
+stepcorr = int(Tsample / dt)
+corrZport = np.zeros((Mpaths, Nsamples))
+corrZMUs_t = np.zeros((Mpaths, Nsamples))
+corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
+corrMuSmuHat = np.zeros((Mpaths, 1))
+fMAT = np.zeros((Mpaths, Nt))
+mC = np.zeros((Mpaths, Nt))
+sC = np.zeros((Mpaths, Nt))
+DeltaHatMAT = np.zeros((Mpaths, Nt))
+rMAT = np.zeros((Mpaths, Nt))
+thetaMAT = np.zeros((Mpaths, Nt))
+portMAT = np.zeros((Mpaths, Nt))
+Zmat = np.zeros((Mpaths, Nt))
+
+# Expected returns
+muSMAT = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+muSsMat = np.zeros((Mpaths, Nt))  # Expected returns under the measure of the agent we track
+muShatMAT = np.zeros((Mpaths, Nt))  # Simple average of expected returns, or consensus belief
+EtMAT = np.zeros((Mpaths, Nt))
+VtMAT = np.zeros((Mpaths, Nt))
+RxMAT = np.zeros((Mpaths, Nt))
+muCst = np.zeros((Mpaths, Nsamples))
+logmuCst = np.zeros((Mpaths, Nsamples))
+sigCst = np.zeros((Mpaths, Nsamples))
+stdCst = np.zeros((Mpaths, Nsamples))
+
+# The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
+for k in range(Mpaths):
+    s = time.time()
+    if k % 10 == 0:
+        dZt = dt ** 0.5 * np.random.randn(int(Nt - 1))
+        Deltabar, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta, DeltabarCondi, fCondi = BuildUpCohortsMAIN(dZt,
+                                                                                                                   Nt,
+                                                                                                                   dt,
+                                                                                                                   rho,
+                                                                                                                   nu,
+                                                                                                                   Vbar,
+                                                                                                                   mu_Y,
+                                                                                                                   sigma_Y,
+                                                                                                                   bet,
+                                                                                                                   That)
+    dZforbias = np.diff(Zt)
+    biasvec = dZforbias[-Npre:]
+    dZt = dt ** 0.5 * np.random.randn(Nt)
+    Zt = np.cumsum(dZt)
+
+    Xt2, Deltabar2, Part1, mu_S, mu_S_t, muhat_S_t, r_t, theta_t, Port, muC_s_t, sigmaC_s_t, BIGf, BIGDELTA, Et, Vt, \
+    dR = SimCohortsMAIN(biasvec, dZt, Nt, tau, IntVec, Delta_s_t, dt, rho, nu, Vbar, mu_Y, sigma_Y, sigma_S, bet,
+                        That, Npre, DeltabarCondi, fCondi)
+
+    RxMAT[k, :] = np.transpose(dR)
+    EtMAT[k, :] = np.transpose(Et)
+    VtMAT[k, :] = np.transpose(Et)
+    DeltaHatMAT[k, :] = np.transpose(Deltabar2)
+    rMAT[k, :] = np.transpose(r_t)
+    thetaMAT[k, :] = np.transpose(theta_t)
+    Zmat[k, :] = np.transpose(Zt)
+
+    portMAT[k, :] = np.transpose(Port)
+
+    muSMAT[k, :] = np.transpose(mu_S + rlog - r_t)
+    muSsMat[k, :] = np.transpose(mu_S_t + rlog - r_t)
+    muShatMAT[k, :] = np.transpose(muhat_S_t + rlog - r_t)
+
+    mu_S = mu_S + rlog - r_t
+    muhat_S_t = muhat_S_t + rlog - r_t
+    mu_S_t = mu_S_t + rlog - r_t
+    mC[k, :] = np.transpose(muC_s_t)
+    sC[k, :] = np.transpose(sigmaC_s_t)
+    corrMuSmuHat[k] = np.corrcoef(muhat_S_t, mu_S)[0, 1]
+    fMAT[k, :] = np.mean(BIGf, axis=0)
+
+    for l in range(Nsamples):
+        a = int(l * stepcorr)
+        b = int((l + 1) * stepcorr)
+        corrZMUs_t[k, l] = np.corrcoef(Zt[a: b], mu_S_t[a: b])[0, 1]
+        corrZport[k, l] = np.corrcoef(Zt[a: b], Port[a: b])[0, 1]
+        corrMU_sMUs_t[k, l] = np.corrcoef(mu_S[a: b], mu_S_t[a: b])[0, 1]
+        muCst[k, l] = np.mean(muC_s_t[a: b])
+        logmuCst[k, l] = np.mean(muC_s_t[a: b]) - 0.5 * sum((sigmaC_s_t[a: b]) ** 2)
+        sigCst[k, l] = np.mean(sigmaC_s_t[a: b])
+        stdCst[k, l] = np.mean(abs(sigmaC_s_t[a: b]))
+    print(time.time() - s)
+
+MaxAge = 100
+MaxAgeN = int(MaxAge / Tsample)
+tperiod = range(Tsample, 100 + Tsample, Tsample)
+meanZport = np.mean(corrZport, axis=0)
+meanZmus_t = np.mean(corrZMUs_t, axis=0)
+
+# Compute the mean values from the simulation
+meanMus = np.mean(corrMU_sMUs_t, axis=0)
+meanMuCst = np.mean(muCst, axis=0)
+meanSCst = np.mean(sigCst, axis=0)
+meanStdCst = np.mean(stdCst, axis=0)
+meanLogMuCst = np.mean(logmuCst, axis=0)
+
+# Figures
+# Figure 1 in the paper
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4, 10))
+ax1.plot(tperiod, meanMus[:MaxAgeN])
+ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
+
+# Figure 2 in the paper
