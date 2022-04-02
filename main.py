@@ -1,12 +1,15 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Callable, Dict
 from tqdm import tqdm
 
 # it is correct now; but much slower than matlab
 #################  Define functions  ####################################################################
 
-def PostVar(sigY, Vbar, tau):
+def PostVar(sigY: float, Vbar: float or np.ndarray, tau: float or np.ndarray):
+    # Equation (2), calculate the posterior variance
+    # tau is (t-s)
     if type(tau) == np.ndarray:
         V = sigY ** 2 * Vbar / (sigY ** 2 * np.ones(len(tau)) + Vbar * tau)
     else:
@@ -14,15 +17,20 @@ def PostVar(sigY, Vbar, tau):
     return V
 
 
-def LookForTheta(thetaguess, consumptionshare, Delta_s_t):
-    invest = (Delta_s_t >= -thetaguess)  # make sure Delta_s_t is a np array
-    DeltabarCondi = sum(Delta_s_t * invest * consumptionshare)
-    InvestCons = sum(invest * consumptionshare)
-    g = (sigma_Y - DeltabarCondi) / InvestCons - thetaguess
+def LookForTheta(thetaguess: float, consumptionshare: np.ndarray, Delta_s_t: np.ndarray):
+    # equation (24), to iterate to solve for theta
+    invest = (Delta_s_t >= -thetaguess)  # equation (10) and (11), invest if theta_s_t >= -theta, constrained if otherwise
+    DeltabarCondi = sum(Delta_s_t * invest * consumptionshare)  # Experience component, as defined below (24)
+    InvestCons = sum(invest * consumptionshare)  # Constraint component, as defined below (24)
+    g = (sigma_Y - DeltabarCondi) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
     return g
 
 
-def BiSection(optimfun, A, B, arg1, arg2, convcrit=1E-6):  # make sure fA * fB < 0 to begin with
+def BiSection(optimfun: Callable[[float, np.ndarray, np.ndarray], float], A: float, B: float, arg1, arg2, convcrit=1E-6):
+    # bisection method to solve for theta
+    # arg1 and arg2 are input for optimfun
+    # A and B are lower and higher bounds for theta
+    # convcrit is the converging criteria
     xlow = A
     flow = optimfun(A, arg1, arg2)
     xhigh = B
@@ -33,10 +41,10 @@ def BiSection(optimfun, A, B, arg1, arg2, convcrit=1E-6):  # make sure fA * fB <
     while diff > convcrit:
         xmid = (xlow + xhigh) / 2
         fmid = optimfun(xmid, arg1, arg2)
-        if flow * fmid < 0:
+        if flow * fmid < 0:  # root between flow and fmid
             xhigh = xmid
             fhigh = fmid
-        elif fmid * fhigh < 0:
+        elif fmid * fhigh < 0:  # root between fmid and fhigh
             xlow = xmid
             flow = fmid
         diff = abs(fhigh - flow)
@@ -44,39 +52,48 @@ def BiSection(optimfun, A, B, arg1, arg2, convcrit=1E-6):  # make sure fA * fB <
     return xmid
 
 
-def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
-    # builds up a sufficiently large set of cohorts
+def BuildUpCohortsMAIN(dZt: np.ndarray, Nt: float, dt: float, rho: float, nu: float, Vbar: float, mu_Y: float, sigma_Y: float, bet: float, That: float):
+    # builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
+    # dZt: random shocks of aggregate output for each period, (Nt-1)*1
+    # Nt: number of periods
+    # dt: unit of time
+    # rho: rho, discount factor
+    # nu: birth / death rate, each cohort starts at size nu and shrinks at speed of nu
+    # Vbar: initial variance of beliefs
+    # mu_Y, sigma_Y: mean and sd of aggregate output growth
+    # bet: beta, initial consumption of the newborn agents
+    # That: pre-trading years
+
     Npre = int(That / dt)  # Number of pre-trading observations
-    Zt = np.insert(np.cumsum(dZt), 0, 0)
-    yg = (mu_Y - 0.5 * sigma_Y ** 2) * dt * np.ones(int(Nt - 1)) + sigma_Y * dZt
-    Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)
-    # Eta_bar_t = np.ones(Nt) * nu * bet  # remove Xt, change it to Eta_bar_t
-    DeltabarConditional = np.zeros(Nt)
-    Delta_s_t = np.zeros(1)
-    MaxDeltaTheta_s_t = np.zeros(1)
-    Xt = np.ones(Nt) * nu * bet
-    IntVec = 1 * nu * bet
-    tau = np.zeros(1)
+    Zt = np.insert(np.cumsum(dZt), 0, 0)  # cumulated shocks, Nt * 1
+    yg = (mu_Y - 0.5 * sigma_Y ** 2) * dt * np.ones(int(Nt - 1)) + sigma_Y * dZt  # output in log, (Nt - 1) *1, equation (1)
+    Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)  # output, Nt *1
+    DeltaConditional = np.zeros(Nt)
+    Delta_s_t = np.zeros(1)  # belief bias, Eq(3)
+    MaxDeltaTheta_s_t = np.zeros(1)  # disagreement, Eq(11)
+    Xt = np.ones(Nt) * nu * bet  # similar to consumption share, similar to Eq(18)
+    IntVec = 1 * nu * bet  # consumption share of a newborn cohort
+    tau = np.zeros(1)  # t-s
     tau[0] = dt
-    reduction = np.exp(-nu * dt)
-    theta_t = np.zeros(Nt)
+    reduction = np.exp(-nu * dt)  # cohort size shrink at this rate
+    theta_t = np.zeros(Nt)  # market price of risk
     for i in tqdm(range(1, Nt)):
-        # for i in range(1, Npre):
         Part = IntVec * np.exp(
-            -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt + MaxDeltaTheta_s_t * dZt[i - 1])
-        if i == 1:
+            -(rho + 0.5 * MaxDeltaTheta_s_t * MaxDeltaTheta_s_t) * dt + MaxDeltaTheta_s_t * dZt[i - 1])  # Consumption of each cohort, Eq(16), where eta_s_t / eta_s_s follows Eq(11)
+        if i == 1:  # only one cohort in the economy
             Xt[i] = Part
-            DeltabarConditional[i] = Part * MaxDeltaTheta_s_t
-        else:
-            Xt[i] = sum(Part)
-            DeltabarConditional[i] = sum(Part * MaxDeltaTheta_s_t) / Xt[i]
+            DeltaConditional[i] = Part * MaxDeltaTheta_s_t
+        else:  # more cohorts
+            Xt[i] = sum(Part)  # total consumption
+            DeltaConditional[i] = sum(Part * MaxDeltaTheta_s_t) / Xt[i]  # Eq(19), consumption weighted max(Delta_s_t, -theta)
 
         IntVec = reduction * Part
-        IntVec = np.append(IntVec, bet * (1 - reduction) * Xt[i])
+        IntVec = np.append(IntVec, bet * (1 - reduction) * Xt[i])  # updated consumption, add a newborn cohort
         f = IntVec / Xt[i]  # consumption share
 
+        # update beliefs
         dDelta_s_t = (PostVar(sigma_Y, Vbar, tau) / sigma_Y ** 2) * (
-                    -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1])
+                    -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1])  # from Eq(5)
         if i < Npre:
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
@@ -84,6 +101,8 @@ def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
             DELbias = sum(dZt[int(i - Npre):i]) / That
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, DELbias)  # newborns begin with available earlier observations
+
+        # update tau
         tau = tau + dt
         tau = np.append(tau, 0)
 
@@ -92,16 +111,16 @@ def BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, bet, That):
         if i < Npre:
             MaxDeltaTheta_s_t = Delta_s_t  # relax the short-sale constraint in the beginning
         else:
-            A = -max(Delta_s_t)
-            theta_t[i] = BiSection(LookForTheta, A, 10, f, Delta_s_t)
-            MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)
+            A = -max(Delta_s_t)  # absolute lower bound for theta
+            theta_t[i] = BiSection(LookForTheta, A, 10, f, Delta_s_t)  # solve for theta
+            MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)  # update max(Delta_s_t, -theta)
 
+    # similar to LookForTheta function, store the final value of elements in Eq(24)
     invest = (Delta_s_t >= -theta_t[Nt - 1])
-    DeltabarCondi = sum(Delta_s_t * invest * f)
-    fCondi = sum(invest * f)
+    DeltabarCondi = sum(Delta_s_t * invest * f)  # Eq(24) experience component
+    fCondi = sum(invest * f)  # Eq(24) constraint component
 
-    return DeltabarConditional, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
-
+    return DeltaConditional, IntVec, Xt, Delta_s_t, Yt, Zt, f, tau, MaxDeltaTheta_s_t, DeltabarCondi, fCondi
 
 def SimCohortsMAIN(biasvec, dZt, Nt, tau, IntVec, Delta_s_t, MaxDeltaTheta_s_t, dt, rho, nu, Vbar, mu_Y, sigma_Y,
                    sigma_S, bet, That, Npre, DeltabarCondi, fCondi):
@@ -342,3 +361,4 @@ ax1.plot(tperiod, meanMus[:MaxAgeN])
 ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
 
 # Figure 2 in the paper
+print("hi")
