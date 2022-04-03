@@ -57,7 +57,7 @@ def solve_theta(
 def bisection(
     optimfun: Callable[[np.float64, float, np.ndarray, np.ndarray], np.float64],
     xlow: np.float64,
-    xhigh: float,
+    xhigh: np.float64,
     arg1: float,
     arg2: np.ndarray,
     arg3: np.ndarray,
@@ -137,7 +137,17 @@ def BuildUpCohortsMAIN(
         T_hat (float): pre-trading years
 
     Returns:
-        _type_: _description_ #TODO: @GoPenguinGo: add the return type and the description
+        DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nt, )
+        IntVec (np.ndarray): ~similar to consumption share, shape(Nt, )
+        Xt (np.ndarray): xi_t * Yt, shape(Nt, )
+        Delta_s_t (np.ndarray): bias, shape(Nt, )
+        Yt (np.ndarray): aggregate output, shape(Nt, )
+        Zt (np.ndarray): cumulated shocks, shape(Nt, )
+        consumptionshare (np.ndarray): shape(Nt, )
+        tau (np.ndarray): t-s, shape(Nt, )
+        MaxDeltaTheta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nt, )
+        DeltabarCondi (np.float64): experience component in (24)
+        fCondishape (np.float64): constraint component in (24)
         #TODO: @chingyulin: use NamedTuple for the return
     """
 
@@ -233,7 +243,7 @@ def BuildUpCohortsMAIN(
         tau,
         MaxDeltaTheta_s_t,
         DeltabarCondi,
-        fCondi,
+        fCondi
     )
 
 
@@ -399,7 +409,7 @@ T_hat = 20  # Pre-trading period
 # Tcohort = 100
 dt = 1 / 12  # time incremental
 Npre = int(T_hat / dt)
-Vbar = (sigma_Y**2) / T_hat  # prior variance
+Vhat = (sigma_Y**2) / T_hat  # prior variance
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)
 
@@ -428,7 +438,7 @@ for i in tqdm(range(MC)):
         Nt=Nt,
         dt=dt,
         rho=rho,
-        Vbar=Vbar,
+        Vhat=Vhat,
         mu_Y=mu_Y,
         sigma_Y=sigma_Y,
         beta=beta,
@@ -490,7 +500,7 @@ for k in range(Mpaths):
             MaxDeltaTheta,
             DeltabarCondi,
             fCondi,
-        ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, beta, T_hat)
+        ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
     dZforbias = np.diff(Zt)
     biasvec = dZforbias[-Npre:]
     dZt = dt**0.5 * np.random.randn(Nt)
@@ -523,7 +533,7 @@ for k in range(Mpaths):
         dt,
         rho,
         nu,
-        Vbar,
+        Vhat,
         mu_Y,
         sigma_Y,
         sigma_S,
