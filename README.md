@@ -13,6 +13,7 @@ python3 main.py
 
 # Linter
 To have a consistent coding style, use `black` to lint the code before commit
+
 ```shell
 black main.py
 ```
