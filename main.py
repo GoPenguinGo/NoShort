@@ -3,9 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Callable, Tuple
 from tqdm import tqdm
+from src.cohort_builder import build_cohorts
+from src.cohort_simulator import simulate_cohorts
 
 # TODO: move the function and parameters to different files
-
 
 # @GoPenguinGo: it seems tau is always np.ndarray right?
 def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
@@ -98,7 +99,7 @@ def bisection(
     return xmid
 
 
-def BuildUpCohortsMAIN(
+def build_cohorts(
     dZt: np.ndarray,
     Nt: int,
     dt: float,
@@ -247,7 +248,7 @@ def BuildUpCohortsMAIN(
     )
 
 
-def SimCohortsMAIN(
+def simulate_cohorts(
     biasvec,
     dZt,
     Nt,
@@ -386,6 +387,8 @@ def SimCohortsMAIN(
 
 
 #############################################################################################################
+
+# TODO: @chingyulin: make cohort a class
 # TODO: move the paramters to a separate config file
 # Parameters
 rho = 0.001  # Time discount factor
@@ -433,7 +436,8 @@ for i in tqdm(range(MC)):
         MaxDeltaTheta,
         DeltabarCondi,
         fCondi,
-    ) = BuildUpCohortsMAIN(
+
+    ) = build_cohorts(
         dZt=dZt,
         Nt=Nt,
         dt=dt,
@@ -500,7 +504,8 @@ for k in range(Mpaths):
             MaxDeltaTheta,
             DeltabarCondi,
             fCondi,
-        ) = BuildUpCohortsMAIN(dZt, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
+        ) = build_cohorts(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, beta, T_hat)
+
     dZforbias = np.diff(Zt)
     biasvec = dZforbias[-Npre:]
     dZt = dt**0.5 * np.random.randn(Nt)
@@ -523,7 +528,8 @@ for k in range(Mpaths):
         Et,
         Vt,
         dR,
-    ) = SimCohortsMAIN(
+
+    ) = simulate_cohorts(  # TODO: missing fCondi
         biasvec,
         dZt,
         Nt,
