@@ -12,7 +12,7 @@ def build_cohorts(
     dt: float,
     rho: float,
     nu: float,
-    Vbar: float,  # TODO: @GoPenguinGo: a better name?
+    Vhat: float,
     mu_Y: float,
     sigma_Y: float,
     beta: float,
@@ -45,9 +45,6 @@ def build_cohorts(
         T_hat (float): pre-trading years
 
     Returns:
-<<<<<<< Updated upstream
-        _type_: _description_ #TODO: @GoPenguinGo: add the return type and the description
-=======
         DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nt, )
         IntVec (np.ndarray): ~similar to consumption share, shape(Nt, )
         Xt (np.ndarray): xi_t * Yt, shape(Nt, )
@@ -59,7 +56,9 @@ def build_cohorts(
         MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nt, )
         DeltabarCondi (np.float64): experience component in (24)
         fCondishape (np.float64): constraint component in (24)
->>>>>>> Stashed changes
+        MaxDeltaTheta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nt, )
+        DeltabarCondi (np.float64): experience component in (24)
+        fCondishape (np.float64): constraint component in (24)
         #TODO: @chingyulin: use NamedTuple for the return
     """
 
@@ -73,8 +72,7 @@ def build_cohorts(
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     MaxThetaDelta_s_t = np.zeros(1)  # disagreement, eq(11)
     Xt = np.ones(Nt) * nu * beta  # similar to consumption share, similar to eq(18)
-    IntVec = 1 * nu * beta  # consumption share of a newborn cohort
-    # TODO: @GoPenguinGo: why `1` in 1 * nu * beta
+    IntVec = nu * beta  # consumption share of a newborn cohort
     # TODO: @chingyulin: tau can allocate the memory
     tau = np.zeros(1)  # t-s
     tau[0] = dt
@@ -101,7 +99,7 @@ def build_cohorts(
         consumptionshare = IntVec / Xt[i]  # consumption share
 
         # update beliefs
-        dDelta_s_t = (post_var(sigma_Y, Vbar, tau) / sigma_Y**2) * (
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
             -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1]
         )  # from eq(5)
         if i < Npre:
@@ -132,7 +130,7 @@ def build_cohorts(
             # TODO: @GoPenguinGo: is `10` in the argument of the bisection a hard-coded value?
             # Should it's put as a configurable parameter?
             theta_t[i] = bisection(
-                solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t, sigma_Y
+                solve_theta, lowest_bound, 1e2, consumptionshare, Delta_s_t, sigma_Y
             )  # solve for theta
             MaxDeltaTheta_s_t = np.maximum(
                 -theta_t[i], Delta_s_t
