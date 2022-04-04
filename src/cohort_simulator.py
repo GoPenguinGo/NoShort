@@ -1,29 +1,84 @@
 import numpy as np
+from typing import Tuple
 from src.stats import post_var
 from src.solver import bisection, solve_theta
 
 # TODO: @GoPenguinGo: type and comment this function
 def simulate_cohorts(
-    biasvec,
-    dZt,
-    Nt,
-    tau,
-    IntVec,
-    Delta_s_t,
-    MaxDeltaTheta_s_t,
-    dt,
-    rho,
-    nu,
-    Vbar,
-    mu_Y,
-    sigma_Y,
-    sigma_S,
-    bet,
-    That,
-    Npre,
-    DeltabarCondi,
-    fCondi,
-):
+    biasvec: np.ndarray,
+    dZt: np.ndarray,
+    Nt: int,
+    tau: np.ndarray,
+    IntVec: np.ndarray,
+    Delta_s_t: np.ndarray,
+    MaxThetaDelta_s_t: np.ndarray,
+    dt: float,
+    rho: float,
+    nu: float,
+    Vhat: float,
+    mu_Y: float,
+    sigma_Y: float,
+    sigma_S: float,
+    bet: float,
+    That: float,
+    Npre: float,
+    DeltabarCondi: np.float64,
+    fCondi: np.float64,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """"" Simulate the economy forward
+    
+    Args:
+        biasvec (np.ndarray): pre-trading period shocks to form beliefs of the initial cohort, shape(Npre,)
+        dZt (np.ndarray): random shocks, shape (Nt)
+        Nt (int): number of observations
+        tau (np.ndarray): t-s, shape(Nt)
+        IntVec (np.ndarray): ~similar to consumption share, shape(Nt)
+        Delta_s_t (np.ndarray): bias for each cohort, shape(Nt)
+        MaxThetaDelta_s_t (np.ndarray): max(Delta_), shape(Nt)
+        dt (float): per unit of time
+        rho (float): discount factor
+        nu (float): rate of birth and death
+        Vhat (float): initial variance
+        mu_Y (float): as in eq(1), drift of aggregate output growth
+        sigma_Y (float): as in eq(1), diffusion of aggregate output growth
+        sigma_S (float): as in eq(26), diffusion of stock price 
+        bet (float): as in eq(18), consumption share of the newborn cohort
+        That (float): pre-trading years
+        Npre (float): pre-trading number of obs
+        DeltabarCondi (np.float64): the experience component in eq(24)
+        fCondi (np.float64): the constraint component in eq(24)
+    
+    Returns:
+        Xt2 (np.ndarray): xi_t * Yt, shape(Nt, )
+        MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nt, )
+        part1 (np.ndarray): Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11), shape(Nt, )
+        mu_S (np.ndarray): expected return under true measure at t, shape(Nt, )
+        mu_S_t (np.ndarray): expected stock return for agent born at t, shape(Nt, )
+        muhat_S_t (np.ndarray): average belief in the economy, shape(Nt, )
+        r_t (np.ndarray): interest rate, shape(Nt, )
+        theta_t (np.ndarray): market price of risk, shape(Nt, )
+        Port (np.ndarray): portfolio choice, shape(Nt, )
+        muC_s_t (np.ndarray): drift of individual consumption, shape(Nt, )
+        sigmaC_s_t (np.ndarray): diffusion of individual consumption, shape(Nt, )
+        BIGF (np.ndarray): consumption share over time, shape(Nt, Nt, )
+        BIGDELTA (np.ndarray): bias over time, shape(Nt, Nt, )
+        # Et
+        # Vt
+        dR (np.ndarray): change of stock returns over time, shape(Nt, )
+    """""
     # Initializing variables
     Xt2 = np.ones(Nt)
     Deltabar2Conditional = np.ones(Nt)
@@ -32,7 +87,6 @@ def simulate_cohorts(
 
     part1 = np.zeros(Nt)
     dR = np.zeros(Nt)
-    # counter = 0
     reduction = np.exp(-nu * dt)
     BIGDELTA = np.zeros((Nt, Nt))
     BIGMAX = np.zeros((Nt, Nt))  # stores max(delta, -theta)
@@ -58,7 +112,7 @@ def simulate_cohorts(
     fst = np.zeros(Nt)  # consumption share
     for i in range(Nt):
         BIGDELTA[i, :] = Delta_s_t
-        BIGMAX[i, :] = MaxDeltaTheta_s_t
+        BIGMAX[i, :] = MaxThetaDelta_s_t
         BIGFCONDI[i] = fCondi
         BIGDELTABARCONDI[i] = DeltabarCondi
 
@@ -67,22 +121,22 @@ def simulate_cohorts(
                 part1[i] = sum(biasvec) / That
             else:
                 part1[i] = part1[i - 1] + (
-                    post_var(sigma_Y, Vbar, (i * dt)) / sigma_Y**2
+                    post_var(sigma_Y, Vhat, (i * dt)) / sigma_Y**2
                 ) * (-part1[i - 1] * dt + dZt[i - 1])
 
         Part = IntVec * np.exp(
-            -(0.5 * MaxDeltaTheta_s_t**2) * dt + MaxDeltaTheta_s_t * dZt[i]
+            -(0.5 * MaxThetaDelta_s_t**2) * dt + MaxThetaDelta_s_t * dZt[i]
         )
 
         Xt2[i] = sum(Part)
-        Deltabar2Conditional[i] = sum(Part * MaxDeltaTheta_s_t) / Xt2[i]
+        Deltabar2Conditional[i] = sum(Part * MaxThetaDelta_s_t) / Xt2[i]
         f = Part / Xt2[i]  # consumption share
         BIGF[i, :] = f
 
         # find theta
         A = -max(Delta_s_t)
         theta_t[i] = bisection(solve_theta, A, 10, f, Delta_s_t)
-        MaxDeltaTheta_s_t = np.maximum(-theta_t[i], Delta_s_t)
+        MaxThetaDelta_s_t = np.maximum(-theta_t[i], Delta_s_t)
         invest = Delta_s_t >= -theta_t[i]
         DeltabarCondi = sum(Delta_s_t * invest * f)
         fCondi = sum(invest * f)
@@ -106,7 +160,7 @@ def simulate_cohorts(
         # Vt[i] = (sum(f * Delta_s_t ** 2) - Deltabar2[i] ** 2) * sigma_Y
 
         # Updating:
-        dDelta_s_t = (post_var(sigma_Y, Vbar, tau) / sigma_Y**2) * (
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
             -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i]
         )
         if i < Npre:
@@ -123,7 +177,7 @@ def simulate_cohorts(
 
     return (
         Xt2,
-        Deltabar2,  # TODO: @GoPenguinGo: this is missing
+        MaxThetaDelta_s_t,
         part1,
         mu_S,
         mu_S_t,
@@ -135,7 +189,9 @@ def simulate_cohorts(
         sigmaC_s_t,
         BIGF,
         BIGDELTA,
-        Et,
-        Vt,
+        #Et,
+        #Vt,
         dR,
     )
+
+
