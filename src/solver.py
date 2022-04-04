@@ -14,7 +14,7 @@ def bisection(
     """Bisection method to solve x (theta)
 
     Args:
-        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): _description_
+        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
         xlow (float): lower bound for x
         xhigh (float): upper bound for x
         arg1 (np.ndarray): second input for optimfun
@@ -22,7 +22,7 @@ def bisection(
         eps (float, optional): converging criteria. Defaults to 1e-6.
 
     Returns:
-        np.float64: _description_ #TODO: GoPenguinGo
+
     """
     flow = optimfun(xlow, arg1, arg2, arg3)
     fhigh = optimfun(xhigh, arg1, arg2, arg3)
@@ -54,9 +54,10 @@ def solve_theta(
     """RHS - LHS of the eq(24), used to iteratively solve theta
 
     Args:
-        thetaguess (np.float64): _description_ #TODO: GoPenguinGo
-        consumptionshare (np.ndarray): shape (T, )
-        Delta_s_t (np.ndarray): shape (T, )
+        thetaguess (np.float64): any potential value of theta
+        consumptionshare (np.ndarray): shape (T, ), fst as in the def for the experience component of eq(24)
+        Delta_s_t (np.ndarray): shape (T, ), delta_s_t as in the def for the experience component of eq(24)
+        sigma_Y (float): sigma_Y in eq(1)
 
     Returns:
         np.float64: RHS - LHS
@@ -73,6 +74,6 @@ def solve_theta(
     )  # Constraint component, as defined below eq(24)
     diff = (
         sigma_Y
-        - DeltabarCondi  # TODO: GoPenguinGo: make sigma_Y a argument of the function
+        - DeltabarCondi
     ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
     return diff
