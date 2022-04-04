@@ -13,18 +13,15 @@ w = 0.92  # Fraction of total output paid out as endowment
 # Some pre-calculations
 D = (rho + nu) * (rho + nu - 4 * nu**2)
 beta = (rho + nu - D**0.5) / (2 * nu)
-rlog = rho + mu_Y - sigma_Y**2
 
 # Setting prior variance
 T_hat = 20  # Pre-trading period
 dt = 1 / 12  # time incremental
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y**2) / T_hat  # prior variance
-T_cohort = 500  # time horizon to keep track of cohorts
-Nt = int(T_cohort / dt)
-
-MC = 1
-fMAT = np.zeros((MC, Nt))
+T_cohort = 100  # time horizon to keep track of cohorts
+Nt = int(T_cohort / dt)  # number of periods
+Nc = int(T_cohort / dt)  # number of cohorts
 
 time_tolerance = 5
 
@@ -37,27 +34,37 @@ corrZport = np.zeros((Mpaths, Nsamples))
 corrZMUs_t = np.zeros((Mpaths, Nsamples))
 corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
 corrMuSmuHat = np.zeros((Mpaths, 1))
-fMAT = np.zeros((Mpaths, Nt))
-mC = np.zeros((Mpaths, Nt))
-sC = np.zeros((Mpaths, Nt))
-DeltaHatMAT = np.zeros((Mpaths, Nt))
-rMAT = np.zeros((Mpaths, Nt))
-thetaMAT = np.zeros((Mpaths, Nt))
-portMAT = np.zeros((Mpaths, Nt))
-Zmat = np.zeros((Mpaths, Nt))
+F_Matrix = np.zeros((Mpaths, Nt, Nc))
+mu_C_matrix = np.zeros((Mpaths, Nt))
+sigma_C_matrix = np.zeros((Mpaths, Nt))
+Delta_matrix = np.zeros((Mpaths, Nt, Nc))
+r_matrix = np.zeros((Mpaths, Nt))
+theta_matrix = np.zeros((Mpaths, Nt))
+port_matrix = np.zeros((Mpaths, Nt, Nc))
+Z_matrix = np.zeros((Mpaths, Nt))
 
 # Expected returns
-muSMAT = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-muSsMat = np.zeros(
-    (Mpaths, Nt)
+mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+mu_S_s_matrix = np.zeros(
+    (Mpaths, Nt, Nc)
 )  # Expected returns under the measure of the agent we track
-muShatMAT = np.zeros(
+mu_hat_S_matrix = np.zeros(
     (Mpaths, Nt)
 )  # Simple average of expected returns, or consensus belief
-EtMAT = np.zeros((Mpaths, Nt))
-VtMAT = np.zeros((Mpaths, Nt))
-RxMAT = np.zeros((Mpaths, Nt))
-muCst = np.zeros((Mpaths, Nsamples))
-logmuCst = np.zeros((Mpaths, Nsamples))
-sigCst = np.zeros((Mpaths, Nsamples))
-stdCst = np.zeros((Mpaths, Nsamples))
+
+# Equity risk premium
+erp_S_matrix  = np.zeros((Mpaths, Nt))
+erp_S_s_matrix = np.zeros(
+    (Mpaths, Nt, Nc)
+)
+erp_hat_S_matrix = np.zeros(
+    (Mpaths, Nt)
+)
+
+Et_matrix = np.zeros((Mpaths, Nt))
+Vt_matrix = np.zeros((Mpaths, Nt))
+dR_matrix = np.zeros((Mpaths, Nt))
+mu_C_s_t = np.zeros((Mpaths, Nsamples))
+log_mu_C_s_t = np.zeros((Mpaths, Nsamples))
+sigma_C_s_t = np.zeros((Mpaths, Nsamples))
+std_C_s_t = np.zeros((Mpaths, Nsamples))

@@ -1,4 +1,3 @@
-
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,42 +9,11 @@ from src.param import *
 
 # TODO: @chingyulin: make cohort a class
 
-time_s = time.time()
-for i in tqdm(range(MC)):
-    dZt = np.sqrt(dt) * np.random.randn(int(Nt - 1))
-    (
-        Deltabar,
-        IntVec,
-        Xt,
-        Delta_s_t,
-        Yt,
-        Zt,
-        f,
-        tau,
-        MaxDeltaTheta,
-        DeltabarCondi,
-        fCondi,
-    ) = build_cohorts(
-        dZt=dZt,
-        Nt=Nt,
-        dt=dt,
-        rho=rho,
-        Vhat=Vhat,
-        mu_Y=mu_Y,
-        sigma_Y=sigma_Y,
-        beta=beta,
-        T_hat=T_hat,
-        nu=nu,
-    )
-    fMAT[i, :] = f
-if time.time() - time_s > time_tolerance:
-    print(f"It takes more than {time_tolerance}s to build up the cohorts")
-
-
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
     s = time.time()
     if k % 10 == 0:
+        time_s = time.time()
         dZt = dt**0.5 * np.random.randn(int(Nt - 1))
         (
             DeltaConditional,
@@ -57,9 +25,9 @@ for k in range(Mpaths):
             f,
             tau,
             MaxThetaDelta_s_t,
-            DeltabarCondi,
-            fCondi,
-        ) = build_cohorts(dZt, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
+        ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
+        if time.time() - time_s > time_tolerance:
+            print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
     dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
 
@@ -69,29 +37,30 @@ for k in range(Mpaths):
 
     (
         Xt2,
-        Deltabar2,
-        Part1,
+        part1,
         mu_S,
-        mu_S_t,
-        muhat_S_t,
-        r_t,
-        theta_t,
-        Port,
-        muC_s_t,
-        sigmaC_s_t,
-        BIGf,
+        mu_S_s,
+        mu_hat_S,
+        r,
+        theta,
+        BIGF,
         BIGDELTA,
-        Et,
-        Vt,
+        BIGMAX,
+        BIGPORT,
+        BIGPOPU,
+        BIGFCONDI,
+        BIGDELTABARCONDI,
         dR,
 
-    ) = simulate_cohorts(  # TODO: missing fCondi
+    ) = simulate_cohorts(
         biasvec,
         dZt,
         Nt,
+        Nc,
         tau,
         IntVec,
         Delta_s_t,
+        MaxThetaDelta_s_t,
         dt,
         rho,
         nu,
@@ -102,43 +71,45 @@ for k in range(Mpaths):
         beta,
         T_hat,
         Npre,
-        DeltabarCondi,
-        fCondi,
     )
 
-    RxMAT[k, :] = np.transpose(dR)
-    EtMAT[k, :] = np.transpose(Et)
-    VtMAT[k, :] = np.transpose(Et)
-    DeltaHatMAT[k, :] = np.transpose(Deltabar2)
-    rMAT[k, :] = np.transpose(r_t)
-    thetaMAT[k, :] = np.transpose(theta_t)
-    Zmat[k, :] = np.transpose(Zt)
+    erp_S = mu_S - r
+    erp_hat_S = mu_hat_S - r
+    erp_S_s = mu_S_s - r
 
-    portMAT[k, :] = np.transpose(Port)
+    Z_matrix[k, :] = Zt
+    dR_matrix[k, :] = dR
+    # EtMAT[k, :] = np.transpose(Et)
+    # VtMAT[k, :] = np.transpose(Vt)
+    Delta_matrix[k, :, :] = BIGDELTA
+    r_matrix[k, :] = r
+    theta_matrix[k, :] = theta
+    mu_S_matrix[k, :] = mu_S
+    mu_S_s_matrix[k, :, :] = mu_S_s
+    mu_hat_S_matrix[k, :] = mu_hat_S
+    erp_S_matrix[k, :] = erp_S
+    erp_S_s_matrix[k, :, :] = erp_S_s
+    erp_hat_S_matrix[k, :] = erp_hat_S
+    port_matrix[k, :, :] = BIGPORT
 
-    muSMAT[k, :] = np.transpose(mu_S + rlog - r_t)
-    muSsMat[k, :] = np.transpose(mu_S_t + rlog - r_t)
-    muShatMAT[k, :] = np.transpose(muhat_S_t + rlog - r_t)
+    corrMuSmuHat[k] = np.corrcoef(mu_hat_S, mu_S)[0, 1]
+    F_Matrix[k, :, :] = np.mean(BIGF, axis=0)
 
-    mu_S = mu_S + rlog - r_t
-    muhat_S_t = muhat_S_t + rlog - r_t
-    mu_S_t = mu_S_t + rlog - r_t
-    mC[k, :] = np.transpose(muC_s_t)
-    sC[k, :] = np.transpose(sigmaC_s_t)
-    corrMuSmuHat[k] = np.corrcoef(muhat_S_t, mu_S)[0, 1]
-    fMAT[k, :] = np.mean(BIGf, axis=0)
+    print(time.time() - s)
 
+
+
+for k in range(Mpaths):
     for l in range(Nsamples):
         a = int(l * stepcorr)
         b = int((l + 1) * stepcorr)
-        corrZMUs_t[k, l] = np.corrcoef(Zt[a:b], mu_S_t[a:b])[0, 1]
-        corrZport[k, l] = np.corrcoef(Zt[a:b], Port[a:b])[0, 1]
-        corrMU_sMUs_t[k, l] = np.corrcoef(mu_S[a:b], mu_S_t[a:b])[0, 1]
-        muCst[k, l] = np.mean(muC_s_t[a:b])
-        logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
-        sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
-        stdCst[k, l] = np.mean(abs(sigmaC_s_t[a:b]))
-    print(time.time() - s)
+        corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, a:b], mu_S_s_matrix[k, Nt-1, a:b])[0, 1]
+        corrZport[k, l] = np.corrcoef(Z_matrix[k, a:b], port_matrix[k, Nt-1, a:b])[0, 1]
+        corrMU_sMUs_t[k, l] = np.corrcoef(mu_S_matrix[k, a:b], mu_S_s_matrix[k, Nt-1, a:b])[0, 1]
+        # muCst[k, l] = np.mean(muC_s_t[a:b])
+        # logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
+        # sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
+        # stdCst[k, l] = np.mean(abs(sigmaC_s_t[a:b]))
 
 MaxAge = 100
 MaxAgeN = int(MaxAge / Tsample)
@@ -148,10 +119,10 @@ meanZmus_t = np.mean(corrZMUs_t, axis=0)
 
 # Compute the mean values from the simulation
 meanMus = np.mean(corrMU_sMUs_t, axis=0)
-meanMuCst = np.mean(muCst, axis=0)
-meanSCst = np.mean(sigCst, axis=0)
-meanStdCst = np.mean(stdCst, axis=0)
-meanLogMuCst = np.mean(logmuCst, axis=0)
+# meanMuCst = np.mean(muCst, axis=0)
+# meanSCst = np.mean(sigCst, axis=0)
+# meanStdCst = np.mean(stdCst, axis=0)
+# meanLogMuCst = np.mean(logmuCst, axis=0)
 
 # Figures
 # Figure 1 in the paper
