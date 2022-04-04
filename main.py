@@ -1,8 +1,14 @@
 
-#############################################################################################################
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from typing import Callable, Tuple
+from src.cohort_builder import build_cohorts
+from src.cohort_simulator import simulate_cohorts
+from src.param import *
 
 # TODO: @chingyulin: make cohort a class
-
 
 time_s = time.time()
 for i in tqdm(range(MC)):
@@ -19,7 +25,6 @@ for i in tqdm(range(MC)):
         MaxDeltaTheta,
         DeltabarCondi,
         fCondi,
-
     ) = build_cohorts(
         dZt=dZt,
         Nt=Nt,
@@ -36,39 +41,6 @@ for i in tqdm(range(MC)):
 if time.time() - time_s > time_tolerance:
     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
-# Initializing some variables
-Mpaths = 100
-Tsample = int(T_cohort / 100)
-Nsamples = 100
-stepcorr = int(Tsample / dt)
-corrZport = np.zeros((Mpaths, Nsamples))
-corrZMUs_t = np.zeros((Mpaths, Nsamples))
-corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
-corrMuSmuHat = np.zeros((Mpaths, 1))
-fMAT = np.zeros((Mpaths, Nt))
-mC = np.zeros((Mpaths, Nt))
-sC = np.zeros((Mpaths, Nt))
-DeltaHatMAT = np.zeros((Mpaths, Nt))
-rMAT = np.zeros((Mpaths, Nt))
-thetaMAT = np.zeros((Mpaths, Nt))
-portMAT = np.zeros((Mpaths, Nt))
-Zmat = np.zeros((Mpaths, Nt))
-
-# Expected returns
-muSMAT = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-muSsMat = np.zeros(
-    (Mpaths, Nt)
-)  # Expected returns under the measure of the agent we track
-muShatMAT = np.zeros(
-    (Mpaths, Nt)
-)  # Simple average of expected returns, or consensus belief
-EtMAT = np.zeros((Mpaths, Nt))
-VtMAT = np.zeros((Mpaths, Nt))
-RxMAT = np.zeros((Mpaths, Nt))
-muCst = np.zeros((Mpaths, Nsamples))
-logmuCst = np.zeros((Mpaths, Nsamples))
-sigCst = np.zeros((Mpaths, Nsamples))
-stdCst = np.zeros((Mpaths, Nsamples))
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
@@ -76,7 +48,7 @@ for k in range(Mpaths):
     if k % 10 == 0:
         dZt = dt**0.5 * np.random.randn(int(Nt - 1))
         (
-            Deltabar,
+            DeltaConditional,
             IntVec,
             Xt,
             Delta_s_t,
@@ -84,14 +56,15 @@ for k in range(Mpaths):
             Zt,
             f,
             tau,
-            MaxDeltaTheta,
+            MaxThetaDelta_s_t,
             DeltabarCondi,
             fCondi,
-        ) = build_cohorts(dZt, Nt, dt, rho, nu, Vbar, mu_Y, sigma_Y, beta, T_hat)
+        ) = build_cohorts(dZt, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
 
-    dZforbias = np.diff(Zt)
+    dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
+
     biasvec = dZforbias[-Npre:]
-    dZt = dt**0.5 * np.random.randn(Nt)
+    dZt = dt**0.5 * np.random.randn(Nt)  # dZt forward
     Zt = np.cumsum(dZt)
 
     (
