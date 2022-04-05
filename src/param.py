@@ -53,13 +53,9 @@ mu_hat_S_matrix = np.zeros(
 )  # Simple average of expected returns, or consensus belief
 
 # Equity risk premium
-erp_S_matrix  = np.zeros((Mpaths, Nt))
-erp_S_s_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)
-erp_hat_S_matrix = np.zeros(
-    (Mpaths, Nt)
-)
+erp_S_matrix = np.zeros((Mpaths, Nt))
+erp_S_s_matrix = np.zeros((Mpaths, Nt, Nc))
+erp_hat_S_matrix = np.zeros((Mpaths, Nt))
 
 Et_matrix = np.zeros((Mpaths, Nt))
 Vt_matrix = np.zeros((Mpaths, Nt))

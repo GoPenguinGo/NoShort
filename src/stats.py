@@ -1,6 +1,6 @@
 import numpy as np
 
-# @GoPenguinGo: it seems tau is always np.ndarray right?
+
 def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
@@ -12,6 +12,6 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: shape (T, )
     """
-    # TODO: @chingyulin: np.ones can be optimized.
-    V = sigma_Y**2 * V_hat / (sigma_Y**2 * np.ones(len(tau)) + V_hat * tau)
+    sigma_Y_sq = sigma_Y**2
+    V = sigma_Y_sq * V_hat / (sigma_Y_sq + V_hat * tau)
     return V
