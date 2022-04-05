@@ -19,7 +19,7 @@ T_hat = 20  # Pre-trading period
 dt = 1 / 12  # time incremental
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y**2) / T_hat  # prior variance
-T_cohort = 100  # time horizon to keep track of cohorts
+T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
 
