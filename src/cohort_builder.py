@@ -102,7 +102,7 @@ def build_cohorts(
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
         else:
-            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat
+            DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
 
             Delta_s_t += dDelta_s_t
             # TODO: @chingyulin: this can be optimized

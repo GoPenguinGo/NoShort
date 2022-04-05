@@ -73,7 +73,6 @@ def solve_theta(
         invest_consumptionshare
     )  # Constraint component, as defined below eq(24)
     diff = (
-        sigma_Y
-        - DeltabarCondi
+        sigma_Y - DeltabarCondi
     ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
     return diff
