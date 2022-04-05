@@ -12,18 +12,16 @@ import concurrent.futures
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 # for k in range(Mpaths):
-def simulate(k):
+def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
     dZt = dt**0.5 * np.random.randn(int(Nt - 1))
     (
-        DeltaConditional,
         IntVec,
         Xt,
         Delta_s_t,
         Yt,
         Zt,
-        f,
         tau,
         MaxThetaDelta_s_t,
     ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
@@ -36,25 +34,24 @@ def simulate(k):
     dZt = dt**0.5 * np.random.randn(Nt)  # dZt forward
     Zt = np.cumsum(dZt)
 
-    # (
-    #     Xt2,
-    #     part1,
-    #     mu_S,
-    #     mu_S_s,
-    #     mu_hat_S,
-    #     r,
-    #     theta,
-    #     BIGF,
-    #     BIGDELTA,
-    #     BIGMAX,
-    #     BIGPORT,
-    #     BIGPOPU,
-    #     BIGFCONDI,
-    #     BIGDELTABARCONDI,
-    #     dR,
+    (
+     Xt2,
+     part1,
+     mu_S,
+     mu_S_s,
+     mu_hat_S,
+     r,
+     theta,
+     BIGF,
+     BIGDELTA,
+     BIGMAX,
+     BIGPORT,
+     BIGPOPU,
+     BIGFCONDI,
+     BIGDELTABARCONDI,
+     dR,
 
-    # ) =
-    return simulate_cohorts(
+    ) = simulate_cohorts(
         biasvec,
         dZt,
         Nt,
@@ -74,21 +71,6 @@ def simulate(k):
         T_hat,
         Npre,
     )
-
-
-ks = [k for k in range(10)]
-
-def main():
-    with concurrent.futures.ProcessPoolExecutor(max_workers=3) as executor:
-        for k, result in zip(ks, executor.map(simulate, ks)):
-            print(f"{k} is done.")
-
-
-if __name__ == "__main__":
-    time_s = time.time()
-    main()
-    print(time.time() - time_s)
-
     erp_S = mu_S - r
     erp_hat_S = mu_hat_S - r
     erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
@@ -109,6 +91,24 @@ if __name__ == "__main__":
     port_matrix[k, :, :] = BIGPORT
     f_matrix[k, :, :] = BIGF
     fcondi_matrix[k, :] = BIGFCONDI
+    popu_matrix[k, :] = BIGPOPU
+    delta_condi_matrix[k, :] = BIGDELTABARCONDI
+
+
+ks = [k for k in range(10)]
+
+def main():
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+        for k, result in zip(ks, executor.map(simulate, ks)):
+            print(f"{k} is done.")
+
+
+if __name__ == "__main__":
+    time_s = time.time()
+    main()
+    print(time.time() - time_s)
+
+
 
 
     if k % 10 == 0:

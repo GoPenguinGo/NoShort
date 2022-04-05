@@ -5,6 +5,7 @@ rho = 0.001  # Time discount factor
 nu = 0.02  # Death rate
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
+sigma_Y_sqr = sigma_Y ** 2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
