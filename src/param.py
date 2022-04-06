@@ -29,6 +29,8 @@ time_tolerance = 5
 Mpaths = 100
 
 # for graphs:
+Tkeep = 100
+Nkeep = int(Tkeep / dt)
 Tsample = int(T_cohort / 100)
 Nsamples = 500
 stepcorr = int(Tsample / dt)
