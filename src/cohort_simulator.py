@@ -124,7 +124,7 @@ def simulate_cohorts(
         f = Part / sumPart  # consumption share
 
         # find theta
-        A = -max(Delta_s_t)
+        A = -np.max(Delta_s_t)
         theta_t = bisection(
             solve_theta, A, 10, f, Delta_s_t, sigma_Y
         )
