@@ -11,8 +11,8 @@ import concurrent.futures
 # TODO: @chingyulin: make cohort a class
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
-# for k in range(Mpaths):
-def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
+for k in range(Mpaths):
+# def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
     dZt = dt**0.5 * np.random.randn(int(Nt - 1))
@@ -98,21 +98,6 @@ def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     
     print(time.time() - s)
 
-    
-ks = [k for k in range(10)]
-
-def main():
-    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-        for k, result in zip(ks, executor.map(simulate, ks)):
-            print(f"{k} is done.")
-
-
-if __name__ == "__main__":
-    time_s = time.time()
-    main()
-    print(time.time() - time_s)
-
-
 
 for k in range(Mpaths):
     corrMuSmuHat[k] = np.corrcoef(mu_hat_S_matrix[k], mu_S_matrix[k])[0, 1]
@@ -151,3 +136,18 @@ ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
 
 # Figure 2 in the paper
 
+
+
+#
+# ks = [k for k in range(10)]
+#
+# def main():
+#     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+#         for k, result in zip(ks, executor.map(simulate, ks)):
+#             print(f"{k} is done.")
+#
+#
+# if __name__ == "__main__":
+#     time_s = time.time()
+#     main()
+#     print(time.time() - time_s)
