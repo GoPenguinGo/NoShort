@@ -72,6 +72,7 @@ for k in range(Mpaths):
         T_hat,
         Npre,
     )
+<<<<<<< Updated upstream
 
     erp_S = mu_S - r
     erp_hat_S = mu_hat_S - r
@@ -91,11 +92,66 @@ for k in range(Mpaths):
     erp_S_s_matrix[k, :, :] = erp_S_s
     erp_hat_S_matrix[k, :] = erp_hat_S
     port_matrix[k, :, :] = BIGPORT
+=======
+    return (
+        Xt2,
+        part1,
+        mu_S,
+        mu_S_s,
+        mu_hat_S,
+        r,
+        theta,
+        BIGF,
+        BIGDELTA,
+        BIGMAX,
+        BIGPORT,
+        BIGPOPU,
+        BIGFCONDI,
+        BIGDELTABARCONDI,
+        dR,
+    )
+>>>>>>> Stashed changes
 
     corrMuSmuHat[k] = np.corrcoef(mu_hat_S, mu_S)[0, 1]
     F_Matrix[k, :, :] = np.mean(BIGF, axis=0)
 
+<<<<<<< Updated upstream
     print(time.time() - s)
+=======
+ks = [k for k in range(10)]
+
+def main():
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+        for k, result in zip(ks, executor.map(simulate, ks, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)):
+            erp_S = mu_S - r
+            erp_hat_S = mu_hat_S - r
+            erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
+
+            Z_matrix[k, :] = Zt
+            dR_matrix[k, :] = dR
+            # EtMAT[k, :] = np.transpose(Et)
+            # VtMAT[k, :] = np.transpose(Vt)
+            Delta_matrix[k, :, :] = BIGDELTA
+            r_matrix[k, :] = r
+            theta_matrix[k, :] = theta
+            mu_S_matrix[k, :] = mu_S
+            mu_S_s_matrix[k, :, :] = mu_S_s
+            mu_hat_S_matrix[k, :] = mu_hat_S
+            erp_S_matrix[k, :] = erp_S
+            erp_S_s_matrix[k, :, :] = erp_S_s
+            erp_hat_S_matrix[k, :] = erp_hat_S
+            port_matrix[k, :, :] = BIGPORT
+            f_matrix[k, :, :] = BIGF
+            fcondi_matrix[k, :] = BIGFCONDI
+            popu_matrix[k, :] = BIGPOPU
+            delta_condi_matrix[k, :] = BIGDELTABARCONDI
+
+
+if __name__ == "__main__":
+    time_s = time.time()
+    main()
+    print(time.time() - time_s)
+>>>>>>> Stashed changes
 
 
 
