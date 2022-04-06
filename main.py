@@ -71,6 +71,7 @@ def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
         T_hat,
         Npre,
     )
+
     erp_S = mu_S - r
     erp_hat_S = mu_hat_S - r
     erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
@@ -89,12 +90,15 @@ def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     erp_S_s_matrix[k, :, :] = erp_S_s
     erp_hat_S_matrix[k, :] = erp_hat_S
     port_matrix[k, :, :] = BIGPORT
+
     f_matrix[k, :, :] = BIGF
     fcondi_matrix[k, :] = BIGFCONDI
     popu_matrix[k, :] = BIGPOPU
     delta_condi_matrix[k, :] = BIGDELTABARCONDI
+    
+    print(time.time() - s)
 
-
+    
 ks = [k for k in range(10)]
 
 def main():
@@ -107,13 +111,6 @@ if __name__ == "__main__":
     time_s = time.time()
     main()
     print(time.time() - time_s)
-
-
-
-
-    if k % 10 == 0:
-        print(k)
-        print(time.time() - s)
 
 
 

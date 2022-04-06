@@ -125,9 +125,10 @@ def simulate_cohorts(
         f = Part / sumPart  # consumption share
 
         # find theta
-
         A = -np.max(Delta_s_t)
-        theta_t = bisection(solve_theta, A, 10, f, Delta_s_t, sigma_Y)
+        theta_t = bisection(
+            solve_theta, A, 10, f, Delta_s_t, sigma_Y
+        )
         MaxThetaDelta_s_t = np.maximum(-theta_t, Delta_s_t)
         invest = Delta_s_t >= -theta_t
         invest_f = invest * f
