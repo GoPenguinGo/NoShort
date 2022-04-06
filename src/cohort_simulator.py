@@ -4,6 +4,7 @@ from src.stats import post_var
 from src.solver import bisection, solve_theta
 from tqdm import tqdm
 
+
 def simulate_cohorts(
     biasvec: np.ndarray,
     dZt: np.ndarray,
@@ -78,7 +79,7 @@ def simulate_cohorts(
         BIGDELTABARCONDI (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
         dR (np.ndarray): change of stock returns over time, shape(Nt, )
         
-    """""
+    """ ""
     # Initializing variables
     Xt2 = np.ones(Nt)
     # Deltabar2Conditional = np.ones(Nt)
@@ -146,7 +147,9 @@ def simulate_cohorts(
         mu_S_st = (
             mu_S_t + sigma_S * Delta_s_t
         )  # expected stock return for agent born at t
-        muhat_S_t = mu_S_t + sigma_S * np.sum(cohort_size * Delta_s_t)  # survey average forecast
+        muhat_S_t = mu_S_t + sigma_S * np.sum(
+            cohort_size * Delta_s_t
+        )  # survey average forecast
 
         dR[i] = mu_S_t * dt + sigma_S * dZt[i]  # mu_t^Sdt + sigma_t^Sdz_t
 
@@ -171,18 +174,17 @@ def simulate_cohorts(
 
         # Updating: (exogenous, for next period)
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
-            -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i]
+            -Delta_s_t * dt + dZt[i]
         )
         if i < Npre:
             DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
         else:
-            DELbias = np.sum(dZt[i - Npre: i]) / T_hat
+            DELbias = np.sum(dZt[i - Npre : i]) / T_hat
 
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
         Delta_s_t = np.append(Delta_s_t, DELbias)
         IntVec = reduction * Part[1:]
         IntVec = np.append(IntVec, beta * (1 - reduction) * sumPart)
-
 
     return (
         Xt2,
@@ -201,5 +203,3 @@ def simulate_cohorts(
         BIGDELTABARCONDI,
         dR,
     )
-
-

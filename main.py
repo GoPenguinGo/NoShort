@@ -6,51 +6,50 @@ from typing import Callable, Tuple
 from src.cohort_builder import build_cohorts
 from src.cohort_simulator import simulate_cohorts
 from src.param import *
+import concurrent.futures
 
 # TODO: @chingyulin: make cohort a class
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
-for k in range(Mpaths):
+# for k in range(Mpaths):
+def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
-    if k % 10 == 0:
-        time_s = time.time()
-        dZt = dt**0.5 * np.random.randn(int(Nt - 1))
-        (
-            DeltaConditional,
-            IntVec,
-            Xt,
-            Delta_s_t,
-            Yt,
-            Zt,
-            f,
-            tau,
-            MaxThetaDelta_s_t,
-        ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
-        if time.time() - time_s > time_tolerance:
-            print(f"It takes more than {time_tolerance}s to build up the cohorts")
+    time_s = time.time()
+    dZt = dt**0.5 * np.random.randn(int(Nt - 1))
+    (
+        IntVec,
+        Xt,
+        Delta_s_t,
+        Yt,
+        Zt,
+        tau,
+        MaxThetaDelta_s_t,
+    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)
+    if time.time() - time_s > time_tolerance:
+        print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
     dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
-
     biasvec = dZforbias[-Npre:]
+
     dZt = dt**0.5 * np.random.randn(Nt)  # dZt forward
     Zt = np.cumsum(dZt)
 
     (
-        Xt2,
-        part1,
-        mu_S,
-        mu_S_s,
-        mu_hat_S,
-        r,
-        theta,
-        BIGF,
-        BIGDELTA,
-        BIGMAX,
-        BIGPORT,
-        BIGPOPU,
-        BIGFCONDI,
-        BIGDELTABARCONDI,
-        dR,
+     Xt2,
+     part1,
+     mu_S,
+     mu_S_s,
+     mu_hat_S,
+     r,
+     theta,
+     BIGF,
+     BIGDELTA,
+     BIGMAX,
+     BIGPORT,
+     BIGPOPU,
+     BIGFCONDI,
+     BIGDELTABARCONDI,
+     dR,
 
     ) = simulate_cohorts(
         biasvec,
@@ -72,11 +71,10 @@ for k in range(Mpaths):
         T_hat,
         Npre,
     )
-<<<<<<< Updated upstream
 
     erp_S = mu_S - r
     erp_hat_S = mu_hat_S - r
-    erp_S_s = mu_S_s - r
+    erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
     Z_matrix[k, :] = Zt
     dR_matrix[k, :] = dR
@@ -92,76 +90,41 @@ for k in range(Mpaths):
     erp_S_s_matrix[k, :, :] = erp_S_s
     erp_hat_S_matrix[k, :] = erp_hat_S
     port_matrix[k, :, :] = BIGPORT
-=======
-    return (
-        Xt2,
-        part1,
-        mu_S,
-        mu_S_s,
-        mu_hat_S,
-        r,
-        theta,
-        BIGF,
-        BIGDELTA,
-        BIGMAX,
-        BIGPORT,
-        BIGPOPU,
-        BIGFCONDI,
-        BIGDELTABARCONDI,
-        dR,
-    )
->>>>>>> Stashed changes
 
-    corrMuSmuHat[k] = np.corrcoef(mu_hat_S, mu_S)[0, 1]
-    F_Matrix[k, :, :] = np.mean(BIGF, axis=0)
-
-<<<<<<< Updated upstream
+    f_matrix[k, :, :] = BIGF
+    fcondi_matrix[k, :] = BIGFCONDI
+    popu_matrix[k, :] = BIGPOPU
+    delta_condi_matrix[k, :] = BIGDELTABARCONDI
+    
     print(time.time() - s)
-=======
+
+    
 ks = [k for k in range(10)]
 
 def main():
     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-        for k, result in zip(ks, executor.map(simulate, ks, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat)):
-            erp_S = mu_S - r
-            erp_hat_S = mu_hat_S - r
-            erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
-
-            Z_matrix[k, :] = Zt
-            dR_matrix[k, :] = dR
-            # EtMAT[k, :] = np.transpose(Et)
-            # VtMAT[k, :] = np.transpose(Vt)
-            Delta_matrix[k, :, :] = BIGDELTA
-            r_matrix[k, :] = r
-            theta_matrix[k, :] = theta
-            mu_S_matrix[k, :] = mu_S
-            mu_S_s_matrix[k, :, :] = mu_S_s
-            mu_hat_S_matrix[k, :] = mu_hat_S
-            erp_S_matrix[k, :] = erp_S
-            erp_S_s_matrix[k, :, :] = erp_S_s
-            erp_hat_S_matrix[k, :] = erp_hat_S
-            port_matrix[k, :, :] = BIGPORT
-            f_matrix[k, :, :] = BIGF
-            fcondi_matrix[k, :] = BIGFCONDI
-            popu_matrix[k, :] = BIGPOPU
-            delta_condi_matrix[k, :] = BIGDELTABARCONDI
+        for k, result in zip(ks, executor.map(simulate, ks)):
+            print(f"{k} is done.")
 
 
 if __name__ == "__main__":
     time_s = time.time()
     main()
     print(time.time() - time_s)
->>>>>>> Stashed changes
 
 
 
 for k in range(Mpaths):
+    corrMuSmuHat[k] = np.corrcoef(mu_hat_S_matrix[k], mu_S_matrix[k])[0, 1]
     for l in range(Nsamples):
-        a = int(l * stepcorr)
-        b = int((l + 1) * stepcorr)
-        corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, a:b], mu_S_s_matrix[k, Nt-1, a:b])[0, 1]
-        corrZport[k, l] = np.corrcoef(Z_matrix[k, a:b], port_matrix[k, Nt-1, a:b])[0, 1]
-        corrMU_sMUs_t[k, l] = np.corrcoef(mu_S_matrix[k, a:b], mu_S_s_matrix[k, Nt-1, a:b])[0, 1]
+        # a = int(l * stepcorr)
+        # b = int((l + 1) * stepcorr)
+        # corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
+        # corrZport[k, l] = np.corrcoef(Z_matrix[k, a:b], port_matrix[k, a:b, Nc-1])[0, 1]
+        # corrMU_sMUs_t[k, l] = np.corrcoef(mu_S_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
+        corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
+        corrZport[k, l] = np.corrcoef(Z_matrix[k, ], port_matrix[k, :, -l])[0, 1]
+        corrMU_sMUs_t[k, l] = np.corrcoef(erp_S_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
         # muCst[k, l] = np.mean(muC_s_t[a:b])
         # logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
         # sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
@@ -187,3 +150,4 @@ ax1.plot(tperiod, meanMus[:MaxAgeN])
 ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
 
 # Figure 2 in the paper
+

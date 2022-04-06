@@ -17,13 +17,13 @@ def build_cohorts(
     beta: float,
     T_hat: float,
 ) -> Tuple[
+    # np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
+    # np.ndarray,
     np.ndarray,
     np.ndarray,
 ]:
@@ -42,28 +42,23 @@ def build_cohorts(
         T_hat (float): pre-trading years
 
     Returns:
-        DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nc, )
+        # DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nc, )
         IntVec (np.ndarray): ~similar to consumption share, shape(Nc, )
         Xt (np.ndarray): xi_t * Yt, shape(Nc, )
         Delta_s_t (np.ndarray): bias, shape(Nc, )
         Yt (np.ndarray): aggregate output, shape(Nc, )
         Zt (np.ndarray): cumulated shocks, shape(Nc, )
-        consumptionshare (np.ndarray): shape(Nc, )
+        # consumptionshare (np.ndarray): shape(Nc, )
         tau (np.ndarray): t-s, shape(Nc, )
         MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
-        DeltabarCondi (np.float64): experience component in (24)
-        fCondishape (np.float64): constraint component in (24)
-        MaxDeltaTheta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
         #TODO: @chingyulin: use NamedTuple for the return
     """
 
     Npre: int = int(T_hat / dt)  # Number of pre-trading observations
     Zt = np.insert(np.cumsum(dZt), 0, 0)  # cumulated shocks, Nc * 1
-    yg = (mu_Y - 0.5 * sigma_Y**2) * dt * np.ones(
-        int(Nc - 1)
-    ) + sigma_Y * dZt  # output in log, (Nc - 1) *1, eq(1)
+    yg = (mu_Y - 0.5 * sigma_Y**2) * dt + sigma_Y * dZt  # output in log, (Nc - 1) *1, eq(1)
     Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)  # output, Nc *1
-    DeltaConditional = np.zeros(Nc)
+    # DeltaConditional = np.zeros(Nc)
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     MaxThetaDelta_s_t = np.zeros(1)  # disagreement, eq(11)
     Xt = np.ones(Nc) * nu * beta  # similar to consumption share, similar to eq(18)
@@ -80,12 +75,12 @@ def build_cohorts(
         )  # Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11)
         if i == 1:  # only one cohort in the economy
             Xt[i] = Part
-            DeltaConditional[i] = Part * MaxThetaDelta_s_t
+            # DeltaConditional[i] = Part * MaxThetaDelta_s_t
         else:  # more cohorts
             Xt[i] = np.sum(Part)  # total consumption
-            DeltaConditional[i] = (
-                np.sum(Part * MaxThetaDelta_s_t) / Xt[i]
-            )  # eq(19), consumption weighted max(Delta_s_t, -theta)
+            #DeltaConditional[i] = (
+                #np.sum(Part * MaxThetaDelta_s_t) / Xt[i]
+            #)  # eq(19), consumption weighted max(Delta_s_t, -theta)
 
         IntVec = reduction * Part
         IntVec = np.append(
@@ -95,14 +90,14 @@ def build_cohorts(
 
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
-            -Delta_s_t * dt + np.ones(len(Delta_s_t)) * dZt[i - 1]
+            -Delta_s_t * dt + dZt[i - 1]
         )  # from eq(5)
         if i < Npre:
             # TODO: @chingyulin: this can be optimized
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
         else:
-            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat
+            DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
 
             Delta_s_t += dDelta_s_t
             # TODO: @chingyulin: this can be optimized
@@ -122,7 +117,6 @@ def build_cohorts(
             )
         else:
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
-            # TODO: @GoPenguinGo: is `10` in the argument of the bisection a hard-coded value?
             # Should it's put as a configurable parameter?
             theta_t[i] = bisection(
                 solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t, sigma_Y
@@ -132,13 +126,13 @@ def build_cohorts(
             )  # update max(Delta_s_t, -theta)
 
     return (
-        DeltaConditional,
+        # DeltaConditional,
         IntVec,
         Xt,
         Delta_s_t,
         Yt,
         Zt,
-        consumptionshare,
+        # consumptionshare,
         tau,
         MaxThetaDelta_s_t,
     )
