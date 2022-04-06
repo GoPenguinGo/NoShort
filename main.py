@@ -80,7 +80,7 @@ for k in range(Mpaths):
     dR_matrix[k, :] = dR
     # EtMAT[k, :] = np.transpose(Et)
     # VtMAT[k, :] = np.transpose(Vt)
-    Delta_matrix[k, :, :] = BIGDELTA
+    delta_matrix[k, :, :] = BIGDELTA
     r_matrix[k, :] = r
     theta_matrix[k, :] = theta
     mu_S_matrix[k, :] = mu_S
@@ -98,6 +98,45 @@ for k in range(Mpaths):
     
     print(time.time() - s)
 
+change_popu_matrix = BIGPOPU[1:]/BIGPOPU[:-1]
+
+########################################################################################################################
+### GRAPHS:
+
+# keep only the last 100 years data
+
+# (1) Zt and Participation Rate from one random path
+t = np.arange(0, T_cohort, dt)  # has the same length as Nc
+random_paths = 1  # 1 can be any random number from 0 to Mpaths
+y1 = Z_matrix[random_paths, :]
+y2 = popu_matrix[random_paths, :]
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('Population holding stocks', color = color2)
+ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+
+fig.suptitle('Zt and Participation Rate')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
+
+# (2) dZt and Log Change in Participation Rate
+sample = np.arange(Nc - Nkeep - 1, Nc - 1, 20)
+x1 = Z_matrix[:, sample] - Z_matrix[:, sample - 1]
+y1 = np.log(popu_matrix[:, sample + 1] / popu_matrix[:, sample])
+plt.scatter(x1, y1, marker = '.', c = 'b', alpha = 0.8)
+plt.xlabel('dZt')
+plt.ylabel('log changes in participation rate')
+plt.title('dZt and Log Change in Participation Rate')
+plt.show()
+
 
 for k in range(Mpaths):
     corrMuSmuHat[k] = np.corrcoef(mu_hat_S_matrix[k], mu_S_matrix[k])[0, 1]
@@ -114,6 +153,10 @@ for k in range(Mpaths):
         # logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
         # sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
         # stdCst[k, l] = np.mean(abs(sigmaC_s_t[a:b]))
+
+
+
+
 
 MaxAge = 100
 MaxAgeN = int(MaxAge / Tsample)
