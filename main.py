@@ -37,8 +37,8 @@ for k in range(Mpaths):
         MaxThetaDelta_s_t_drop,
         invest_tracker,
     ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode2)
-    if time.time() - time_s > time_tolerance:
-        print(f"It takes more than {time_tolerance}s to build up the cohorts")
+    # if time.time() - time_s > time_tolerance:
+    #     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
     dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
     biasvec = dZforbias[-Npre:]
@@ -180,6 +180,7 @@ for k in range(Mpaths):
     delta_condi_matrix_drop[k, :] = BIGDELTABARCONDI_drop
 
     print(time.time() - s)
+    print(k)
 
 change_popu_matrix = BIGPOPU[1:]/BIGPOPU[:-1]
 
@@ -190,7 +191,7 @@ change_popu_matrix = BIGPOPU[1:]/BIGPOPU[:-1]
 
 # (1.1) Zt and Participation Rate from one random path
 t = np.arange(0, T_cohort, dt)  # has the same length as Nc
-random_paths = 1  # 1 can be any random number from 0 to Mpaths
+random_paths = 2  # 1 can be any random number from 0 to Mpaths
 y1 = Z_matrix[random_paths, :]
 y2 = popu_matrix[random_paths, :]
 fig, ax1 = plt.subplots()
@@ -203,6 +204,7 @@ ax1.tick_params(axis='y', labelcolor = color1)
 ax2 = ax1.twinx()
 color2 = 'b'
 ax2.set_ylabel('Population holding stocks', color = color2)
+ax2.set_ylim([0,1])
 ax2.plot(t, y2, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
 
@@ -211,10 +213,13 @@ fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
-sample = np.arange(Nc - Nkeep - 1, Nc - 1, 20)
+sample = np.arange(Nc - Nkeep, Nc, 20)
 x1 = Z_matrix[:, sample] - Z_matrix[:, sample - 1]
-y1 = np.log(popu_matrix[:, sample + 1] / popu_matrix[:, sample])  # participation rate is lagged because of simulate_cohorts construction
+y1 = np.log(popu_matrix[:, sample] / popu_matrix[:, sample - 1])
+plt.figure(2)
 plt.scatter(x1, y1, marker = '.', c = 'b', alpha = 0.8)
+plt.xlim([-1.5, 1.5])
+plt.ylim([-0.8, 0.8])
 plt.xlabel('dZt')
 plt.ylabel('log changes in participation rate')
 plt.title('dZt and Log Change in Participation Rate')
@@ -226,7 +231,7 @@ plt.show()
 
 # (1.1) Zt and Participation Rate from one random path
 t = np.arange(0, T_cohort, dt)  # has the same length as Nc
-random_paths = 1  # 1 can be any random number from 0 to Mpaths
+random_paths = 2  # 1 can be any random number from 0 to Mpaths
 y1 = Z_matrix[random_paths, :]
 y2 = popu_matrix_drop[random_paths, :]
 fig, ax1 = plt.subplots()
@@ -239,6 +244,7 @@ ax1.tick_params(axis='y', labelcolor = color1)
 ax2 = ax1.twinx()
 color2 = 'b'
 ax2.set_ylabel('Population holding stocks, drop', color = color2)
+ax2.set_ylim([0,1])
 ax2.plot(t, y2, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
 
@@ -247,13 +253,15 @@ fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
-sample = np.arange(Nc - Nkeep - 1, Nc - 1, 20)
+sample = np.arange(Nc - Nkeep, Nc, 20)
 x1 = Z_matrix[:, sample] - Z_matrix[:, sample - 1]
-y1 = np.log(popu_matrix_drop[:, sample + 1] / popu_matrix_drop[:, sample])  # participation rate is lagged because of simulate_cohorts construction
+y1 = np.log(popu_matrix_drop[:, sample] / popu_matrix_drop[:, sample - 1])
 plt.scatter(x1, y1, marker = '.', c = 'b', alpha = 0.8)
+plt.xlim([-1.5, 1.5])
+plt.ylim([-0.8, 0.8])
 plt.xlabel('dZt')
 plt.ylabel('log changes in participation rate')
-plt.title('dZt and Log Change in Participation Rate')
+plt.title('dZt and Log Change in Participation Rate, if Drop')
 plt.show()
 
 ###################################################

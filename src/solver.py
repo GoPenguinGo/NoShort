@@ -42,6 +42,7 @@ def bisection(
         iter += 1
         if iter > 50:
             print("Warning! It takes more than 50 iteration to converge.")
+            break
     return xmid
 
 
