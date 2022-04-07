@@ -24,6 +24,8 @@ T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
 
+mode1 = 'keep'
+mode2 = 'drop'
 time_tolerance = 5
 
 Mpaths = 100
@@ -85,3 +87,44 @@ Et_matrix = np.zeros((Mpaths, Nt))
 Vt_matrix = np.zeros((Mpaths, Nt))
 dR_matrix = np.zeros((Mpaths, Nt))
 
+
+######################## for the drop case
+# Store the values from the main loop
+Z_matrix_drop = np.zeros((Mpaths, Nt))
+mu_C_matrix_drop = np.zeros((Mpaths, Nt))
+sigma_C_matrix_drop = np.zeros((Mpaths, Nt))
+delta_matrix_drop = np.zeros((Mpaths, Nt, Nc))
+r_matrix_drop = np.zeros((Mpaths, Nt))
+f_matrix_drop = np.zeros((Mpaths, Nt, Nc))
+theta_matrix_drop = np.zeros((Mpaths, Nt))
+port_matrix_drop = np.zeros((Mpaths, Nt, Nc))
+fcondi_matrix_drop = np.zeros((Mpaths, Nt))
+popu_matrix_drop = np.zeros((Mpaths, Nt))
+delta_condi_matrix_drop = np.zeros((Mpaths, Nt))
+
+
+# Expected returns
+mu_S_matrix_drop = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+mu_S_s_matrix_drop = np.zeros(
+    (Mpaths, Nt, Nc)
+)  # Expected returns under the measure of the agent we track
+mu_hat_S_matrix_drop = np.zeros(
+    (Mpaths, Nt)
+)  # Simple average of expected returns, or consensus belief
+
+# Equity risk premium
+erp_S_matrix_drop = np.zeros(
+    (Mpaths, Nt)
+)
+
+erp_S_s_matrix_drop = np.zeros(
+    (Mpaths, Nt, Nc)
+)
+erp_hat_S_matrix_drop = np.zeros(
+    (Mpaths, Nt)
+)
+
+
+Et_matrix_drop = np.zeros((Mpaths, Nt))
+Vt_matrix_drop = np.zeros((Mpaths, Nt))
+dR_matrix_drop = np.zeros((Mpaths, Nt))
