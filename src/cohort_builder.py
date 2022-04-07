@@ -69,8 +69,8 @@ def build_cohorts(
     tau = np.zeros(1)  # t-s
     tau[0] = dt
     reduction = np.exp(-nu * dt)  # cohort size shrink at this rate
-    theta_t = np.zeros(Nc)  # market price of risk
-    invest_tracker = np.ones(Npre + 1)
+    theta = np.zeros(Nc)  # market price of risk
+    invest_tracker = np.ones(Npre)
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Npre)):
         Part = IntVec * np.exp(
@@ -122,29 +122,26 @@ def build_cohorts(
         else:
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             if mode == 'drop':
+                invest_tracker = np.append(invest_tracker, 1)
                 possible_cons_share = consumptionshare * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                theta = bisection(
+                theta_t = bisection(
                     solve_theta, lowest_bound, 10, possible_cons_share, possible_delta_st, sigma_Y
                 )  # solve for theta
-                invest = (
-                        Delta_s_t >= -theta
-                )
-                MaxThetaDelta_s_t = np.maximum(
-                    -theta, Delta_s_t
-                )  # update max(Delta_s_t, -theta)
-                theta_t[i] = theta
+                invest = Delta_s_t >= -theta_t
                 invest_tracker = invest * invest_tracker
-                invest_tracker = np.append(invest_tracker, 1)
+                MaxThetaDelta_s_t = Delta_s_t * invest_tracker + (1 - invest_tracker) * (-theta_t)
+                theta[i] = theta_t
+
             else:
                 lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
-                theta_t[i] = bisection(
+                theta[i] = bisection(
                     solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t, sigma_Y
                 )  # solve for theta
                 MaxThetaDelta_s_t = np.maximum(
-                    -theta_t[i], Delta_s_t
+                    -theta[i], Delta_s_t
                 )  # update max(Delta_s_t, -theta)
-    invest_tracker = invest_tracker[:Nc]
+
     return (
         # DeltaConditional,
         IntVec,

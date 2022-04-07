@@ -103,7 +103,7 @@ def simulate_cohorts(
 
     cohort = nu * np.exp(-nu * tau) * dt
     population = np.sum(cohort)  # ~1
-    cohort_size = cohort / population
+    cohort_size = cohort / population  # stay fixed in the loop
 
     # Expected returns
     mu_S = np.zeros(Nt)  # expected return under true measure
@@ -118,15 +118,35 @@ def simulate_cohorts(
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
 
+    # I start the loop from 1
+    # the output when i = 0 should really be the corresponding input values
     for i in tqdm(range(0, Nt)):
-        # todo: think about the time sequence of how things happen
+        # todo:
+        #  (1) think about the time sequence of how things happen (done)
+        #  (2) think about the drop case: once out of the stock market, stop updating and stop investing for good
+        #       currently I let them update, but keep their "opinions" muted
         Part = IntVec * np.exp(
             -(0.5 * MaxThetaDelta_s_t ** 2) * dt + MaxThetaDelta_s_t * dZt[i]
         )
 
         sumPart = np.sum(Part)
         # Deltabar2Conditional[i] = np.sum(Part * MaxThetaDelta_s_t) / sumPart
-        f = Part / sumPart  # consumption share
+        IntVec = reduction * Part[1:]
+        IntVec = np.append(IntVec, beta * (1 - reduction) * sumPart)
+
+        f = IntVec / sumPart  # consumption share
+
+        # Updating: (exogenous, for next period)
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y ** 2) * (
+                -Delta_s_t * dt + dZt[i]
+        )
+        if i < Npre:
+            DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
+        else:
+            DELbias = np.sum(dZt[i - Npre: i]) / T_hat
+
+        Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
+        Delta_s_t = np.append(Delta_s_t, DELbias)
 
         # find theta
         A = -np.max(Delta_s_t)
@@ -136,15 +156,23 @@ def simulate_cohorts(
             theta_t = bisection(
                 solve_theta, A, 10, possible_f, possible_delta_st, sigma_Y
             )
-            MaxThetaDelta_s_t = np.maximum(-theta_t, Delta_s_t)
+
+            # update invest_tracker to incorporate investment decisions for the current period
             invest = Delta_s_t >= -theta_t
             invest_tracker = invest_tracker * invest
+
+            # calculate the values we want to store
+            MaxThetaDelta_s_t = Delta_s_t * invest_tracker + (1 - invest_tracker) * (-theta_t)
             invest_f = invest_tracker * f
             popuCondi = np.sum(cohort_size * invest_tracker)
             DeltabarCondi = np.sum(Delta_s_t * invest_f)
             fCondi = np.sum(invest_f)
+            Port = (MaxThetaDelta_s_t + theta_t) / sigma_S  # todo: *fst, Wst
+
+            # prepare invest_tracker for the next period
             invest_tracker = invest_tracker[1:]
             invest_tracker = np.append(invest_tracker, 1)
+
 
         else:
             theta_t = bisection(
@@ -156,15 +184,17 @@ def simulate_cohorts(
             popuCondi = np.sum(cohort_size * invest)
             DeltabarCondi = np.sum(Delta_s_t * invest_f)
             fCondi = np.sum(invest_f)
+            Port = np.maximum(Delta_s_t + theta_t, 0) / sigma_S
 
         r_t = (
                 rho
                 + mu_Y
                 + nu * (1 - beta)
-                - (sigma_Y ** 2 - sigma_Y * DeltabarCondi) / fCondi
+                - sigma_Y * theta_t
         )
 
         mu_S_t = sigma_S * theta_t + r_t
+        # todo: need to change the updating mechanism of Delta_s_t once a cohort quits the stock market
         mu_S_st = (
                 mu_S_t + sigma_S * Delta_s_t
         )  # expected stock return for agent born at t
@@ -177,7 +207,10 @@ def simulate_cohorts(
         # Et[i] = sum(f * (Vbar / (1 + (Vbar / sigma_Y ** 2) * dt * RevNt)) * (1 / sigma_Y))
         # Vt[i] = (sum(f * Delta_s_t ** 2) - Deltabar2[i] ** 2) * sigma_Y
 
-        Port = np.maximum(Delta_s_t + theta_t, 0) / sigma_S
+        # todo: * Wst, and
+        #  (1) track wealth and consumption
+        #  (2) track realized stock return
+        #  (3) test if the sum of wealth in the economy equals to stock value
 
         theta[i] = theta_t
         r[i] = r_t
@@ -192,20 +225,6 @@ def simulate_cohorts(
         BIGDELTABARCONDI[i] = DeltabarCondi
         BIGPORT[i] = Port
         BIGPOPU[i] = popuCondi
-
-        # Updating: (exogenous, for next period)
-        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y ** 2) * (
-                -Delta_s_t * dt + dZt[i]
-        )
-        if i < Npre:
-            DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
-        else:
-            DELbias = np.sum(dZt[i - Npre: i]) / T_hat
-
-        Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
-        Delta_s_t = np.append(Delta_s_t, DELbias)
-        IntVec = reduction * Part[1:]
-        IntVec = np.append(IntVec, beta * (1 - reduction) * sumPart)
 
     return (
         Xt2,

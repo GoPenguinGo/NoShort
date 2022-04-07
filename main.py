@@ -109,9 +109,9 @@ for k in range(Mpaths):
         Nt,
         Nc,
         tau,
-        IntVec,
-        Delta_s_t,
-        MaxThetaDelta_s_t,
+        IntVec_drop,
+        Delta_s_t_drop,
+        MaxThetaDelta_s_t_drop,
         dt,
         rho,
         nu,
@@ -257,46 +257,46 @@ plt.title('dZt and Log Change in Participation Rate')
 plt.show()
 
 ###################################################
-
-# (2.1)
-for k in range(Mpaths):
-    corrMuSmuHat[k] = np.corrcoef(mu_hat_S_matrix[k], mu_S_matrix[k])[0, 1]
-    for l in range(Nsamples):
-        # a = int(l * stepcorr)
-        # b = int((l + 1) * stepcorr)
-        # corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
-        # corrZport[k, l] = np.corrcoef(Z_matrix[k, a:b], port_matrix[k, a:b, Nc-1])[0, 1]
-        # corrMU_sMUs_t[k, l] = np.corrcoef(mu_S_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
-        corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
-        corrZport[k, l] = np.corrcoef(Z_matrix[k, ], port_matrix[k, :, -l])[0, 1]
-        corrMU_sMUs_t[k, l] = np.corrcoef(erp_S_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
-        # muCst[k, l] = np.mean(muC_s_t[a:b])
-        # logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
-        # sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
-        # stdCst[k, l] = np.mean(abs(sigmaC_s_t[a:b]))
-
-
-
-
-
-MaxAge = 100
-MaxAgeN = int(MaxAge / Tsample)
-tperiod = range(Tsample, 100 + Tsample, Tsample)
-meanZport = np.mean(corrZport, axis=0)
-meanZmus_t = np.mean(corrZMUs_t, axis=0)
-
-# Compute the mean values from the simulation
-meanMus = np.mean(corrMU_sMUs_t, axis=0)
-# meanMuCst = np.mean(muCst, axis=0)
-# meanSCst = np.mean(sigCst, axis=0)
-# meanStdCst = np.mean(stdCst, axis=0)
-# meanLogMuCst = np.mean(logmuCst, axis=0)
-
-# Figures
-# Figure 1 in the paper
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4, 10))
-ax1.plot(tperiod, meanMus[:MaxAgeN])
-ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
+#
+# # (2.1)
+# for k in range(Mpaths):
+#     corrMuSmuHat[k] = np.corrcoef(mu_hat_S_matrix[k], mu_S_matrix[k])[0, 1]
+#     for l in range(Nsamples):
+#         # a = int(l * stepcorr)
+#         # b = int((l + 1) * stepcorr)
+#         # corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
+#         # corrZport[k, l] = np.corrcoef(Z_matrix[k, a:b], port_matrix[k, a:b, Nc-1])[0, 1]
+#         # corrMU_sMUs_t[k, l] = np.corrcoef(mu_S_matrix[k, a:b], mu_S_s_matrix[k, a:b, Nc-1])[0, 1]
+#         corrZMUs_t[k, l] = np.corrcoef(Z_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
+#         corrZport[k, l] = np.corrcoef(Z_matrix[k, ], port_matrix[k, :, -l])[0, 1]
+#         corrMU_sMUs_t[k, l] = np.corrcoef(erp_S_matrix[k, ], erp_S_s_matrix[k, :, -l])[0, 1]
+#         # muCst[k, l] = np.mean(muC_s_t[a:b])
+#         # logmuCst[k, l] = np.mean(muC_s_t[a:b]) - 0.5 * sum((sigmaC_s_t[a:b]) ** 2)
+#         # sigCst[k, l] = np.mean(sigmaC_s_t[a:b])
+#         # stdCst[k, l] = np.mean(abs(sigmaC_s_t[a:b]))
+#
+#
+#
+#
+#
+# MaxAge = 100
+# MaxAgeN = int(MaxAge / Tsample)
+# tperiod = range(Tsample, 100 + Tsample, Tsample)
+# meanZport = np.mean(corrZport, axis=0)
+# meanZmus_t = np.mean(corrZMUs_t, axis=0)
+#
+# # Compute the mean values from the simulation
+# meanMus = np.mean(corrMU_sMUs_t, axis=0)
+# # meanMuCst = np.mean(muCst, axis=0)
+# # meanSCst = np.mean(sigCst, axis=0)
+# # meanStdCst = np.mean(stdCst, axis=0)
+# # meanLogMuCst = np.mean(logmuCst, axis=0)
+#
+# # Figures
+# # Figure 1 in the paper
+# fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4, 10))
+# ax1.plot(tperiod, meanMus[:MaxAgeN])
+# ax2.plot(tperiod, meanZmus_t[:MaxAgeN])
 
 # Figure 2 in the paper
 
