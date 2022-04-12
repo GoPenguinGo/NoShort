@@ -22,6 +22,7 @@ def bisection(
         eps (float, optional): converging criteria. Defaults to 1e-6.
 
     Returns:
+        xmid: the estimated value that makes the optimfun close to 0
 
     """
     flow = optimfun(xlow, arg1, arg2, arg3)
