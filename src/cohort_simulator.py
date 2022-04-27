@@ -3,8 +3,15 @@ from typing import Tuple
 from src.stats import post_var
 from src.solver import bisection, solve_theta
 from tqdm import tqdm
+from numba import jit
 
+@jit(nopython=True)
+def get_part(IntVec, MaxThetaDelta_s_t, dt, dZt, i):
+    return IntVec * np.exp(
+            -(0.5 * MaxThetaDelta_s_t**2) * dt + MaxThetaDelta_s_t * dZt[i]
+        )
 
+@jit(nopython=True)
 def simulate_cohorts(
     biasvec: np.ndarray,
     dZt: np.ndarray,
@@ -114,11 +121,9 @@ def simulate_cohorts(
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
 
-    for i in tqdm(range(0, Nt)):
+    for i in range(0, Nt):
+        Part = get_part(IntVec, MaxThetaDelta_s_t, dt, dZt, i)
 
-        Part = IntVec * np.exp(
-            -(0.5 * MaxThetaDelta_s_t**2) * dt + MaxThetaDelta_s_t * dZt[i]
-        )
 
         sumPart = np.sum(Part)
         # Deltabar2Conditional[i] = np.sum(Part * MaxThetaDelta_s_t) / sumPart

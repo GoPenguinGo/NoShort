@@ -1,7 +1,10 @@
 import numpy as np
 from typing import Callable
+from numba import jit
+
 
 # TODO: @chingyulin: use *args for optimfun
+@jit(nopython=True)
 def bisection(
     optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
     xlow: np.float64,
@@ -44,7 +47,7 @@ def bisection(
             print("Warning! It takes more than 50 iteration to converge.")
     return xmid
 
-
+@jit(nopython=True)
 def solve_theta(
     thetaguess: np.float64,
     consumptionshare: np.ndarray,

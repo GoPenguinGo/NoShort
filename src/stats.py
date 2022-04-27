@@ -1,6 +1,7 @@
 import numpy as np
+from numba import jit
 
-
+@jit(nopython=True)
 def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 

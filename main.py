@@ -6,7 +6,6 @@ from typing import Callable, Tuple
 from src.cohort_builder import build_cohorts
 from src.cohort_simulator import simulate_cohorts
 from src.param import *
-import concurrent.futures
 
 # TODO: @chingyulin: make cohort a class
 
@@ -77,13 +76,11 @@ def simulate(k):
     )
 
 
-ks = [k for k in range(10)]
 
 
 def main():
-    with concurrent.futures.ProcessPoolExecutor(max_workers=3) as executor:
-        for k, result in zip(ks, executor.map(simulate, ks)):
-            print(f"{k} is done.")
+    for k in range(10):
+        simulate(k)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,6 @@ from tqdm import tqdm
 from typing import Tuple
 from src.stats import post_var
 
-
 def build_cohorts(
     dZt: np.ndarray,
     Nc: int,
