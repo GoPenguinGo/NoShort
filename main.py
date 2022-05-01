@@ -1,21 +1,18 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-from typing import Callable, Tuple
+
 from src.cohort_builder import build_cohorts
 from src.cohort_simulator import simulate_cohorts
 from src.param import *
-import concurrent.futures
-
+from src.macro import Macro
 # TODO: @chingyulin: make cohort a class
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
-# def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
-    dZt = dt**0.5 * np.random.randn(int(Nt - 1))
+    macro = Macro(dt, T_cohort, mu_Y, sigma_Y)
     (
         IntVec,
         Xt,
@@ -25,7 +22,7 @@ for k in range(Mpaths):
         tau,
         MaxThetaDelta_s_t,
         invest_tracker_keep,
-    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode1)
+    ) = build_cohorts(dt, rho, nu, Vhat, beta, T_hat, mode1)
 
     (
         IntVec_drop,
@@ -37,8 +34,6 @@ for k in range(Mpaths):
         MaxThetaDelta_s_t_drop,
         invest_tracker,
     ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode2)
-    # if time.time() - time_s > time_tolerance:
-    #     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
     dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
     biasvec = dZforbias[-Npre:]
