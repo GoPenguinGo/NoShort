@@ -3,17 +3,16 @@ from typing import Tuple
 from src.stats import post_var
 from src.solver import bisection, solve_theta
 from tqdm import tqdm
+from numba import jit
 
 
+# todo: trace output, consumption, and wealth
 def simulate_cohorts(
         biasvec: np.ndarray,
         dZt: np.ndarray,
         Nt: int,
         Nc: int,
         tau: np.ndarray,
-        IntVec: np.ndarray,
-        Delta_s_t: np.ndarray,
-        MaxThetaDelta_s_t: np.ndarray,
         dt: float,
         rho: float,
         nu: float,
@@ -25,6 +24,12 @@ def simulate_cohorts(
         T_hat: float,
         Npre: float,
         mode: str,
+        cohort_size: np.ndarray,
+        f_st: np.ndarray,
+        Delta_s_t: np.ndarray,
+        eta_st_ss: np.ndarray,
+        eta_bar: np.ndarray,
+        MaxThetaDelta_s_t: np.ndarray,
         invest_tracker: np.ndarray
 ) -> Tuple[
     np.ndarray,
@@ -48,9 +53,7 @@ def simulate_cohorts(
         Nt (int): number of periods in the simulation
         Nc (int): number of cohorts in the economy
         tau (np.ndarray): t-s, shape(Nt)
-        IntVec (np.ndarray): ~similar to consumption share, shape(Nc)
-        Delta_s_t (np.ndarray): bias for each cohort, shape(Nc)
-        MaxThetaDelta_s_t (np.ndarray): max(Delta_), shape(Nc)
+        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc)
         dt (float): per unit of time
         rho (float): discount factor
         nu (float): rate of birth and death
@@ -61,7 +64,13 @@ def simulate_cohorts(
         beta (float): as in eq(18), consumption share of the newborn cohort
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of obs
-        mode (str)
+        mode (str): versions of the model
+        - from the cohort_builder function -
+        f_st (np.ndarray): consumption share input
+        eta_st_ss (np.ndarray): disagreement input
+        eta_bar (np.ndarray): average disagreement input
+        Delta_s_t (np.ndarray): bias for each cohort, shape(Nc)
+        MaxThetaDelta_s_t (np.ndarray): max(Delta_), shape(Nc)
         invest_tracker (np.ndarry): shape(Nt)
 
     Returns:
@@ -85,14 +94,10 @@ def simulate_cohorts(
 
     """ ""
     # Initializing variables
-    Xt2 = np.ones(Nt)
-    # Deltabar2Conditional = np.ones(Nt)
     # Et = np.ones(Nt)
     # Vt = np.ones(Nt)
 
-    part1 = np.zeros(Nc)
     dR = np.zeros(Nt)
-    reduction = np.exp(-nu * dt)
     BIGDELTA = np.zeros((Nt, Nc))
     BIGMAX = np.zeros((Nt, Nc))  # stores max(delta, -theta)
     BIGF = np.zeros((Nt, Nc))
@@ -101,45 +106,41 @@ def simulate_cohorts(
     BIGDELTABARCONDI = np.zeros((Nt))
     BIGPOPU = np.zeros((Nt))
 
-    cohort = nu * np.exp(-nu * tau) * dt
-    population = np.sum(cohort)  # ~1
-    cohort_size = cohort / population  # stay fixed in the loop
-
     # Expected returns
     mu_S = np.zeros(Nt)  # expected return under true measure
     mu_S_s = np.zeros((Nt, Nc))  # expected return under agent-measure
     mu_hat_S = np.zeros(Nt)  # average belief in the economy
 
     # Consumption
-    # muC_s_t = np.zeros(Nt)  # drift log consumption
-    # sigmaC_s_t = np.zeros(Nt)  # diffusion log consumption
+    # Wealth todo: write the code to track the evolution of wealth
 
     # Aggregate quantities
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
 
-    # I start the loop from 1
-    # the output when i = 0 should really be the corresponding input values
     for i in tqdm(range(0, Nt)):
         # todo:
         #  (1) think about the time sequence of how things happen (done)
-        #  (2) think about the drop case: once out of the stock market, stop updating and stop investing for good
+        #  (2) think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
         #       currently I let them update, but keep their "opinions" muted
-        Part = IntVec * np.exp(
-            -(0.5 * MaxThetaDelta_s_t ** 2) * dt + MaxThetaDelta_s_t * dZt[i]
+        #       in this case, the survey data type of analysis wouldn't work
+        eta_st_ss = eta_st_ss * np.exp(
+            -0.5 * MaxThetaDelta_s_t ** 2 * dt
+            + MaxThetaDelta_s_t * dZt[i]
         )
 
-        sumPart = np.sum(Part)
-        # Deltabar2Conditional[i] = np.sum(Part * MaxThetaDelta_s_t) / sumPart
-        IntVec = reduction * Part[1:]
-        IntVec = np.append(IntVec, beta * (1 - reduction) * sumPart)
+        Part = beta * np.exp(-beta * tau) * eta_bar * eta_st_ss
+        eta_st_ss = eta_st_ss[1:]
+        eta_st_ss = np.append(eta_st_ss, 1)
+        Part = Part[1:]
+        eta_bar_t = np.sum(Part * dt) / (1 - beta * dt)
+        eta_bar = eta_bar[1:]
+        eta_bar = np.append(eta_bar, eta_bar_t)
 
-        f = IntVec / sumPart  # consumption share
-
-        # Updating: (exogenous, for next period)
-        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y ** 2) * (
-                -Delta_s_t * dt + dZt[i]
-        )
+        # update beliefs
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
+            -Delta_s_t * dt + dZt[i]
+        )  # from eq(5)
         if i < Npre:
             DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
         else:
@@ -148,48 +149,57 @@ def simulate_cohorts(
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
         Delta_s_t = np.append(Delta_s_t, DELbias)
 
-        # find theta
-        A = -np.max(Delta_s_t)
+        # consumption or wealth share:
+        f_st = Part / eta_bar_t * dt
+        f_st = np.append(f_st, beta * dt)  # cohort consumption share
+
+        # Wealth todo: write the code to track evolution of wealth; test if sum(f_st * dt) == 1
+        # stock_wealth = Yt[i] / w
+        # w_st = stock_wealth * f_st / (nu * np.exp(-nu * tau))
+
+        # find the market clearing theta, given beliefs and consumption shares
+        # todo: participation rate seems to low
         if mode == 'drop':
-            possible_f = f * invest_tracker
+            invest_tracker = invest_tracker[1:]
+            invest_tracker = np.append(invest_tracker, 1)
+            possible_cons_share = f_st * invest_tracker
             possible_delta_st = Delta_s_t * invest_tracker
+            lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
             theta_t = bisection(
-                solve_theta, A, 10, possible_f, possible_delta_st, sigma_Y
-            )
-
-            # update invest_tracker to incorporate investment decisions for the current period
+                solve_theta, lowest_bound, 10, possible_cons_share, possible_delta_st, sigma_Y
+            )  # solve for theta
             invest = Delta_s_t >= -theta_t
-            invest_tracker = invest_tracker * invest
-
-            # calculate the values we want to store
+            invest_tracker = invest * invest_tracker
             MaxThetaDelta_s_t = Delta_s_t * invest_tracker + (1 - invest_tracker) * (-theta_t)
-            invest_f = invest_tracker * f
+            invest_fst = invest_tracker * f_st
             popuCondi = np.sum(cohort_size * invest_tracker)
-            DeltabarCondi = np.sum(Delta_s_t * invest_f)
-            fCondi = np.sum(invest_f)
+            DeltabarCondi = np.sum(Delta_s_t * invest_fst)
+            fCondi = np.sum(invest_fst)
             Port = (MaxThetaDelta_s_t + theta_t) / sigma_S  # todo: *fst, Wst
 
             # prepare invest_tracker for the next period
             invest_tracker = invest_tracker[1:]
             invest_tracker = np.append(invest_tracker, 1)
 
-
         else:
+            lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             theta_t = bisection(
-                solve_theta, A, 10, f, Delta_s_t, sigma_Y
-            )
-            MaxThetaDelta_s_t = np.maximum(-theta_t, Delta_s_t)
+                solve_theta, lowest_bound, 10, f_st, Delta_s_t, sigma_Y
+            )  # solve for theta
+            MaxThetaDelta_s_t = np.maximum(
+                -theta_t, Delta_s_t
+            )  # update max(Delta_s_t, -theta)
             invest = Delta_s_t >= -theta_t
-            invest_f = invest * f
+            invest_fst = invest * f_st
             popuCondi = np.sum(cohort_size * invest)
-            DeltabarCondi = np.sum(Delta_s_t * invest_f)
-            fCondi = np.sum(invest_f)
-            Port = np.maximum(Delta_s_t + theta_t, 0) / sigma_S
+            DeltabarCondi = np.sum(Delta_s_t * invest_fst)
+            fCondi = np.sum(invest_fst)
+            Port = (MaxThetaDelta_s_t + theta_t) / sigma_S
 
         r_t = (
                 rho
                 + mu_Y
-                + nu * (1 - beta)
+                + nu - beta
                 - sigma_Y * theta_t
         )
 
@@ -214,11 +224,10 @@ def simulate_cohorts(
 
         theta[i] = theta_t
         r[i] = r_t
-        Xt2[i] = sumPart
         mu_S[i] = mu_S_t
         mu_S_s[i, :] = mu_S_st
         mu_hat_S[i] = muhat_S_t
-        BIGF[i, :] = f
+        BIGF[i, :] = f_st
         BIGDELTA[i, :] = Delta_s_t
         BIGMAX[i, :] = MaxThetaDelta_s_t
         BIGFCONDI[i] = fCondi
@@ -227,8 +236,6 @@ def simulate_cohorts(
         BIGPOPU[i] = popuCondi
 
     return (
-        Xt2,
-        part1,
         mu_S,
         mu_S_s,
         mu_hat_S,
@@ -243,6 +250,33 @@ def simulate_cohorts(
         BIGDELTABARCONDI,
         dR,
     )
+
+
+
+# Part = IntVec * np.exp(
+#     -(0.5 * MaxThetaDelta_s_t ** 2) * dt + MaxThetaDelta_s_t * dZt[i]
+# )
+#
+# sumPart = np.sum(Part)
+# # Deltabar2Conditional[i] = np.sum(Part * MaxThetaDelta_s_t) / sumPart
+# IntVec = reduction * Part[1:]
+# # IntVec = np.append(IntVec, beta * (1 - reduction) * sumPart)
+# IntVec = np.append(IntVec, beta / nu * (1 - reduction) * sumPart)
+#
+# f = IntVec / sumPart  # consumption share
+#
+# # Updating: (exogenous, for next period)
+# dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y ** 2) * (
+#         -Delta_s_t * dt + dZt[i]
+# )
+# if i < Npre:
+#     DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
+# else:
+#     DELbias = np.sum(dZt[i - Npre: i]) / T_hat
+#
+# Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
+# Delta_s_t = np.append(Delta_s_t, DELbias)
+
 
 
 #####################################################################################

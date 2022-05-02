@@ -9,11 +9,14 @@ sigma_Y_sqr = sigma_Y ** 2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
-w = 0.92  # Fraction of total output paid out as endowment
+
+beta = 0.015  # marginal rate of wealth tax
+
+w = rho + nu - beta  # marginal propensity to consume
 
 # Some pre-calculations
-D = (rho + nu) * (rho + nu - 4 * nu ** 2)
-beta = (rho + nu - D ** 0.5) / (2 * nu)
+# D = (rho + nu) * (rho + nu - 4 * nu ** 2)
+# beta = (rho + nu - D ** 0.5) / (2 * nu)
 
 # Setting prior variance
 T_hat = 20  # Pre-trading period
@@ -28,7 +31,7 @@ mode1 = 'keep'
 mode2 = 'drop'
 time_tolerance = 5
 
-Mpaths = 100
+Mpaths = 1000
 
 # for graphs:
 Tkeep = 100

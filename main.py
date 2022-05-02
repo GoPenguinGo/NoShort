@@ -6,49 +6,65 @@ from typing import Callable, Tuple
 from src.cohort_builder import build_cohorts
 from src.cohort_simulator import simulate_cohorts
 from src.param import *
+from src.stats import shocks, tau_calculator
 import concurrent.futures
+from numba import jit
 
 # TODO: @chingyulin: make cohort a class
+
+# generate values that are fixed in the main loop
+tau = np.arange(T_cohort, 0, -dt)
+tau_1 = np.arange(T_cohort-dt, -dt, -dt)
+cohort = nu * np.exp(-nu * tau_1) * dt
+population = np.sum(cohort)  # ~1
+cohort_size = cohort / population
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
 # def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
-    dZt = dt**0.5 * np.random.randn(int(Nt - 1))
+    dZt_build = dt**0.5 * np.random.randn(int(Nc - 1))
+    # baseline scenario
     (
-        IntVec,
-        Xt,
+        f_st,
         Delta_s_t,
-        Yt,
-        Zt,
-        tau,
+        eta_st_ss,
+        eta_bar,
         MaxThetaDelta_s_t,
-        invest_tracker_keep,
-    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode1)
-
-    (
-        IntVec_drop,
-        Xt_drop,
-        Delta_s_t_drop,
-        Yt_drop,
-        Zt_drop,
-        tau_drop,
-        MaxThetaDelta_s_t_drop,
         invest_tracker,
-    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode2)
+        theta,
+        cohorts_condi,
+    ) = build_cohorts(dZt_build, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode1)
+
+   # drop scenario
+    (
+        f_st_drop,
+        Delta_s_t_drop,
+        eta_st_ss_drop,
+        eta_bar_drop,
+        MaxThetaDelta_s_t_drop,
+        invest_tracker_drop,
+        theta_drop,
+        cohorts_condi_drop,
+    ) = build_cohorts(dZt_build, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode2)
     # if time.time() - time_s > time_tolerance:
     #     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
-    dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
-    biasvec = dZforbias[-Npre:]
+    biasvec = dZt_build[-Npre:]  # dZt used in the build_cohorts function
 
     dZt = dt**0.5 * np.random.randn(Nt)  # dZt forward
-    Zt = np.cumsum(dZt)
+    (
+        Zt,
+        Yt
+    ) = shocks(
+        dZt,
+        mu_Y,
+        sigma_Y,
+        dt,
+    )
 
     (
-     Xt2,
-     part1,
      mu_S,
      mu_S_s,
      mu_hat_S,
@@ -62,16 +78,12 @@ for k in range(Mpaths):
      BIGFCONDI,
      BIGDELTABARCONDI,
      dR,
-
     ) = simulate_cohorts(
         biasvec,
         dZt,
         Nt,
         Nc,
         tau,
-        IntVec,
-        Delta_s_t,
-        MaxThetaDelta_s_t,
         dt,
         rho,
         nu,
@@ -83,12 +95,16 @@ for k in range(Mpaths):
         T_hat,
         Npre,
         mode1,
-        invest_tracker_keep,
+        cohort_size,
+        f_st,
+        Delta_s_t,
+        eta_st_ss,
+        eta_bar,
+        MaxThetaDelta_s_t,
+        invest_tracker,
     )
 
     (
-        Xt2_drop,
-        part1_drop,
         mu_S_drop,
         mu_S_s_drop,
         mu_hat_S_drop,
@@ -102,16 +118,12 @@ for k in range(Mpaths):
         BIGFCONDI_drop,
         BIGDELTABARCONDI_drop,
         dR_drop,
-
     ) = simulate_cohorts(
         biasvec,
         dZt,
         Nt,
         Nc,
         tau,
-        IntVec_drop,
-        Delta_s_t_drop,
-        MaxThetaDelta_s_t_drop,
         dt,
         rho,
         nu,
@@ -123,7 +135,13 @@ for k in range(Mpaths):
         T_hat,
         Npre,
         mode2,
-        invest_tracker,
+        cohort_size,
+        f_st_drop,
+        Delta_s_t_drop,
+        eta_st_ss_drop,
+        eta_bar_drop,
+        MaxThetaDelta_s_t_drop,
+        invest_tracker_drop,
     )
 
     erp_S = mu_S - r
@@ -184,11 +202,54 @@ for k in range(Mpaths):
 
 change_popu_matrix = BIGPOPU[1:]/BIGPOPU[:-1]
 
+varlist = ['Z_matrix', 'dR_matrix',  'delta_matrix', 'r_matrix', 'theta_matrix', 'mu_S_matrix', 'mu_S_s_matrix', \
+'mu_hat_S_matrix', 'erp_S_matrix', 'erp_S_s_matrix', 'erp_hat_S_matrix', 'port_matrix', 'f_matrix', 'fcondi_matrix',\
+'popu_matrix', 'delta_condi_matrix']
+np.save('Z_matrix', Z_matrix)
+np.save('dR_matrix', dR_matrix)
+np.save('delta_matrix', delta_matrix)
+np.save('r_matrix', r_matrix)
+np.save('theta_matrix', theta_matrix)
+np.save('mu_S_matrix', mu_S_matrix)
+np.save('mu_S_s_matrix', mu_S_s_matrix)
+np.save('mu_hat_S_matrix', mu_hat_S_matrix)
+np.save('erp_S_matrix', erp_S_matrix)
+np.save('erp_S_s_matrix', erp_S_s_matrix)
+np.save('erp_hat_S_matrix', erp_hat_S_matrix)
+np.save('port_matrix', port_matrix)
+np.save('f_matrix', f_matrix)
+np.save('fcondi_matrix', fcondi_matrix)
+np.save('popu_matrix', popu_matrix)
+np.save('delta_condi_matrix', delta_condi_matrix)
+
+np.save('dR_matrix_drop', dR_matrix_drop)
+np.save('delta_matrix_drop', delta_matrix_drop)
+np.save('r_matrix_drop', r_matrix_drop)
+np.save('theta_matrix_drop', theta_matrix_drop)
+np.save('mu_S_matrix_drop', mu_S_matrix_drop)
+np.save('mu_S_s_matrix_drop', mu_S_s_matrix_drop)
+np.save('mu_hat_S_matrix_drop', mu_hat_S_matrix_drop)
+np.save('erp_S_matrix_drop', erp_S_matrix_drop)
+np.save('erp_S_s_matrix_drop', erp_S_s_matrix_drop)
+np.save('erp_hat_S_matrix_drop', erp_hat_S_matrix_drop)
+np.save('port_matrix_drop', port_matrix_drop)
+np.save('f_matrix_drop', f_matrix_drop)
+np.save('fcondi_matrix_drop', fcondi_matrix_drop)
+np.save('popu_matrix_drop', popu_matrix_drop)
+np.save('delta_condi_matrix_drop', delta_condi_matrix_drop)
+
+
+
+
+
+
+
+
 ########################################################################################################################
 ### GRAPHS:
 
 # keep only the last 100 years data
-
+# todo: save the graphs
 # (1.1) Zt and Participation Rate from one random path
 t = np.arange(0, T_cohort, dt)  # has the same length as Nc
 random_paths = 2  # 1 can be any random number from 0 to Mpaths
