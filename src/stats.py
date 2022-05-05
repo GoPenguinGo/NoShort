@@ -43,10 +43,12 @@ Returns:
     Yt (np.float64): output over the period
 """
     Zt = np.cumsum(dZt)  # cumulated shocks, Nc * 1
+    # Zt = np.insert(Zt, 0, 0)
     yg = (
                  mu_Y - 0.5 * sigma_Y ** 2
          ) * dt + sigma_Y * dZt  # output in log, (Nc - 1) *1, eq(1)
     Yt = np.exp(np.cumsum(yg))
+    # Yt = np.insert(Yt, 0, 1)
     return (
         Zt,
         Yt

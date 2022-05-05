@@ -8,8 +8,9 @@ from numba import jit
 
 # todo: trace output, consumption, and wealth
 def simulate_cohorts(
+        Y: np.ndarray,
         biasvec: np.ndarray,
-        dZt: np.ndarray,
+        dZ: np.ndarray,
         Nt: int,
         Nc: int,
         tau: np.ndarray,
@@ -21,6 +22,7 @@ def simulate_cohorts(
         sigma_Y: float,
         sigma_S: float,
         beta: float,
+        omega: float,
         T_hat: float,
         Npre: float,
         mode: str,
@@ -94,107 +96,120 @@ def simulate_cohorts(
 
     """ ""
     # Initializing variables
-    # Et = np.ones(Nt)
-    # Vt = np.ones(Nt)
+    # cohort-specific terms:
+    Delta = np.zeros((Nt, Nc))  # stores bias in beliefs
+    max = np.zeros((Nt, Nc))  # stores max(delta, -theta)
+    f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
+    pi = np.zeros((Nt, Nc))  # portfolio choices
+    w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
+    w = np.zeros((Nt, Nc))  # evolution of wealth for individual agents alive
 
-    dR = np.zeros(Nt)
-    BIGDELTA = np.zeros((Nt, Nc))
-    BIGMAX = np.zeros((Nt, Nc))  # stores max(delta, -theta)
-    BIGF = np.zeros((Nt, Nc))
-    BIGPORT = np.zeros((Nt, Nc))
-    BIGFCONDI = np.zeros((Nt))
-    BIGDELTABARCONDI = np.zeros((Nt))
-    BIGPOPU = np.zeros((Nt))
+    # aggregate terms:
+    dR = np.zeros(Nt)  # stores stock returns
+    r = np.zeros(Nt)  # interest rate
+    theta = np.zeros(Nt)  # market price of risk
+    f_parti = np.zeros((Nt))  # consumption share of the stock market participants
+    Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
+    parti = np.zeros((Nt))  # participation rate
 
     # Expected returns
     mu_S = np.zeros(Nt)  # expected return under true measure
     mu_S_s = np.zeros((Nt, Nc))  # expected return under agent-measure
     mu_hat_S = np.zeros(Nt)  # average belief in the economy
 
-    # Consumption
-    # Wealth todo: write the code to track the evolution of wealth
+    dR_t = 0
+    age = np.zeros(Nt)
 
-    # Aggregate quantities
-    r = np.zeros(Nt)  # interest rate
-    theta = np.zeros(Nt)  # market price of risk
-
-    for i in tqdm(range(0, Nt)):
-        # todo:
-        #  (1) think about the time sequence of how things happen (done)
-        #  (2) think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
+    for i in tqdm(range(Nt)):
+        # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
         #       currently I let them update, but keep their "opinions" muted
         #       in this case, the survey data type of analysis wouldn't work
+
+        # realization of shocks
+        dZ_t = dZ[i]
+
         eta_st_ss = eta_st_ss * np.exp(
             -0.5 * MaxThetaDelta_s_t ** 2 * dt
-            + MaxThetaDelta_s_t * dZt[i]
+            + MaxThetaDelta_s_t * dZ_t
         )
-
-        Part = beta * np.exp(-beta * tau) * eta_bar * eta_st_ss
-        eta_st_ss = eta_st_ss[1:]
+        part = beta * np.exp(-beta * tau) * eta_bar * eta_st_ss
+        # add a new cohort
+        eta_st_ss = eta_st_ss[1 : ]
         eta_st_ss = np.append(eta_st_ss, 1)
-        Part = Part[1:]
-        eta_bar_t = np.sum(Part * dt) / (1 - beta * dt)
-        eta_bar = eta_bar[1:]
+        part = part[1 : ]
+        eta_bar_t = np.sum(part * dt) / (1 - beta * dt)
+        eta_bar = eta_bar[1 : ]
         eta_bar = np.append(eta_bar, eta_bar_t)
 
-        # update beliefs
-        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
-            -Delta_s_t * dt + dZt[i]
-        )  # from eq(5)
-        if i < Npre:
-            DELbias = (np.sum(biasvec[i:]) + np.sum(dZt[:i])) / T_hat
+        # Cohort consumption (wealth) share:
+        # sum(f_st * dt) == 1 for any t
+        f_st = part / eta_bar_t
+        f_st = np.append(f_st, beta)  # add a new cohort who consumes beta proportion of the total output
+
+        # Wealth
+        if i == 0:
+            w_cohort_st = Y[i] / omega * f_st
+            w_st = w_cohort_st / cohort_size * dt
         else:
-            DELbias = np.sum(dZt[i - Npre: i]) / T_hat
+            dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+            w_t = Y[i] / omega
+            dw_st = ((r_t + nu - beta - omega) * w_st + pi_st * (mu_S_t - r_t)) * dt + pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            w_st = w_st[1:] + dw_st[1:]
+            w_st = np.append(w_st, w_t * beta / nu)
+            w_cohort_st = w_st * cohort_size / dt
+
+        # update beliefs
+        # todo: need to change the updating mechanism of Delta_s_t once a cohort quits the stock market
+        dDelta_s_t = (
+            post_var(sigma_Y, Vhat, tau) / sigma_Y**2
+                     ) * (
+            -Delta_s_t * dt + dZ_t
+        )  # from eq(5)
+        if i < Npre-1:
+            init_bias = (np.sum(biasvec[i+1:]) + np.sum(dZ[:i+1])) / T_hat
+        else:
+            init_bias = np.sum(dZ[i+1 - Npre: i+1]) / T_hat
 
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
-        Delta_s_t = np.append(Delta_s_t, DELbias)
+        Delta_s_t = np.append(Delta_s_t, init_bias)
 
-        # consumption or wealth share:
-        f_st = Part / eta_bar_t * dt
-        f_st = np.append(f_st, beta * dt)  # cohort consumption share
-
-        # Wealth todo: write the code to track evolution of wealth; test if sum(f_st * dt) == 1
-        # stock_wealth = Yt[i] / w
-        # w_st = stock_wealth * f_st / (nu * np.exp(-nu * tau))
-
-        # find the market clearing theta, given beliefs and consumption shares
-        # todo: participation rate seems to low
+        # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         if mode == 'drop':
             invest_tracker = invest_tracker[1:]
             invest_tracker = np.append(invest_tracker, 1)
-            possible_cons_share = f_st * invest_tracker
+            possible_cons_share = f_st * dt * invest_tracker
             possible_delta_st = Delta_s_t * invest_tracker
             lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
             theta_t = bisection(
                 solve_theta, lowest_bound, 10, possible_cons_share, possible_delta_st, sigma_Y
             )  # solve for theta
-            invest = Delta_s_t >= -theta_t
+            a = Delta_s_t + theta_t
+            invest = (a >= 0)
             invest_tracker = invest * invest_tracker
-            MaxThetaDelta_s_t = Delta_s_t * invest_tracker + (1 - invest_tracker) * (-theta_t)
-            invest_fst = invest_tracker * f_st
-            popuCondi = np.sum(cohort_size * invest_tracker)
-            DeltabarCondi = np.sum(Delta_s_t * invest_fst)
-            fCondi = np.sum(invest_fst)
-            Port = (MaxThetaDelta_s_t + theta_t) / sigma_S  # todo: *fst, Wst
-
-            # prepare invest_tracker for the next period
-            invest_tracker = invest_tracker[1:]
-            invest_tracker = np.append(invest_tracker, 1)
+            MaxThetaDelta_s_t = a * invest_tracker - theta_t
+            invest_fst = invest_tracker * f_st * dt
+            popu_parti_t = np.sum(cohort_size * invest_tracker)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S * w_st
+            age_t = np.sum(cohort_size * tau * invest_tracker)
 
         else:
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
+            f_st_standard = f_st * dt
             theta_t = bisection(
-                solve_theta, lowest_bound, 10, f_st, Delta_s_t, sigma_Y
+                solve_theta, lowest_bound, 10, f_st_standard, Delta_s_t, sigma_Y
             )  # solve for theta
             MaxThetaDelta_s_t = np.maximum(
                 -theta_t, Delta_s_t
             )  # update max(Delta_s_t, -theta)
             invest = Delta_s_t >= -theta_t
-            invest_fst = invest * f_st
-            popuCondi = np.sum(cohort_size * invest)
-            DeltabarCondi = np.sum(Delta_s_t * invest_fst)
-            fCondi = np.sum(invest_fst)
-            Port = (MaxThetaDelta_s_t + theta_t) / sigma_S
+            invest_fst = invest * f_st_standard
+            popu_parti_t = np.sum(cohort_size * invest)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            age_t = np.sum(cohort_size * tau * invest)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S * w_st
 
         r_t = (
                 rho
@@ -204,51 +219,48 @@ def simulate_cohorts(
         )
 
         mu_S_t = sigma_S * theta_t + r_t
-        # todo: need to change the updating mechanism of Delta_s_t once a cohort quits the stock market
         mu_S_st = (
                 mu_S_t + sigma_S * Delta_s_t
-        )  # expected stock return for agent born at t
-        muhat_S_t = mu_S_t + sigma_S * np.sum(
-            cohort_size * Delta_s_t
-        )  # survey average forecast
+        )  # expected stock return for agent cohorts
+        # muhat_S_t = mu_S_t + sigma_S * np.sum(
+        #     cohort_size * Delta_s_t
+        # )  # survey average forecast
 
-        dR[i] = mu_S_t * dt + sigma_S * dZt[i]  # mu_t^Sdt + sigma_t^Sdz_t
-
-        # Et[i] = sum(f * (Vbar / (1 + (Vbar / sigma_Y ** 2) * dt * RevNt)) * (1 / sigma_Y))
-        # Vt[i] = (sum(f * Delta_s_t ** 2) - Deltabar2[i] ** 2) * sigma_Y
-
-        # todo: * Wst, and
-        #  (1) track wealth and consumption
-        #  (2) track realized stock return
-        #  (3) test if the sum of wealth in the economy equals to stock value
-
+        # store the results
+        dR[i] = dR_t  # realized return from dZt
         theta[i] = theta_t
         r[i] = r_t
         mu_S[i] = mu_S_t
         mu_S_s[i, :] = mu_S_st
-        mu_hat_S[i] = muhat_S_t
-        BIGF[i, :] = f_st
-        BIGDELTA[i, :] = Delta_s_t
-        BIGMAX[i, :] = MaxThetaDelta_s_t
-        BIGFCONDI[i] = fCondi
-        BIGDELTABARCONDI[i] = DeltabarCondi
-        BIGPORT[i] = Port
-        BIGPOPU[i] = popuCondi
+        # mu_hat_S[i] = muhat_S_t
+        f[i, :] = f_st
+        Delta[i, :] = Delta_s_t
+        max[i, :] = MaxThetaDelta_s_t
+        f_parti[i] = f_parti_t
+        Delta_bar_parti[i] = Delta_bar_parti_t
+        pi[i, :] = pi_st
+        parti[i] = popu_parti_t
+        w[i, :] = w_st
+        w_cohort[i, :] = w_cohort_st
+        age[i] = age_t
 
     return (
         mu_S,
         mu_S_s,
-        mu_hat_S,
+        # mu_hat_S,
         r,
         theta,
-        BIGF,
-        BIGDELTA,
-        BIGMAX,
-        BIGPORT,
-        BIGPOPU,
-        BIGFCONDI,
-        BIGDELTABARCONDI,
+        f,
+        Delta,
+        max,
+        pi,
+        parti,
+        f_parti,
+        Delta_bar_parti,
         dR,
+        w,
+        w_cohort,
+        age,
     )
 
 
