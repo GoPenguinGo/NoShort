@@ -9,11 +9,14 @@ sigma_Y_sqr = sigma_Y ** 2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
-w = 0.92  # Fraction of total output paid out as endowment
+
+beta = 0.015  # marginal rate of wealth tax
+
+omega = rho + nu - beta  # marginal propensity to consume
 
 # Some pre-calculations
-D = (rho + nu) * (rho + nu - 4 * nu ** 2)
-beta = (rho + nu - D ** 0.5) / (2 * nu)
+# D = (rho + nu) * (rho + nu - 4 * nu ** 2)
+# beta = (rho + nu - D ** 0.5) / (2 * nu)
 
 # Setting prior variance
 T_hat = 20  # Pre-trading period
@@ -28,7 +31,7 @@ mode1 = 'keep'
 mode2 = 'drop'
 time_tolerance = 5
 
-Mpaths = 100
+Mpaths = 20
 
 # for graphs:
 Tkeep = 100
@@ -48,6 +51,7 @@ std_C_s_t = np.zeros((Mpaths, Nsamples))
 
 ####################################################################################
 # Store the values from the main loop
+dZ_matrix = np.zeros((Mpaths, Nt))
 Z_matrix = np.zeros((Mpaths, Nt))
 mu_C_matrix = np.zeros((Mpaths, Nt))
 sigma_C_matrix = np.zeros((Mpaths, Nt))
@@ -55,11 +59,13 @@ delta_matrix = np.zeros((Mpaths, Nt, Nc))
 r_matrix = np.zeros((Mpaths, Nt))
 f_matrix = np.zeros((Mpaths, Nt, Nc))
 theta_matrix = np.zeros((Mpaths, Nt))
-port_matrix = np.zeros((Mpaths, Nt, Nc))
-fcondi_matrix = np.zeros((Mpaths, Nt))
-popu_matrix = np.zeros((Mpaths, Nt))
-delta_condi_matrix = np.zeros((Mpaths, Nt))
-
+pi_matrix = np.zeros((Mpaths, Nt, Nc))
+f_parti_matrix = np.zeros((Mpaths, Nt))
+parti_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
+w_matrix = np.zeros((Mpaths, Nt, Nc))
+w_cohort_matrix = np.zeros((Mpaths, Nt, Nc))
+age_matrix = np.zeros((Mpaths, Nt))
 
 # Expected returns
 mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
@@ -90,41 +96,42 @@ dR_matrix = np.zeros((Mpaths, Nt))
 
 ######################## for the drop case
 # Store the values from the main loop
-Z_matrix_drop = np.zeros((Mpaths, Nt))
-mu_C_matrix_drop = np.zeros((Mpaths, Nt))
-sigma_C_matrix_drop = np.zeros((Mpaths, Nt))
-delta_matrix_drop = np.zeros((Mpaths, Nt, Nc))
-r_matrix_drop = np.zeros((Mpaths, Nt))
-f_matrix_drop = np.zeros((Mpaths, Nt, Nc))
-theta_matrix_drop = np.zeros((Mpaths, Nt))
-port_matrix_drop = np.zeros((Mpaths, Nt, Nc))
-fcondi_matrix_drop = np.zeros((Mpaths, Nt))
-popu_matrix_drop = np.zeros((Mpaths, Nt))
-delta_condi_matrix_drop = np.zeros((Mpaths, Nt))
-
+mu_C_drop_matrix = np.zeros((Mpaths, Nt))
+sigma_C_drop_matrix = np.zeros((Mpaths, Nt))
+delta_drop_matrix = np.zeros((Mpaths, Nt, Nc))
+r_drop_matrix = np.zeros((Mpaths, Nt))
+f_drop_matrix = np.zeros((Mpaths, Nt, Nc))
+theta_drop_matrix = np.zeros((Mpaths, Nt))
+pi_drop_matrix = np.zeros((Mpaths, Nt, Nc))
+f_parti_drop_matrix = np.zeros((Mpaths, Nt))
+parti_drop_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_parti_drop_matrix = np.zeros((Mpaths, Nt))
+w_drop_matrix = np.zeros((Mpaths, Nt, Nc))
+w_cohort_drop_matrix = np.zeros((Mpaths, Nt, Nc))
+age_drop_matrix = np.zeros((Mpaths, Nt))
 
 # Expected returns
-mu_S_matrix_drop = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-mu_S_s_matrix_drop = np.zeros(
+mu_S_drop_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+mu_S_s_drop_matrix = np.zeros(
     (Mpaths, Nt, Nc)
 )  # Expected returns under the measure of the agent we track
-mu_hat_S_matrix_drop = np.zeros(
+mu_hat_S_drop_matrix = np.zeros(
     (Mpaths, Nt)
 )  # Simple average of expected returns, or consensus belief
 
 # Equity risk premium
-erp_S_matrix_drop = np.zeros(
+erp_S_drop_matrix = np.zeros(
     (Mpaths, Nt)
 )
 
-erp_S_s_matrix_drop = np.zeros(
+erp_S_s_drop_matrix = np.zeros(
     (Mpaths, Nt, Nc)
 )
-erp_hat_S_matrix_drop = np.zeros(
+erp_hat_S_drop_matrix = np.zeros(
     (Mpaths, Nt)
 )
 
 
-Et_matrix_drop = np.zeros((Mpaths, Nt))
-Vt_matrix_drop = np.zeros((Mpaths, Nt))
-dR_matrix_drop = np.zeros((Mpaths, Nt))
+Et_drop_matrix = np.zeros((Mpaths, Nt))
+Vt_drop_matrix= np.zeros((Mpaths, Nt))
+dR_drop_matrix = np.zeros((Mpaths, Nt))

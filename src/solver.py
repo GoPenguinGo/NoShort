@@ -1,15 +1,21 @@
 import numpy as np
 from typing import Callable
+from numba import jit
+
+
 
 # TODO: @chingyulin: use *args for optimfun
+# todo: use numba to improve the speed of these functions
+
+@jit(nopython=True)
 def bisection(
-    optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
-    xlow: np.float64,
-    xhigh: np.float64,
-    arg1: np.ndarray,
-    arg2: np.ndarray,
-    arg3: float,
-    eps: float = 1e-6,
+        optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
+        xlow: np.float64,
+        xhigh: np.float64,
+        arg1: np.ndarray,
+        arg2: np.ndarray,
+        arg3: float,
+        eps: float = 1e-6,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 
@@ -47,11 +53,12 @@ def bisection(
     return xmid
 
 
+@jit(nopython=True)
 def solve_theta(
-    thetaguess: np.float64,
-    consumptionshare: np.ndarray,
-    Delta_s_t: np.ndarray,
-    sigma_Y: float,
+        thetaguess: np.float64,
+        consumptionshare: np.ndarray,
+        Delta_s_t: np.ndarray,
+        sigma_Y: float,
 ) -> np.float64:
     """RHS - LHS of the eq(24), used to iteratively solve theta
 
@@ -65,7 +72,7 @@ def solve_theta(
         np.float64: RHS - LHS
     """
     invest = (
-        Delta_s_t >= -thetaguess
+            Delta_s_t >= -thetaguess
     )  # eq(10) and eq(11), invest if theta_s_t >= -theta, constrained if otherwise
     invest_consumptionshare = invest * consumptionshare
     DeltabarCondi = np.sum(
@@ -74,7 +81,12 @@ def solve_theta(
     InvestCons = np.sum(
         invest_consumptionshare
     )  # Constraint component, as defined below eq(24)
-    diff = (
-        sigma_Y - DeltabarCondi
-    ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
+    if InvestCons == 0:
+        diff = 10000
+    else:
+        diff = (
+                       sigma_Y - DeltabarCondi
+               ) / InvestCons - thetaguess  # RHS - LHS, equals to 0 if find the right theta
     return diff
+
+

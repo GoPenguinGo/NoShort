@@ -6,72 +6,80 @@ from typing import Callable, Tuple
 from src.cohort_builder import build_cohorts
 from src.cohort_simulator import simulate_cohorts
 from src.param import *
+from src.stats import shocks, tau_calculator
 import concurrent.futures
+from numba import jit
 
-# TODO: @chingyulin: make cohort a class
+
+# generate values that are fixed in the main loop
+tau = np.arange(T_cohort, 0, -dt)
+cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
 # def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
-    dZt = dt**0.5 * np.random.randn(int(Nt - 1))
+    dZ_build = dt**0.5 * np.random.randn(int(Nc - 1))
+    # baseline scenario
     (
-        IntVec,
-        Xt,
+        f_st,
         Delta_s_t,
-        Yt,
-        Zt,
-        tau,
+        eta_st_ss,
+        eta_bar,
         MaxThetaDelta_s_t,
-        invest_tracker_keep,
-    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode1)
-
-    (
-        IntVec_drop,
-        Xt_drop,
-        Delta_s_t_drop,
-        Yt_drop,
-        Zt_drop,
-        tau_drop,
-        MaxThetaDelta_s_t_drop,
         invest_tracker,
-    ) = build_cohorts(dZt, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat, mode2)
+    ) = build_cohorts(dZ_build, Nc, dt, tau, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode1)
+
+   # drop scenario
+    (
+        f_st_drop,
+        Delta_s_t_drop,
+        eta_st_ss_drop,
+        eta_bar_drop,
+        MaxThetaDelta_s_t_drop,
+        invest_tracker_drop,
+    ) = build_cohorts(dZ_build, Nc, dt, tau, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode2)
     # if time.time() - time_s > time_tolerance:
     #     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
-    dZforbias = np.diff(Zt)  # dZt used in the build_cohorts function
-    biasvec = dZforbias[-Npre:]
+    biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
-    dZt = dt**0.5 * np.random.randn(Nt)  # dZt forward
-    Zt = np.cumsum(dZt)
+    dZ = dt**0.5 * np.random.randn(Nt)  # dZt forward
+    (
+        Z,
+        Y,
+    ) = shocks(
+        dZ,
+        mu_Y,
+        sigma_Y,
+        dt,
+    )
 
     (
-     Xt2,
-     part1,
-     mu_S,
-     mu_S_s,
-     mu_hat_S,
-     r,
-     theta,
-     BIGF,
-     BIGDELTA,
-     BIGMAX,
-     BIGPORT,
-     BIGPOPU,
-     BIGFCONDI,
-     BIGDELTABARCONDI,
-     dR,
-
+        mu_S,
+        mu_S_s,
+        # mu_hat_S,
+        r,
+        theta,
+        f,
+        Delta,
+        max,
+        pi,
+        parti,
+        f_parti,
+        Delta_bar_parti,
+        dR,
+        w,
+        w_cohort,
+        age,
     ) = simulate_cohorts(
+        Y,
         biasvec,
-        dZt,
+        dZ,
         Nt,
         Nc,
         tau,
-        IntVec,
-        Delta_s_t,
-        MaxThetaDelta_s_t,
         dt,
         rho,
         nu,
@@ -80,38 +88,43 @@ for k in range(Mpaths):
         sigma_Y,
         sigma_S,
         beta,
+        omega,
         T_hat,
         Npre,
         mode1,
-        invest_tracker_keep,
+        cohort_size,
+        f_st,
+        Delta_s_t,
+        eta_st_ss,
+        eta_bar,
+        MaxThetaDelta_s_t,
+        invest_tracker,
     )
 
     (
-        Xt2_drop,
-        part1_drop,
         mu_S_drop,
         mu_S_s_drop,
-        mu_hat_S_drop,
+        # mu_hat_S_drop,
         r_drop,
         theta_drop,
-        BIGF_drop,
-        BIGDELTA_drop,
-        BIGMAX_drop,
-        BIGPORT_drop,
-        BIGPOPU_drop,
-        BIGFCONDI_drop,
-        BIGDELTABARCONDI_drop,
+        f_drop,
+        Delta_drop,
+        max_drop,
+        pi_drop,
+        parti_drop,
+        f_parti_drop,
+        Delta_bar_parti_drop,
         dR_drop,
-
+        w_drop,
+        w_cohort_drop,
+        age_drop,
     ) = simulate_cohorts(
+        Y,
         biasvec,
-        dZt,
+        dZ,
         Nt,
         Nc,
         tau,
-        IntVec_drop,
-        Delta_s_t_drop,
-        MaxThetaDelta_s_t_drop,
         dt,
         rho,
         nu,
@@ -120,80 +133,87 @@ for k in range(Mpaths):
         sigma_Y,
         sigma_S,
         beta,
+        omega,
         T_hat,
         Npre,
         mode2,
-        invest_tracker,
+        cohort_size,
+        f_st_drop,
+        Delta_s_t_drop,
+        eta_st_ss_drop,
+        eta_bar_drop,
+        MaxThetaDelta_s_t_drop,
+        invest_tracker_drop,
     )
 
     erp_S = mu_S - r
-    erp_hat_S = mu_hat_S - r
+    # erp_hat_S = mu_hat_S - r
     erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
-    Z_matrix[k, :] = Zt
+    dZ_matrix[k, :] = dZ
+    Z_matrix[k, :] = Z
+
     dR_matrix[k, :] = dR
-    # EtMAT[k, :] = np.transpose(Et)
-    # VtMAT[k, :] = np.transpose(Vt)
-    delta_matrix[k, :, :] = BIGDELTA
+    delta_matrix[k, :, :] = Delta
     r_matrix[k, :] = r
     theta_matrix[k, :] = theta
     mu_S_matrix[k, :] = mu_S
     mu_S_s_matrix[k, :, :] = mu_S_s
-    mu_hat_S_matrix[k, :] = mu_hat_S
+    # mu_hat_S_matrix[k, :] = mu_hat_S
     erp_S_matrix[k, :] = erp_S
     erp_S_s_matrix[k, :, :] = erp_S_s
-    erp_hat_S_matrix[k, :] = erp_hat_S
-    port_matrix[k, :, :] = BIGPORT
+    # erp_hat_S_matrix[k, :] = erp_hat_S
+    pi_matrix[k, :, :] = pi
 
-    f_matrix[k, :, :] = BIGF
-    fcondi_matrix[k, :] = BIGFCONDI
-    popu_matrix[k, :] = BIGPOPU
-    delta_condi_matrix[k, :] = BIGDELTABARCONDI
+    f_matrix[k, :, :] = f
+    f_parti_matrix[k, :] = f_parti
+    parti_matrix[k, :] = parti
+    Delta_bar_parti_matrix[k, :] = Delta_bar_parti
+    w_matrix[k, :, :] = w
+    w_cohort_matrix[k, :, :] = w_cohort
+    age_matrix[k, :] = age
 
-
-
-
-    ####################### for the drop case:
+    ############ for the drop case: ###########
 
     erp_S_drop = mu_S_drop - r_drop
-    erp_hat_S_drop = mu_hat_S_drop - r_drop
+    # erp_hat_S_drop = mu_hat_S_drop - r_drop
     erp_S_s_drop = mu_S_s_drop - np.reshape(r_drop, (Nt, 1))
 
-    # Z_matrix[k, :] = Zt
-    dR_matrix_drop[k, :] = dR_drop
-    # EtMAT[k, :] = np.transpose(Et)
-    # VtMAT[k, :] = np.transpose(Vt)
-    delta_matrix_drop[k, :, :] = BIGDELTA_drop
-    r_matrix_drop[k, :] = r_drop
-    theta_matrix_drop[k, :] = theta_drop
-    mu_S_matrix_drop[k, :] = mu_S_drop
-    mu_S_s_matrix_drop[k, :, :] = mu_S_s_drop
-    mu_hat_S_matrix_drop[k, :] = mu_hat_S_drop
-    erp_S_matrix_drop[k, :] = erp_S_drop
-    erp_S_s_matrix_drop[k, :, :] = erp_S_s_drop
-    erp_hat_S_matrix_drop[k, :] = erp_hat_S_drop
-    port_matrix_drop[k, :, :] = BIGPORT_drop
+    dR_drop_matrix[k, :] = dR_drop
+    delta_drop_matrix[k, :, :] = Delta_drop
+    r_drop_matrix[k, :] = r_drop
+    theta_drop_matrix[k, :] = theta_drop
+    mu_S_drop_matrix[k, :] = mu_S_drop
+    mu_S_s_drop_matrix[k, :, :] = mu_S_s_drop
+    # mu_hat_S_matrix_drop[k, :] = mu_hat_S_drop
+    erp_S_drop_matrix[k, :] = erp_S_drop
+    erp_S_s_drop_matrix[k, :, :] = erp_S_s_drop
+    # erp_hat_S_matrix_drop[k, :] = erp_hat_S_drop
+    pi_drop_matrix[k, :, :] = pi_drop
 
-    f_matrix_drop[k, :, :] = BIGF_drop
-    fcondi_matrix_drop[k, :] = BIGFCONDI_drop
-    popu_matrix_drop[k, :] = BIGPOPU_drop
-    delta_condi_matrix_drop[k, :] = BIGDELTABARCONDI_drop
+    f_drop_matrix[k, :, :] = f_drop
+    f_parti_drop_matrix[k, :] = f_parti_drop
+    parti_drop_matrix[k, :] = parti_drop
+    Delta_bar_parti_drop_matrix[k, :] = Delta_bar_parti_drop
+    w_drop_matrix[k, :, :] = w_drop
+    w_cohort_drop_matrix[k, :, :] = w_cohort_drop
+    age_drop_matrix[k, :] = age_drop
 
     print(time.time() - s)
     print(k)
-
-change_popu_matrix = BIGPOPU[1:]/BIGPOPU[:-1]
 
 ########################################################################################################################
 ### GRAPHS:
 
 # keep only the last 100 years data
-
+# todo: save the graphs
 # (1.1) Zt and Participation Rate from one random path
 t = np.arange(0, T_cohort, dt)  # has the same length as Nc
-random_paths = 2  # 1 can be any random number from 0 to Mpaths
+random_paths = 2  # can be any random number from 0 to Mpaths
 y1 = Z_matrix[random_paths, :]
-y2 = popu_matrix[random_paths, :]
+y2 = parti_matrix[random_paths, :]
+y3 = age_matrix[random_paths, :]
+
 fig, ax1 = plt.subplots()
 color1 = 'r'
 ax1.set_xlabel('time in simulation, one random path')
@@ -201,11 +221,18 @@ ax1.set_ylabel('Zt', color = color1)
 ax1.plot(t, y1, color = color1, linewidth = 0.8)
 ax1.tick_params(axis='y', labelcolor = color1)
 
+# ax2 = ax1.twinx()
+# color2 = 'b'
+# ax2.set_ylabel('Population holding stocks', color = color2)
+# ax2.set_ylim([0,1])
+# ax2.plot(t, y2, color = color2, linewidth = 0.8)
+# ax2.tick_params(axis='y', labelcolor = color2)
+
 ax2 = ax1.twinx()
 color2 = 'b'
-ax2.set_ylabel('Population holding stocks', color = color2)
-ax2.set_ylim([0,1])
-ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.set_ylabel('Average age holding stocks', color = color2)
+ax2.set_ylim([0,50])
+ax2.plot(t, y3, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
 
 fig.suptitle('Zt and Participation Rate')
@@ -214,8 +241,8 @@ plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
 sample = np.arange(Nc - Nkeep, Nc, 20)
-x1 = Z_matrix[:, sample] - Z_matrix[:, sample - 1]
-y1 = np.log(popu_matrix[:, sample] / popu_matrix[:, sample - 1])
+x1 = dZ_matrix[:, sample]
+y1 = np.log(parti_matrix[:, sample] / parti_matrix[:, sample - 1])
 plt.figure(2)
 plt.scatter(x1, y1, marker = '.', c = 'b', alpha = 0.8)
 plt.xlim([-1.5, 1.5])
@@ -225,15 +252,15 @@ plt.ylabel('log changes in participation rate')
 plt.title('dZt and Log Change in Participation Rate')
 plt.show()
 
-
-
-############################## for the drop case:
+############## for the drop case: ################
 
 # (1.1) Zt and Participation Rate from one random path
 t = np.arange(0, T_cohort, dt)  # has the same length as Nc
 random_paths = 2  # 1 can be any random number from 0 to Mpaths
 y1 = Z_matrix[random_paths, :]
-y2 = popu_matrix_drop[random_paths, :]
+y2 = parti_drop_matrix[random_paths, :]
+y3 = age_drop_matrix[random_paths, :]
+
 fig, ax1 = plt.subplots()
 color1 = 'r'
 ax1.set_xlabel('time in simulation, one random path')
@@ -241,11 +268,18 @@ ax1.set_ylabel('Zt', color = color1)
 ax1.plot(t, y1, color = color1, linewidth = 0.8)
 ax1.tick_params(axis='y', labelcolor = color1)
 
+# ax2 = ax1.twinx()
+# color2 = 'b'
+# ax2.set_ylabel('Population holding stocks, drop', color = color2)
+# ax2.set_ylim([0,1])
+# ax2.plot(t, y2, color = color2, linewidth = 0.8)
+# ax2.tick_params(axis='y', labelcolor = color2)
+
 ax2 = ax1.twinx()
 color2 = 'b'
-ax2.set_ylabel('Population holding stocks, drop', color = color2)
-ax2.set_ylim([0,1])
-ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.set_ylabel('Average age holding stocks', color = color2)
+ax2.set_ylim([0,50])
+ax2.plot(t, y3, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
 
 fig.suptitle('Zt and Participation Rate, if Drop')
@@ -254,8 +288,8 @@ plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
 sample = np.arange(Nc - Nkeep, Nc, 20)
-x1 = Z_matrix[:, sample] - Z_matrix[:, sample - 1]
-y1 = np.log(popu_matrix_drop[:, sample] / popu_matrix_drop[:, sample - 1])
+x1 = dZ_matrix[:, sample]
+y1 = np.log(parti_drop_matrix[:, sample] / parti_drop_matrix[:, sample - 1])
 plt.scatter(x1, y1, marker = '.', c = 'b', alpha = 0.8)
 plt.xlim([-1.5, 1.5])
 plt.ylim([-0.8, 0.8])
