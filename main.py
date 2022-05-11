@@ -14,13 +14,29 @@ from numba import jit
 # generate values that are fixed in the main loop
 tau = np.arange(T_cohort, 0, -dt)
 cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+cummu_popu = np.cumsum(cohort_size)
+tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for k in range(Mpaths):
 # def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
-    dZ_build = dt**0.5 * np.random.randn(int(Nc - 1))
+    dZ_build = dt**0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
+    biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
+    dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+    (
+        Z,
+        Y,
+    ) = shocks(
+        dZ,
+        mu_Y,
+        sigma_Y,
+        dt,
+    )
+
     # baseline scenario
     (
         f_st,
@@ -40,21 +56,29 @@ for k in range(Mpaths):
         MaxThetaDelta_s_t_drop,
         invest_tracker_drop,
     ) = build_cohorts(dZ_build, Nc, dt, tau, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode2)
+
+    # complete market scenario
+    (
+        f_st_comp,
+        Delta_s_t_comp,
+        eta_st_ss_comp,
+        eta_bar_comp,
+        MaxThetaDelta_s_t_comp,
+        invest_tracker_comp,
+    ) = build_cohorts(dZ_build, Nc, dt, tau, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode3)
     # if time.time() - time_s > time_tolerance:
     #     print(f"It takes more than {time_tolerance}s to build up the cohorts")
 
-    biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
-
-    dZ = dt**0.5 * np.random.randn(Nt)  # dZt forward
+    # partial constraint scenario
     (
-        Z,
-        Y,
-    ) = shocks(
-        dZ,
-        mu_Y,
-        sigma_Y,
-        dt,
-    )
+        f_st_free,
+        Delta_s_t_free,
+        eta_st_ss_free,
+        eta_bar_free,
+        d_eta_st_ss_free,
+        invest_tracker_free,
+        can_short_tracker_free,
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode4)
 
     (
         mu_S,
@@ -73,6 +97,7 @@ for k in range(Mpaths):
         w,
         w_cohort,
         age,
+        n_parti,
     ) = simulate_cohorts(
         Y,
         biasvec,
@@ -118,6 +143,7 @@ for k in range(Mpaths):
         w_drop,
         w_cohort_drop,
         age_drop,
+        n_parti_drop,
     ) = simulate_cohorts(
         Y,
         biasvec,
@@ -144,6 +170,107 @@ for k in range(Mpaths):
         eta_bar_drop,
         MaxThetaDelta_s_t_drop,
         invest_tracker_drop,
+    )
+
+    (
+        mu_S_comp,
+        mu_S_s_comp,
+        # mu_hat_S_comp,
+        r_comp,
+        theta_comp,
+        f_comp,
+        Delta_comp,
+        max_comp,
+        pi_comp,
+        parti_comp,
+        f_parti_comp,
+        Delta_bar_parti_comp,
+        dR_comp,
+        w_comp,
+        w_cohort_comp,
+        age_comp,
+        n_parti_comp,
+    ) = simulate_cohorts(
+        Y,
+        biasvec,
+        dZ,
+        Nt,
+        Nc,
+        tau,
+        dt,
+        rho,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        sigma_S,
+        beta,
+        omega,
+        T_hat,
+        Npre,
+        mode3,
+        cohort_size,
+        f_st_comp,
+        Delta_s_t_comp,
+        eta_st_ss_comp,
+        eta_bar_comp,
+        MaxThetaDelta_s_t_comp,
+        invest_tracker_comp,
+    )
+
+    (
+        mu_S_free,
+        mu_S_s_free,
+        # mu_hat_S_free,
+        r_free,
+        theta_free,
+        f_free,
+        Delta_free,
+        d_eta_free,
+        pi_free,
+        f_parti_free,
+        Delta_bar_parti_free,
+        dR_free,
+        w_free,
+        w_cohort_free,
+        popu_parti_free,
+        popu_can_short_free,
+        popu_short_free,
+        popu_long_free,
+        f_parti_free,
+        f_short_free,
+        f_long_free,
+        age_parti_free,
+        age_short_free,
+        age_long_free,
+        n_parti_free,
+    ) = simulate_cohorts_partial_constraint(
+        Y,
+        biasvec,
+        dZ,
+        Nt,
+        Nc,
+        tau,
+        dt,
+        rho,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        sigma_S,
+        beta,
+        omega,
+        T_hat,
+        Npre,
+        mode4,
+        cohort_size,
+        f_st_free,
+        Delta_s_t_free,
+        eta_st_ss_free,
+        eta_bar_free,
+        d_eta_st_ss_free,
+        invest_tracker_free,
+        can_short_tracker_free,
     )
 
     erp_S = mu_S - r
@@ -220,23 +347,49 @@ ax1.set_xlabel('time in simulation, one random path')
 ax1.set_ylabel('Zt', color = color1)
 ax1.plot(t, y1, color = color1, linewidth = 0.8)
 ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('Population holding stocks', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and Participation Rate')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Participation Rate' + '_keep' + '.jpg')
+plt.show()
 
-# ax2 = ax1.twinx()
-# color2 = 'b'
-# ax2.set_ylabel('Population holding stocks', color = color2)
-# ax2.set_ylim([0,1])
-# ax2.plot(t, y2, color = color2, linewidth = 0.8)
-# ax2.tick_params(axis='y', labelcolor = color2)
-
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
 ax2 = ax1.twinx()
 color2 = 'b'
 ax2.set_ylabel('Average age holding stocks', color = color2)
-ax2.set_ylim([0,50])
+ax2.set_ylim([0,100])
 ax2.plot(t, y3, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
-
-fig.suptitle('Zt and Participation Rate')
+fig.suptitle('Zt and Average Participant Age')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Average Participant Age' + '_keep' + '.jpg')
+plt.show()
+
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('% of cohorts holding stocks', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y4, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and % of Cohorts Participate')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Cohorts Participate' + '_keep' + '.jpg')
 plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
@@ -250,6 +403,7 @@ plt.ylim([-0.8, 0.8])
 plt.xlabel('dZt')
 plt.ylabel('log changes in participation rate')
 plt.title('dZt and Log Change in Participation Rate')
+plt.savefig('dZt and Log Change in Participation Rate' + '_keep' + '.jpg')
 plt.show()
 
 ############## for the drop case: ################
@@ -261,29 +415,56 @@ y1 = Z_matrix[random_paths, :]
 y2 = parti_drop_matrix[random_paths, :]
 y3 = age_drop_matrix[random_paths, :]
 
+
 fig, ax1 = plt.subplots()
 color1 = 'r'
 ax1.set_xlabel('time in simulation, one random path')
 ax1.set_ylabel('Zt', color = color1)
 ax1.plot(t, y1, color = color1, linewidth = 0.8)
 ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('Population holding stocks, drop', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and Participation Rate, if Drop')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Participation Rate' + '_drop' + '.jpg')
+plt.show()
 
-# ax2 = ax1.twinx()
-# color2 = 'b'
-# ax2.set_ylabel('Population holding stocks, drop', color = color2)
-# ax2.set_ylim([0,1])
-# ax2.plot(t, y2, color = color2, linewidth = 0.8)
-# ax2.tick_params(axis='y', labelcolor = color2)
-
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
 ax2 = ax1.twinx()
 color2 = 'b'
 ax2.set_ylabel('Average age holding stocks', color = color2)
-ax2.set_ylim([0,50])
+ax2.set_ylim([0,100])
 ax2.plot(t, y3, color = color2, linewidth = 0.8)
 ax2.tick_params(axis='y', labelcolor = color2)
-
-fig.suptitle('Zt and Participation Rate, if Drop')
+fig.suptitle('Zt and Average Participant Age, if Drop')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Average Participant Age' + '_drop' + '.jpg')
+plt.show()
+
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('% of cohorts holding stocks', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y4, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and % of Cohorts Participate, if Drop')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Cohorts Participate' + '_drop' + '.jpg')
 plt.show()
 
 # (1.2) dZt and Log Change in Participation Rate
@@ -296,9 +477,71 @@ plt.ylim([-0.8, 0.8])
 plt.xlabel('dZt')
 plt.ylabel('log changes in participation rate')
 plt.title('dZt and Log Change in Participation Rate, if Drop')
+plt.savefig('dZt and Log Change in Participation Rate' + '_drop' + '.jpg')
 plt.show()
 
 ###################################################
+
+y1 = Z
+y2 = parti_comp
+y3 = age_comp
+y4 = n_parti_comp
+
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('Population longing stocks', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y2, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and Participation Rate, complete market')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Participation Rate' + '_comp' + '.jpg')
+plt.show()
+
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('Average age longing stocks', color = color2)
+ax2.set_ylim([0,100])
+ax2.plot(t, y3, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and Average Participant Age, complete market')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Average Participant Age' + '_comp' + '.jpg')
+plt.show()
+
+fig, ax1 = plt.subplots()
+color1 = 'r'
+ax1.set_xlabel('time in simulation, one random path')
+ax1.set_ylabel('Zt', color = color1)
+ax1.plot(t, y1, color = color1, linewidth = 0.8)
+ax1.tick_params(axis='y', labelcolor = color1)
+ax2 = ax1.twinx()
+color2 = 'b'
+ax2.set_ylabel('% of cohorts longing stocks', color = color2)
+ax2.set_ylim([0,1])
+ax2.plot(t, y4, color = color2, linewidth = 0.8)
+ax2.tick_params(axis='y', labelcolor = color2)
+fig.suptitle('Zt and % of Cohorts Participate, complete market')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and Cohorts Participate' + '_comp' + '.jpg')
+plt.show()
+
+#############################
+#### comparative graphs
+
+
 #
 # # (2.1)
 # for k in range(Mpaths):

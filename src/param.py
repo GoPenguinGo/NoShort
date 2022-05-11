@@ -11,7 +11,8 @@ sigma_S = (
 )
 
 beta = 0.015  # marginal rate of wealth tax
-
+# beta = 0.02
+# beta = 0.01
 omega = rho + nu - beta  # marginal propensity to consume
 
 # Some pre-calculations
@@ -29,6 +30,9 @@ Nc = int(T_cohort / dt)  # number of cohorts
 
 mode1 = 'keep'
 mode2 = 'drop'
+mode3 = 'complete'
+mode4 = 'rich_free'
+mode5 = 'learn_hard'
 time_tolerance = 5
 
 Mpaths = 20
