@@ -15,7 +15,7 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: shape (T, )
     """
-    sigma_Y_sq = sigma_Y**2
+    sigma_Y_sq = sigma_Y ** 2
     V = sigma_Y_sq * V_hat / (sigma_Y_sq + V_hat * tau)
     return V
 
@@ -70,3 +70,43 @@ returns:
     tau = np.arange(T_cohort, 0, -dt)
     return tau
 
+
+@jit(nopython=True)
+def good_times(
+        dZt_build: np.ndarray,
+        dZt: np.ndarray,
+        dt: float,
+        Nt: int,
+        Nc: int,
+        window: int,
+        z: float,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+]:
+    """
+    returns the indicator for good times when agents previously dropped out from the stock market might return
+    :param dZt_build:
+    :param dZt:
+    :param dt:
+    :param Nt:
+    :param window:
+    :param z:
+    :return:
+    """
+    cummu_dZt_build = np.zeros(Nc)
+    cummu_dZt = np.zeros(Nt)
+    for j in range(Nc):
+        if j < window:
+            cummu_dZt_build[j] = 0
+        else:
+            cummu_dZt_build[j] = np.sum(dZt_build[j + 1 - window: j + 1])
+    for i in range(Nt):
+        if i < window:
+            cummu_dZt[i] = np.sum(dZt_build[i + 1 - window:]) + np.sum(dZt[: i + 1])
+        else:
+            cummu_dZt[i] = np.sum(dZt[i + 1 - window: i + 1])
+    sigma_cummu = (dt * window) ** 0.5
+    good_time_build = cummu_dZt_build >= z * sigma_cummu
+    good_time_simulate = cummu_dZt >= z * sigma_cummu
+    return good_time_build, good_time_simulate

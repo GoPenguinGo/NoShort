@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from src.stats import post_var
-from src.solver import bisection, solve_theta
+from src.solver import bisection, solve_theta, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from numba import jit
 
@@ -103,6 +103,7 @@ def simulate_cohorts(
     pi = np.zeros((Nt, Nc))  # portfolio choices
     w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
     w = np.zeros((Nt, Nc))  # evolution of wealth for individual agents alive
+    short = np.zeros((Nt, Nc))
 
     # aggregate terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -190,6 +191,7 @@ def simulate_cohorts(
             )  # solve for theta
             a = Delta_s_t + theta_t
             invest = (a >= 0)
+            want_to_short_t = invest_tracker * (1 - invest)
             invest_tracker = invest * invest_tracker
             MaxThetaDelta_s_t = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
@@ -220,13 +222,13 @@ def simulate_cohorts(
 
         if mode == 'complete':
             f_st_standard = f_st * dt
-            theta_t = sigma_Y - np.sum(f_st_standard * Delta_s_t)
+            Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
+            theta_t = sigma_Y - Delta_bar_parti_t
             MaxThetaDelta_s_t = Delta_s_t
             invest = Delta_s_t >= -theta_t  # long stock
-            invest_fst = invest * f_st_standard
-            popu_parti_t = np.sum(cohort_size * invest)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
-            f_parti_t = np.sum(invest_fst)
+            popu_parti_t = 1
+
+            f_parti_t = 1
             pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
@@ -264,6 +266,7 @@ def simulate_cohorts(
         w_cohort[i, :] = w_cohort_st
         age[i] = age_t
         n_parti[i] = n_parti_t
+        short[i,:] = want_to_short_t
 
     return (
         mu_S,
@@ -283,6 +286,7 @@ def simulate_cohorts(
         w_cohort,
         age,
         n_parti,
+        short,
     )
 
 
@@ -314,6 +318,7 @@ def simulate_cohorts_partial_constraint(
         d_eta_st_ss: np.ndarray,
         invest_tracker_t: np.ndarray,
         can_short_tracker_t: np.ndarray,
+        good_time_simulate: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -445,7 +450,6 @@ def simulate_cohorts_partial_constraint(
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
-        # todo: need to change the updating mechanism of Delta_s_t once a cohort quits the stock market
         dDelta_s_t = (
             post_var(sigma_Y, Vhat, tau) / sigma_Y**2
                      ) * (
@@ -459,35 +463,47 @@ def simulate_cohorts_partial_constraint(
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
         Delta_s_t = np.append(Delta_s_t, init_bias)
 
+        invest_tracker_t = np.append(invest_tracker_t[1:], 1)  # all cohorts that are still in the market
+        can_short_tracker_t = np.append(can_short_tracker_t[1:], 0)  # the cohorts that are allowed to short
+
+        if mode == 'back_collect' and good_time_simulate[i] == 1:
+            # agents who have left the market respond to the recent positive shocks
+            # they collect all the information they missed during the drop period
+            invest_tracker_t = np.ones(Nc)  # all can invest
+
+        if mode == 'back_renew' and good_time_simulate[i] == 1:
+            if i < window - 1:
+                return_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / (window * dt)
+            else:
+                return_bias = np.sum(dZ[i + 1 - window: i + 1]) / (window * dt)
+            Delta_s_t = Delta_s_t * invest_tracker_t + return_bias * (1 - invest_tracker_t)
+            invest_tracker_t = np.ones(Nc)
+
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
-        if mode == 'rich_free':
-            invest_tracker_t = np.append(invest_tracker_t[1:], 1)  # all cohorts that are still in the market
-            can_short_tracker_t = np.append(can_short_tracker_t[1:], 0)  # all cohorts that are allowed to short
+        f_st_possible = f_st * dt * invest_tracker_t
+        indiv_w_possible = f_st_possible / cohort_size
+        cohort_size_possible = cohort_size * invest_tracker_t
+        Delta_s_t_possible = Delta_s_t * invest_tracker_t
+        wealth_cutoff = find_the_rich(
+            indiv_w_possible, cohort_size_possible, top=0.05
+        )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+        can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+        can_short_tracker_t = (
+            can_short_tracker_t + can_short >= 1
+        )  # once rich, always can short
 
-            f_st_possible = f_st * dt * invest_tracker_t
-            indiv_w_possible = f_st_possible / cohort_size
-            cohort_size_possible = cohort_size * invest_tracker_t
-            Delta_s_t_possible = Delta_s_t * invest_tracker_t
-            wealth_cutoff = find_the_rich(
-                indiv_w_possible, cohort_size_possible, top=0.05
-            )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-            can_short_tracker_t = (
-                    can_short_tracker_t + can_short >= 1
-            )  # once rich, always can short
-
-            theta_t = bisection_partial_constraint(
-                solve_theta_partial_constraint, -10, 10, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
-            )
-            want_to_short = (Delta_s_t + theta_t) < 0
-            constrained = invest_tracker_t * want_to_short * (
-                        1 - can_short_tracker_t
-            )  # in the market * want to short * can't short
-            short_t = want_to_short * can_short_tracker_t
-            long_t = (1 - want_to_short) * invest_tracker_t
-            invest_tracker_t = invest_tracker_t - constrained  # constrained people drop, update invest_tracker
-            pi_st = (Delta_s_t + theta_t) / sigma_S * invest_tracker_t
-            d_eta_st_ss = Delta_s_t * invest_tracker_t - theta_t * (1 - invest_tracker_t)
+        theta_t = bisection_partial_constraint(
+            solve_theta_partial_constraint, -10, 10, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
+        )
+        want_to_short = (Delta_s_t + theta_t) < 0
+        constrained = invest_tracker_t * want_to_short * (
+            1 - can_short_tracker_t
+        )  # in the market * want to short * can't short
+        short_t = want_to_short * can_short_tracker_t
+        long_t = (1 - want_to_short) * invest_tracker_t
+        invest_tracker_t = invest_tracker_t - constrained  # constrained people drop, update invest_tracker
+        pi_st = (Delta_s_t + theta_t) / sigma_S * invest_tracker_t
+        d_eta_st_ss = Delta_s_t * invest_tracker_t - theta_t * (1 - invest_tracker_t)
 
         r_t = (
                 rho
@@ -561,6 +577,10 @@ def simulate_cohorts_partial_constraint(
         age_short,
         age_long,
         n_parti,
+        invest_tracker,
+        can_short_tracker,
+        long,
+        short,
     )
 
 

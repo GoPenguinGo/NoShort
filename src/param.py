@@ -32,7 +32,8 @@ mode1 = 'keep'
 mode2 = 'drop'
 mode3 = 'complete'
 mode4 = 'rich_free'
-mode5 = 'learn_hard'
+mode5 = 'back_collect'
+mode6 = 'back_renew'
 time_tolerance = 5
 
 Mpaths = 20

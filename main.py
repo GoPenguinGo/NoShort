@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Callable, Tuple
-from src.cohort_builder import build_cohorts
-from src.cohort_simulator import simulate_cohorts
+from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
+from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
 from src.param import *
-from src.stats import shocks, tau_calculator
+from src.stats import shocks, tau_calculator, good_times
 import concurrent.futures
 from numba import jit
 
@@ -24,9 +24,10 @@ for k in range(Mpaths):
 # def simulate(k, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, T_hat):
     s = time.time()
     time_s = time.time()
-    dZ_build = dt**0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-    biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
-    dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+    #dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
+    #biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
+    #dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+
     (
         Z,
         Y,
@@ -37,7 +38,20 @@ for k in range(Mpaths):
         dt,
     )
 
-    # baseline scenario
+    (
+        good_time_build,
+        good_time_simulate,
+    ) = good_times(
+        dZ_build,
+        dZ,
+        dt,
+        Nt,
+        Nc,
+        window=12,
+        z=1.28,
+    )
+
+# baseline scenario
     (
         f_st,
         Delta_s_t,
@@ -78,7 +92,18 @@ for k in range(Mpaths):
         d_eta_st_ss_free,
         invest_tracker_free,
         can_short_tracker_free,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, mode4)
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, good_time_build, mode4)
+
+    (
+        f_st_collect,
+        Delta_s_t_collect,
+        eta_st_ss_collect,
+        eta_bar_collect,
+        d_eta_st_ss_collect,
+        invest_tracker_collect,
+        can_short_tracker_collect,
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre,
+                                     T_hat, good_time_build, mode5)
 
     (
         mu_S,
@@ -144,6 +169,7 @@ for k in range(Mpaths):
         w_cohort_drop,
         age_drop,
         n_parti_drop,
+        short_drop,
     ) = simulate_cohorts(
         Y,
         biasvec,
@@ -244,6 +270,10 @@ for k in range(Mpaths):
         age_short_free,
         age_long_free,
         n_parti_free,
+        invest_tracker_free,
+        can_short_tracker_free,
+        long_free,
+        short_free,
     ) = simulate_cohorts_partial_constraint(
         Y,
         biasvec,
@@ -262,7 +292,7 @@ for k in range(Mpaths):
         omega,
         T_hat,
         Npre,
-        mode4,
+        mode5,
         cohort_size,
         f_st_free,
         Delta_s_t_free,
@@ -271,6 +301,67 @@ for k in range(Mpaths):
         d_eta_st_ss_free,
         invest_tracker_free,
         can_short_tracker_free,
+        good_time_simulate,
+    )
+
+    (
+        mu_S_collect,
+        mu_S_s_collect,
+        # mu_hat_S_collect,
+        r_collect,
+        theta_collect,
+        f_collect,
+        Delta_collect,
+        d_eta_collect,
+        pi_collect,
+        f_parti_collect,
+        Delta_bar_parti_collect,
+        dR_collect,
+        w_collect,
+        w_cohort_collect,
+        popu_parti_collect,
+        popu_can_short_collect,
+        popu_short_collect,
+        popu_long_collect,
+        f_parti_collect,
+        f_short_collect,
+        f_long_collect,
+        age_parti_collect,
+        age_short_collect,
+        age_long_collect,
+        n_parti_collect,
+        invest_tracker_collect,
+        can_short_tracker_collect,
+        long_collect,
+        short_collect,
+    ) = simulate_cohorts_partial_constraint(
+        Y,
+        biasvec,
+        dZ,
+        Nt,
+        Nc,
+        tau,
+        dt,
+        rho,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        sigma_S,
+        beta,
+        omega,
+        T_hat,
+        Npre,
+        mode5,
+        cohort_size,
+        f_st_collect,
+        Delta_s_t_collect,
+        eta_st_ss_collect,
+        eta_bar_collect,
+        d_eta_st_ss_collect,
+        invest_tracker_collect,
+        can_short_tracker_collect,
+        good_time_simulate,
     )
 
     erp_S = mu_S - r

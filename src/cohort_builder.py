@@ -1,5 +1,5 @@
 import numpy as np
-from src.solver import bisection, solve_theta
+from src.solver import bisection, solve_theta, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from typing import Tuple
 from src.stats import post_var
@@ -120,49 +120,6 @@ def build_cohorts(
                 invest_tracker = invest * invest_tracker
                 MaxThetaDelta_s_t = a * invest_tracker - theta_t
 
-            if mode == 'rich_free':
-                # invest_tracker tracks if a cohort has left the stock market;
-                # can_short shows if a cohort can short in this round;
-                # if can_short == 1 and invest_tracker == 0, this cohort can still participate
-                invest_tracker = np.append(invest_tracker, 1)
-
-                cohort_size = nu * np.exp(-nu * tau_short) * dt  # todo: confirm this
-                indiv_w = f_st / cohort_size
-                wealth_cutoff = find_the_rich(
-                    indiv_w, cohort_size, top = 0.01
-                )  # find the cohorts that make the richest 1% pupolation
-                can_short = indiv_w >= wealth_cutoff  # these cohorts can short
-
-                possibe_cohorts = (can_short + invest_tracker > 0)
-                possible_cons_share = f_st * dt * possibe_cohorts
-                possible_delta_st = Delta_s_t * possibe_cohorts
-
-                theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -10, 10, can_short, possible_delta_st, possible_cons_share, sigma_Y
-                )
-                a = Delta_s_t + theta_t
-                invest = (a >= 0)
-                invest_tracker = invest * invest_tracker
-                MaxThetaDelta_s_t = a * invest_tracker - theta_t  # for constrained cohorts
-
-            # if mode == 'learn_hard':
-            #     # todo: think about this scenario
-            #     # invest_tracker: across periods, if an agent is still in the market
-            #     # invest: specific to each period, if in the market * if find it optimal to
-            #     invest_when_bad = bad_times[i - 1] * invest
-            #     young_when_bad = tau_short <= 15
-            #     invest_tracker = invest_tracker * (1 - invest_when_bad * young_when_bad)  # ==0 only when bad stock investment occurred
-            #     invest_tracker = np.append(invest_tracker, 1)
-            #     possible_cons_share = f_st * dt * invest_tracker
-            #     possible_delta_st = Delta_s_t * invest_tracker
-            #     lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-            #     theta_t = bisection(
-            #         solve_theta, -10, 10, possible_cons_share, possible_delta_st, sigma_Y
-            #     )  # solve for theta
-            #     a = Delta_s_t + theta_t
-            #     invest = (a >= 0) * invest_tracker
-            #     MaxThetaDelta_s_t = a * invest - theta_t
-
             if mode == 'keep':
                 lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
                 f_st_standard = f_st * dt
@@ -201,6 +158,7 @@ def build_cohorts_partial_constraint(
         beta: float,
         Npre: int,
         T_hat: float,
+        good_time_build: np.ndarray,
         mode: str
 ) -> Tuple[
     # np.ndarray,
@@ -275,7 +233,7 @@ def build_cohorts_partial_constraint(
             Delta_s_t = np.append(Delta_s_t,
                                   0)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
-            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat
+            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat  # todo: should this be different for agents coming back in the renew case?
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
@@ -287,29 +245,38 @@ def build_cohorts_partial_constraint(
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
         else:
-            if mode == 'rich_free':
-                # add a new cohort in the trackers
-                invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market
-                can_short_tracker = np.append(can_short_tracker, 0)  # all cohorts that are allowed to short
-                cohort_size_short = cohort_size[-i-1:]
+            # add a new cohort in the trackers
+            invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market
+            can_short_tracker = np.append(can_short_tracker, 0)  # all cohorts that are allowed to short
+            cohort_size_short = cohort_size[-i - 1:]
 
-                f_st_possible = f_st * dt * invest_tracker
-                indiv_w_possible = f_st_possible / cohort_size_short
-                cohort_size_possible = cohort_size_short * invest_tracker
-                Delta_s_t_possible = Delta_s_t * invest_tracker
-                wealth_cutoff = find_the_rich(
+            if mode == 'back_collect' and good_time_build[i - 1] == 1:
+                # agents who have left the market respond to the recent positive shocks
+                # they collect all the information they missed during the drop period
+                invest_tracker_t = np.ones(i + 1)  # all can invest
+
+            if mode == 'back_renew' and good_time_build[i - 1] == 1:
+                return_bias = np.sum(dZt[int(i - window): i]) / (window * dt)
+                Delta_s_t = Delta_s_t * invest_tracker_t + return_bias * (1 - invest_tracker_t)
+                invest_tracker_t = np.ones(i + 1)
+
+            f_st_possible = f_st * dt * invest_tracker
+            indiv_w_possible = f_st_possible / cohort_size_short
+            cohort_size_possible = cohort_size_short * invest_tracker
+            Delta_s_t_possible = Delta_s_t * invest_tracker
+            wealth_cutoff = find_the_rich(
                     indiv_w_possible, cohort_size_possible, top=0.05
                 )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-                can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
+            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+            can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
 
-                theta_t = bisection_partial_constraint(
+            theta_t = bisection_partial_constraint(
                     solve_theta_partial_constraint, -10, 10, can_short_tracker, Delta_s_t_possible, f_st_possible, sigma_Y
-                )
-                want_to_short = (Delta_s_t + theta_t) < 0
-                constrained = invest_tracker * want_to_short * (1 - can_short_tracker)  # in the market * want to short * can't short
-                invest_tracker = invest_tracker - constrained  # constrained people drop, update invest_tracker
-                d_eta_st_ss = Delta_s_t * invest_tracker - theta_t * (1 - invest_tracker)
+            )
+            want_to_short = (Delta_s_t + theta_t) < 0
+            constrained = invest_tracker * want_to_short * (1 - can_short_tracker)  # in the market * want to short * can't short
+            invest_tracker = invest_tracker - constrained  # constrained people drop, update invest_tracker
+            d_eta_st_ss = Delta_s_t * invest_tracker - theta_t * (1 - invest_tracker)
 
     return (
         f_st,
