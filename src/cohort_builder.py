@@ -1,5 +1,5 @@
 import numpy as np
-from src.solver import bisection, solve_theta
+from src.solver import bisection, solve_theta, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from typing import Tuple
 from src.stats import post_var
@@ -59,13 +59,16 @@ def build_cohorts(
         MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
         # TODO: @chingyulin: use NamedTuple for the return
     """
-    # todo: build the initial values, don't change length each time
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     MaxThetaDelta_s_t = np.zeros(1)  # disagreement, eq(11)
     eta_bar = np.ones(1)
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
-    invest_tracker = np.ones(Npre)
+    invest_tracker = np.ones(Nc) if mode == 'complete' else np.ones(Npre)
+    if mode == 'learn_hard':
+        bad_times = dZt <= np.percentile(dZt, 1)  # bottom 1%
+        invest = np.ones(Npre)
+        invest_when_bad = np.ones(Npre)
 
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
@@ -99,7 +102,7 @@ def build_cohorts(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Npre:
+        if i < Npre or mode == 'complete':
             MaxThetaDelta_s_t = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
@@ -116,17 +119,18 @@ def build_cohorts(
                 invest = (a >= 0)
                 invest_tracker = invest * invest_tracker
                 MaxThetaDelta_s_t = a * invest_tracker - theta_t
-            else:
+
+            if mode == 'keep':
                 lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
+                f_st_standard = f_st * dt
                 theta_t = bisection(
-                    solve_theta, lowest_bound, 10, f_st * dt, Delta_s_t, sigma_Y
+                    solve_theta, lowest_bound, 10, f_st_standard, Delta_s_t, sigma_Y
                 )  # solve for theta
                 MaxThetaDelta_s_t = np.maximum(
                     -theta_t, Delta_s_t
                 )  # update max(Delta_s_t, -theta)
-                invest_tracker = (Delta_s_t >= -theta_t)
 
-    if mode == "keep":
+    if mode == 'keep':
         invest_tracker = (Delta_s_t >= -theta_t)
 
     return (
@@ -139,76 +143,38 @@ def build_cohorts(
     )
 
 
-# Part = IntVec * np.exp(
-#     -(rho + 0.5 * MaxThetaDelta_s_t * MaxThetaDelta_s_t) * dt
-#     + MaxThetaDelta_s_t * dZt[i - 1]
-# )  # Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11)
 
-# if i == 1:  # only one cohort in the economy
-#     Xt[i] = Part
-#
-# else:  # more cohorts
-#     Xt[i] = np.sum(Part)  # total consumption
-#
-#
-# IntVec = reduction * Part
-# # IntVec = np.append(
-# #     IntVec, beta * (1 - reduction) * Xt[i]
-# # )  # updated consumption, add a newborn cohort
-# IntVec = np.append(
-#     IntVec, beta / nu * (1 - reduction) * Xt[i]
-# )  # updated consumption, add a newborn cohort
-# consumptionshare = IntVec / Xt[i]  # consumption share
-
-# # Wealth todo: write the code to track evolution of wealth
-#
-# # update beliefs
-# dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
-#     -Delta_s_t * dt + dZt[i - 1]
-# )  # from eq(5)
-# if i < Npre:
-#     # TODO: @chingyulin: this can be optimized
-#     Delta_s_t = Delta_s_t + dDelta_s_t
-#     Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
-# else:
-#     DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
-#
-#     Delta_s_t += dDelta_s_t
-#     # TODO: @chingyulin: this can be optimized
-#     Delta_s_t = np.append(
-#         Delta_s_t, DELbias
-#     )  # newborns begin with available earlier observations
-
-
-#####################################################################################
-
-def build_cohorts_complete_market(
-    dZt: np.ndarray,
-    Nc: int,
-    dt: float,
-    rho: float,
-    nu: float,
-    Vhat: float,
-    mu_Y: float,
-    sigma_Y: float,
-    beta: float,
-    T_hat: float,
+def build_cohorts_partial_constraint(
+        dZt: np.ndarray,
+        Nc: int,
+        dt: float,
+        tau: np.ndarray,
+        cohort_size: np.ndarray,
+        rho: float,
+        nu: float,
+        Vhat: float,
+        mu_Y: float,
+        sigma_Y: float,
+        beta: float,
+        Npre: int,
+        T_hat: float,
+        good_time_build: np.ndarray,
+        mode: str
 ) -> Tuple[
+    # np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
     # np.ndarray,
-    # np.ndarray,
-    # np.ndarray,
-    # np.ndarray,
-    # np.ndarray,
-    # np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
-    complete market version
-    run this function along with the incomplete version above,
-    as this function returns results that are used in comparison with the previous results
 
     Args:
+        # todo: edit the description
         dZt (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
         Nc (int): number of periods  = number of cohorts in the economy
         dt (float): unit of time
@@ -217,101 +183,107 @@ def build_cohorts_complete_market(
         Vhat (float): initial variance of beliefs
         mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
-        beta (float): initial consumption of the newborn agents
+        beta (float): marginal rate of wealth tax
+        # omega (float): marginal propensity to consume
         T_hat (float): pre-trading years
+        mode (str): describes the mode
 
     Returns:
         # DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nc, )
-        IntVec (np.ndarray): ~similar to consumption share, shape(Nc, )
-        Xt (np.ndarray): xi_t * Yt, shape(Nc, )
-        # Delta_s_t (np.ndarray): bias, shape(Nc, )
+        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc, )
+        # Xt (np.ndarray): xi_t * Yt, shape(Nc, )
+        Delta_s_t (np.ndarray): bias, shape(Nc, )
         # Yt (np.ndarray): aggregate output, shape(Nc, )
         # Zt (np.ndarray): cumulated shocks, shape(Nc, )
         # consumptionshare (np.ndarray): shape(Nc, )
-        # tau (np.ndarray): t-s, shape(Nc, )
-        # MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
+        tau (np.ndarray): t-s, shape(Nc, )
+        MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
+        # TODO: @chingyulin: use NamedTuple for the return
     """
-
-    Npre: int = int(T_hat / dt)  # Number of pre-trading observations
-
-    # Zt = np.insert(np.cumsum(dZt), 0, 0)  # cumulated shocks, Nc * 1
-    # yg = (mu_Y - 0.5 * sigma_Y**2) * dt + sigma_Y * dZt  # output in log, (Nc - 1) *1, eq(1)
-    # Yt = np.insert(np.exp(np.cumsum(yg)), 0, 1)  # output, Nc *1
-    # DeltaConditional = np.zeros(Nc)
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
-    # MaxThetaDelta_s_t = np.zeros(1)  # disagreement, eq(11)
-    Xt = np.ones(Nc) * nu * beta  # similar to consumption share, similar to eq(18)
-    IntVec = nu * beta  # consumption share of a newborn cohort
-
-    tau = np.zeros(1)  # t-s
-    tau[0] = dt
-    reduction = np.exp(-nu * dt)  # cohort size shrink at this rate
-    theta_t = np.zeros(Nc)  # market price of risk
+    d_eta_st_ss = np.zeros(1)  # disagreement, eq(11)
+    eta_bar = np.ones(1)
+    eta_st_ss = np.ones(1)
+    f_st = np.ones(1)
+    invest_tracker = np.ones(Npre)
+    can_short_tracker = np.zeros(Npre)
     for i in tqdm(range(1, Nc)):
-        Part = IntVec * np.exp(
-            -(rho + 0.5 * Delta_s_t * Delta_s_t) * dt
-            + Delta_s_t * dZt[i - 1]
-        )  # Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11)
-        if i == 1:  # only one cohort in the economy
-            Xt[i] = Part
-            # DeltaConditional[i] = Part * MaxThetaDelta_s_t
-        else:  # more cohorts
-            Xt[i] = np.sum(Part)  # total consumption
-            #DeltaConditional[i] = (
-                #np.sum(Part * MaxThetaDelta_s_t) / Xt[i]
-            #)  # eq(19), consumption weighted max(Delta_s_t, -theta)
+        tau_short = tau[-i:]
 
-        IntVec = reduction * Part
-        IntVec = np.append(
-            IntVec, beta * (1 - reduction) * Xt[i]
-        )  # updated consumption, add a newborn cohort
-        consumptionshare = IntVec / Xt[i]  # consumption share
+        eta_st_ss = eta_st_ss * np.exp(
+            -0.5 * d_eta_st_ss ** 2 * dt
+            + d_eta_st_ss * dZt[i - 1]
+        )
+
+        Part = beta * np.exp(-beta * tau_short) * eta_bar * eta_st_ss
+        eta_bar_t = np.sum(Part * dt) / (1 - beta * dt)
+        eta_bar = np.append(eta_bar, eta_bar_t)
+        eta_st_ss = np.append(eta_st_ss, 1)
+
+        f_st = Part / eta_bar_t
+        f_st = np.append(f_st, beta)  # cohort consumption share
 
         # update beliefs
-        dDelta_s_t = (post_var(sigma_Y, Vhat, tau) / sigma_Y**2) * (
-            -Delta_s_t * dt + dZt[i - 1]
-        )  # from eq(5)
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau_short) / sigma_Y ** 2
+                      ) * (
+                             -Delta_s_t * dt + dZt[i - 1]
+                     )  # from eq(5)
         if i < Npre:
-            # TODO: @chingyulin: this can be optimized
             Delta_s_t = Delta_s_t + dDelta_s_t
-            Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0
+            Delta_s_t = np.append(Delta_s_t,
+                                  0)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
-            DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
-
+            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat  # todo: should this be different for agents coming back in the renew case?
             Delta_s_t += dDelta_s_t
-            # TODO: @chingyulin: this can be optimized
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
-            )  # newborns begin with available earlier observations
-
-        # update tau
-        tau += dt
-        tau = np.append(tau, 0)  # TODO: @chingyulin: this can be optimized
+            )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        # need a large enough number of cohorts to make the distribution of beliefs reasonably continuous
-        # if i < Npre:
-        #     MaxThetaDelta_s_t = (
-        #         Delta_s_t  # relax the short-sale constraint in the beginning
-        #     )
-        # else:
-        #     lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
-        #     # Should it's put as a configurable parameter?
-        #     theta_t[i] = bisection(
-        #         solve_theta, lowest_bound, 10, consumptionshare, Delta_s_t, sigma_Y
-        #     )  # solve for theta
-        #     MaxThetaDelta_s_t = np.maximum(
-        #         -theta_t[i], Delta_s_t
-        #     )  # update max(Delta_s_t, -theta)
+        if i < Npre:
+            d_eta_st_ss = (
+                Delta_s_t  # relax the short-sale constraint in the beginning
+            )
+        else:
+            # add a new cohort in the trackers
+            invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market, new cohort by default can invest
+            can_short_tracker = np.append(can_short_tracker, 0)  # all cohorts that are allowed to short, new cohort by default can't short
+            cohort_size_short = cohort_size[-i - 1:]
+
+            if mode == 'back_collect' and good_time_build[i - 1] == 1:
+                # agents who have left the market respond to the recent positive shocks
+                # they collect all the information they missed during the drop period
+                invest_tracker_t = np.ones(i + 1)  # all can invest
+
+            if mode == 'back_renew' and good_time_build[i - 1] == 1:
+                return_bias = np.sum(dZt[int(i - window): i]) / (window * dt)
+                Delta_s_t = Delta_s_t * invest_tracker_t + return_bias * (1 - invest_tracker_t)
+                invest_tracker_t = np.ones(i + 1)
+
+            f_st_possible = f_st * dt * invest_tracker
+            indiv_w_possible = f_st_possible / cohort_size_short
+            cohort_size_possible = cohort_size_short * invest_tracker
+            Delta_s_t_possible = Delta_s_t * invest_tracker
+            wealth_cutoff = find_the_rich(
+                    indiv_w_possible, cohort_size_possible, top=0.05
+                )  # find the cohorts that make the richest 5% pupolation in the current period that are still in the market
+            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can start shorting in this period
+            can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
+
+            theta_t = bisection_partial_constraint(
+                    solve_theta_partial_constraint, -10, 10, can_short_tracker, Delta_s_t_possible, f_st_possible, sigma_Y
+            )
+            want_to_short = (Delta_s_t + theta_t) < 0
+            constrained = invest_tracker * want_to_short * (1 - can_short_tracker)  # in the market * want to short * can't short
+            invest_tracker = invest_tracker - constrained  # constrained people drop, update invest_tracker
+            d_eta_st_ss = Delta_s_t * invest_tracker - theta_t * (1 - invest_tracker)
 
     return (
-        # DeltaConditional,
-        IntVec,
-        Xt,
-        # Delta_s_t,
-        # Yt,
-        # Zt,
-        # consumptionshare,
-        # tau,
-        # MaxThetaDelta_s_t,
+        f_st,
+        Delta_s_t,
+        eta_st_ss,
+        eta_bar,
+        d_eta_st_ss,
+        invest_tracker,
+        can_short_tracker,
     )
