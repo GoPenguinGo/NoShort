@@ -191,7 +191,7 @@ def simulate_cohorts(
             )  # solve for theta
             a = Delta_s_t + theta_t
             invest = (a >= 0)
-            want_to_short_t = invest_tracker * (1 - invest)
+            #want_to_short_t = invest_tracker * (1 - invest)
             invest_tracker = invest * invest_tracker
             MaxThetaDelta_s_t = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
@@ -266,7 +266,7 @@ def simulate_cohorts(
         w_cohort[i, :] = w_cohort_st
         age[i] = age_t
         n_parti[i] = n_parti_t
-        short[i,:] = want_to_short_t
+        #short[i,:] = want_to_short_t
 
     return (
         mu_S,
@@ -286,7 +286,7 @@ def simulate_cohorts(
         w_cohort,
         age,
         n_parti,
-        short,
+        #short,
     )
 
 
@@ -398,7 +398,9 @@ def simulate_cohorts_partial_constraint(
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
     f_parti = np.zeros((Nt))  # consumption share of the stock market participants
-    Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
+    Delta_bar_parti = np.zeros((Nt))  # average belief of all investors
+    Delta_bar_long = np.zeros((Nt))  # average belief of the long investors
+    Delta_bar_short = np.zeros((Nt))  # average belief of the short-sellers
 
 
     # Expected returns
@@ -411,10 +413,6 @@ def simulate_cohorts_partial_constraint(
     n_parti = np.zeros(Nt)
 
     for i in tqdm(range(Nt)):
-        # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
-        #       currently I let them update, but keep their "opinions" muted
-        #       in this current version, the survey data type of analysis wouldn't work
-
         # realization of shocks
         dZ_t = dZ[i]
 
@@ -537,12 +535,18 @@ def simulate_cohorts_partial_constraint(
         w[i, :] = w_st
         w_cohort[i, :] = w_cohort_st
         pi[i, :] = pi_st
+        Delta_bar_parti[i] = np.sum(Delta_s_t * invest_tracker_t * f_st) / np.sum(invest_tracker_t * f_st)
+        Delta_bar_long[i] = np.sum(Delta_s_t * long_t * f_st) / np.sum(long_t * f_st)
+        total_c_short = np.sum(short_t * f_st)
+        if total_c_short == 0:
+            Delta_bar_short[i] = np.nan
+        else:
+            Delta_bar_short[i] = np.sum(Delta_s_t * short_t * f_st) / total_c_short
 
     popu_parti = np.sum(cohort_size * invest_tracker, 1)
     popu_can_short = np.sum(cohort_size * can_short_tracker, 1)
     popu_short = np.sum(cohort_size * short, 1)
     popu_long = np.sum(cohort_size * long, 1)
-    # Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
     f_parti = np.sum(invest_tracker * f_st * dt, 1)
     f_short = np.sum(short * f_st * dt, 1)
     f_long = np.sum(long * f_st * dt, 1)
@@ -561,8 +565,6 @@ def simulate_cohorts_partial_constraint(
         Delta,
         d_eta,
         pi,
-        f_parti,
-        Delta_bar_parti,
         dR,
         w,
         w_cohort,
@@ -581,6 +583,9 @@ def simulate_cohorts_partial_constraint(
         can_short_tracker,
         long,
         short,
+        Delta_bar_parti,
+        Delta_bar_long,
+        Delta_bar_short,
     )
 
 

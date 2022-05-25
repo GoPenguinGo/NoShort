@@ -128,6 +128,9 @@ fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('Zt and market bias' + '.png', dpi=500)
 plt.show()
 
+# Regression
+
+
 #######################################
 ############ GRAPH  FOUR ##############
 #######################################
@@ -173,11 +176,11 @@ y53 = np.sum(var[:, tau_cutoff3:], axis=1)
 y54 = np.sum(var[:, ], axis=1)
 fig, ax1 = plt.subplots(figsize=(15, 5))
 ax1.set_ylabel('Short-sale demand composition of age groups', color=color2)
-ax1.set_ylim([0, 0.1])
-ax1.fill_between(t, y51, color = 'steelblue', linewidth = 0.4, label = '20 < Age <= 35, youngest quartile')
-ax1.fill_between(t, y52, y51, color = 'darkseagreen', linewidth = 0.4, label = '35 < Age <= 55')
-ax1.fill_between(t, y53, y52, color = 'moccasin', linewidth = 0.4, label= '55 < Age <= 89')
-ax1.fill_between(t, y54, y53, color = 'pink', linewidth = 0.4, label= 'Age > 89, oldest quartile')
+ax1.set_ylim([0, 0.02])
+ax1.fill_between(t, y51, color = 'steelblue', linewidth = 0.1, label = '20 < Age <= 35, youngest quartile')
+ax1.fill_between(t, y52, y51, color = 'darkseagreen', linewidth = 0.1, label = '35 < Age <= 55')
+ax1.fill_between(t, y53, y52, color = 'moccasin', linewidth = 0.1, label= '55 < Age <= 89')
+ax1.fill_between(t, y54, y53, color = 'pink', linewidth = 0.1, label= 'Age > 89, oldest quartile')
 # ax1.fill_between(t, y51, color='lavender', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
 # ax1.fill_between(t, y52, y51, color='lightsteelblue', linewidth=0.4, label='35 < Age <= 55')
 # ax1.fill_between(t, y53, y52, color='steelblue', linewidth=0.4, label='55 < Age <= 89')
@@ -190,11 +193,112 @@ ax2.set_ylabel('Zt', color=color5)
 ax2.plot(t, y0, color=color5, linewidth=0.5)
 ax2.tick_params(axis='y', labelcolor=color5)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and short sale composition' + '.png', dpi = 500)
+#plt.savefig('Zt and short sale composition' + '.png', dpi = 500)
 plt.show()
 
 
 
+# illustrate who are investing and when do they quit
+nn = 10
+length = len(t)
+pi_time_series = np.zeros((nn, length))
+starts = np.zeros(nn)
+for i in range(nn):
+    start = int((i + 5) * 25 * (1 / dt))
+    starts[i] = start*dt
+    for j in range(length):
+        if j < start:
+            pi_time_series[i, j] = np.nan
+        else:
+            cohort_rank = length - (j - start) - 1
+            a = pi_drop[j, cohort_rank]
+            pi_time_series[i, j] = a
+            if a == 0:
+                pi_time_series[i, j + 1: j + 8] = 0
+                pi_time_series[i, j + 8:] = np.nan
+                break
+
+colors = ['darkmagenta',  'midnightblue','green', 'saddlebrown',  'darkgreen','firebrick', 'purple', 'blue', 'olivedrab', 'darkviolet']
+fig, ax1 = plt.subplots(figsize=(15, 5))
+ax1.set_xlabel('Time in simulation, one random path')
+ax1.set_ylabel('Zt', color=color5)
+ax1.plot(t, y0, color=color5, linewidth=0.5)
+ax1.tick_params(axis='y', labelcolor=color5)
+ax2 = ax1.twinx()
+ax2.set_ylabel('Investment in stock market', color=color2)
+ax2.set_ylim([-0.1, 25])
+for i in range(nn):
+    y6 = pi_time_series[i]
+    plt.vlines(starts[i], ymax=25, ymin=0, color='grey', linestyle = '--', linewidth=0.4)
+    ax2.plot(t, y6, color=colors[i], linewidth=0.4)
+ax2.tick_params(axis='y', labelcolor=color2)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and pi time series' + '.png', dpi=500)
+plt.show()
+
+
+
+#######################################
+############ GRAPH  FIVE ##############
+#######################################
+# The rich can short
+# compare theta
+# plot the market price of risk
+y21 = theta_comp
+y22 = theta_drop
+y71 = theta_free
+
+fig, ax1 = plt.subplots(figsize=(15, 5))
+ax1.set_xlabel('Time in simulation, one random path')
+ax1.set_ylabel('Zt', color=color5)
+ax1.plot(t, y0, color=color5, linewidth=0.5)
+ax1.tick_params(axis='y', labelcolor=color5)
+ax2 = ax1.twinx()
+ax2.set_ylabel('Market price of risk', color=color2)
+ax2.set_ylim([-1, 1])
+ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
+ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
+ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
+#ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+ax2.tick_params(axis='y', labelcolor=color2)
+plt.legend()
+# fig.suptitle('Zt and Market Price of Risk')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
+plt.show()
+
+
+# Compare the bias between investors having long and short positions
+y72 = popu_parti_free
+y73 = popu_short_free
+y74 = Delta_bar_long_free
+y75 = Delta_bar_short_free
+# todo: something seems wrong with f_short_free
+# for i in range(Nt):
+#     if f_short_free[i] < 0.01:
+#         y75[i] = 0
+#     else:
+#         y75[i] = np.sum(Delta_free[i] * f_free[i] * short_free[i] * dt) / f_short_free[i]
+
+fig, ax1 = plt.subplots(figsize=(15, 5))
+ax1.set_xlabel('Time in simulation, one random path')
+ax1.set_ylabel('Zt', color=color5)
+ax1.plot(t, y0, color=color5, linewidth=0.5)
+ax1.tick_params(axis='y', labelcolor=color5)
+ax2 = ax1.twinx()
+ax2.set_ylabel('Market price of risk', color=color2)
+ax2.set_ylim([-0.5, 1])
+ax2.plot(t, y72, color='darkblue', linewidth=0.6, label='% investors')
+ax2.plot(t, y73, color='darkgreen', linewidth=0.6, label='% Short sellers')
+ax2.plot(t, y74, color='blue', linewidth=0.4, label='Average bias long')
+ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
+#ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+ax2.tick_params(axis='y', labelcolor=color2)
+plt.legend()
+# fig.suptitle('Zt and Market Price of Risk')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
+plt.show()
 
 
 

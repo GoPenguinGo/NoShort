@@ -140,3 +140,49 @@ erp_hat_S_drop_matrix = np.zeros(
 Et_drop_matrix = np.zeros((Mpaths, Nt))
 Vt_drop_matrix= np.zeros((Mpaths, Nt))
 dR_drop_matrix = np.zeros((Mpaths, Nt))
+
+
+
+
+
+######################## for the complete market
+# Store the values from the main loop
+mu_C_comp_matrix = np.zeros((Mpaths, Nt))
+sigma_C_comp_matrix = np.zeros((Mpaths, Nt))
+delta_comp_matrix = np.zeros((Mpaths, Nt, Nc))
+r_comp_matrix = np.zeros((Mpaths, Nt))
+f_comp_matrix = np.zeros((Mpaths, Nt, Nc))
+theta_comp_matrix = np.zeros((Mpaths, Nt))
+pi_comp_matrix = np.zeros((Mpaths, Nt, Nc))
+f_parti_comp_matrix = np.zeros((Mpaths, Nt))
+parti_comp_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_parti_comp_matrix = np.zeros((Mpaths, Nt))
+w_comp_matrix = np.zeros((Mpaths, Nt, Nc))
+w_cohort_comp_matrix = np.zeros((Mpaths, Nt, Nc))
+age_comp_matrix = np.zeros((Mpaths, Nt))
+
+# Expected returns
+mu_S_comp_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+mu_S_s_comp_matrix = np.zeros(
+    (Mpaths, Nt, Nc)
+)  # Expected returns under the measure of the agent we track
+mu_hat_S_comp_matrix = np.zeros(
+    (Mpaths, Nt)
+)  # Simple average of expected returns, or consensus belief
+
+# Equity risk premium
+erp_S_comp_matrix = np.zeros(
+    (Mpaths, Nt)
+)
+
+erp_S_s_comp_matrix = np.zeros(
+    (Mpaths, Nt, Nc)
+)
+erp_hat_S_comp_matrix = np.zeros(
+    (Mpaths, Nt)
+)
+
+
+Et_comp_matrix = np.zeros((Mpaths, Nt))
+Vt_comp_matrix = np.zeros((Mpaths, Nt))
+dR_comp_matrix = np.zeros((Mpaths, Nt))

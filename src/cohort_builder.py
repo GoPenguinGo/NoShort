@@ -246,8 +246,8 @@ def build_cohorts_partial_constraint(
             )
         else:
             # add a new cohort in the trackers
-            invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market
-            can_short_tracker = np.append(can_short_tracker, 0)  # all cohorts that are allowed to short
+            invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market, new cohort by default can invest
+            can_short_tracker = np.append(can_short_tracker, 0)  # all cohorts that are allowed to short, new cohort by default can't short
             cohort_size_short = cohort_size[-i - 1:]
 
             if mode == 'back_collect' and good_time_build[i - 1] == 1:
@@ -266,8 +266,8 @@ def build_cohorts_partial_constraint(
             Delta_s_t_possible = Delta_s_t * invest_tracker
             wealth_cutoff = find_the_rich(
                     indiv_w_possible, cohort_size_possible, top=0.05
-                )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                )  # find the cohorts that make the richest 5% pupolation in the current period that are still in the market
+            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can start shorting in this period
             can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
 
             theta_t = bisection_partial_constraint(
