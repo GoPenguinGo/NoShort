@@ -5,7 +5,7 @@ from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
 from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
 from src.param import *
 from src.stats import shocks, good_times
-from numba import jit
+
 
 
 def simulate(
@@ -18,7 +18,7 @@ def simulate(
     mu_Y: float,
     sigma_Y: float,
     beta: float,
-    Npre: float,
+    Npre: int,
     T_hat: int,
     dZ_build: np.ndarray,
     dZ: np.ndarray,

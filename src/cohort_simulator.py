@@ -46,6 +46,10 @@ def simulate_cohorts(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -163,7 +167,6 @@ def simulate_cohorts(
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
-        # todo: need to change the updating mechanism of Delta_s_t once a cohort quits the stock market
         dDelta_s_t = (
             post_var(sigma_Y, Vhat, tau) / sigma_Y**2
                      ) * (
@@ -218,7 +221,7 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
-        if mode == 'complete':
+        if mode == 'comp':
             f_st_standard = f_st * dt
             Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
             theta_t = sigma_Y - Delta_bar_parti_t
@@ -242,9 +245,6 @@ def simulate_cohorts(
         mu_S_st = (
                 mu_S_t + sigma_S * Delta_s_t
         )  # expected stock return for agent cohorts
-        # muhat_S_t = mu_S_t + sigma_S * np.sum(
-        #     cohort_size * Delta_s_t
-        # )  # survey average forecast
 
         # store the results
         dR[i] = dR_t  # realized return from dZt
@@ -252,7 +252,6 @@ def simulate_cohorts(
         r[i] = r_t
         mu_S[i] = mu_S_t
         mu_S_s[i, :] = mu_S_st
-        # mu_hat_S[i] = muhat_S_t
         f[i, :] = f_st
         Delta[i, :] = Delta_s_t
         max[i, :] = MaxThetaDelta_s_t
@@ -264,7 +263,6 @@ def simulate_cohorts(
         w_cohort[i, :] = w_cohort_st
         age[i] = age_t
         n_parti[i] = n_parti_t
-        #short[i,:] = want_to_short_t
 
     return (
         mu_S,
@@ -286,7 +284,6 @@ def simulate_cohorts(
     )
 
 
-# todo: edit the description of the function
 def simulate_cohorts_partial_constraint(
         Y: np.ndarray,
         biasvec: np.ndarray,
@@ -328,15 +325,31 @@ def simulate_cohorts_partial_constraint(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
-    """"" Simulate the economy forward
+    """"" Simulate the economy forward, partial constraint case
     Args:
         biasvec (np.ndarray): pre-trading period shocks to form beliefs of the initial cohort, shape(Npre,)
         dZt (np.ndarray): random shocks, shape (Nt)
         Nt (int): number of periods in the simulation
         Nc (int): number of cohorts in the economy
         tau (np.ndarray): t-s, shape(Nt)
-        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc)
         dt (float): per unit of time
         rho (float): discount factor
         nu (float): rate of birth and death
@@ -357,24 +370,35 @@ def simulate_cohorts_partial_constraint(
         invest_tracker (np.ndarry): shape(Nt)
 
     Returns:
-        Xt2 (np.ndarray): xi_t * Yt, shape(Nt, )
-        part1 (np.ndarray): Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11), shape(Nc, )
         mu_S (np.ndarray): expected return under true measure at t, shape(Nt, )
         mu_S_s (np.ndarray): expected stock return each cohort, shape(Nt, Nc, )
-        mu_hat_S (np.ndarray): survey belief in the economy, shape(Nt, )
         r (np.ndarray): interest rate, shape(Nt, )
         theta (np.ndarray): market price of risk, shape(Nt, )
-        # muC_s_t (np.ndarray): drift of individual consumption, shape(Nc, )
-        # sigmaC_s_t (np.ndarray): diffusion of individual consumption, shape(Nc, )
-        BIGF (np.ndarray): consumption share over time, shape(Nt, Nc, )
-        BIGDELTA (np.ndarray): bias over time, shape(Nt, Nc, )
-        BIGMAX (np.ndarray): max(-theta, delta_s_t) over time, shape(Nt, Nc, )
-        BIGPORT (np.ndarray): portfolio choice over time, shape(Nt, Nc, )
-        BIGPOPU (np.ndarray): population that invest in stocks over time, shape(Nt, )
-        BIGFCONDI (np.ndarray): aggregate consumption share over time conditional on invest in stocks, shape(Nt, )
-        BIGDELTABARCONDI (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
-        dR (np.ndarray): change of stock returns over time, shape(Nt, )
-
+        f (np.ndarray): consumption share over time, shape(Nt, Nc, )
+        Delta (np.ndarray): bias over time, shape(Nt, Nc, )
+        d_eta (np.ndarray): change of eta, shape(Nt, Nc, )
+        pi (np.ndarray): portfolio choice over time, shape(Nt, Nc, )
+        dR (np.ndarray): objective stock returns over time, shape(Nt, )
+        w (np.ndarray): individual wealth over time, shape(Nt, Nc, )
+        w_cohort (np.ndarray): cohort wealth over time, shape(Nt, Nc, )
+        popu_parti (np.ndarray): population that invest in stocks over time, shape(Nt, )
+        popu_can_short (np.ndarray): population that can short over time, shape(Nt, )
+        popu_short (np.ndarray): population that actually short in stocks over time, shape(Nt, )
+        popu_long (np.ndarray): population that actually long in stocks over time, shape(Nt, )
+        f_parti (np.ndarray): aggregate consumption share over time conditional on investing in stocks, shape(Nt, )
+        f_short (np.ndarray): aggregate consumption share over time conditional on shorting stocks, shape(Nt, )
+        f_long (np.ndarray): aggregate consumption share over time conditional on longing stocks, shape(Nt, )
+        age_parti (np.ndarray):  average age participating in the stock market, shape(Nt, )
+        age_short (np.ndarray):  average age shorting the stock market, shape(Nt, )
+        age_long (np.ndarray):  average age longing the stock market, shape(Nt, )
+        n_parti (np.ndarray): number of cohorts participating in the stock market, shape(Nt, )
+        invest_tracker (np.ndarray): tracks if a cohort is still in the market, shape(Nt, Nc, )
+        can_short_tracker (np.ndarray): tracks if a cohort can short, shape(Nt, Nc, )
+        long (np.ndarray): tracks all the cohorts over time, shape(Nt, Nc, )
+        short(np.ndarray): tracks all the cohorts over time, shape(Nt, Nc, )
+        Delta_bar_parti (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
+        Delta_bar_long (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
+        Delta_bar_short (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
     """ ""
     # Initializing variables
     # cohort-specific terms:
@@ -554,7 +578,6 @@ def simulate_cohorts_partial_constraint(
     return (
         mu_S,
         mu_S_s,
-        # mu_hat_S,
         r,
         theta,
         f,

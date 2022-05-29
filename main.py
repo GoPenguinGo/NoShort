@@ -345,7 +345,7 @@ for i in range(nn):
             pi_time_series[i, j] = np.nan
         else:
             cohort_rank = length - (j - start) - 1
-            a = pi_drop[j, cohort_rank]
+            a = y6[j, cohort_rank]
             pi_time_series[i, j] = a
             if a == 0:
                 pi_time_series[i, j + 1: j + 8] = 0
@@ -375,8 +375,7 @@ plt.show()
 ############ GRAPH  FIVE ##############
 #######################################
 # The rich can short
-# compare theta
-# plot the market price of risk
+# compare and plot theta
 fig, ax1 = plt.subplots(figsize=(15, 5))
 ax1.set_xlabel('Time in simulation, one random path')
 ax1.set_ylabel('Zt', color=color5)

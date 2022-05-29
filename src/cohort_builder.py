@@ -21,13 +21,10 @@ def build_cohorts(
     T_hat: float,
     mode: str
 ) -> Tuple[
-    # np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    # np.ndarray,
     np.ndarray,
     np.ndarray,
 ]:
@@ -43,7 +40,7 @@ def build_cohorts(
         mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
         beta (float): marginal rate of wealth tax
-        # omega (float): marginal propensity to consume
+        Npre (int): pre-trading periods
         T_hat (float): pre-trading years
         mode (str): describes the mode
 
@@ -60,12 +57,7 @@ def build_cohorts(
     eta_bar = np.ones(1)
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
-    invest_tracker = np.ones(Nc) if mode == 'complete' else np.ones(Npre)
-    if mode == 'learn_hard':
-        bad_times = dZt <= np.percentile(dZt, 1)  # bottom 1%
-        invest = np.ones(Npre)
-        invest_when_bad = np.ones(Npre)
-
+    invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Npre)
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
 
@@ -98,7 +90,7 @@ def build_cohorts(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Npre or mode == 'complete':
+        if i < Npre or mode == 'comp':
             MaxThetaDelta_s_t = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
@@ -110,7 +102,7 @@ def build_cohorts(
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
                     solve_theta, lowest_bound, 10, possible_cons_share, possible_delta_st, sigma_Y
-                )  # solve for theta
+                )  # solve for theta, 10 is a far away upper bound for theta
                 a = Delta_s_t + theta_t
                 invest = (a >= 0)
                 invest_tracker = invest * invest_tracker
@@ -171,7 +163,6 @@ def build_cohorts_partial_constraint(
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
-        # todo: edit the description
         dZt (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
         Nc (int): number of periods  = number of cohorts in the economy
         dt (float): unit of time
@@ -181,21 +172,19 @@ def build_cohorts_partial_constraint(
         mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
         beta (float): marginal rate of wealth tax
-        # omega (float): marginal propensity to consume
+        Npre (int): pre-trading periods
         T_hat (float): pre-trading years
+        good_time_build (np.ndarray): an information indicator that attracts attention of all agents
         mode (str): describes the mode
 
     Returns:
-        # DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nc, )
-        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc, )
-        # Xt (np.ndarray): xi_t * Yt, shape(Nc, )
+        f_st (np.ndarray): consumption shares
         Delta_s_t (np.ndarray): bias, shape(Nc, )
-        # Yt (np.ndarray): aggregate output, shape(Nc, )
-        # Zt (np.ndarray): cumulated shocks, shape(Nc, )
-        # consumptionshare (np.ndarray): shape(Nc, )
-        tau (np.ndarray): t-s, shape(Nc, )
-        MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
-        # TODO: @chingyulin: use NamedTuple for the return
+        eta_st_ss (np.ndarray): consumption change process, shape(Nc, )
+        eta_bar (np.ndarray): consumption weighted disagreement, shape(Nc, )
+        d_eta_st_ss (np.ndarray): summarizes xi_st, shape(Nc, )
+        invest_tracker (np.ndarray): track if a cohort is still in the risky market
+        can_short_tracker (np.ndarray): track if a cohort can short
     """
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     d_eta_st_ss = np.zeros(1)  # disagreement, eq(11)
