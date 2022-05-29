@@ -28,13 +28,16 @@ T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
 
-mode1 = 'keep'
-mode2 = 'drop'
-mode3 = 'complete'
-mode4 = 'rich_free'
-mode5 = 'back_collect'
-mode6 = 'back_renew'
-time_tolerance = 5
+
+# generate values that are fixed in the main loop
+tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
+cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+
+# create age quartiles for analysis
+cummu_popu = np.cumsum(cohort_size)
+tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 
 Mpaths = 20
 
@@ -63,14 +66,29 @@ sigma_C_matrix = np.zeros((Mpaths, Nt))
 delta_matrix = np.zeros((Mpaths, Nt, Nc))
 r_matrix = np.zeros((Mpaths, Nt))
 f_matrix = np.zeros((Mpaths, Nt, Nc))
+f_short_matrix = np.zeros((Mpaths, Nt, Nc))
+f_long_matrix = np.zeros((Mpaths, Nt, Nc))
 theta_matrix = np.zeros((Mpaths, Nt))
 pi_matrix = np.zeros((Mpaths, Nt, Nc))
 f_parti_matrix = np.zeros((Mpaths, Nt))
-parti_matrix = np.zeros((Mpaths, Nt))
+popu_parti_matrix = np.zeros((Mpaths, Nt))
+popu_can_short_matrix = np.zeros((Mpaths, Nt))
+popu_short_matrix = np.zeros((Mpaths, Nt))
+popu_long_matrix = np.zeros((Mpaths, Nt))
 Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_long_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_short_matrix = np.zeros((Mpaths, Nt))
 w_matrix = np.zeros((Mpaths, Nt, Nc))
 w_cohort_matrix = np.zeros((Mpaths, Nt, Nc))
-age_matrix = np.zeros((Mpaths, Nt))
+age_parti_matrix = np.zeros((Mpaths, Nt))
+age_short_matrix = np.zeros((Mpaths, Nt))
+age_long_matrix = np.zeros((Mpaths, Nt))
+n_parti_matrix = np.zeros((Mpaths, Nt))
+
+invest_tracker_matrix = np.zeros((Mpaths, Nt, Nc))
+can_short_tracker_matrix = np.zeros((Mpaths, Nt, Nc))
+long_indicator_matrix = np.zeros((Mpaths, Nt, Nc))
+short_indicator_matrix = np.zeros((Mpaths, Nt, Nc))
 
 # Expected returns
 mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
@@ -97,92 +115,3 @@ erp_hat_S_matrix = np.zeros(
 Et_matrix = np.zeros((Mpaths, Nt))
 Vt_matrix = np.zeros((Mpaths, Nt))
 dR_matrix = np.zeros((Mpaths, Nt))
-
-
-######################## for the drop case
-# Store the values from the main loop
-mu_C_drop_matrix = np.zeros((Mpaths, Nt))
-sigma_C_drop_matrix = np.zeros((Mpaths, Nt))
-delta_drop_matrix = np.zeros((Mpaths, Nt, Nc))
-r_drop_matrix = np.zeros((Mpaths, Nt))
-f_drop_matrix = np.zeros((Mpaths, Nt, Nc))
-theta_drop_matrix = np.zeros((Mpaths, Nt))
-pi_drop_matrix = np.zeros((Mpaths, Nt, Nc))
-f_parti_drop_matrix = np.zeros((Mpaths, Nt))
-parti_drop_matrix = np.zeros((Mpaths, Nt))
-Delta_bar_parti_drop_matrix = np.zeros((Mpaths, Nt))
-w_drop_matrix = np.zeros((Mpaths, Nt, Nc))
-w_cohort_drop_matrix = np.zeros((Mpaths, Nt, Nc))
-age_drop_matrix = np.zeros((Mpaths, Nt))
-
-# Expected returns
-mu_S_drop_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-mu_S_s_drop_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)  # Expected returns under the measure of the agent we track
-mu_hat_S_drop_matrix = np.zeros(
-    (Mpaths, Nt)
-)  # Simple average of expected returns, or consensus belief
-
-# Equity risk premium
-erp_S_drop_matrix = np.zeros(
-    (Mpaths, Nt)
-)
-
-erp_S_s_drop_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)
-erp_hat_S_drop_matrix = np.zeros(
-    (Mpaths, Nt)
-)
-
-
-Et_drop_matrix = np.zeros((Mpaths, Nt))
-Vt_drop_matrix= np.zeros((Mpaths, Nt))
-dR_drop_matrix = np.zeros((Mpaths, Nt))
-
-
-
-
-
-######################## for the complete market
-# Store the values from the main loop
-mu_C_comp_matrix = np.zeros((Mpaths, Nt))
-sigma_C_comp_matrix = np.zeros((Mpaths, Nt))
-delta_comp_matrix = np.zeros((Mpaths, Nt, Nc))
-r_comp_matrix = np.zeros((Mpaths, Nt))
-f_comp_matrix = np.zeros((Mpaths, Nt, Nc))
-theta_comp_matrix = np.zeros((Mpaths, Nt))
-pi_comp_matrix = np.zeros((Mpaths, Nt, Nc))
-f_parti_comp_matrix = np.zeros((Mpaths, Nt))
-parti_comp_matrix = np.zeros((Mpaths, Nt))
-Delta_bar_parti_comp_matrix = np.zeros((Mpaths, Nt))
-w_comp_matrix = np.zeros((Mpaths, Nt, Nc))
-w_cohort_comp_matrix = np.zeros((Mpaths, Nt, Nc))
-age_comp_matrix = np.zeros((Mpaths, Nt))
-
-# Expected returns
-mu_S_comp_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-mu_S_s_comp_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)  # Expected returns under the measure of the agent we track
-mu_hat_S_comp_matrix = np.zeros(
-    (Mpaths, Nt)
-)  # Simple average of expected returns, or consensus belief
-
-# Equity risk premium
-erp_S_comp_matrix = np.zeros(
-    (Mpaths, Nt)
-)
-
-erp_S_s_comp_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)
-erp_hat_S_comp_matrix = np.zeros(
-    (Mpaths, Nt)
-)
-
-
-Et_comp_matrix = np.zeros((Mpaths, Nt))
-Vt_comp_matrix = np.zeros((Mpaths, Nt))
-dR_comp_matrix = np.zeros((Mpaths, Nt))
