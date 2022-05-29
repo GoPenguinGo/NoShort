@@ -48,16 +48,12 @@ def build_cohorts(
         mode (str): describes the mode
 
     Returns:
-        # DeltaConditional (np.ndarray): consumption weighted aggregate max(delta_s_t, -theta_t), as in eq(19), shape(Nc, )
-        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc, )
-        # Xt (np.ndarray): xi_t * Yt, shape(Nc, )
+        f_st (np.ndarray): consumption shares
         Delta_s_t (np.ndarray): bias, shape(Nc, )
-        # Yt (np.ndarray): aggregate output, shape(Nc, )
-        # Zt (np.ndarray): cumulated shocks, shape(Nc, )
-        # consumptionshare (np.ndarray): shape(Nc, )
-        tau (np.ndarray): t-s, shape(Nc, )
+        eta_st_ss (np.ndarray): consumption change process, shape(Nc, )
+        eta_bar (np.ndarray): consumption weighted disagreement, shape(Nc, )
         MaxThetaDelta_s_t (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
-        # TODO: @chingyulin: use NamedTuple for the return
+        invest_tracker (np.ndarray): track if a cohort is still in the risky market
     """
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
     MaxThetaDelta_s_t = np.zeros(1)  # disagreement, eq(11)
@@ -141,6 +137,7 @@ def build_cohorts(
         MaxThetaDelta_s_t,
         invest_tracker,
     )
+
 
 
 
@@ -267,7 +264,7 @@ def build_cohorts_partial_constraint(
             wealth_cutoff = find_the_rich(
                     indiv_w_possible, cohort_size_possible, top=0.05
                 )  # find the cohorts that make the richest 5% pupolation in the current period that are still in the market
-            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can start shorting in this period
+            can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can start shorting in this period if they couldn't before
             can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
 
             theta_t = bisection_partial_constraint(

@@ -262,7 +262,6 @@ ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
 #ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
 ax2.tick_params(axis='y', labelcolor=color2)
 plt.legend()
-# fig.suptitle('Zt and Market Price of Risk')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
 plt.show()
@@ -273,12 +272,6 @@ y72 = popu_parti_free
 y73 = popu_short_free
 y74 = Delta_bar_long_free
 y75 = Delta_bar_short_free
-# todo: something seems wrong with f_short_free
-# for i in range(Nt):
-#     if f_short_free[i] < 0.01:
-#         y75[i] = 0
-#     else:
-#         y75[i] = np.sum(Delta_free[i] * f_free[i] * short_free[i] * dt) / f_short_free[i]
 
 fig, ax1 = plt.subplots(figsize=(15, 5))
 ax1.set_xlabel('Time in simulation, one random path')
@@ -295,11 +288,25 @@ ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
 #ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
 ax2.tick_params(axis='y', labelcolor=color2)
 plt.legend()
-# fig.suptitle('Zt and Market Price of Risk')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
 plt.show()
 
+
+
+#######################################
+############ GRAPH  SIX ###############
+#######################################
+
+# test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
+
+theta_hat = theta_drop + Delta_bar_parti_drop  # wealth weighted average subjective risk premia
+# regression:
+x1 = dZ.reshape((-1,1))
+y_obj_theta = theta_drop
+y_subj_theta = theta_hat
+model_obj_theta = LinearRegression().fit(x1, y_obj_theta)
+model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
 
 
 

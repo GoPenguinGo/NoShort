@@ -76,24 +76,22 @@ def simulate_cohorts(
         invest_tracker (np.ndarry): shape(Nt)
 
     Returns:
-        Xt2 (np.ndarray): xi_t * Yt, shape(Nt, )
-        part1 (np.ndarray): Consumption of each cohort, eq(16), where eta_s_t / eta_s_s follows eq(11), shape(Nc, )
         mu_S (np.ndarray): expected return under true measure at t, shape(Nt, )
         mu_S_s (np.ndarray): expected stock return each cohort, shape(Nt, Nc, )
-        mu_hat_S (np.ndarray): survey belief in the economy, shape(Nt, )
         r (np.ndarray): interest rate, shape(Nt, )
         theta (np.ndarray): market price of risk, shape(Nt, )
-        # muC_s_t (np.ndarray): drift of individual consumption, shape(Nc, )
-        # sigmaC_s_t (np.ndarray): diffusion of individual consumption, shape(Nc, )
-        BIGF (np.ndarray): consumption share over time, shape(Nt, Nc, )
-        BIGDELTA (np.ndarray): bias over time, shape(Nt, Nc, )
-        BIGMAX (np.ndarray): max(-theta, delta_s_t) over time, shape(Nt, Nc, )
-        BIGPORT (np.ndarray): portfolio choice over time, shape(Nt, Nc, )
-        BIGPOPU (np.ndarray): population that invest in stocks over time, shape(Nt, )
-        BIGFCONDI (np.ndarray): aggregate consumption share over time conditional on invest in stocks, shape(Nt, )
-        BIGDELTABARCONDI (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
+        f (np.ndarray): consumption share over time, shape(Nt, Nc, )
+        Delta (np.ndarray): bias over time, shape(Nt, Nc, )
+        max (np.ndarray): max(-theta, delta_s_t) over time, shape(Nt, Nc, )
+        pi (np.ndarray): portfolio choice over time, shape(Nt, Nc, )
+        parti (np.ndarray): population that invest in stocks over time, shape(Nt, )
+        f_parti (np.ndarray): aggregate consumption share over time conditional on invest in stocks, shape(Nt, )
+        Delta_bar_parti (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
         dR (np.ndarray): change of stock returns over time, shape(Nt, )
-
+        w (np.ndarray): individual wealth, shape(Nt, Nc, )
+        w_cohort (np.ndarray): cohort wealth = individual wealth * cohort size, shape(Nt, Nc, )
+        age (np.ndarray):  average age participating in the stock market, shape(Nt, )
+        n_parti (np.ndarray): number of cohorts participating in the stock market, shape(Nt, )
     """ ""
     # Initializing variables
     # cohort-specific terms:
@@ -271,7 +269,6 @@ def simulate_cohorts(
     return (
         mu_S,
         mu_S_s,
-        # mu_hat_S,
         r,
         theta,
         f,
@@ -286,7 +283,6 @@ def simulate_cohorts(
         w_cohort,
         age,
         n_parti,
-        #short,
     )
 
 
