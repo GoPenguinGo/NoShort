@@ -21,7 +21,7 @@ for k in range(Mpaths):
     s = time.time()
     time_s = time.time()
 
-    if k == Mpaths - 1:
+    if k == Mpaths - 1:  # in the last round, use the shocks seen in the slides
         dZ_build = np.load('dZt_build_demo.npy')  # dZt for the build function
         dZ = np.load('dZt_demo.npy')  # dZt for the simulate function
 
@@ -36,7 +36,6 @@ for k in range(Mpaths):
     Z_matrix[k, :] = Z
 
     for mode in modes:
-
         if mode == 'keep' or 'drop' or 'complete':
             (
                 mu_S,
