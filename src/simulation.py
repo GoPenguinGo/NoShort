@@ -42,7 +42,7 @@ def simulate(
         np.ndarray,
         np.ndarray,
 ]:
-    '''
+    '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     :param mode: scenario of the function, see param for scenario names
     :param Nc: number of cohorts
     :param dt: time increment
