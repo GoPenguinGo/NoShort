@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 
 # different scenarios
 modes = ['keep', 'drop', 'comp', 'rich_free', 'back_collect', 'back_renew']
+# modes = ['drop']
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 

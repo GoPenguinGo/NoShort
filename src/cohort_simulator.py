@@ -124,9 +124,6 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    if mode == 'learn_hard':
-        bad_times = dZt <= np.percentile(dZt, 10)  # bottom 10%
-
     for i in tqdm(range(Nt)):
         # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
         #       currently I let them update, but keep their "opinions" muted

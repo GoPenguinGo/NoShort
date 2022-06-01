@@ -15,15 +15,11 @@ beta = 0.015  # marginal rate of wealth tax
 # beta = 0.01
 omega = rho + nu - beta  # marginal propensity to consume
 
-# Some pre-calculations
-# D = (rho + nu) * (rho + nu - 4 * nu ** 2)
-# beta = (rho + nu - D ** 0.5) / (2 * nu)
-
 # Setting prior variance
-T_hat = 20  # Pre-trading period
 dt = 1 / 12  # time incremental
-Npre = int(T_hat / dt)
-Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+# T_hat = 20  # Pre-trading period
+# Npre = int(T_hat / dt)
+# Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
