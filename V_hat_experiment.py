@@ -13,8 +13,9 @@ from numba import jit
 from sklearn.linear_model import LinearRegression
 
 modes = ['drop', 'ric_free']
-T_hats = [dt, dt*2, dt*5, 1, 2, 3, 4, 5, 7, 10, 20, 30, 50]
-#T_hats = [dt, 1, 2, 5]
+# modes = ['rich_free']
+T_hats = [dt*2, dt*4, dt*7, 1, 2, 3, 4, 5, 7, 10]
+# T_hats = [1, 2, 5]
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -99,17 +100,17 @@ for mode in modes:
                 ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, dZ_build, dZ, tau,
                              cohort_size)
 
-                dR_matrix[k, l] = np.average(dR)
-                r_matrix[k, l] = np.average(r)
-                theta_matrix[k, l] = np.average(theta)
-                popu_parti_matrix[k, l] = np.average(popu_parti)
+                dR_matrix[k, l] = np.average(dR[1200:])
+                r_matrix[k, l] = np.average(r[1200:])
+                theta_matrix[k, l] = np.average(theta[1200:])
+                popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
                 invest = pi > 0
                 parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff3:], axis=1))
-                age_parti_matrix[k, l] = np.average(age_parti)
-                n_parti_matrix[k, l] = np.average(n_parti)
+                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
+                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
+                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                age_parti_matrix[k, l] = np.average(age_parti[1200:])
+                n_parti_matrix[k, l] = np.average(n_parti[1200:])
 
             else:
                 (
@@ -145,23 +146,23 @@ for mode in modes:
                 ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
                                                 T_hat, dZ_build, dZ, tau, cohort_size)
 
-                dR_matrix[k, l] = np.average(dR)
-                r_matrix[k, l] = np.average(r)
-                theta_matrix[k, l] = np.average(theta)
-                popu_parti_matrix[k, l] = np.average(popu_parti)
+                dR_matrix[k, l] = np.average(dR[1200:])
+                r_matrix[k, l] = np.average(r[1200:])
+                theta_matrix[k, l] = np.average(theta[1200:])
+                popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
                 invest = pi > 0
                 parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[:, tau_cutoff3:], axis=1))
-                age_parti_matrix[k, l] = np.average(age_parti)
-                n_parti_matrix[k, l] = np.average(n_parti)
+                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
+                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
+                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                age_parti_matrix[k, l] = np.average(age_parti[1200:])
+                n_parti_matrix[k, l] = np.average(n_parti[1200:])
 
             # covariance:
 
     # graphs:
     x = T_hats
-    y0 = (sigma_Y ** 2) / x
+    y0 = (np.ones(len(T_hats)) * sigma_Y ** 2) / x
     y1 = np.average(r_matrix, axis=1)
     y2 = np.average(theta_matrix, axis=1)
     y3 = np.average(popu_parti_matrix, axis=1)
@@ -191,7 +192,6 @@ for mode in modes:
         else:
             ax.set_ylabel('mean ' + xlabels[i])
         plt.savefig('initial window and ' + xlabels[i] + mode + '.png', dpi=500)
-        plt.show()
 
 
 
