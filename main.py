@@ -429,3 +429,40 @@ model_obj_theta = LinearRegression().fit(x1, y_obj_theta)
 model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
 
 
+#######################################
+########### GRAPH  SEVEN ##############
+#######################################
+
+# regressing difference in participarion on difference in experienced stock market returns
+# over all simulated paths
+
+young_age_cut = Nt - 20 / dt
+old_age_cut = Nt - 40 / dt
+young_prior = 20 / dt
+old_prior = 50 / dt
+diff_exprienced_growth = np.zeros((Mpaths, Nt - old_prior))
+diff_participation_rate = np.zeros((Mpaths, Nt - old_prior))
+for i in range(Nt - old_prior):
+    old_experienced_growth = np.average(dZ_matrix[:, i : i + old_prior])
+    young_experienced_growth = np.average(dZ_matrix[:, (i + old_prior - young_prior) : i + old_prior])
+    diff_exprienced_growth[:, i] = old_experienced_growth - young_experienced_growth
+
+    old_participation_rate = np.sum(y5[:, :old_age_cut], axis=1)  # not y5, but participation rate in matrix
+    young_participation_rate = np.sum(y5[:, young_age_cut:], axis=1)
+    diff_participation_rate[:, i] = old_participation_rate - young_participation_rate
+
+a = np.zeros(Mpaths)
+
+for j in range(Mpaths):
+    model = LinearRegression().fit(diff_exprienced_growth[j], diff_participation_rate[j])
+    a[j] = model.coef_
+
+#######################################
+########### GRAPH  EIGHT ##############
+#######################################
+
+# describe the mean and variance of beliefs (wealth-weighted) against belief of the marginal investor
+# specific to one path
+# relates to the information index. right now beliefs of non-participants make little sense
+
+marginal_belief = (-theta_drop) * sigma_Y + mu_Y

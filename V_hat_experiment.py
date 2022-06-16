@@ -1,21 +1,16 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-from typing import Callable, Tuple
 from src.simulation import simulate, simulate_partial_constraint
-from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
-from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
 from src.param import *
-from src.stats import shocks, tau_calculator, good_times
-import concurrent.futures
-from numba import jit
-from sklearn.linear_model import LinearRegression
 
-modes = ['drop', 'ric_free']
-# modes = ['rich_free']
-T_hats = [dt*2, dt*4, dt*7, 1, 2, 3, 4, 5, 7, 10]
-# T_hats = [1, 2, 5]
+
+# modes = ['drop', 'ric_free']
+modes = ['rich_free']
+# modes = ['drop']
+# zoom_in = 'small'
+zoom_in = 'large'
+T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -171,12 +166,13 @@ for mode in modes:
     y33 = np.average(popu_age3_matrix, axis=1)
     y4 = np.average(age_parti_matrix, axis=1)
     y5 = np.average(n_parti_matrix, axis=1)
+    y6 = -y2 * sigma_Y + mu_Y
 
     xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'age of participants',
-               'number of cohorts']
-    ys = [y0, y1, y2, y3, y4, y5]
+               'number of cohorts', 'cutoff belief']
+    ys = [y0, y1, y2, y3, y4, y5, y6]
 
-    for i in range(6):
+    for i in range(7):
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         y = ys[i]
         if i == 3:
@@ -187,11 +183,12 @@ for mode in modes:
         else:
             ax.plot(x, y)
         ax.set_xlabel('initial window')
-        if i == 0:
+        if i == 0 or i == 6:
             ax.set_ylabel(xlabels[i])
         else:
             ax.set_ylabel('mean ' + xlabels[i])
-        plt.savefig('initial window and ' + xlabels[i] + mode + '.png', dpi=500)
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + '.png', dpi=500)
+        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
 
 
 
