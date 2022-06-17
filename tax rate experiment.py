@@ -5,8 +5,8 @@ from src.simulation import simulate, simulate_partial_constraint
 from src.param import *
 
 
-modes = ['drop']
-# modes = ['rich_free']
+# modes = ['drop']
+modes = ['rich_free']
 tax_rates = np.arange(0.005, 0.021, 0.002)
 tax_rate_dimension = len(tax_rates)
 
