@@ -19,6 +19,7 @@ def simulate(
     mu_Y: float,
     sigma_Y: float,
     beta: float,
+    omega: float,
     Npre: int,
     T_hat: int,
     dZ_build: np.ndarray,

@@ -10,16 +10,16 @@ sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
 
-beta = 0.015  # marginal rate of wealth tax
+# beta = 0.015  # marginal rate of wealth tax
 # beta = 0.02
 # beta = 0.01
-omega = rho + nu - beta  # marginal propensity to consume
+# omega = rho + nu - beta  # marginal propensity to consume
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
-# T_hat = 20  # Pre-trading period
-# Npre = int(T_hat / dt)
-# Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+T_hat = 20  # Pre-trading period
+Npre = int(T_hat / dt)
+Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
