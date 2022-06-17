@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 from src.stats import post_var
-from src.solver import bisection, solve_theta, bisection_partial_constraint, solve_theta_partial_constraint
+from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from numba import jit
 
@@ -124,9 +124,6 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    if mode == 'learn_hard':
-        bad_times = dZt <= np.percentile(dZt, 10)  # bottom 10%
-
     for i in tqdm(range(Nt)):
         # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
         #       currently I let them update, but keep their "opinions" muted
@@ -188,7 +185,7 @@ def simulate_cohorts(
             possible_delta_st = Delta_s_t * invest_tracker
             lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
             theta_t = bisection(
-                solve_theta, lowest_bound, 10, possible_cons_share, possible_delta_st, sigma_Y
+                solve_theta, lowest_bound, 20, possible_cons_share, possible_delta_st, sigma_Y
             )  # solve for theta
             a = Delta_s_t + theta_t
             invest = (a >= 0)
@@ -207,7 +204,7 @@ def simulate_cohorts(
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             f_st_standard = f_st * dt
             theta_t = bisection(
-                solve_theta, lowest_bound, 10, f_st_standard, Delta_s_t, sigma_Y
+                solve_theta, lowest_bound, 20, f_st_standard, Delta_s_t, sigma_Y
             )  # solve for theta
             MaxThetaDelta_s_t = np.maximum(
                 -theta_t, Delta_s_t
@@ -511,7 +508,7 @@ def simulate_cohorts_partial_constraint(
         )  # once rich, always can short
 
         theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint, -10, 10, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
+            solve_theta_partial_constraint, -20, 20, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
         )
         want_to_short = (Delta_s_t + theta_t) < 0
         constrained = invest_tracker_t * want_to_short * (

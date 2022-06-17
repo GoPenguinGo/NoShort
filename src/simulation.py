@@ -11,6 +11,7 @@ from src.stats import shocks, good_times
 def simulate(
     mode: str,
     Nc: int,
+    Nt: int,
     dt: float,
     rho: float,
     nu: float,
@@ -18,6 +19,7 @@ def simulate(
     mu_Y: float,
     sigma_Y: float,
     beta: float,
+    omega: float,
     Npre: int,
     T_hat: int,
     dZ_build: np.ndarray,
