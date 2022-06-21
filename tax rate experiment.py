@@ -1,3 +1,5 @@
+# from the graphs: tax rate is not very important
+
 import time
 import numpy as np
 import matplotlib.pyplot as plt
