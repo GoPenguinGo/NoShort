@@ -10,7 +10,7 @@ modes = ['rich_free']
 # modes = ['drop']
 # zoom_in = 'small'
 zoom_in = 'large'
-T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
+T_hats = dt * np.arange(1, 13, 2) if zoom_in == 'small' else np.arange(40, 51, 2)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -40,18 +40,12 @@ popu_age1_matrix = np.zeros((T_hat_dimension, Mpaths))
 popu_age2_matrix = np.zeros((T_hat_dimension, Mpaths))
 popu_age3_matrix = np.zeros((T_hat_dimension, Mpaths))
 
+belief_age1_matrix = np.zeros((T_hat_dimension, Mpaths))
+belief_age2_matrix = np.zeros((T_hat_dimension, Mpaths))
+belief_age3_matrix = np.zeros((T_hat_dimension, Mpaths))
+belief_age4_matrix = np.zeros((T_hat_dimension, Mpaths))
 
 # invest_tracker_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
-
-# Expected returns
-# mu_S_matrix = np.zeros((T_hat_dimension, Mpaths))  # Expected returns under the true measure
-# mu_S_s_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))  # Expected returns under the measure of the agent we track
-# mu_hat_S_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))  # Simple average of expected returns, or consensus belief
-
-# Equity risk premium
-# erp_S_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
-# erp_S_s_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
-# erp_hat_S_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
 
 Et_matrix = np.zeros((T_hat_dimension, Mpaths))
 Vt_matrix = np.zeros((T_hat_dimension, Mpaths))
@@ -92,20 +86,41 @@ for mode in modes:
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, dZ_build, dZ, tau,
+                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre, T_hat, dZ_build, dZ, tau,
                              cohort_size)
 
-                dR_matrix[k, l] = np.average(dR[1200:])
-                r_matrix[k, l] = np.average(r[1200:])
-                theta_matrix[k, l] = np.average(theta[1200:])
-                popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
+                dR_matrix[k, l] = np.mean(dR[1200:])
+                r_matrix[k, l] = np.mean(r[1200:])
+                theta_matrix[k, l] = np.mean(theta[1200:])
+                popu_parti_matrix[k, l] = np.mean(popu_parti[1200:])
                 invest = pi > 0
                 parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
-                age_parti_matrix[k, l] = np.average(age_parti[1200:])
-                n_parti_matrix[k, l] = np.average(n_parti[1200:])
+                popu_age1_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
+                popu_age2_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
+                popu_age3_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                age_parti_matrix[k, l] = np.mean(age_parti[1200:])
+                n_parti_matrix[k, l] = np.mean(n_parti[1200:])
+                belief = Delta * sigma_Y + mu_Y
+                weights = f * dt * invest
+                condi_weighted_belief = belief * weights
+                belief_age1_matrix[k,l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff1:], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff1:], axis=1)
+                )
+                belief_age2_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff2:tau_cutoff1], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff2:tau_cutoff1], axis=1)
+                )
+                belief_age3_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff3:tau_cutoff2], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff3:tau_cutoff2], axis=1)
+                )
+                belief_age4_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, :tau_cutoff3], axis=1) /
+                    np.sum(weights[1200:, :tau_cutoff3], axis=1)
+                )
+                age_parti_matrix[k, l] = np.mean(age_parti[1200:])
+                n_parti_matrix[k, l] = np.mean(n_parti[1200:])
 
             else:
                 (
@@ -141,38 +156,61 @@ for mode in modes:
                 ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
                                                 T_hat, dZ_build, dZ, tau, cohort_size)
 
-                dR_matrix[k, l] = np.average(dR[1200:])
-                r_matrix[k, l] = np.average(r[1200:])
-                theta_matrix[k, l] = np.average(theta[1200:])
-                popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
-                invest = pi > 0
-                parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
-                age_parti_matrix[k, l] = np.average(age_parti[1200:])
-                n_parti_matrix[k, l] = np.average(n_parti[1200:])
+                dR_matrix[k, l] = np.mean(dR[1200:])
+                r_matrix[k, l] = np.mean(r[1200:])
+                theta_matrix[k, l] = np.mean(theta[1200:])
+                popu_parti_matrix[k, l] = np.mean(popu_parti[1200:])
+                parti_rate = invest_tracker * cohort_size
+                popu_age1_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
+                popu_age2_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
+                popu_age3_matrix[k, l] = np.mean(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                belief = Delta * sigma_Y + mu_Y
+                weights = f * dt * invest_tracker
+                condi_weighted_belief = belief * weights
+                belief_age1_matrix[k,l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff1:], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff1:], axis=1)
+                )   # what if no one in the age group is participating?
+                belief_age2_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff2:tau_cutoff1], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff2:tau_cutoff1], axis=1)
+                )
+                belief_age3_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, tau_cutoff3:tau_cutoff2], axis=1) /
+                    np.sum(weights[1200:, tau_cutoff3:tau_cutoff2], axis=1)
+                )
+                belief_age4_matrix[k, l] = np.nanmean(
+                    np.sum(condi_weighted_belief[1200:, :tau_cutoff3], axis=1) /
+                    np.sum(weights[1200:, :tau_cutoff3], axis=1)
+                )
+                age_parti_matrix[k, l] = np.mean(age_parti[1200:])
+                n_parti_matrix[k, l] = np.mean(n_parti[1200:])
 
             # covariance:
+        print(l)
 
     # graphs:
     x = T_hats
     y0 = (np.ones(len(T_hats)) * sigma_Y ** 2) / x
-    y1 = np.average(r_matrix, axis=1)
-    y2 = np.average(theta_matrix, axis=1)
-    y3 = np.average(popu_parti_matrix, axis=1)
-    y31 = np.average(popu_age1_matrix, axis=1)
-    y32 = np.average(popu_age2_matrix, axis=1)
-    y33 = np.average(popu_age3_matrix, axis=1)
-    y4 = np.average(age_parti_matrix, axis=1)
-    y5 = np.average(n_parti_matrix, axis=1)
+    y1 = np.mean(r_matrix, axis=1)
+    y2 = np.mean(theta_matrix, axis=1)
+    y3 = np.mean(popu_parti_matrix, axis=1)
+    y31 = np.mean(popu_age1_matrix, axis=1)
+    y32 = np.mean(popu_age2_matrix, axis=1)
+    y33 = np.mean(popu_age3_matrix, axis=1)
+    y4 = np.mean(age_parti_matrix, axis=1)
+    y5 = np.mean(n_parti_matrix, axis=1)
     y6 = -y2 * sigma_Y + mu_Y
+    y71 = np.mean(belief_age1_matrix, axis=1)  # consumption-weighted beliefs for participants from each age group
+    y72 = np.mean(belief_age2_matrix, axis=1)
+    y73 = np.mean(belief_age3_matrix, axis=1)
+    y74 = np.mean(belief_age4_matrix, axis=1)
 
     xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'age of participants',
-               'number of cohorts', 'cutoff belief']
-    ys = [y0, y1, y2, y3, y4, y5, y6]
+               'number of cohorts', 'cutoff belief', 'belief of participants in age groups']
+    ys = [y0, y1, y2, y3, y4, y5, y6, y71]
 
-    for i in range(7):
+    for i in range(len(ys)):
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         y = ys[i]
         if i == 3:
@@ -180,6 +218,13 @@ for mode in modes:
             ax.fill_between(x, y32, y31, color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
             ax.fill_between(x, y33, y32, color='moccasin', linewidth=0.4, label='55 < Age <= 89')
             ax.fill_between(x, y, y33, color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+            plt.legend()
+        elif i == 7:
+            ax.plot(x, y71, color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
+            ax.plot(x, y72, color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
+            ax.plot(x, y73, color='moccasin', linewidth=0.4, label='55 < Age <= 89')
+            ax.plot(x, y74, color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+            plt.legend()
         else:
             ax.plot(x, y)
         ax.set_xlabel('initial window')
@@ -187,8 +232,10 @@ for mode in modes:
             ax.set_ylabel(xlabels[i])
         else:
             ax.set_ylabel('mean ' + xlabels[i])
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + '.png', dpi=500)
+
+        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + '.png', dpi=500)
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
+        plt.show()
 
 
 

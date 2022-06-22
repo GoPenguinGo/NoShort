@@ -11,10 +11,12 @@ from src.stats import shocks, tau_calculator, good_times
 import concurrent.futures
 from numba import jit
 from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
 # different scenarios
-modes = ['keep', 'drop', 'comp', 'rich_free', 'back_collect', 'back_renew']
+# modes = ['keep', 'drop', 'comp', 'rich_free', 'back_collect', 'back_renew']
 # modes = ['drop']
+modes = ['rich_free']
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 
@@ -37,7 +39,7 @@ for k in range(Mpaths):
     Z_matrix[k, :] = Z
 
     for mode in modes:
-        if mode == 'keep' or 'drop' or 'complete':
+        if mode == 'keep' or mode == 'drop' or mode == 'complete':
             (
                 mu_S,
                 mu_S_s,
@@ -45,7 +47,7 @@ for k in range(Mpaths):
                 theta,
                 f,
                 Delta,
-                 max,
+                max,
                 pi,
                 popu_parti,
                 f_parti,
@@ -55,32 +57,33 @@ for k in range(Mpaths):
                 w_cohort,
                 age_parti,
                 n_parti,
-            ) = simulate(mode, Nc, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, tau, cohort_size)
+            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre, T_hat, dZ_build, dZ, tau,
+                         cohort_size)
 
             erp_S = mu_S - r
             erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
-            dR_matrix[k, :] = dR
-            delta_matrix[k, :, :] = Delta
-            r_matrix[k, :] = r
-            theta_matrix[k, :] = theta
-            mu_S_matrix[k, :] = mu_S
-            mu_S_s_matrix[k, :, :] = mu_S_s
-            erp_S_matrix[k, :] = erp_S
-            erp_S_s_matrix[k, :, :] = erp_S_s
-            pi_matrix[k, :, :] = pi
+            dR_matrix[k] = dR
+            delta_matrix[k] = Delta
+            r_matrix[k] = r
+            theta_matrix[k] = theta
+            mu_S_matrix[k] = mu_S
+            mu_S_s_matrix[k] = mu_S_s
+            erp_S_matrix[k] = erp_S
+            erp_S_s_matrix[k] = erp_S_s
+            pi_matrix[k] = pi
 
-            f_matrix[k, :, :] = f
-            f_parti_matrix[k, :] = f_parti
-            popu_parti_matrix[k, :] = popu_parti
-            Delta_bar_parti_matrix[k, :] = Delta_bar_parti
-            w_matrix[k, :, :] = w
-            w_cohort_matrix[k, :, :] = w_cohort
-            age_parti_matrix[k, :] = age_parti
-            n_parti_matrix[k, :] = n_parti
+            f_matrix[k] = f
+            f_parti_matrix[k] = f_parti
+            popu_parti_matrix[k] = popu_parti
+            Delta_bar_parti_matrix[k] = Delta_bar_parti
+            w_matrix[k] = w
+            w_cohort_matrix[k] = w_cohort
+            age_parti_matrix[k] = age_parti
+            n_parti_matrix[k] = n_parti
 
 
-        if mode == 'rich_free' or 'back_collect' or 'back_renew':
+        if mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
             (
                 mu_S,
                 mu_S_s,
@@ -111,73 +114,77 @@ for k in range(Mpaths):
                 Delta_bar_parti,
                 Delta_bar_long,
                 Delta_bar_short,
-            ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre, T_hat, dZ_build, dZ, tau, cohort_size)
+            ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
+                                            T_hat, dZ_build, dZ, tau, cohort_size)
 
             erp_S = mu_S - r
             erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
-            dR_matrix[k, :] = dR
-            delta_matrix[k, :, :] = Delta
-            r_matrix[k, :] = r
-            theta_matrix[k, :] = theta
-            mu_S_matrix[k, :] = mu_S
-            mu_S_s_matrix[k, :, :] = mu_S_s
-            erp_S_matrix[k, :] = erp_S
-            erp_S_s_matrix[k, :, :] = erp_S_s
-            pi_matrix[k, :, :] = pi
+            dR_matrix[k] = dR
+            delta_matrix[k] = Delta
+            r_matrix[k] = r
+            theta_matrix[k] = theta
+            mu_S_matrix[k] = mu_S
+            mu_S_s_matrix[k] = mu_S_s
+            erp_S_matrix[k] = erp_S
+            erp_S_s_matrix[k] = erp_S_s
+            pi_matrix[k] = pi
 
-            w_matrix[k, :, :] = w
-            w_cohort_matrix[k, :, :] = w_cohort
-            n_parti_matrix[k, :] = n_parti
+            w_matrix[k] = w
+            w_cohort_matrix[k] = w_cohort
+            n_parti_matrix[k] = n_parti
 
-            popu_parti_matrix[k, :] = popu_parti
-            popu_can_short_matrix[k, :] = popu_can_short
-            popu_short_matrix[k,:] = popu_short
-            popu_long_matrix[k,:] = popu_long
-            f_matrix[k, :, :] = f
-            f_parti_matrix[k, :] = f_parti
-            f_short_matrix[k, :, :] = f_short
-            f_long_matrix[k, :, :] = f_long
-            age_parti_matrix[k, :] = age_parti
-            age_short_matrix[k, :] = age_short
-            age_long_matrix[k, :] = age_long
+            popu_parti_matrix[k] = popu_parti
+            popu_can_short_matrix[k] = popu_can_short
+            popu_short_matrix[k] = popu_short
+            popu_long_matrix[k] = popu_long
+            f_matrix[k] = f
+            f_parti_matrix[k] = f_parti
+            f_short_matrix[k] = f_short
+            f_long_matrix[k] = f_long
+            age_parti_matrix[k] = age_parti
+            age_short_matrix[k] = age_short
+            age_long_matrix[k] = age_long
 
-            invest_tracker_matrix[k, :, :] = invest_tracker,
-            can_short_tracker_matrix[k, :, :] = can_short_tracker
-            long_indicator_matrix[k, :, :] = long
-            short_indicator_matrix[k, :, :] = short
+            invest_tracker_matrix[k] = invest_tracker
+            can_short_tracker_matrix[k] = can_short_tracker
+            long_indicator_matrix[k] = long
+            short_indicator_matrix[k] = short
 
-            Delta_bar_parti_matrix[k, :] = Delta_bar_parti
-            Delta_bar_long_matrix[k, :] = Delta_bar_long
-            Delta_bar_short_matrix[k, :] = Delta_bar_short
+            Delta_bar_parti_matrix[k] = Delta_bar_parti
+            Delta_bar_long_matrix[k] = Delta_bar_long
+            Delta_bar_short_matrix[k] = Delta_bar_short
 
-        # for graphs:
-        if dZ_build == np.load('dZt_build_demo.npy'):
-            if mode == 'comp':
-                y21 = theta
-                y31 = r
-                y41 = Delta_bar_parti
-            if mode == 'drop':
-                y1 = Delta
-                y22 = theta
-                y32 = r
-                y42 = Delta_bar_parti / f_parti
-                y43 = f_parti
-                y44 = popu_parti
-                invest = pi > 0
-                parti_rate = invest * cohort_size
-                y5 = parti_rate
-                y6 = pi
-            if mode == 'free':
-                y71 = theta
-                y72 = popu_parti
-                y73 = popu_short
-                y74 = Delta_bar_long
-                y75 = Delta_bar_short
+        # # for graphs specific to one random path:
+        # if dZ_build == np.load('dZt_build_demo.npy'):
+        #     if mode == 'comp':
+        #         y21 = theta
+        #         y31 = r
+        #         y41 = Delta_bar_parti
+        #     if mode == 'drop':
+        #         y1 = Delta
+        #         y22 = theta
+        #         y32 = r
+        #         y42 = Delta_bar_parti / f_parti
+        #         y43 = f_parti
+        #         y44 = popu_parti
+        #         invest = pi > 0
+        #         parti_rate = invest * cohort_size
+        #         y5 = parti_rate
+        #         y6 = pi
+        #     if mode == 'free':
+        #         y71 = theta
+        #         y72 = popu_parti
+        #         y73 = popu_short
+        #         y74 = Delta_bar_long
+        #         y75 = Delta_bar_short
 
     print(time.time() - s)
     print(mode)
     print(k)
+
+    # for graphs using information from all simulated paths
+
 
 
 
@@ -434,28 +441,28 @@ model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
 #######################################
 
 # regressing difference in participarion on difference in experienced stock market returns
-# over all simulated paths
+# over all simulated paths, and take average coefficient across all the paths
 
-young_age_cut = Nt - 20 / dt
-old_age_cut = Nt - 40 / dt
-young_prior = 20 / dt
-old_prior = 50 / dt
-diff_exprienced_growth = np.zeros((Mpaths, Nt - old_prior))
-diff_participation_rate = np.zeros((Mpaths, Nt - old_prior))
-for i in range(Nt - old_prior):
-    old_experienced_growth = np.average(dZ_matrix[:, i : i + old_prior])
-    young_experienced_growth = np.average(dZ_matrix[:, (i + old_prior - young_prior) : i + old_prior])
-    diff_exprienced_growth[:, i] = old_experienced_growth - young_experienced_growth
-
-    old_participation_rate = np.sum(y5[:, :old_age_cut], axis=1)  # not y5, but participation rate in matrix
-    young_participation_rate = np.sum(y5[:, young_age_cut:], axis=1)
-    diff_participation_rate[:, i] = old_participation_rate - young_participation_rate
-
-a = np.zeros(Mpaths)
-
-for j in range(Mpaths):
-    model = LinearRegression().fit(diff_exprienced_growth[j], diff_participation_rate[j])
-    a[j] = model.coef_
+# young_age_cut = Nt - 20 / dt
+# old_age_cut = Nt - 40 / dt
+# young_prior = 20 / dt
+# old_prior = 50 / dt
+# diff_exprienced_growth = np.zeros((Mpaths, Nt - old_prior))
+# diff_participation_rate = np.zeros((Mpaths, Nt - old_prior))
+# for i in range(Nt - old_prior):
+#     old_experienced_growth = np.average(dZ_matrix[:, i : i + old_prior])
+#     young_experienced_growth = np.average(dZ_matrix[:, (i + old_prior - young_prior) : i + old_prior])
+#     diff_exprienced_growth[:, i] = old_experienced_growth - young_experienced_growth
+#
+#     old_participation_rate = np.sum(y5[:, :old_age_cut], axis=1)  # not y5, but participation rate in matrix
+#     young_participation_rate = np.sum(y5[:, young_age_cut:], axis=1)
+#     diff_participation_rate[:, i] = old_participation_rate - young_participation_rate
+#
+# a = np.zeros(Mpaths)
+#
+# for j in range(Mpaths):
+#     model = LinearRegression().fit(diff_exprienced_growth[j], diff_participation_rate[j])
+#     a[j] = model.coef_
 
 #######################################
 ########### GRAPH  EIGHT ##############
@@ -465,4 +472,36 @@ for j in range(Mpaths):
 # specific to one path
 # relates to the information index. right now beliefs of non-participants make little sense
 
-marginal_belief = (-theta_drop) * sigma_Y + mu_Y
+# marginal_belief = (-theta_drop) * sigma_Y + mu_Y
+
+
+#######################################
+############ GRAPH  NINE ##############
+#######################################
+
+# describe the predictive power of participation rate
+frequencies = [1, 3, 6, 12, 24, 36, 60]
+horizons = [1, 3, 6, 12, 24, 36, 60]
+m = len(frequencies)
+n = len(horizons)
+coeff_matrix = np.zeros((Mpaths, m, n))
+pvalue_matrix = np.zeros((Mpaths, m, n))
+for i in range(Mpaths):
+    path_y = np.cumprod(dR_matrix[i]+1)
+    path_x = popu_parti_matrix[i]
+    for j, horizon in enumerate(horizons):
+        y_raw = path_y[horizon:] / path_y[:-horizon] - 1 # cummulated return from t to t + j * dt
+        for k, frequency in enumerate(frequencies):
+            x_raw = path_x[frequency:] / path_x[:-frequency] - 1  # cummulated participation rate change from t to t + k * dt
+            x_lag = x_raw[:-horizon]
+            x_lag = x_lag.reshape(-1, 1)
+            x_lag2 = sm.add_constant(x_lag)
+            y_predict = y_raw[frequency:]
+            y_predict = y_predict.reshape(-1,1)
+            model = sm.OLS(y_predict, x_lag2)
+            est = model.fit()
+            coeff_matrix[i, j, k] = est.params[1]
+            pvalue_matrix[i, j, k] = est.pvalues[1]
+            # print(k,j)
+            # print(est.summary())
+coeffs = np.average(coeff_matrix, axis=1)

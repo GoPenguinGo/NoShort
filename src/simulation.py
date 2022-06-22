@@ -155,8 +155,8 @@ def simulate(
         MaxThetaDelta_s_t,
         invest_tracker,
     )
-    if time.time() - time_s >= 10:
-        print('takes more than 10s')
+    # if time.time() - time_s >= 10:
+    #     print('takes more than 10s')
     return (
         mu_S,
         mu_S_s,
@@ -349,8 +349,8 @@ def simulate_partial_constraint(
     )
 
 
-    if time.time() - time_s >= 15:
-        print('takes more than 15s')
+    # if time.time() - time_s >= 15:
+    #     print('takes more than 15s')
 
     return (
         mu_S,
