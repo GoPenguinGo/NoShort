@@ -244,7 +244,7 @@ def simulate_cohorts(
         )  # expected stock return for agent cohorts
 
         # store the results
-        dR[i] = dR_t  # realized return from dZt
+        dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
         mu_S[i] = mu_S_t

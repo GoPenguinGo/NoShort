@@ -1,17 +1,19 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import tabulate
 from tqdm import tqdm
 from typing import Callable, Tuple
 from src.simulation import simulate, simulate_partial_constraint
 from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
 from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
-from src.param import *
+# from src.param import *
 from src.stats import shocks, tau_calculator, good_times
-import concurrent.futures
+# import concurrent.futures
 from numba import jit
-from sklearn.linear_model import LinearRegression
+# from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
+import tabulate as tabulate
 
 # different scenarios
 # modes = ['keep', 'drop', 'comp', 'rich_free', 'back_collect', 'back_renew']
@@ -19,6 +21,14 @@ import statsmodels.api as sm
 modes = ['rich_free']
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
+survey_view_parti_matrix = np.zeros((Mpaths, Nt))
+popu_parti_young_matrix = np.zeros((Mpaths, Nt))
+popu_parti_old_matrix = np.zeros((Mpaths, Nt))
+age_parti_matrix = np.zeros((Mpaths, Nt))
+theta_matrix = np.zeros((Mpaths, Nt))
+erp_S_matrix = np.zeros((Mpaths, Nt))
+Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
+
 
 for k in range(Mpaths):
     s = time.time()
@@ -32,11 +42,11 @@ for k in range(Mpaths):
         dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
         dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
 
-    biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
+    biasvec = dZ_build[-Npre:]  # dZt in the building cohorts stage, but also used in the simulation function
 
-    dZ_matrix[k, :] = dZ
-    Z = np.cumsum(dZ)
-    Z_matrix[k, :] = Z
+    # dZ_matrix[k, :] = dZ
+    # Z = np.cumsum(dZ)
+    # Z_matrix[k, :] = Z
 
     for mode in modes:
         if mode == 'keep' or mode == 'drop' or mode == 'complete':
@@ -61,26 +71,34 @@ for k in range(Mpaths):
                          cohort_size)
 
             erp_S = mu_S - r
-            erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
-
+            # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
+            #
             dR_matrix[k] = dR
-            delta_matrix[k] = Delta
-            r_matrix[k] = r
+            # delta_matrix[k] = Delta
+            # r_matrix[k] = r
             theta_matrix[k] = theta
-            mu_S_matrix[k] = mu_S
-            mu_S_s_matrix[k] = mu_S_s
+            # mu_S_matrix[k] = mu_S
+            # mu_S_s_matrix[k] = mu_S_s
             erp_S_matrix[k] = erp_S
-            erp_S_s_matrix[k] = erp_S_s
-            pi_matrix[k] = pi
-
-            f_matrix[k] = f
-            f_parti_matrix[k] = f_parti
+            # erp_S_s_matrix[k] = erp_S_s
+            # pi_matrix[k] = pi
+            #
+            # f_matrix[k] = f
+            # f_parti_matrix[k] = f_parti
             popu_parti_matrix[k] = popu_parti
-            Delta_bar_parti_matrix[k] = Delta_bar_parti
-            w_matrix[k] = w
-            w_cohort_matrix[k] = w_cohort
+            # Delta_bar_parti_matrix[k] = Delta_bar_parti
+            # w_matrix[k] = w
+            # w_cohort_matrix[k] = w_cohort
             age_parti_matrix[k] = age_parti
-            n_parti_matrix[k] = n_parti
+            # n_parti_matrix[k] = n_parti
+
+            invest_tracker = pi > 0
+
+            survey_view_parti_matrix[k] = np.average((Delta + theta) * sigma_S * invest_tracker,
+                                                     weights=cohort_size * invest_tracker, axis=1)
+            parti_track = invest_tracker * cohort_size
+            popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
+            popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
 
 
         if mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
@@ -118,42 +136,48 @@ for k in range(Mpaths):
                                             T_hat, dZ_build, dZ, tau, cohort_size)
 
             erp_S = mu_S - r
-            erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
+            # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
             dR_matrix[k] = dR
-            delta_matrix[k] = Delta
-            r_matrix[k] = r
+            # delta_matrix[k] = Delta
+            # r_matrix[k] = r
             theta_matrix[k] = theta
-            mu_S_matrix[k] = mu_S
-            mu_S_s_matrix[k] = mu_S_s
+            # mu_S_matrix[k] = mu_S
+            # mu_S_s_matrix[k] = mu_S_s
             erp_S_matrix[k] = erp_S
-            erp_S_s_matrix[k] = erp_S_s
-            pi_matrix[k] = pi
+            # erp_S_s_matrix[k] = erp_S_s
+            # pi_matrix[k] = pi
 
-            w_matrix[k] = w
-            w_cohort_matrix[k] = w_cohort
-            n_parti_matrix[k] = n_parti
+            # w_matrix[k] = w
+            # w_cohort_matrix[k] = w_cohort
+            # n_parti_matrix[k] = n_parti
 
             popu_parti_matrix[k] = popu_parti
-            popu_can_short_matrix[k] = popu_can_short
-            popu_short_matrix[k] = popu_short
-            popu_long_matrix[k] = popu_long
-            f_matrix[k] = f
-            f_parti_matrix[k] = f_parti
-            f_short_matrix[k] = f_short
-            f_long_matrix[k] = f_long
+            parti_track = invest_tracker * cohort_size
+            popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
+            popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
+            # popu_can_short_matrix[k] = popu_can_short
+            # popu_short_matrix[k] = popu_short
+            # popu_long_matrix[k] = popu_long
+            # f_matrix[k] = f
+            # f_parti_matrix[k] = f_parti
+            # f_short_matrix[k] = f_short
+            # f_long_matrix[k] = f_long
             age_parti_matrix[k] = age_parti
-            age_short_matrix[k] = age_short
-            age_long_matrix[k] = age_long
+            # age_short_matrix[k] = age_short
+            # age_long_matrix[k] = age_long
 
-            invest_tracker_matrix[k] = invest_tracker
-            can_short_tracker_matrix[k] = can_short_tracker
-            long_indicator_matrix[k] = long
-            short_indicator_matrix[k] = short
+            # invest_tracker_matrix[k] = invest_tracker
+            # can_short_tracker_matrix[k] = can_short_tracker
+            # long_indicator_matrix[k] = long
+            # short_indicator_matrix[k] = short
 
             Delta_bar_parti_matrix[k] = Delta_bar_parti
-            Delta_bar_long_matrix[k] = Delta_bar_long
-            Delta_bar_short_matrix[k] = Delta_bar_short
+            # Delta_bar_long_matrix[k] = Delta_bar_long
+            # Delta_bar_short_matrix[k] = Delta_bar_short
+
+            survey_view_parti_matrix[k] = np.average((Delta + theta) * sigma_S * invest_tracker, weights=cohort_size * invest_tracker, axis=1)
+
 
         # # for graphs specific to one random path:
         # if dZ_build == np.load('dZt_build_demo.npy'):
@@ -186,255 +210,255 @@ for k in range(Mpaths):
     # for graphs using information from all simulated paths
 
 
-
-
-#######################################
-########## ONE RANDOM PATH ############
-#######################################
-
-# the x-axis
-t = np.arange(0, T_cohort, dt)
-y0 = Z
-
-
-# define colors
-color1 = 'black'
-color2 = 'mediumblue'
-color3 = 'darkgreen'
-color4 = 'orange'
-color5 = 'red'
-color6 = 'b'
-color7 = 'g'
-
-#######################################
-############# GRAPH ONE ###############
-#######################################
-# illustrate the learning process
-
-nn = 3
-length = len(t)
-Delta_time_series = np.zeros((nn, length))
-for i in range(3):
-    start = int((i + 1) * 100 * (1 / dt))
-    for j in range(length):
-        if j < start:
-            Delta_time_series[i, j] = np.nan
-        else:
-            cohort_rank = length - (j - start) - 1
-            Delta_time_series[i, j] = y1[j, cohort_rank]
-
-y11 = Delta_time_series[0]
-y12 = Delta_time_series[1]
-y13 = Delta_time_series[2]
-
-fig, ax1 = plt.subplots(figsize=(10, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Bias in belief and learning', color=color2)
-ax2.set_ylim([-0.5, 0.5])
-ax2.plot(t, y11, color=color2, linewidth=0.4)
-ax2.plot(t, y12, color=color3, linewidth=0.4)
-ax2.plot(t, y13, color=color4, linewidth=0.4)
-ax2.tick_params(axis='y', labelcolor=color2)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and bias time series' + '.png', dpi=500)
-plt.show()
-
-#######################################
-############# GRAPH TWO ###############
-#######################################
-# plot the market price of risk
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Market price of risk', color=color2)
-ax2.set_ylim([-1, 1])
-ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
-ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
-ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-ax2.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-# fig.suptitle('Zt and Market Price of Risk')
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and market price of risk' + '.png', dpi=500)
-plt.show()
-
-# plot the interest rate
-y33 = rho + mu_Y - sigma_Y ** 2
-
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Interest rate (annual)', color=color2)
-ax2.set_ylim([0, 0.05])
-ax2.plot(t, y31, color=color2, linewidth=0.4, label='Complete market')
-ax2.plot(t, y32, color=color3, linewidth=0.4, label='Short-sale constraint')
-ax2.hlines(y33, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-ax2.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-# fig.suptitle('Zt and Market Price of Risk')
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and interest rate' + '.png', dpi=500)
-plt.show()
-
-#######################################
-############ GRAPH THREE ##############
-#######################################
-
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Consumption weighted bias', color=color2)
-ax2.set_ylim([-0.5, 1])
-ax2.plot(t, y41, color='purple', linewidth=0.4, linestyle='--', label='Market view, complete market')
-ax2.plot(t, y42, color=color3, linewidth=0.4, label='Market view, no shorting')
-ax2.plot(t, y43, color=color4, linewidth=0.4, label='Participant consumption share')
-ax2.plot(t, y44, color=color2, linewidth=0.4, label='Participation rate')
-ax2.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-# fig.suptitle('Zt and market view')
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and market bias' + '.png', dpi=500)
-plt.show()
-
-# Regression
-
-
-#######################################
-############ GRAPH  FOUR ##############
-#######################################
-# who are the investors
-y_label = 'participation composition of age groups'
-y51 = np.sum(y5[:, tau_cutoff1:], axis=1)
-y52 = np.sum(y5[:, tau_cutoff2:], axis=1)
-y53 = np.sum(y5[:, tau_cutoff3:], axis=1)
-y54 = np.sum(y5[:, ], axis=1)
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_ylabel('Participation composition of age groups', color=color2)
-ax1.set_ylim([0, 1])
-ax1.fill_between(t, y51, color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-ax1.fill_between(t, y52, y51, color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-ax1.fill_between(t, y53, y52, color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-ax1.fill_between(t, y54, y53, color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
-ax1.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-ax2 = ax1.twinx()
-ax2.set_xlabel('Time in simulation, one random path')
-ax2.set_ylabel('Zt', color=color5)
-ax2.plot(t, y0, color=color5, linewidth=0.5)
-ax2.tick_params(axis='y', labelcolor=color5)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and participation composition' + '.png', dpi=500)
-plt.show()
-
-# illustrate who are investing and when do they quit
-nn = 10
-length = len(t)
-pi_time_series = np.zeros((nn, length))
-starts = np.zeros(nn)
-for i in range(nn):
-    start = int((i + 5) * 25 * (1 / dt))
-    starts[i] = start * dt
-    for j in range(length):
-        if j < start:
-            pi_time_series[i, j] = np.nan
-        else:
-            cohort_rank = length - (j - start) - 1
-            a = y6[j, cohort_rank]
-            pi_time_series[i, j] = a
-            if a == 0:
-                pi_time_series[i, j + 1: j + 8] = 0
-                pi_time_series[i, j + 8:] = np.nan
-                break
-
-colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
-          'olivedrab', 'darkviolet']
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Investment in stock market', color=color2)
-ax2.set_ylim([-0.1, 25])
-for i in range(nn):
-    y6i = pi_time_series[i]
-    plt.vlines(starts[i], ymax=25, ymin=0, color='grey', linestyle='--', linewidth=0.4)
-    ax2.plot(t, y6i, color=colors[i], linewidth=0.4)
-ax2.tick_params(axis='y', labelcolor=color2)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and pi time series' + '.png', dpi=500)
-plt.show()
-
-#######################################
-############ GRAPH  FIVE ##############
-#######################################
-# The rich can short
-# compare and plot theta
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Market price of risk', color=color2)
-ax2.set_ylim([-1, 1])
-ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
-ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
-ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
+#
+#
+# #######################################
+# ########## ONE RANDOM PATH ############
+# #######################################
+#
+# # the x-axis
+# t = np.arange(0, T_cohort, dt)
+# y0 = Z
+#
+#
+# # define colors
+# color1 = 'black'
+# color2 = 'mediumblue'
+# color3 = 'darkgreen'
+# color4 = 'orange'
+# color5 = 'red'
+# color6 = 'b'
+# color7 = 'g'
+#
+# #######################################
+# ############# GRAPH ONE ###############
+# #######################################
+# # illustrate the learning process
+#
+# nn = 3
+# length = len(t)
+# Delta_time_series = np.zeros((nn, length))
+# for i in range(3):
+#     start = int((i + 1) * 100 * (1 / dt))
+#     for j in range(length):
+#         if j < start:
+#             Delta_time_series[i, j] = np.nan
+#         else:
+#             cohort_rank = length - (j - start) - 1
+#             Delta_time_series[i, j] = y1[j, cohort_rank]
+#
+# y11 = Delta_time_series[0]
+# y12 = Delta_time_series[1]
+# y13 = Delta_time_series[2]
+#
+# fig, ax1 = plt.subplots(figsize=(10, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Bias in belief and learning', color=color2)
+# ax2.set_ylim([-0.5, 0.5])
+# ax2.plot(t, y11, color=color2, linewidth=0.4)
+# ax2.plot(t, y12, color=color3, linewidth=0.4)
+# ax2.plot(t, y13, color=color4, linewidth=0.4)
+# ax2.tick_params(axis='y', labelcolor=color2)
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and bias time series' + '.png', dpi=500)
+# plt.show()
+#
+# #######################################
+# ############# GRAPH TWO ###############
+# #######################################
+# # plot the market price of risk
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Market price of risk', color=color2)
+# ax2.set_ylim([-1, 1])
+# ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
+# ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
 # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-ax2.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
-plt.show()
-
-# Compare the bias between investors having long and short positions
-fig, ax1 = plt.subplots(figsize=(15, 5))
-ax1.set_xlabel('Time in simulation, one random path')
-ax1.set_ylabel('Zt', color=color5)
-ax1.plot(t, y0, color=color5, linewidth=0.5)
-ax1.tick_params(axis='y', labelcolor=color5)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Market price of risk', color=color2)
-ax2.set_ylim([-0.5, 1])
-ax2.plot(t, y72, color='darkblue', linewidth=0.6, label='% investors')
-ax2.plot(t, y73, color='darkgreen', linewidth=0.6, label='% Short sellers')
-ax2.plot(t, y74, color='blue', linewidth=0.4, label='Average bias long')
-ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
-# ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-ax2.tick_params(axis='y', labelcolor=color2)
-plt.legend()
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
-plt.show()
-
-#######################################
-############ GRAPH  SIX ###############
-#######################################
-
-# test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
-
-theta_hat = theta_drop + Delta_bar_parti_drop  # wealth weighted average subjective risk premia
-# regression:
-x1 = dZ.reshape((-1, 1))
-y_obj_theta = theta_drop
-y_subj_theta = theta_hat
-model_obj_theta = LinearRegression().fit(x1, y_obj_theta)
-model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
-
+# ax2.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# # fig.suptitle('Zt and Market Price of Risk')
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and market price of risk' + '.png', dpi=500)
+# plt.show()
+#
+# # plot the interest rate
+# y33 = rho + mu_Y - sigma_Y ** 2
+#
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Interest rate (annual)', color=color2)
+# ax2.set_ylim([0, 0.05])
+# ax2.plot(t, y31, color=color2, linewidth=0.4, label='Complete market')
+# ax2.plot(t, y32, color=color3, linewidth=0.4, label='Short-sale constraint')
+# ax2.hlines(y33, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+# ax2.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# # fig.suptitle('Zt and Market Price of Risk')
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and interest rate' + '.png', dpi=500)
+# plt.show()
+#
+# #######################################
+# ############ GRAPH THREE ##############
+# #######################################
+#
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Consumption weighted bias', color=color2)
+# ax2.set_ylim([-0.5, 1])
+# ax2.plot(t, y41, color='purple', linewidth=0.4, linestyle='--', label='Market view, complete market')
+# ax2.plot(t, y42, color=color3, linewidth=0.4, label='Market view, no shorting')
+# ax2.plot(t, y43, color=color4, linewidth=0.4, label='Participant consumption share')
+# ax2.plot(t, y44, color=color2, linewidth=0.4, label='Participation rate')
+# ax2.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# # fig.suptitle('Zt and market view')
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and market bias' + '.png', dpi=500)
+# plt.show()
+#
+# # Regression
+#
+#
+# #######################################
+# ############ GRAPH  FOUR ##############
+# #######################################
+# # who are the investors
+# y_label = 'participation composition of age groups'
+# y51 = np.sum(y5[:, tau_cutoff1:], axis=1)
+# y52 = np.sum(y5[:, tau_cutoff2:], axis=1)
+# y53 = np.sum(y5[:, tau_cutoff3:], axis=1)
+# y54 = np.sum(y5[:, ], axis=1)
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_ylabel('Participation composition of age groups', color=color2)
+# ax1.set_ylim([0, 1])
+# ax1.fill_between(t, y51, color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
+# ax1.fill_between(t, y52, y51, color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
+# ax1.fill_between(t, y53, y52, color='moccasin', linewidth=0.4, label='55 < Age <= 89')
+# ax1.fill_between(t, y54, y53, color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+# ax1.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# ax2 = ax1.twinx()
+# ax2.set_xlabel('Time in simulation, one random path')
+# ax2.set_ylabel('Zt', color=color5)
+# ax2.plot(t, y0, color=color5, linewidth=0.5)
+# ax2.tick_params(axis='y', labelcolor=color5)
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and participation composition' + '.png', dpi=500)
+# plt.show()
+#
+# # illustrate who are investing and when do they quit
+# nn = 10
+# length = len(t)
+# pi_time_series = np.zeros((nn, length))
+# starts = np.zeros(nn)
+# for i in range(nn):
+#     start = int((i + 5) * 25 * (1 / dt))
+#     starts[i] = start * dt
+#     for j in range(length):
+#         if j < start:
+#             pi_time_series[i, j] = np.nan
+#         else:
+#             cohort_rank = length - (j - start) - 1
+#             a = y6[j, cohort_rank]
+#             pi_time_series[i, j] = a
+#             if a == 0:
+#                 pi_time_series[i, j + 1: j + 8] = 0
+#                 pi_time_series[i, j + 8:] = np.nan
+#                 break
+#
+# colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
+#           'olivedrab', 'darkviolet']
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Investment in stock market', color=color2)
+# ax2.set_ylim([-0.1, 25])
+# for i in range(nn):
+#     y6i = pi_time_series[i]
+#     plt.vlines(starts[i], ymax=25, ymin=0, color='grey', linestyle='--', linewidth=0.4)
+#     ax2.plot(t, y6i, color=colors[i], linewidth=0.4)
+# ax2.tick_params(axis='y', labelcolor=color2)
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and pi time series' + '.png', dpi=500)
+# plt.show()
+#
+# #######################################
+# ############ GRAPH  FIVE ##############
+# #######################################
+# # The rich can short
+# # compare and plot theta
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Market price of risk', color=color2)
+# ax2.set_ylim([-1, 1])
+# ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
+# ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
+# ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
+# # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+# ax2.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
+# plt.show()
+#
+# # Compare the bias between investors having long and short positions
+# fig, ax1 = plt.subplots(figsize=(15, 5))
+# ax1.set_xlabel('Time in simulation, one random path')
+# ax1.set_ylabel('Zt', color=color5)
+# ax1.plot(t, y0, color=color5, linewidth=0.5)
+# ax1.tick_params(axis='y', labelcolor=color5)
+# ax2 = ax1.twinx()
+# ax2.set_ylabel('Market price of risk', color=color2)
+# ax2.set_ylim([-0.5, 1])
+# ax2.plot(t, y72, color='darkblue', linewidth=0.6, label='% investors')
+# ax2.plot(t, y73, color='darkgreen', linewidth=0.6, label='% Short sellers')
+# ax2.plot(t, y74, color='blue', linewidth=0.4, label='Average bias long')
+# ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
+# # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+# ax2.tick_params(axis='y', labelcolor=color2)
+# plt.legend()
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
+# plt.show()
+#
+# #######################################
+# ############ GRAPH  SIX ###############
+# #######################################
+#
+# # test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
+#
+# theta_hat = theta_drop + Delta_bar_parti_drop  # wealth weighted average subjective risk premia
+# # regression:
+# x1 = dZ.reshape((-1, 1))
+# y_obj_theta = theta_drop
+# y_subj_theta = theta_hat
+# model_obj_theta = LinearRegression().fit(x1, y_obj_theta)
+# model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
+#
 
 #######################################
 ########### GRAPH  SEVEN ##############
@@ -480,28 +504,160 @@ model_subj_theta = LinearRegression().fit(x1, y_subj_theta)
 #######################################
 
 # describe the predictive power of participation rate
-frequencies = [1, 3, 6, 12, 24, 36, 60]
-horizons = [1, 3, 6, 12, 24, 36, 60]
-m = len(frequencies)
-n = len(horizons)
-coeff_matrix = np.zeros((Mpaths, m, n))
-pvalue_matrix = np.zeros((Mpaths, m, n))
+
+
+start_t = 1200
+young_old_diff = popu_parti_young_matrix - popu_parti_old_matrix
+x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix, young_old_diff]
+m = len(x_variables)
+# np.cumsum(dR_matrix[i])
+coeff_matrix1 = np.zeros((Mpaths, m, 3))
+pvalue_matrix1 = np.zeros((Mpaths, m, 3))
+tstats_matrix1 = np.zeros((Mpaths, m, 3))
+rsqrd_matrix1 = np.zeros((Mpaths, m, 2))
+
 for i in range(Mpaths):
-    path_y = np.cumprod(dR_matrix[i]+1)
-    path_x = popu_parti_matrix[i]
-    for j, horizon in enumerate(horizons):
-        y_raw = path_y[horizon:] / path_y[:-horizon] - 1 # cummulated return from t to t + j * dt
-        for k, frequency in enumerate(frequencies):
-            x_raw = path_x[frequency:] / path_x[:-frequency] - 1  # cummulated participation rate change from t to t + k * dt
-            x_lag = x_raw[:-horizon]
-            x_lag = x_lag.reshape(-1, 1)
-            x_lag2 = sm.add_constant(x_lag)
-            y_predict = y_raw[frequency:]
-            y_predict = y_predict.reshape(-1,1)
-            model = sm.OLS(y_predict, x_lag2)
+    path_y = erp_S_matrix[i]
+    path_x2 = survey_view_parti_matrix[i]
+    path_x2 = path_x2 / np.std(path_x2)
+    for j, var in enumerate(x_variables):
+        path_x = var[i]
+        y_raw = path_y[start_t:]  # equity risk premium at time t
+
+        # univariate regressions
+        x1_raw = path_x[start_t:]  # participation rate at time t
+        x1_raw = x1_raw / np.std(x1_raw)
+        x1_lag = x1_raw.reshape(-1, 1)
+        x1_lag2 = sm.add_constant(x1_lag)
+        y_predict = y_raw.reshape(-1, 1)
+
+        model = sm.OLS(y_predict, x1_lag2)
+        est = model.fit()
+        coeff_matrix1[i, j, 0] = est.params[1]
+        pvalue_matrix1[i, j, 0] = est.pvalues[1]
+        tstats_matrix1[i, j, 0] = est.tvalues[1]
+        rsqrd_matrix1[i, j, 0] = est.rsquared
+
+        # bivariate regressions
+        x2_lag = path_x2[start_t:]
+
+        x_lag = np.append(x1_lag, x2_lag)
+        x_lag = np.transpose(x_lag.reshape(2, -1))
+        x_lag = sm.add_constant(x_lag)
+
+        y_predict = y_raw.reshape(-1, 1)
+
+        model = sm.OLS(y_predict, x_lag)
+        est = model.fit()
+        coeff_matrix1[i, j, 1] = est.params[1]
+        coeff_matrix1[i, j, 2] = est.params[2]
+        pvalue_matrix1[i, j, 1] = est.pvalues[1]
+        pvalue_matrix1[i, j, 2] = est.pvalues[2]
+        tstats_matrix1[i, j, 1] = est.tvalues[1]
+        tstats_matrix1[i, j, 2] = est.tvalues[2]
+        rsqrd_matrix1[i, j, 1] = est.rsquared
+
+reg_coeffs1 = np.average(coeff_matrix1, axis=0)
+reg_pvalues1 = np.average(pvalue_matrix1, axis=0)
+reg_tstats1 = np.average(tstats_matrix1, axis=0)
+reg_rsqrd1 = np.average(rsqrd_matrix1, axis=0)
+reg_data = np.empty((5,8))
+header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age', '(8)']
+index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+for i in range(4):
+    reg_data[0, i * 2] = reg_coeffs1[i, 0]
+    reg_data[1, i * 2] = reg_tstats1[i, 0]
+    reg_data[2, i * 2] = np.nan
+    reg_data[3, i * 2] = np.nan
+    reg_data[4, i * 2] = reg_rsqrd1[i, 0]
+
+    reg_data[0, i * 2 + 1] = reg_coeffs1[i, 1]
+    reg_data[1, i * 2 + 1] = reg_tstats1[i, 1]
+    reg_data[2, i * 2 + 1] = reg_coeffs1[i, 2]
+    reg_data[3, i * 2 + 1] = reg_tstats1[i, 2]
+    reg_data[4, i * 2 + 1] = reg_rsqrd1[i, 1]
+
+print(tabulate(reg_data, headers=header, showindex = index,  floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+
+####
+horizons = [1, 3, 6, 12, 36, 60, 120]
+young_old_diff = popu_parti_young_matrix - popu_parti_old_matrix
+x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix, young_old_diff]
+# x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+m = len(x_variables)
+n = len(horizons)
+# np.cumsum(dR_matrix[i])
+coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
+pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
+tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
+rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
+
+for i in range(Mpaths):
+    path_y = np.cumsum(dR_matrix[i])
+    path_x2 = survey_view_parti_matrix[i]
+    path_x2 = path_x2 / np.std(path_x2)
+    for j,horizon in enumerate(horizons):
+        y_raw = path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]  #dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
+        y_predict = y_raw.reshape(-1, 1)
+        for k, var in enumerate(x_variables):
+            path_x = var[i]
+            # univariate regressions
+            x1_raw = path_x[start_t: -1-horizon]  # participation rate at time t
+            x1_raw = x1_raw / np.std(x1_raw)
+            x1_lag = x1_raw.reshape(-1, 1)
+            x1_lag2 = sm.add_constant(x1_lag)
+
+            model = sm.OLS(y_predict, x1_lag2)
             est = model.fit()
-            coeff_matrix[i, j, k] = est.params[1]
-            pvalue_matrix[i, j, k] = est.pvalues[1]
-            # print(k,j)
-            # print(est.summary())
-coeffs = np.average(coeff_matrix, axis=1)
+            coeff_matrix2[i, j, k, 0] = est.params[1]
+            pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
+            tstats_matrix2[i, j, k, 0] = est.tvalues[1]
+            rsqrd_matrix2[i, j, k, 0] = est.rsquared
+
+            # bivariate regressions
+            x2_lag = path_x2[start_t: -1-horizon]
+
+            x_lag = np.append(x1_lag, x2_lag)
+            x_lag = np.transpose(x_lag.reshape(2, -1))
+            x_lag = sm.add_constant(x_lag)
+
+            y_predict = y_raw.reshape(-1, 1)
+
+            model = sm.OLS(y_predict, x_lag)
+            est = model.fit()
+            coeff_matrix2[i, j, k, 1] = est.params[1]
+            coeff_matrix2[i, j, k, 2] = est.params[2]
+            pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
+            pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
+            tstats_matrix2[i, j, k, 1] = est.tvalues[1]
+            tstats_matrix2[i, j, k, 2] = est.tvalues[2]
+            rsqrd_matrix2[i, j, k, 1] = est.rsquared
+
+reg_coeffs2 = np.average(coeff_matrix2, axis=0)
+reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
+reg_tstats2 = np.average(tstats_matrix2, axis=0)
+reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+
+for j in range(n):
+    horizon = horizons[j]
+    reg_data = np.empty((5, 8))
+    header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
+              '(8)']
+    index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+    for i in range(4):
+        reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
+        reg_data[1, i * 2] = reg_tstats2[j, i, 0]
+        reg_data[2, i * 2] = np.nan
+        reg_data[3, i * 2] = np.nan
+        reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
+
+        reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
+        reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
+        reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
+        reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
+        reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+
+    print(horizon)
+    print(tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
