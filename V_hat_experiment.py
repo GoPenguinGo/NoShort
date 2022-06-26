@@ -8,9 +8,9 @@ from src.param import *
 # modes = ['drop', 'ric_free']
 modes = ['rich_free']
 # modes = ['drop']
-# zoom_in = 'small'
-zoom_in = 'large'
-T_hats = dt * np.arange(1, 13, 2) if zoom_in == 'small' else np.arange(40, 51, 2)
+zoom_in = 'small'
+# zoom_in = 'large'
+T_hats = dt * np.arange(1, 60, 4) if zoom_in == 'small' else np.arange(40, 51, 2)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -68,7 +68,7 @@ for mode in modes:
             Vhat = (sigma_Y ** 2) / T_hat  # prior variance
             biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
-            if mode == 'drop':
+            if mode == 'drop' or 'keep':
                 (
                     mu_S,
                     mu_S_s,
@@ -201,10 +201,10 @@ for mode in modes:
     y4 = np.mean(age_parti_matrix, axis=1)
     y5 = np.mean(n_parti_matrix, axis=1)
     y6 = -y2 * sigma_Y + mu_Y
-    y71 = np.mean(belief_age1_matrix, axis=1)  # consumption-weighted beliefs for participants from each age group
-    y72 = np.mean(belief_age2_matrix, axis=1)
-    y73 = np.mean(belief_age3_matrix, axis=1)
-    y74 = np.mean(belief_age4_matrix, axis=1)
+    y71 = np.nanmean(belief_age1_matrix, axis=1)  # consumption-weighted beliefs for participants from each age group
+    y72 = np.nanmean(belief_age2_matrix, axis=1)
+    y73 = np.nanmean(belief_age3_matrix, axis=1)
+    y74 = np.nanmean(belief_age4_matrix, axis=1)
 
     xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'age of participants',
                'number of cohorts', 'cutoff belief', 'belief of participants in age groups']
@@ -234,7 +234,7 @@ for mode in modes:
             ax.set_ylabel('mean ' + xlabels[i])
 
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + '.png', dpi=500)
-        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
         plt.show()
 
 
