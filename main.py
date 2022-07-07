@@ -22,6 +22,10 @@ modes = ['keep']
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 survey_view_parti_matrix = np.zeros((Mpaths, Nt))  # average perceived risk premia among investors
+survey_view_long_only_matrix = np.zeros((Mpaths, Nt))
+survey_view_can_short_matrix = np.zeros((Mpaths, Nt))
+survey_view_parti_young_matrix = np.zeros((Mpaths, Nt))
+survey_view_parti_old_matrix = np.zeros((Mpaths, Nt))
 popu_parti_young_matrix = np.zeros((Mpaths, Nt))
 popu_parti_old_matrix = np.zeros((Mpaths, Nt))
 age_parti_matrix = np.zeros((Mpaths, Nt))
@@ -30,6 +34,7 @@ erp_S_matrix = np.zeros((Mpaths, Nt))
 Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
 dY_Y_matrix = np.zeros((Mpaths, Nt))
 obj_rp_matrix = np.zeros((Mpaths, Nt))
+
 
 for k in range(Mpaths):
     s = time.time()
@@ -73,37 +78,7 @@ for k in range(Mpaths):
             ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre, T_hat, dZ_build, dZ, tau,
                          cohort_size)
 
-            erp_S = mu_S - r
-            # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
-            #
-            dR_matrix[k] = dR
-            # delta_matrix[k] = Delta
-            r_matrix[k] = r
-            # theta_matrix[k] = theta
-            # mu_S_matrix[k] = mu_S
-            # mu_S_s_matrix[k] = mu_S_s
-            erp_S_matrix[k] = erp_S
-            # erp_S_s_matrix[k] = erp_S_s
-            # pi_matrix[k] = pi
-            #
-            # f_matrix[k] = f
-            # f_parti_matrix[k] = f_parti
-            popu_parti_matrix[k] = popu_parti
-            # Delta_bar_parti_matrix[k] = Delta_bar_parti
-            # w_matrix[k] = w
-            # w_cohort_matrix[k] = w_cohort
-            age_parti_matrix[k] = age_parti
-            # n_parti_matrix[k] = n_parti
-
             invest_tracker = pi > 0
-            theta_mat = np.transpose(np.tile(theta, (Nt, 1)))
-            parti_track = invest_tracker * cohort_size
-            survey_view_parti_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
-                                                     weights=parti_track, axis=1)
-            obj_rp_matrix[k] = theta * sigma_S
-
-            popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
-            popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
 
 
         if mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
@@ -140,52 +115,70 @@ for k in range(Mpaths):
             ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
                                             T_hat, dZ_build, dZ, tau, cohort_size)
 
-            erp_S = mu_S - r
-            # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
+            long_only_weights = (invest_tracker - can_short_tracker) * cohort_size
+            can_short_weights = can_short_tracker * cohort_size
+            survey_view_long_only_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
+                                                           weights=long_only_weights, axis=1)
+            survey_view_can_short_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
+                                                         weights=can_short_weights, axis=1)
 
-            dR_matrix[k] = dR
-            # delta_matrix[k] = Delta
-            r_matrix[k] = r
-            # theta_matrix[k] = theta
-            # mu_S_matrix[k] = mu_S
-            # mu_S_s_matrix[k] = mu_S_s
-            erp_S_matrix[k] = erp_S
-            # erp_S_s_matrix[k] = erp_S_s
-            # pi_matrix[k] = pi
+        erp_S = mu_S - r
+        # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
-            # w_matrix[k] = w
-            # w_cohort_matrix[k] = w_cohort
-            # n_parti_matrix[k] = n_parti
+        dR_matrix[k] = dR
+        # delta_matrix[k] = Delta
+        r_matrix[k] = r
+        # theta_matrix[k] = theta
+        # mu_S_matrix[k] = mu_S
+        # mu_S_s_matrix[k] = mu_S_s
+        erp_S_matrix[k] = erp_S
+        # erp_S_s_matrix[k] = erp_S_s
+        # pi_matrix[k] = pi
 
-            popu_parti_matrix[k] = popu_parti
-            parti_track = invest_tracker * cohort_size
-            popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
-            popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
-            # popu_can_short_matrix[k] = popu_can_short
-            # popu_short_matrix[k] = popu_short
-            # popu_long_matrix[k] = popu_long
-            # f_matrix[k] = f
-            # f_parti_matrix[k] = f_parti
-            # f_short_matrix[k] = f_short
-            # f_long_matrix[k] = f_long
-            age_parti_matrix[k] = age_parti
-            # age_short_matrix[k] = age_short
-            # age_long_matrix[k] = age_long
+        # w_matrix[k] = w
+        # w_cohort_matrix[k] = w_cohort
+        # n_parti_matrix[k] = n_parti
 
-            # invest_tracker_matrix[k] = invest_tracker
-            # can_short_tracker_matrix[k] = can_short_tracker
-            # long_indicator_matrix[k] = long
-            # short_indicator_matrix[k] = short
+        popu_parti_matrix[k] = popu_parti
+        # popu_can_short_matrix[k] = popu_can_short
+        # popu_short_matrix[k] = popu_short
+        # popu_long_matrix[k] = popu_long
+        # f_matrix[k] = f
+        # f_parti_matrix[k] = f_parti
+        # f_short_matrix[k] = f_short
+        # f_long_matrix[k] = f_long
+        age_parti_matrix[k] = age_parti
+        # age_short_matrix[k] = age_short
+        # age_long_matrix[k] = age_long
 
-            Delta_bar_parti_matrix[k] = Delta_bar_parti
-            # Delta_bar_long_matrix[k] = Delta_bar_long
-            # Delta_bar_short_matrix[k] = Delta_bar_short
+        # invest_tracker_matrix[k] = invest_tracker
+        # can_short_tracker_matrix[k] = can_short_tracker
+        # long_indicator_matrix[k] = long
+        # short_indicator_matrix[k] = short
 
-            theta_mat = np.transpose(np.tile(theta, (Nt, 1)))
-            survey_view_parti_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
-                                                     weights=parti_track, axis=1)
-            obj_rp_matrix[k] = theta * sigma_S
+        Delta_bar_parti_matrix[k] = Delta_bar_parti
+        # Delta_bar_long_matrix[k] = Delta_bar_long
+        # Delta_bar_short_matrix[k] = Delta_bar_short
 
+        theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+        cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+        survey_view_parti = (Delta + theta_mat) * invest_tracker * sigma_S
+        survey_view_parti_matrix[k] = np.average(survey_view_parti,
+                                                 weights=cohort_size_mat, axis=1)
+
+        araw = np.sum(survey_view_parti[:, tau_cutoff1:], axis=1)
+        a = araw == 0
+        survey_view_parti_young_matrix[k] = np.average(survey_view_parti[:, tau_cutoff1:],
+                                                       weights = cohort_size_mat[:, tau_cutoff1:], axis=1) * (1-a) + np.nan * a
+        braw = np.sum(survey_view_parti[:, tau_cutoff3:tau_cutoff2], axis=1)
+        b = braw == 0
+        survey_view_parti_old_matrix[k] = np.average(survey_view_parti[:, tau_cutoff3:tau_cutoff2],
+                                                     weights=cohort_size_mat[:, tau_cutoff3:tau_cutoff2], axis=1) * (1-b) + np.nan * b
+        obj_rp_matrix[k] = theta * sigma_S
+
+        parti_track = cohort_size_mat * invest_tracker
+        popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
+        popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
 
         # # for graphs specific to one random path:
         # if dZ_build == np.load('dZt_build_demo.npy'):
@@ -458,7 +451,10 @@ for k in range(Mpaths):
 # #######################################
 #
 # test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
-horizons = [1, 3, 6, 12, 36, 60, 120]
+# sensitivity of subjective vs. objective risk premia to business cycle indicator (dY/Y)
+# y: output growth from time t-T to time t
+# x: subjective and objective risk premia at tme t
+horizons = [1, 3, 6, 12, 24]
 m = len(horizons)
 results_obj_matrix = np.empty((Mpaths, m, 3))
 results_sub_matrix = np.empty((Mpaths, m, 3))
@@ -470,15 +466,15 @@ for i in range(Mpaths):
         if i == 0:
             header_j = str(horizon) + '-month'
             header.append(header_j)
-        y = (y_path[horizon:] - y_path[:-horizon]) / (horizon * dt)
+        y = (y_path[horizon:-horizon] - y_path[:-horizon * 2]) / (horizon * dt)
         y = y.reshape(-1, 1)
 
-        x_sub_path = survey_view_parti_matrix[i, :-horizon]
+        x_sub_path = survey_view_parti_matrix[i, horizon:-horizon]
         x_sub_path = x_sub_path / np.std(x_sub_path)
         x_sub = x_sub_path.reshape(-1, 1)
         x_sub = sm.add_constant(x_sub)
 
-        x_obj_path = obj_rp_matrix[i, :-horizon]
+        x_obj_path = obj_rp_matrix[i, horizon:-horizon]
         x_obj_path = x_obj_path / np.std(x_obj_path)
         x_obj = x_obj_path.reshape(-1, 1)
         x_obj = sm.add_constant(x_obj)

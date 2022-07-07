@@ -34,7 +34,7 @@ cummu_popu = np.cumsum(cohort_size)
 tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
 tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
 tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-
+cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 Mpaths = 100
 
 # for graphs:
