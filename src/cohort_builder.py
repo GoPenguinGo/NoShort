@@ -63,7 +63,7 @@ def build_cohorts(
 
         part = intvec * np.exp(
             (-0.5 * d_eta_st_ss ** 2 - beta) * dt
-            + d_eta_st_ss * dZ_t
+            + d_eta_st_ss * dZt[i - 1]
         )
 
         # add a new cohort
@@ -206,7 +206,7 @@ def build_cohorts_partial_constraint(
 
         part = intvec * np.exp(
             (-0.5 * d_eta_st_ss ** 2 - beta) * dt
-            + d_eta_st_ss * dZ_t
+            + d_eta_st_ss * dZt[i - 1]
         )
 
         # add a new cohort

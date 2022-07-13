@@ -10,7 +10,7 @@ modes = ['rich_free']
 # modes = ['drop']
 zoom_in = 'small'
 # zoom_in = 'large'
-T_hats = dt * np.arange(1, 12, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
+T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -65,8 +65,6 @@ for mode in modes:
 
             if mode == 'drop' or mode == 'keep':
                 (
-                    mu_S,
-                    mu_S_s,
                     r,
                     theta,
                     f,
@@ -77,7 +75,6 @@ for mode in modes:
                     f_parti,
                     Delta_bar_parti,
                     dR,
-                    w,
                     w_cohort,
                     age_parti,
                     n_parti,
@@ -87,8 +84,6 @@ for mode in modes:
 
             else:
                 (
-                    mu_S,
-                    mu_S_s,
                     r,
                     theta,
                     f,
@@ -96,7 +91,6 @@ for mode in modes:
                     d_eta,
                     pi,
                     dR,
-                    w,
                     w_cohort,
                     popu_parti,
                     popu_can_short,
