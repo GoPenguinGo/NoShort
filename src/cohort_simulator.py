@@ -5,8 +5,6 @@ from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_
 from tqdm import tqdm
 from numba import jit
 
-
-# todo: trace output, consumption, and wealth
 def simulate_cohorts(
         Y: np.ndarray,
         biasvec: np.ndarray,
@@ -27,16 +25,11 @@ def simulate_cohorts(
         Npre: float,
         mode: str,
         cohort_size: np.ndarray,
-        f_st: np.ndarray,
+        intvec: np.ndarray,
         Delta_s_t: np.ndarray,
-        eta_st_ss: np.ndarray,
-        eta_bar: np.ndarray,
-        MaxThetaDelta_s_t: np.ndarray,
+        d_eta_st_ss: np.ndarray,
         invest_tracker: np.ndarray
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -76,7 +69,7 @@ def simulate_cohorts(
         eta_st_ss (np.ndarray): disagreement input
         eta_bar (np.ndarray): average disagreement input
         Delta_s_t (np.ndarray): bias for each cohort, shape(Nc)
-        MaxThetaDelta_s_t (np.ndarray): max(Delta_), shape(Nc)
+        d_eta_st_ss (np.ndarray): max(Delta_), shape(Nc)
         invest_tracker (np.ndarry): shape(Nt)
 
     Returns:
@@ -104,7 +97,6 @@ def simulate_cohorts(
     f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
     pi = np.zeros((Nt, Nc))  # portfolio choices
     w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
-    w = np.zeros((Nt, Nc))  # evolution of wealth for individual agents alive
     short = np.zeros((Nt, Nc))
 
     # aggregate terms:
@@ -124,6 +116,8 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
+    reduction = np.exp(-nu * dt)
+
     for i in tqdm(range(Nt)):
         # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
         #       currently I let them update, but keep their "opinions" muted
@@ -132,24 +126,17 @@ def simulate_cohorts(
         # realization of shocks
         dZ_t = dZ[i]
 
-        eta_st_ss = eta_st_ss * np.exp(
-            -0.5 * MaxThetaDelta_s_t ** 2 * dt
-            + MaxThetaDelta_s_t * dZ_t
+        part = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            + d_eta_st_ss * dZ_t
         )
-        part = beta * np.exp(-beta * tau) * eta_bar * eta_st_ss
-        # add a new cohort
-        eta_st_ss = eta_st_ss[1 : ]
-        eta_st_ss = np.append(eta_st_ss, 1)
-        part = part[1 : ]
-        eta_bar_t = np.sum(part * dt) / (1 - beta * dt)
-        # todo: alternatively, update eta_bar_t using (19)
-        eta_bar = eta_bar[1 : ]
-        eta_bar = np.append(eta_bar, eta_bar_t)
 
+        # add a new cohort
         # Cohort consumption (wealth) share:
-        # sum(f_st * dt) == 1 for any t
-        f_st = part / eta_bar_t
-        f_st = np.append(f_st, beta)  # add a new cohort who consumes beta proportion of the total output
+        eta_t = np.sum(part)
+        intvec = reduction * part
+        intvec = np.append(intvec[1:], beta / nu * (1 - reduction) * eta_t)
+        f_st = intvec / eta_t / dt
 
         # Wealth
         if i == 0:
@@ -183,30 +170,30 @@ def simulate_cohorts(
             invest_tracker = np.append(invest_tracker, 1)
             possible_cons_share = f_st * dt * invest_tracker
             possible_delta_st = Delta_s_t * invest_tracker
-            lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+            # lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
             theta_t = bisection(
-                solve_theta, lowest_bound, 20, possible_cons_share, possible_delta_st, sigma_Y
+                solve_theta, -50, 50, possible_cons_share, possible_delta_st, sigma_Y
             )  # solve for theta
             a = Delta_s_t + theta_t
             invest = (a >= 0)
             #want_to_short_t = invest_tracker * (1 - invest)
             invest_tracker = invest * invest_tracker
-            MaxThetaDelta_s_t = a * invest_tracker - theta_t
+            d_eta_st_ss = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
-            pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
 
         if mode == 'keep':
-            lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
+            #lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             f_st_standard = f_st * dt
             theta_t = bisection(
-                solve_theta, lowest_bound, 20, f_st_standard, Delta_s_t, sigma_Y
+                solve_theta, -50, 50, f_st_standard, Delta_s_t, sigma_Y
             )  # solve for theta
-            MaxThetaDelta_s_t = np.maximum(
+            d_eta_st_ss = np.maximum(
                 -theta_t, Delta_s_t
             )  # update max(Delta_s_t, -theta)
             invest = Delta_s_t >= -theta_t
@@ -214,7 +201,7 @@ def simulate_cohorts(
             popu_parti_t = np.sum(cohort_size * invest)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
-            pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
@@ -222,12 +209,12 @@ def simulate_cohorts(
             f_st_standard = f_st * dt
             Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
             theta_t = sigma_Y - Delta_bar_parti_t
-            MaxThetaDelta_s_t = Delta_s_t
+            d_eta_st_ss = Delta_s_t
             invest = Delta_s_t >= -theta_t  # long stock
             popu_parti_t = 1
 
             f_parti_t = 1
-            pi_st = (MaxThetaDelta_s_t + theta_t) / sigma_S
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
@@ -238,32 +225,22 @@ def simulate_cohorts(
                 - sigma_Y * theta_t
         )
 
-        mu_S_t = sigma_S * theta_t + r_t
-        mu_S_st = (
-                mu_S_t + sigma_S * Delta_s_t
-        )  # expected stock return for agent cohorts
-
         # store the results
         dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
-        mu_S[i] = mu_S_t
-        mu_S_s[i, :] = mu_S_st
         f[i, :] = f_st
         Delta[i, :] = Delta_s_t
-        max[i, :] = MaxThetaDelta_s_t
+        max[i, :] = d_eta_st_ss
         f_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         pi[i, :] = pi_st
         parti[i] = popu_parti_t
-        w[i, :] = w_st
         w_cohort[i, :] = w_cohort_st
         age[i] = age_t
         n_parti[i] = n_parti_t
 
     return (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -274,7 +251,6 @@ def simulate_cohorts(
         f_parti,
         Delta_bar_parti,
         dR,
-        w,
         w_cohort,
         age,
         n_parti,
@@ -301,18 +277,13 @@ def simulate_cohorts_partial_constraint(
         Npre: float,
         mode: str,
         cohort_size: np.ndarray,
-        f_st: np.ndarray,
+        intvec: np.ndarray,
         Delta_s_t: np.ndarray,
-        eta_st_ss: np.ndarray,
-        eta_bar: np.ndarray,
         d_eta_st_ss: np.ndarray,
         invest_tracker_t: np.ndarray,
         can_short_tracker_t: np.ndarray,
         good_time_simulate: np.ndarray,
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -363,7 +334,7 @@ def simulate_cohorts_partial_constraint(
         eta_st_ss (np.ndarray): disagreement input
         eta_bar (np.ndarray): average disagreement input
         Delta_s_t (np.ndarray): bias for each cohort, shape(Nc)
-        MaxThetaDelta_s_t (np.ndarray): max(Delta_), shape(Nc)
+        d_eta_st_ss (np.ndarray): max(Delta_), shape(Nc)
         invest_tracker (np.ndarry): shape(Nt)
 
     Returns:
@@ -404,7 +375,6 @@ def simulate_cohorts_partial_constraint(
     f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
     pi = np.zeros((Nt, Nc))  # portfolio choices
     w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
-    w = np.zeros((Nt, Nc))  # evolution of wealth for individual agents alive
     invest_tracker = np.zeros((Nt, Nc))
     can_short_tracker = np.zeros((Nt, Nc))
     long = np.zeros((Nt, Nc))
@@ -419,38 +389,27 @@ def simulate_cohorts_partial_constraint(
     Delta_bar_long = np.zeros((Nt))  # average belief of the long investors
     Delta_bar_short = np.zeros((Nt))  # average belief of the short-sellers
 
-
-    # Expected returns
-    mu_S = np.zeros(Nt)  # expected return under true measure
-    mu_S_s = np.zeros((Nt, Nc))  # expected return under agent-measure
-    mu_hat_S = np.zeros(Nt)  # average belief in the economy
-
     dR_t = 0
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
+
+    reduction = np.exp(-nu * dt)
 
     for i in tqdm(range(Nt)):
         # realization of shocks
         dZ_t = dZ[i]
 
-        eta_st_ss = eta_st_ss * np.exp(
-            -0.5 * d_eta_st_ss ** 2 * dt
+        part = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
             + d_eta_st_ss * dZ_t
         )
-        part = beta * np.exp(-beta * tau) * eta_bar * eta_st_ss
-        # add a new cohort
-        eta_st_ss = eta_st_ss[1 : ]
-        eta_st_ss = np.append(eta_st_ss, 1)
-        part = part[1 : ]
-        eta_bar_t = np.sum(part * dt) / (1 - beta * dt)
-        # todo: alternatively, update eta_bar_t using (19)
-        eta_bar = eta_bar[1 : ]
-        eta_bar = np.append(eta_bar, eta_bar_t)
 
+        # add a new cohort
         # Cohort consumption (wealth) share:
-        # sum(f_st * dt) == 1 for any t
-        f_st = part / eta_bar_t
-        f_st = np.append(f_st, beta)  # add a new cohort who consumes beta proportion of the total output
+        eta_t = np.sum(part)
+        intvec = reduction * part
+        intvec = np.append(intvec[1:], beta / nu * (1 - reduction) * eta_t)
+        f_st = intvec / eta_t / dt
 
         # Wealth
         if i == 0:
@@ -508,7 +467,7 @@ def simulate_cohorts_partial_constraint(
         )  # once rich, always can short
 
         theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint, -20, 20, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
+            solve_theta_partial_constraint, -50, 50, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
         )
         want_to_short = (Delta_s_t + theta_t) < 0
         constrained = invest_tracker_t * want_to_short * (
@@ -527,29 +486,17 @@ def simulate_cohorts_partial_constraint(
                 - sigma_Y * theta_t
         )
 
-        mu_S_t = sigma_S * theta_t + r_t
-        mu_S_st = (
-                mu_S_t + sigma_S * Delta_s_t
-        )  # expected stock return for agent cohorts
-        # muhat_S_t = mu_S_t + sigma_S * np.sum(
-        #     cohort_size * Delta_s_t
-        # )  # survey average forecast
-
         # store the results
         d_eta[i, :] = d_eta_st_ss
         dR[i] = dR_t  # realized return from dZt
         theta[i] = theta_t
         r[i] = r_t
-        mu_S[i] = mu_S_t
-        mu_S_s[i, :] = mu_S_st
-        # mu_hat_S[i] = muhat_S_t
         f[i, :] = f_st
         Delta[i, :] = Delta_s_t
         invest_tracker[i, :] = invest_tracker_t
         can_short_tracker[i, :] = can_short_tracker_t
         long[i, :] = long_t
         short[i, :] = short_t
-        w[i, :] = w_st
         w_cohort[i, :] = w_cohort_st
         pi[i, :] = pi_st
         Delta_bar_parti[i] = np.sum(Delta_s_t * invest_tracker_t * f_st) / np.sum(invest_tracker_t * f_st)
@@ -573,8 +520,6 @@ def simulate_cohorts_partial_constraint(
     n_parti = np.sum(invest_tracker, 1) / Nc
 
     return (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -582,7 +527,6 @@ def simulate_cohorts_partial_constraint(
         d_eta,
         pi,
         dR,
-        w,
         w_cohort,
         popu_parti,
         popu_can_short,

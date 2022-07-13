@@ -10,7 +10,7 @@ modes = ['rich_free']
 # modes = ['drop']
 zoom_in = 'small'
 # zoom_in = 'large'
-T_hats = dt * np.arange(6, 60, 4) if zoom_in == 'small' else np.arange(40, 51, 2)
+T_hats = dt * np.arange(1, 12, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -62,7 +62,6 @@ for mode in modes:
         for k, T_hat in enumerate(T_hats):
             Npre = int(T_hat / dt)
             Vhat = (sigma_Y ** 2) / T_hat  # prior variance
-            biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
             if mode == 'drop' or mode == 'keep':
                 (
@@ -125,14 +124,14 @@ for mode in modes:
             popu_parti_matrix[k, l] = np.mean(popu_parti[1200:])
             parti_rate = invest_tracker * cohort_size
 
-            belief = (Delta * sigma_Y + mu_Y) * invest_tracker
+            belief = (Delta * sigma_Y + mu_Y)
             belief_weights = f * dt
 
             for i in range(4):
                 if i <= 2:
                     popu_age_matrix[k, l, i] = np.mean(np.sum(parti_rate[1200:, cutoffs[i+1]:], axis=1))
 
-                weights_zero = (np.sum(belief[:, cutoffs[i+1]:cutoffs[i]], axis=1) == 0)  # no one from the age group is participating
+                weights_zero = (np.sum(invest_tracker[:, cutoffs[i+1]:cutoffs[i]], axis=1) == 0)  # no one from the age group is participating
                 belief_copy = belief.copy()
                 if np.sum(weights_zero[1200:]) == Nt-1200:
                     belief_age_matrix[k, l, i] = np.nan

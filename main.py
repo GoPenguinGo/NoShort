@@ -79,6 +79,7 @@ for k in range(Mpaths):
                          cohort_size)
 
             invest_tracker = pi > 0
+            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
 
 
         if mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
@@ -114,6 +115,8 @@ for k in range(Mpaths):
                 Delta_bar_short,
             ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
                                             T_hat, dZ_build, dZ, tau, cohort_size)
+
+            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
 
             long_only_weights = (invest_tracker - can_short_tracker) * cohort_size
             can_short_weights = can_short_tracker * cohort_size
@@ -160,20 +163,26 @@ for k in range(Mpaths):
         # Delta_bar_long_matrix[k] = Delta_bar_long
         # Delta_bar_short_matrix[k] = Delta_bar_short
 
-        theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+        # todo: correct the code about survey view
         cohort_size_mat = np.tile(cohort_size, (Nt, 1))
         survey_view_parti = (Delta + theta_mat) * invest_tracker * sigma_S
         survey_view_parti_matrix[k] = np.average(survey_view_parti,
                                                  weights=cohort_size_mat, axis=1)
 
-        araw = np.sum(survey_view_parti[:, tau_cutoff1:], axis=1)
-        a = araw == 0
-        survey_view_parti_young_matrix[k] = np.average(survey_view_parti[:, tau_cutoff1:],
-                                                       weights = cohort_size_mat[:, tau_cutoff1:], axis=1) * (1-a) + np.nan * a
-        braw = np.sum(survey_view_parti[:, tau_cutoff3:tau_cutoff2], axis=1)
-        b = braw == 0
-        survey_view_parti_old_matrix[k] = np.average(survey_view_parti[:, tau_cutoff3:tau_cutoff2],
-                                                     weights=cohort_size_mat[:, tau_cutoff3:tau_cutoff2], axis=1) * (1-b) + np.nan * b
+        weights_zero = (np.sum(survey_view_parti[:, tau_cutoff1:], axis=1) == 0)
+        view_copy = np.copy(survey_view_parti)
+        a = np.where(weights_zero == 1)
+        view_copy[a, :] = np.nan
+        survey_view_parti_young_matrix[k] = np.average(view_copy[:, tau_cutoff1:],
+                                                       weights = cohort_size_mat[:, tau_cutoff1:], axis=1)
+
+        weights_zero1 = (np.sum(survey_view_parti[:, tau_cutoff3:tau_cutoff2], axis=1) == 0)
+        view_copy1 = np.copy(survey_view_parti)
+        a1 = np.where(weights_zero1 == 1)
+        view_copy1[a1, :] = np.nan
+        survey_view_parti_old_matrix[k] = np.average(view_copy1[:, tau_cutoff3:tau_cutoff2],
+                                                     weights=cohort_size_mat[:, tau_cutoff3:tau_cutoff2], axis=1)
+
         obj_rp_matrix[k] = theta * sigma_S
 
         parti_track = cohort_size_mat * invest_tracker
@@ -452,42 +461,41 @@ for k in range(Mpaths):
 #
 # test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
 # sensitivity of subjective vs. objective risk premia to business cycle indicator (dY/Y)
-# y: output growth from time t-T to time t
-# x: subjective and objective risk premia at tme t
+# x: output growth from time t-T to time t
+# y: subjective and objective risk premia at tme t
 horizons = [1, 3, 6, 12, 24]
 m = len(horizons)
 results_obj_matrix = np.empty((Mpaths, m, 3))
 results_sub_matrix = np.empty((Mpaths, m, 3))
 header = []
 for i in range(Mpaths):
-    y_path = np.cumsum(dY_Y_matrix[i])
+    x_path = np.cumsum(dY_Y_matrix[i])
 
     for j, horizon in enumerate(horizons):
         if i == 0:
             header_j = str(horizon) + '-month'
             header.append(header_j)
-        y = (y_path[horizon:-horizon] - y_path[:-horizon * 2]) / (horizon * dt)
-        y = y.reshape(-1, 1)
+        x = (x_path[horizon:-horizon] - x_path[:-horizon * 2]) / (horizon * dt)
+        x = x / np.std(x)
+        x = x.reshape(-1, 1)
+        x = sm.add_constant(x)
 
-        x_sub_path = survey_view_parti_matrix[i, horizon:-horizon]
-        x_sub_path = x_sub_path / np.std(x_sub_path)
-        x_sub = x_sub_path.reshape(-1, 1)
-        x_sub = sm.add_constant(x_sub)
+        y_sub_path = survey_view_parti_matrix[i, horizon:-horizon]
+        y_sub = y_sub_path.reshape(-1, 1)
 
-        x_obj_path = obj_rp_matrix[i, horizon:-horizon]
-        x_obj_path = x_obj_path / np.std(x_obj_path)
-        x_obj = x_obj_path.reshape(-1, 1)
-        x_obj = sm.add_constant(x_obj)
+        y_obj_path = obj_rp_matrix[i, horizon:-horizon]
+        y_obj = y_obj_path.reshape(-1, 1)
 
         # Objective risk premia:
-        model = sm.OLS(y, x_obj)
+        model = sm.OLS(y_obj, x)
+
         est = model.fit()
         results_obj_matrix[i, j, 0] = est.params[1]
         results_obj_matrix[i, j, 1] = est.tvalues[1]
         results_obj_matrix[i, j, 2] = est.rsquared
 
         # Subjective risk premia:
-        model = sm.OLS(y, x_sub)
+        model = sm.OLS(y_sub, x)
         est = model.fit()
         results_sub_matrix[i, j, 0] = est.params[1]
         results_sub_matrix[i, j, 1] = est.tvalues[1]

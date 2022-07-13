@@ -40,9 +40,6 @@ def simulate(
         np.ndarray,
         np.ndarray,
         np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
 ]:
     '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     :param mode: scenario of the function, see param for scenario names
@@ -59,42 +56,20 @@ def simulate(
     :return:
     '''
 
-
-    time_s = time.time()
-    # dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
-    # dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
 
-    (
-        Z,
-        Y,
-    ) = shocks(
+    Y = shocks(
         dZ,
         mu_Y,
         sigma_Y,
         dt,
-    )
-    #
-    # (
-    #     good_time_build,
-    #     good_time_simulate,
-    # ) = good_times(
-    #     dZ_build,
-    #     dZ,
-    #     dt,
-    #     Nt,
-    #     Nc,
-    #     window=12,
-    #     z=1.28,
-    # )
+        )
 
     (
-        f_st,
         Delta_s_t,
-        eta_st_ss,
-        eta_bar,
-        MaxThetaDelta_s_t,
+        d_eta_st_ss,
         invest_tracker,
+        intvec,
     ) = build_cohorts(
         dZ_build,
         Nc,
@@ -112,8 +87,6 @@ def simulate(
     )
 
     (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -124,7 +97,6 @@ def simulate(
         f_parti,
         Delta_bar_parti,
         dR,
-        w,
         w_cohort,
         age,
         n_parti,
@@ -148,18 +120,13 @@ def simulate(
         Npre,
         mode,
         cohort_size,
-        f_st,
+        intvec,
         Delta_s_t,
-        eta_st_ss,
-        eta_bar,
-        MaxThetaDelta_s_t,
+        d_eta_st_ss,
         invest_tracker,
-    )
-    # if time.time() - time_s >= 10:
-    #     print('takes more than 10s')
+        )
+
     return (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -170,7 +137,6 @@ def simulate(
         f_parti,
         Delta_bar_parti,
         dR,
-        w,
         w_cohort,
         age,
         n_parti,
@@ -222,9 +188,6 @@ def simulate_partial_constraint(
         np.ndarray,
         np.ndarray,
         np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
 ]:
     '''
     :param mode: scenario of the function, see param for scenario names
@@ -247,21 +210,16 @@ def simulate_partial_constraint(
     :return:
     '''
 
-
-    time_s = time.time()
     # dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
     # dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
 
-    (
-        Z,
-        Y,
-    ) = shocks(
+    Y = shocks(
         dZ,
         mu_Y,
         sigma_Y,
         dt,
-    )
+        )
 
     (
         good_time_build,
@@ -276,21 +234,15 @@ def simulate_partial_constraint(
         z=1.28,
     )
 
-
     (
-        f_st,
         Delta_s_t,
-        eta_st_ss,
-        eta_bar,
         d_eta_st_ss,
         invest_tracker_build,
         can_short_tracker_build,
+        intvec,
     ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, good_time_build, mode)
 
-
     (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -298,7 +250,6 @@ def simulate_partial_constraint(
         d_eta,
         pi,
         dR,
-        w,
         w_cohort,
         popu_parti,
         popu_can_short,
@@ -338,23 +289,15 @@ def simulate_partial_constraint(
         Npre,
         mode,
         cohort_size,
-        f_st,
+        intvec,
         Delta_s_t,
-        eta_st_ss,
-        eta_bar,
         d_eta_st_ss,
         invest_tracker_build,
         can_short_tracker_build,
         good_time_simulate,
     )
 
-
-    # if time.time() - time_s >= 15:
-    #     print('takes more than 15s')
-
     return (
-        mu_S,
-        mu_S_s,
         r,
         theta,
         f,
@@ -362,7 +305,6 @@ def simulate_partial_constraint(
         d_eta,
         pi,
         dR,
-        w,
         w_cohort,
         popu_parti,
         popu_can_short,
