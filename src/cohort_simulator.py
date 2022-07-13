@@ -107,11 +107,6 @@ def simulate_cohorts(
     Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
     parti = np.zeros((Nt))  # participation rate
 
-    # Expected returns
-    mu_S = np.zeros(Nt)  # expected return under true measure
-    mu_S_s = np.zeros((Nt, Nc))  # expected return under agent-measure
-    mu_hat_S = np.zeros(Nt)  # average belief in the economy
-
     dR_t = 0
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
@@ -224,6 +219,8 @@ def simulate_cohorts(
                 + nu - beta
                 - sigma_Y * theta_t
         )
+
+        mu_S_t = sigma_S * theta_t + r_t
 
         # store the results
         dR[i] = dR_t  # realized return from t-1 to t
@@ -485,6 +482,8 @@ def simulate_cohorts_partial_constraint(
                 + nu - beta
                 - sigma_Y * theta_t
         )
+
+        mu_S_t = sigma_S * theta_t + r_t
 
         # store the results
         d_eta[i, :] = d_eta_st_ss
