@@ -98,9 +98,9 @@ def build_cohorts(
                 invest_tracker = np.append(invest_tracker, 1)
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                # lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
+                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
                 theta_t = bisection(
-                    solve_theta, -50, 50, possible_cons_share, possible_delta_st, sigma_Y
+                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
                 )  # solve for theta, 10 is a far away upper bound for theta
                 a = Delta_s_t + theta_t
                 invest = (a >= 0)
@@ -108,10 +108,10 @@ def build_cohorts(
                 d_eta_st_ss = a * invest_tracker - theta_t
 
             if mode == 'keep':
-                # lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
+                lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
                 f_st_standard = f_st * dt
                 theta_t = bisection(
-                    solve_theta, -50, 50, f_st_standard, Delta_s_t, sigma_Y
+                    solve_theta, lowest_bound, 50, f_st_standard, Delta_s_t, sigma_Y
                 )  # solve for theta
                 d_eta_st_ss = np.maximum(
                     -theta_t, Delta_s_t
