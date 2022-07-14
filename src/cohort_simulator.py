@@ -111,7 +111,7 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    reduction = np.exp(-nu * dt)
+    reduction = np.exp(-beta * dt)
 
     for i in tqdm(range(Nt)):
         # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
@@ -122,7 +122,7 @@ def simulate_cohorts(
         dZ_t = dZ[i]
 
         part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            (-0.5 * d_eta_st_ss ** 2) * dt
             + d_eta_st_ss * dZ_t
         )
 
@@ -130,7 +130,7 @@ def simulate_cohorts(
         # Cohort consumption (wealth) share:
         eta_t = np.sum(part)
         intvec = reduction * part
-        intvec = np.append(intvec[1:], beta / nu * (1 - reduction) * eta_t)
+        intvec = np.append(intvec[1:], beta * eta_t)
         f_st = intvec / eta_t / dt
 
         # Wealth
