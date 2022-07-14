@@ -56,13 +56,13 @@ def build_cohorts(
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
     invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Npre)
-    reduction = np.exp(-nu * dt)
+    reduction = np.exp(-beta * dt)
     intvec = beta
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
 
         part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            (-0.5 * d_eta_st_ss ** 2) * dt
             + d_eta_st_ss * dZt[i - 1]
         )
 
@@ -70,7 +70,7 @@ def build_cohorts(
         # Cohort consumption (wealth) share:
         eta_t = np.sum(part)
         intvec = reduction * part
-        intvec = np.append(intvec, beta / nu * (1 - reduction) * eta_t)
+        intvec = np.append(intvec, beta * eta_t)
         f_st = intvec / eta_t / dt
 
         # update beliefs
