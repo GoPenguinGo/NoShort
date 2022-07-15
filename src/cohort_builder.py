@@ -16,7 +16,7 @@ def build_cohorts(
     Vhat: float,
     mu_Y: float,
     sigma_Y: float,
-    beta: float,
+    tax: float,
     Npre: int,
     T_hat: float,
     mode: str
@@ -29,7 +29,7 @@ def build_cohorts(
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
-        dZt (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
+        dZ_build (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
         Nc (int): number of periods  = number of cohorts in the economy
         dt (float): unit of time
         rho (float): rho, discount factor
@@ -37,7 +37,7 @@ def build_cohorts(
         Vhat (float): initial variance of beliefs
         mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
-        beta (float): marginal rate of wealth tax
+        tax (float): marginal rate of wealth tax
         Npre (int): pre-trading periods
         T_hat (float): pre-trading years
         mode (str): describes the mode
@@ -56,23 +56,24 @@ def build_cohorts(
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
     invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Ninit)
-
-    intvec = beta / dt
+    reduction = np.exp(-tax * dt)
+    intvec = 1 / dt
     # eta = np.zeros(Nc)
     # sum_f = np.zeros(Nc)
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
 
         intvec = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
             + d_eta_st_ss * dZ_build[i - 1]
         )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(intvec * dt) / (1 - beta * dt)
-        intvec = np.append(intvec, beta * eta_t)
-        f_st = intvec / eta_t
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t
+        f_st = intvec
         # eta[i] = eta_t
         # sum_f[i] = np.sum(f_st)
 
@@ -85,7 +86,7 @@ def build_cohorts(
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
-            DELbias = np.sum(dZt[int(i - Npre) : i]) / T_hat
+            DELbias = np.sum(dZ_build[int(i - Npre) : i]) / T_hat
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
@@ -119,7 +120,7 @@ def build_cohorts(
                 d_eta_st_ss = np.maximum(
                     -theta_t, Delta_s_t
                 )  # update max(Delta_s_t, -theta)
-            print(theta_t)
+            # print(theta_t)
 
     if mode == 'keep':
         invest_tracker = (Delta_s_t >= -theta_t)
@@ -135,7 +136,7 @@ def build_cohorts(
 
 
 def build_cohorts_partial_constraint(
-        dZt: np.ndarray,
+        dZ_build: np.ndarray,
         Nc: int,
         dt: float,
         tau: np.ndarray,
@@ -145,7 +146,7 @@ def build_cohorts_partial_constraint(
         Vhat: float,
         mu_Y: float,
         sigma_Y: float,
-        beta: float,
+        tax: float,
         Npre: int,
         T_hat: float,
         good_time_build: np.ndarray,
@@ -160,7 +161,7 @@ def build_cohorts_partial_constraint(
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
-        dZt (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
+        dZ_build (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
         Nc (int): number of periods  = number of cohorts in the economy
         dt (float): unit of time
         rho (float): rho, discount factor
@@ -168,7 +169,7 @@ def build_cohorts_partial_constraint(
         Vhat (float): initial variance of beliefs
         mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
-        beta (float): marginal rate of wealth tax
+        tax (float): marginal rate of wealth tax
         Npre (int): pre-trading periods
         T_hat (float): pre-trading years
         good_time_build (np.ndarray): an information indicator that attracts attention of all agents
@@ -188,49 +189,36 @@ def build_cohorts_partial_constraint(
     eta_bar = np.ones(1)
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
-    invest_tracker = np.ones(Npre)
-    can_short_tracker = np.zeros(Npre)
-    reduction = np.exp(-nu * dt)
-    intvec = beta
+    invest_tracker = np.ones(Ninit)
+    can_short_tracker = np.ones(Ninit)
+    intvec = 1 / dt
+
     for i in tqdm(range(1, Nc)):
-        tau_short = tau[-i:]
 
-        # eta_st_ss = eta_st_ss * np.exp(
-        #     -0.5 * d_eta_st_ss ** 2 * dt
-        #     + d_eta_st_ss * dZt[i - 1]
-        # )
-        #
-        # Part = beta * np.exp(-beta * tau_short) * eta_bar * eta_st_ss
-        # eta_bar_t = np.sum(Part * dt) / (1 - beta * dt)
-        # eta_bar = np.append(eta_bar, eta_bar_t)
-        # eta_st_ss = np.append(eta_st_ss, 1)
-        #
-        # f_st = Part / eta_bar_t
-        # f_st = np.append(f_st, beta)  # cohort consumption share
-
-        part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
-            + d_eta_st_ss * dZt[i - 1]
-        )
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
+            + d_eta_st_ss * dZ_build[i - 1]
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(part)
-        intvec = reduction * part
-        intvec = np.append(intvec, beta / nu * (1 - reduction) * eta_t)
-        f_st = intvec / eta_t / dt
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t  # rescale intvec to improve numerical stability; it is OK because we don't change f_st & we use only f_st afterwards
+        f_st = intvec
+
 
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau_short) / sigma_Y ** 2
                       ) * (
-                             -Delta_s_t * dt + dZt[i - 1]
+                             -Delta_s_t * dt + dZ_build[i - 1]
                      )  # from eq(5)
         if i < Npre:
             Delta_s_t = Delta_s_t + dDelta_s_t
             Delta_s_t = np.append(Delta_s_t,
                                   0)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
-            DELbias = np.sum(dZt[int(i - Npre): i]) / T_hat  # todo: should this be different for agents coming back in the renew case?
+            DELbias = np.sum(dZ_build[int(i - Npre): i]) / T_hat  # todo: should this be different for agents coming back in the renew case?
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
@@ -253,7 +241,7 @@ def build_cohorts_partial_constraint(
                 invest_tracker_t = np.ones(i + 1)  # all can invest
 
             if mode == 'back_renew' and good_time_build[i - 1] == 1:
-                return_bias = np.sum(dZt[int(i - window): i]) / (window * dt)
+                return_bias = np.sum(dZ_build[int(i - window): i]) / (window * dt)
                 Delta_s_t = Delta_s_t * invest_tracker_t + return_bias * (1 - invest_tracker_t)
                 invest_tracker_t = np.ones(i + 1)
 

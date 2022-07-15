@@ -10,10 +10,10 @@ sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
 
-beta = 0.015  # marginal rate of wealth tax
-# beta = 0.02
-# beta = 0.01
-omega = rho + nu - beta  # marginal propensity to consume
+tax = 0.015  # marginal rate of wealth tax
+# tax = 0.02
+# tax = 0.01
+beta = rho + nu - tax  # marginal propensity to consume
 
 # Setting prior variance
 dt = 1 / 12  # time incremental

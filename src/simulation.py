@@ -18,8 +18,8 @@ def simulate(
     Vhat: float,
     mu_Y: float,
     sigma_Y: float,
+    tax: float,
     beta: float,
-    omega: float,
     Npre: int,
     T_hat: int,
     dZ_build: np.ndarray,
@@ -50,7 +50,7 @@ def simulate(
     :param Vhat: initial variance
     :param mu_Y: mean of aggregate output growth rate
     :param sigma_Y: volatility of aggregate output growth rate
-    :param beta: initial consumption ratio
+    :param tax: initial consumption ratio
     :param Npre: pre-trading periods
     :param T_hat: pre-trading years
     :return:
@@ -80,7 +80,7 @@ def simulate(
         Vhat,
         mu_Y,
         sigma_Y,
-        beta,
+        tax,
         Npre,
         T_hat,
         mode,
@@ -114,8 +114,8 @@ def simulate(
         mu_Y,
         sigma_Y,
         sigma_S,
+        tax,
         beta,
-        omega,
         T_hat,
         Npre,
         mode,
@@ -153,8 +153,8 @@ def simulate_partial_constraint(
     Vhat: float,
     mu_Y: float,
     sigma_Y: float,
+    tax: float,
     beta: float,
-    omega: float,
     Npre: int,
     T_hat: int,
     dZ_build: np.ndarray,
@@ -199,8 +199,8 @@ def simulate_partial_constraint(
     :param Vhat: initial variance
     :param mu_Y: mean of aggregate output growth rate
     :param sigma_Y: volatility of aggregate output growth rate
-    :param beta: initial consumption share
-    :param omega: marginal propensity to consume
+    :param tax: initial consumption share
+    :param beta: marginal propensity to consume
     :param Npre: pre-trading periods
     :param T_hat: pre-trading years
     :param dZ_build: shocks for the building cohorts part
@@ -240,7 +240,7 @@ def simulate_partial_constraint(
         invest_tracker_build,
         can_short_tracker_build,
         intvec,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, beta, Npre, T_hat, good_time_build, mode)
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, T_hat, good_time_build, mode)
 
     (
         r,
@@ -283,8 +283,8 @@ def simulate_partial_constraint(
         mu_Y,
         sigma_Y,
         sigma_S,
+        tax,
         beta,
-        omega,
         T_hat,
         Npre,
         mode,

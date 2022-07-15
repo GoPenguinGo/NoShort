@@ -19,8 +19,8 @@ def simulate_cohorts(
         mu_Y: float,
         sigma_Y: float,
         sigma_S: float,
+        tax: float,
         beta: float,
-        omega: float,
         T_hat: float,
         Npre: float,
         mode: str,
@@ -60,7 +60,7 @@ def simulate_cohorts(
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
         sigma_S (float): as in eq(26), diffusion of stock price 
-        beta (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): as in eq(18), consumption share of the newborn cohort
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of obs
         mode (str): versions of the model
@@ -111,34 +111,32 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    # eta = np.zeros(Nc)
-    # sum_f = np.zeros(Nc)
     for i in tqdm(range(Nt)):
-        tau_short = tau[-i:]
+        dZ_t = dZ[i]
 
         intvec = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
-            + d_eta_st_ss * dZ_build[i - 1]
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
+            + d_eta_st_ss * dZ_t
         )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(intvec * dt) / (1 - beta * dt)
-        intvec = np.append(intvec, beta * eta_t)
-        f_st = intvec / eta_t
-        # eta[i] = eta_t
-        # sum_f[i] = np.sum(f_st)
+        intvec = intvec[1:]
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t
+        f_st = intvec
 
         # Wealth
         if i == 0:
-            w_cohort_st = Y[i] / omega * f_st
+            w_cohort_st = Y[i] / beta * f_st
             w_st = w_cohort_st / cohort_size * dt
         else:
             dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
-            w_t = Y[i] / omega
-            dw_st = ((r_t + nu - beta - omega) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            w_t = Y[i] / beta
+            dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
             w_st = w_st[1:] + dw_st[1:]
-            w_st = np.append(w_st, w_t * beta / nu)
+            w_st = np.append(w_st, w_t * tax / nu)
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
@@ -178,7 +176,7 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
 
-        if mode == 'keep':
+        elif mode == 'keep':
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             f_st_standard = f_st * dt
             theta_t = bisection(
@@ -196,7 +194,7 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
-        if mode == 'comp':
+        elif mode == 'comp':
             f_st_standard = f_st * dt
             Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
             theta_t = sigma_Y - Delta_bar_parti_t
@@ -210,13 +208,13 @@ def simulate_cohorts(
             n_parti_t = np.sum(invest) / Nc
 
         else:
-            print('error: mode not defined')
+            print('Warning! Mode not defined')
             exit()
 
         r_t = (
                 rho
                 + mu_Y
-                + nu - beta
+                + nu - tax
                 - sigma_Y * theta_t
         )
 
@@ -268,8 +266,8 @@ def simulate_cohorts_partial_constraint(
         mu_Y: float,
         sigma_Y: float,
         sigma_S: float,
+        tax: float,
         beta: float,
-        omega: float,
         T_hat: float,
         Npre: float,
         mode: str,
@@ -322,7 +320,7 @@ def simulate_cohorts_partial_constraint(
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
         sigma_S (float): as in eq(26), diffusion of stock price 
-        beta (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): as in eq(18), consumption share of the newborn cohort
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of obs
         mode (str): versions of the model
@@ -390,34 +388,33 @@ def simulate_cohorts_partial_constraint(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    reduction = np.exp(-nu * dt)
-
     for i in tqdm(range(Nt)):
         # realization of shocks
         dZ_t = dZ[i]
 
-        part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
             + d_eta_st_ss * dZ_t
-        )
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(part)
-        intvec = reduction * part
-        intvec = np.append(intvec[1:], beta / nu * (1 - reduction) * eta_t)
-        f_st = intvec / eta_t / dt
+        intvec = intvec[1:]
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t
+        f_st = intvec
 
         # Wealth
         if i == 0:
-            w_cohort_st = Y[i] / omega * f_st
+            w_cohort_st = Y[i] / beta * f_st
             w_st = w_cohort_st / cohort_size * dt
         else:
             dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
-            w_t = Y[i] / omega
-            dw_st = ((r_t + nu - beta - omega) * w_st + pi_st * (mu_S_t - r_t)) * dt + pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            w_t = Y[i] / beta
+            dw_st = ((r_t + nu - tax - beta) * w_st + pi_st * (mu_S_t - r_t)) * dt + pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
             w_st = w_st[1:] + dw_st[1:]
-            w_st = np.append(w_st, w_t * beta / nu)
+            w_st = np.append(w_st, w_t * tax / nu)
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
@@ -479,7 +476,7 @@ def simulate_cohorts_partial_constraint(
         r_t = (
                 rho
                 + mu_Y
-                + nu - beta
+                + nu - tax
                 - sigma_Y * theta_t
         )
 

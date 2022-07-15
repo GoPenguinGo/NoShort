@@ -75,7 +75,7 @@ for k in range(Mpaths):
                 w_cohort,
                 age_parti,
                 n_parti,
-            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre, T_hat, dZ_build, dZ, tau,
+            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, T_hat, dZ_build, dZ, tau,
                          cohort_size)
 
             invest_tracker = pi > 0
@@ -113,7 +113,7 @@ for k in range(Mpaths):
                 Delta_bar_parti,
                 Delta_bar_long,
                 Delta_bar_short,
-            ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, beta, omega, Npre,
+            ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
                                             T_hat, dZ_build, dZ, tau, cohort_size)
 
             theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
