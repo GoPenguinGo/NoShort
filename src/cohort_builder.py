@@ -228,7 +228,7 @@ def build_cohorts_partial_constraint(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Npre:
+        if i < Ninit:
             d_eta_st_ss = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
