@@ -18,6 +18,7 @@ def build_cohorts(
     sigma_Y: float,
     tax: float,
     Npre: int,
+    Ninit: int,
     T_hat: float,
     mode: str
 ) -> Tuple[
@@ -148,6 +149,7 @@ def build_cohorts_partial_constraint(
         sigma_Y: float,
         tax: float,
         Npre: int,
+        Ninit: int,
         T_hat: float,
         good_time_build: np.ndarray,
         mode: str

@@ -78,7 +78,7 @@ for mode in modes:
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, T_hat, dZ_build, dZ, tau,
+                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, Ninit, T_hat, dZ_build, dZ, tau,
                              cohort_size)
                 invest_tracker = pi > 0
 
@@ -110,7 +110,7 @@ for mode in modes:
                     Delta_bar_parti,
                     Delta_bar_long,
                     Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
+                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, Ninit,
                                                 T_hat, dZ_build, dZ, tau, cohort_size)
             dR_matrix[k, l] = np.mean(dR[1200:])
             r_matrix[k, l] = np.mean(r[1200:])

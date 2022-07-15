@@ -21,6 +21,7 @@ def simulate(
     tax: float,
     beta: float,
     Npre: int,
+    Ninit: int,
     T_hat: int,
     dZ_build: np.ndarray,
     dZ: np.ndarray,
@@ -82,6 +83,7 @@ def simulate(
         sigma_Y,
         tax,
         Npre,
+        Ninit,
         T_hat,
         mode,
     )
@@ -118,6 +120,7 @@ def simulate(
         beta,
         T_hat,
         Npre,
+        Ninit,
         mode,
         cohort_size,
         intvec,
@@ -156,6 +159,7 @@ def simulate_partial_constraint(
     tax: float,
     beta: float,
     Npre: int,
+    Ninit: int,
     T_hat: int,
     dZ_build: np.ndarray,
     dZ: np.ndarray,
@@ -240,7 +244,7 @@ def simulate_partial_constraint(
         invest_tracker_build,
         can_short_tracker_build,
         intvec,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, T_hat, good_time_build, mode)
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode)
 
     (
         r,
@@ -287,6 +291,7 @@ def simulate_partial_constraint(
         beta,
         T_hat,
         Npre,
+        Ninit,
         mode,
         cohort_size,
         intvec,
