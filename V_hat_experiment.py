@@ -10,7 +10,7 @@ modes = ['rich_free']
 # modes = ['drop']
 zoom_in = 'small'
 # zoom_in = 'large'
-T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(40, 51, 1)
+T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else dt * np.arange(20, 121, 5)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
