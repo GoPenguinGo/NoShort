@@ -194,6 +194,7 @@ def build_cohorts_partial_constraint(
     intvec = 1 / dt
 
     for i in tqdm(range(1, Nc)):
+        tau_short = tau[-i:]
 
         intvec = intvec * np.exp(
             (-0.5 * d_eta_st_ss ** 2 - tax) * dt
