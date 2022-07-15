@@ -111,27 +111,23 @@ def simulate_cohorts(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
-    reduction = np.exp(-beta * dt)
-
+    # eta = np.zeros(Nc)
+    # sum_f = np.zeros(Nc)
     for i in tqdm(range(Nt)):
-        # todo: think about the drop case: once an agent is out of the stock market, stop updating and stop investing for good
-        #       currently I let them update, but keep their "opinions" muted
-        #       in this current version, the survey data type of analysis wouldn't work
+        tau_short = tau[-i:]
 
-        # realization of shocks
-        dZ_t = dZ[i]
-
-        part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2) * dt
-            + d_eta_st_ss * dZ_t
-        )
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            + d_eta_st_ss * dZ_build[i - 1]
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(part)
-        intvec = reduction * part
-        intvec = np.append(intvec[1:], beta * eta_t)
-        f_st = intvec / eta_t / dt
+        eta_t = np.sum(intvec * dt) / (1 - beta * dt)
+        intvec = np.append(intvec, beta * eta_t)
+        f_st = intvec / eta_t
+        # eta[i] = eta_t
+        # sum_f[i] = np.sum(f_st)
 
         # Wealth
         if i == 0:

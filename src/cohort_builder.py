@@ -7,7 +7,7 @@ from numba import jit
 
 
 def build_cohorts(
-    dZt: np.ndarray,
+    dZ_build: np.ndarray,
     Nc: int,
     dt: float,
     tau: np.ndarray,
@@ -55,30 +55,31 @@ def build_cohorts(
     eta_bar = np.ones(1)
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
-    invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Npre)
-    reduction = np.exp(-beta * dt)
-    intvec = beta
+    invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Ninit)
+
+    intvec = beta / dt
+    # eta = np.zeros(Nc)
+    # sum_f = np.zeros(Nc)
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
 
-        part = intvec * np.exp(
-            (-0.5 * d_eta_st_ss ** 2) * dt
-            + d_eta_st_ss * dZt[i - 1]
-        )
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - beta) * dt
+            + d_eta_st_ss * dZ_build[i - 1]
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
 
         # add a new cohort
         # Cohort consumption (wealth) share:
-        eta_t = np.sum(part)
-        intvec = reduction * part
+        eta_t = np.sum(intvec * dt) / (1 - beta * dt)
         intvec = np.append(intvec, beta * eta_t)
-        f_st = intvec / eta_t / dt
-
-        print(np.sum(f_st))
+        f_st = intvec / eta_t
+        # eta[i] = eta_t
+        # sum_f[i] = np.sum(f_st)
 
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau_short) / sigma_Y**2
                       ) * (
-            -Delta_s_t * dt + dZt[i - 1]
+            -Delta_s_t * dt + dZ_build[i - 1]
         )  # from eq(5)
         if i < Npre:
             Delta_s_t = Delta_s_t + dDelta_s_t
@@ -91,7 +92,7 @@ def build_cohorts(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Npre or mode == 'comp':
+        if i < Ninit or mode == 'comp':
             d_eta_st_ss = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
@@ -118,6 +119,7 @@ def build_cohorts(
                 d_eta_st_ss = np.maximum(
                     -theta_t, Delta_s_t
                 )  # update max(Delta_s_t, -theta)
+            print(theta_t)
 
     if mode == 'keep':
         invest_tracker = (Delta_s_t >= -theta_t)
