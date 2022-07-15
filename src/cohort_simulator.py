@@ -213,6 +213,10 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
+        else:
+            print('error: mode not defined')
+            exit()
+
         r_t = (
                 rho
                 + mu_Y

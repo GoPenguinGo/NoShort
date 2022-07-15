@@ -73,6 +73,8 @@ def build_cohorts(
         intvec = np.append(intvec, beta * eta_t)
         f_st = intvec / eta_t / dt
 
+        print(np.sum(f_st))
+
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau_short) / sigma_Y**2
                       ) * (
