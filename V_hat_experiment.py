@@ -6,11 +6,11 @@ from src.param import *
 
 
 # modes = ['drop', 'ric_free']
-modes = ['rich_free']
-# modes = ['drop']
-zoom_in = 'small'
-# zoom_in = 'large'
-T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 31, 2)
+# modes = ['rich_free']
+modes = ['drop']
+# zoom_in = 'small'
+zoom_in = 'large'
+T_hats = dt * np.arange(1, 7, 1) if zoom_in == 'small' else np.arange(1, 31, 2)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
@@ -188,7 +188,8 @@ for mode in modes:
         else:
             ax.set_ylabel('mean ' + xlabels[i])
 
-        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + '.png', dpi=500)
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=500, format="png")
+        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
+        plt.close()
 
