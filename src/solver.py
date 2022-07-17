@@ -11,7 +11,7 @@ def bisection(
         arg1: np.ndarray,
         arg2: np.ndarray,
         arg3: float,
-        eps: float = 1e-6,
+        eps: float = 1e-9,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 

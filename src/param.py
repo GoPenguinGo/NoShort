@@ -10,16 +10,17 @@ sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
 
-# beta = 0.015  # marginal rate of wealth tax
-# beta = 0.02
-# beta = 0.01
-# omega = rho + nu - beta  # marginal propensity to consume
+tax = 0.015  # marginal rate of wealth tax
+# tax = 0.02
+# tax = 0.01
+beta = rho + nu - tax  # marginal propensity to consume
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
 T_hat = 20  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+Ninit = int(20 / dt)
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
@@ -34,8 +35,8 @@ cummu_popu = np.cumsum(cohort_size)
 tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
 tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
 tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-
-Mpaths = 50
+cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+Mpaths = 100
 
 # for graphs:
 Tkeep = 100
@@ -43,48 +44,48 @@ Nkeep = int(Tkeep / dt)
 Tsample = int(T_cohort / 100)
 Nsamples = 500
 stepcorr = int(Tsample / dt)
-corrZport = np.zeros((Mpaths, Nsamples))
-corrZMUs_t = np.zeros((Mpaths, Nsamples))
-corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
-corrMuSmuHat = np.zeros((Mpaths, 1))
-
-mu_C_s_t = np.zeros((Mpaths, Nsamples))
-log_mu_C_s_t = np.zeros((Mpaths, Nsamples))
-sigma_C_s_t = np.zeros((Mpaths, Nsamples))
-std_C_s_t = np.zeros((Mpaths, Nsamples))
+# corrZport = np.zeros((Mpaths, Nsamples))
+# corrZMUs_t = np.zeros((Mpaths, Nsamples))
+# corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
+# corrMuSmuHat = np.zeros((Mpaths, 1))
+#
+# mu_C_s_t = np.zeros((Mpaths, Nsamples))
+# log_mu_C_s_t = np.zeros((Mpaths, Nsamples))
+# sigma_C_s_t = np.zeros((Mpaths, Nsamples))
+# std_C_s_t = np.zeros((Mpaths, Nsamples))
 
 ####################################################################################
 # Store the values from the main loop
-dZ_matrix = np.zeros((Mpaths, Nt))
-Z_matrix = np.zeros((Mpaths, Nt))
-mu_C_matrix = np.zeros((Mpaths, Nt))
-sigma_C_matrix = np.zeros((Mpaths, Nt))
-delta_matrix = np.zeros((Mpaths, Nt, Nc))
-r_matrix = np.zeros((Mpaths, Nt))
-f_matrix = np.zeros((Mpaths, Nt, Nc))
-f_short_matrix = np.zeros((Mpaths, Nt, Nc))
-f_long_matrix = np.zeros((Mpaths, Nt, Nc))
-theta_matrix = np.zeros((Mpaths, Nt))
-pi_matrix = np.zeros((Mpaths, Nt, Nc))
-f_parti_matrix = np.zeros((Mpaths, Nt))
-popu_parti_matrix = np.zeros((Mpaths, Nt))
-popu_can_short_matrix = np.zeros((Mpaths, Nt))
-popu_short_matrix = np.zeros((Mpaths, Nt))
-popu_long_matrix = np.zeros((Mpaths, Nt))
+dZ_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+Z_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# mu_C_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# sigma_C_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# delta_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# r_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# f_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# f_short_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# f_long_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# theta_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# pi_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# f_parti_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+popu_parti_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# popu_can_short_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# popu_short_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
+# popu_long_matrix = np.zeros((Mpaths, Nt))
 Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
-Delta_bar_long_matrix = np.zeros((Mpaths, Nt))
-Delta_bar_short_matrix = np.zeros((Mpaths, Nt))
-w_matrix = np.zeros((Mpaths, Nt, Nc))
-w_cohort_matrix = np.zeros((Mpaths, Nt, Nc))
-age_parti_matrix = np.zeros((Mpaths, Nt))
-age_short_matrix = np.zeros((Mpaths, Nt))
-age_long_matrix = np.zeros((Mpaths, Nt))
-n_parti_matrix = np.zeros((Mpaths, Nt))
-
-invest_tracker_matrix = np.zeros((Mpaths, Nt, Nc))
-can_short_tracker_matrix = np.zeros((Mpaths, Nt, Nc))
-long_indicator_matrix = np.zeros((Mpaths, Nt, Nc))
-short_indicator_matrix = np.zeros((Mpaths, Nt, Nc))
+# Delta_bar_long_matrix = np.zeros((Mpaths, Nt))
+# Delta_bar_short_matrix = np.zeros((Mpaths, Nt))
+# w_matrix = np.zeros((Mpaths, Nt, Nc))
+# w_cohort_matrix = np.zeros((Mpaths, Nt, Nc))
+# age_parti_matrix = np.zeros((Mpaths, Nt))
+# age_short_matrix = np.zeros((Mpaths, Nt))
+# age_long_matrix = np.zeros((Mpaths, Nt))
+# n_parti_matrix = np.zeros((Mpaths, Nt))
+#
+# invest_tracker_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# can_short_tracker_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# long_indicator_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
+# short_indicator_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
 
 # Expected returns
 mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
