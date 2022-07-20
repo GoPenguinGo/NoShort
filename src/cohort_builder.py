@@ -2,7 +2,7 @@ import numpy as np
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from typing import Tuple
-from src.stats import post_var
+from src.stats import post_var, fadingmemo
 from numba import jit
 
 
@@ -22,6 +22,8 @@ def build_cohorts(
     T_hat: float,
     mode: str
 ) -> Tuple[
+    np.ndarray,
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -56,11 +58,14 @@ def build_cohorts(
     eta_bar = np.ones(1)
     eta_st_ss = np.ones(1)
     f_st = np.ones(1)
+    theta = np.zeros(Nc)
     invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Ninit)
     reduction = np.exp(-tax * dt)
     intvec = 1 / dt
-    # eta = np.zeros(Nc)
-    # sum_f = np.zeros(Nc)
+
+    int_zt = dZ_build[0]
+    delta_ss = np.zeros(1)
+
     for i in tqdm(range(1, Nc)):
         tau_short = tau[-i:]
 
@@ -75,8 +80,6 @@ def build_cohorts(
         intvec = np.append(intvec, tax * eta_t)
         intvec = intvec / eta_t
         f_st = intvec
-        # eta[i] = eta_t
-        # sum_f[i] = np.sum(f_st)
 
         # update beliefs
         dDelta_s_t = (post_var(sigma_Y, Vhat, tau_short) / sigma_Y**2
@@ -88,13 +91,13 @@ def build_cohorts(
             Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
             DELbias = np.sum(dZ_build[int(i - Npre) : i]) / T_hat
-            Delta_s_t += dDelta_s_t
+            Delta_s_t+= dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, DELbias
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Ninit or mode == 'comp':
+        if i < Ninit or mode == 'comp':  # Ninit: initial rounds where the short-sale constraint is relaxed
             d_eta_st_ss = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
@@ -111,6 +114,8 @@ def build_cohorts(
                 invest = (a >= 0)
                 invest_tracker = invest * invest_tracker
                 d_eta_st_ss = a * invest_tracker - theta_t
+
+                theta[i] = theta_t
 
             if mode == 'keep':
                 lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
@@ -132,8 +137,6 @@ def build_cohorts(
         invest_tracker,
         intvec,
     )
-
-
 
 
 def build_cohorts_partial_constraint(
@@ -272,4 +275,136 @@ def build_cohorts_partial_constraint(
         invest_tracker,
         can_short_tracker,
         intvec,
+    )
+
+
+def build_cohorts_fading(
+    dZ_build: np.ndarray,
+    Nc: int,
+    dt: float,
+    tau: np.ndarray,
+    rho: float,
+    nu: float,
+    Vhat: float,
+    mu_Y: float,
+    sigma_Y: float,
+    tax: float,
+    Npre: int,
+    Ninit: int,
+    T_hat: float,
+    v: float,
+    mode: str
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
+
+    Args:
+        dZ_build (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
+        Nc (int): number of periods  = number of cohorts in the economy
+        dt (float): unit of time
+        rho (float): rho, discount factor
+        nu (float): birth / death rate, each cohort starts at size nu and shrinks at speed of nu
+        Vhat (float): initial variance of beliefs
+        mu_Y (float): mean of aggregate output growth
+        sigma_Y (float): sd of aggregate output growth
+        tax (float): marginal rate of wealth tax
+        Npre (int): pre-trading periods
+        T_hat (float): pre-trading years
+        mode (str): describes the mode
+
+    Returns:
+        f_st (np.ndarray): consumption shares
+        Delta_s_t (np.ndarray): bias, shape(Nc, )
+        # eta_st_ss (np.ndarray): consumption change process, shape(Nc, )
+        # eta_bar (np.ndarray): consumption weighted disagreement, shape(Nc, )
+        d_eta_st_ss (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
+        invest_tracker (np.ndarray): track if a cohort is still in the risky market
+    """
+    Delta_s_t = np.zeros(1)  # belief bias, eq(3)
+    d_eta_st_ss = np.zeros(1)  # disagreement, eq(11)
+    eta_bar = np.ones(1)
+    eta_st_ss = np.ones(1)
+    f_st = np.ones(1)
+    theta = np.zeros(Nc)
+    invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Ninit)
+    reduction = np.exp(-tax * dt)
+    intvec = 1 / dt
+
+    int_zt = dZ_build[0]
+    delta_ss = np.zeros(1)
+
+    for i in tqdm(range(1, Nc)):
+        tau_short = tau[-i:]
+
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
+            + d_eta_st_ss * dZ_build[i - 1]
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
+
+        # add a new cohort
+        # Cohort consumption (wealth) share:
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t
+        f_st = intvec
+
+        # alternatively:
+        Delta_s_t = fadingmemo(v, tau_short, sigma_Y, Vhat, int_zt, delta_ss)
+        if i < Npre:
+            DELbias = 0
+        else:
+            DELbias = np.sum(dZ_build[int(i - Npre) : i]) / T_hat  # newborns begin with Npre earlier observations
+        delta_ss = np.append(delta_ss, DELbias)
+        int_zt = np.append(int_zt, 0)
+        int_zt = int_zt * (1 - v) ** dt + dZ_build[i - 1]
+        Delta_s_t = np.append(Delta_s_t, DELbias)
+
+        # find the market clearing theta, given beliefs and consumption shares
+        if i < Ninit or mode == 'comp':  # Ninit: initial rounds where the short-sale constraint is relaxed
+            d_eta_st_ss = (
+                Delta_s_t  # relax the short-sale constraint in the beginning
+            )
+        else:
+            if mode == 'drop':
+                invest_tracker = np.append(invest_tracker, 1)
+                possible_cons_share = f_st * dt * invest_tracker
+                possible_delta_st = Delta_s_t * invest_tracker
+                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
+                theta_t = bisection(
+                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                )  # solve for theta, 10 is a far away upper bound for theta
+                a = Delta_s_t + theta_t
+                invest = (a >= 0)
+                invest_tracker = invest * invest_tracker
+                d_eta_st_ss = a * invest_tracker - theta_t
+
+                theta[i] = theta_t
+
+            if mode == 'keep':
+                lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
+                f_st_standard = f_st * dt
+                theta_t = bisection(
+                    solve_theta, lowest_bound, 50, f_st_standard, Delta_s_t, sigma_Y
+                )  # solve for theta
+                d_eta_st_ss = np.maximum(
+                    -theta_t, Delta_s_t
+                )  # update max(Delta_s_t, -theta)
+            # print(theta_t)
+
+    if mode == 'keep':
+        invest_tracker = (Delta_s_t >= -theta_t)
+
+    return (
+        Delta_s_t,
+        d_eta_st_ss,
+        invest_tracker,
+        intvec,
+        int_zt,
+        delta_ss,
     )

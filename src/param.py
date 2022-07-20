@@ -3,12 +3,16 @@ import numpy as np
 # Parameters
 rho = 0.001  # Time discount factor
 nu = 0.02  # Death rate
+# nu = 0.015
+# nu = 0.025
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
+
+v = 0.018  # from Nagel and Xu (2021 RFS)
 
 tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
@@ -36,7 +40,7 @@ tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
 tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
 tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
-Mpaths = 100
+Mpaths = 1000
 
 # for graphs:
 Tkeep = 100
@@ -88,25 +92,25 @@ Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
 # short_indicator_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
 
 # Expected returns
-mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-mu_S_s_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)  # Expected returns under the measure of the agent we track
-mu_hat_S_matrix = np.zeros(
-    (Mpaths, Nt)
-)  # Simple average of expected returns, or consensus belief
-
-# Equity risk premium
-erp_S_matrix = np.zeros(
-    (Mpaths, Nt)
-)
-
-erp_S_s_matrix = np.zeros(
-    (Mpaths, Nt, Nc)
-)
-erp_hat_S_matrix = np.zeros(
-    (Mpaths, Nt)
-)
+# mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
+# mu_S_s_matrix = np.zeros(
+#     (Mpaths, Nt, Nc)
+# )  # Expected returns under the measure of the agent we track
+# mu_hat_S_matrix = np.zeros(
+#     (Mpaths, Nt)
+# )  # Simple average of expected returns, or consensus belief
+#
+# # Equity risk premium
+# erp_S_matrix = np.zeros(
+#     (Mpaths, Nt)
+# )
+#
+# erp_S_s_matrix = np.zeros(
+#     (Mpaths, Nt, Nc)
+# )
+# erp_hat_S_matrix = np.zeros(
+#     (Mpaths, Nt)
+# )
 
 
 Et_matrix = np.zeros((Mpaths, Nt))

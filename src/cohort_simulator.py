@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from src.stats import post_var
+from src.stats import post_var, fadingmemo
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from numba import jit
@@ -29,7 +29,7 @@ def simulate_cohorts(
         intvec: np.ndarray,
         Delta_s_t: np.ndarray,
         d_eta_st_ss: np.ndarray,
-        invest_tracker: np.ndarray
+        invest_tracker: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -547,3 +547,249 @@ def simulate_cohorts_partial_constraint(
     )
 
 
+def simulate_cohorts_fading(
+        Y: np.ndarray,
+        biasvec: np.ndarray,
+        dZ: np.ndarray,
+        Nt: int,
+        Nc: int,
+        tau: np.ndarray,
+        dt: float,
+        rho: float,
+        nu: float,
+        Vhat: float,
+        mu_Y: float,
+        sigma_Y: float,
+        sigma_S: float,
+        tax: float,
+        beta: float,
+        T_hat: float,
+        Npre: float,
+        Ninit: int,
+        mode: str,
+        cohort_size: np.ndarray,
+        intvec: np.ndarray,
+        Delta_s_t: np.ndarray,
+        d_eta_st_ss: np.ndarray,
+        invest_tracker: np.ndarray,
+        int_zt: np.ndarray,
+        delta_ss: np.ndarray,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """"" Simulate the economy forward
+
+    Args:
+        biasvec (np.ndarray): pre-trading period shocks to form beliefs of the initial cohort, shape(Npre,)
+        dZt (np.ndarray): random shocks, shape (Nt)
+        Nt (int): number of periods in the simulation
+        Nc (int): number of cohorts in the economy
+        tau (np.ndarray): t-s, shape(Nt)
+        # IntVec (np.ndarray): ~similar to consumption share, shape(Nc)
+        dt (float): per unit of time
+        rho (float): discount factor
+        nu (float): rate of birth and death
+        Vhat (float): initial variance
+        mu_Y (float): as in eq(1), drift of aggregate output growth
+        sigma_Y (float): as in eq(1), diffusion of aggregate output growth
+        sigma_S (float): as in eq(26), diffusion of stock price 
+        tax (float): as in eq(18), consumption share of the newborn cohort
+        T_hat (float): pre-trading years
+        Npre (float): pre-trading number of obs
+        mode (str): versions of the model
+        - from the cohort_builder function -
+        f_st (np.ndarray): consumption share input
+        eta_st_ss (np.ndarray): disagreement input
+        eta_bar (np.ndarray): average disagreement input
+        Delta_s_t (np.ndarray): bias for each cohort, shape(Nc)
+        d_eta_st_ss (np.ndarray): max(Delta_), shape(Nc)
+        invest_tracker (np.ndarry): shape(Nt)
+
+    Returns:
+        mu_S (np.ndarray): expected return under true measure at t, shape(Nt, )
+        mu_S_s (np.ndarray): expected stock return each cohort, shape(Nt, Nc, )
+        r (np.ndarray): interest rate, shape(Nt, )
+        theta (np.ndarray): market price of risk, shape(Nt, )
+        f (np.ndarray): consumption share over time, shape(Nt, Nc, )
+        Delta (np.ndarray): bias over time, shape(Nt, Nc, )
+        max (np.ndarray): max(-theta, delta_s_t) over time, shape(Nt, Nc, )
+        pi (np.ndarray): portfolio choice over time, shape(Nt, Nc, )
+        parti (np.ndarray): population that invest in stocks over time, shape(Nt, )
+        f_parti (np.ndarray): aggregate consumption share over time conditional on invest in stocks, shape(Nt, )
+        Delta_bar_parti (np.ndarray): aggregate consumption weighted bias over time conditional on invest in stocks, shape(Nt, )
+        dR (np.ndarray): change of stock returns over time, shape(Nt, )
+        w (np.ndarray): individual wealth, shape(Nt, Nc, )
+        w_cohort (np.ndarray): cohort wealth = individual wealth * cohort size, shape(Nt, Nc, )
+        age (np.ndarray):  average age participating in the stock market, shape(Nt, )
+        n_parti (np.ndarray): number of cohorts participating in the stock market, shape(Nt, )
+    """ ""
+    # Initializing variables
+    # cohort-specific terms:
+    Delta = np.zeros((Nt, Nc))  # stores bias in beliefs
+    max = np.zeros((Nt, Nc))  # stores max(delta, -theta)
+    f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
+    pi = np.zeros((Nt, Nc))  # portfolio choices
+    w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
+    short = np.zeros((Nt, Nc))
+
+    # aggregate terms:
+    dR = np.zeros(Nt)  # stores stock returns
+    r = np.zeros(Nt)  # interest rate
+    theta = np.zeros(Nt)  # market price of risk
+    f_parti = np.zeros((Nt))  # consumption share of the stock market participants
+    Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
+    parti = np.zeros((Nt))  # participation rate
+
+    dR_t = 0
+    age = np.zeros(Nt)
+    n_parti = np.zeros(Nt)
+
+    for i in tqdm(range(Nt)):
+        dZ_t = dZ[i]
+
+        intvec = intvec * np.exp(
+            (-0.5 * d_eta_st_ss ** 2 - tax) * dt
+            + d_eta_st_ss * dZ_t
+        )  # eq(18), intvec = tau * exp() * eta_bar_s * eta_st / eta_ss
+
+        # add a new cohort
+        # Cohort consumption (wealth) share:
+        intvec = intvec[1:]
+        eta_t = np.sum(intvec * dt) / (1 - tax * dt)
+        intvec = np.append(intvec, tax * eta_t)
+        intvec = intvec / eta_t
+        f_st = intvec
+
+        # Wealth
+        if i == 0:
+            w_cohort_st = Y[i] / beta * f_st
+            w_st = w_cohort_st / cohort_size * dt
+        else:
+            dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+            w_t = Y[i] / beta
+            dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            w_st = w_st[1:] + dw_st[1:]
+            w_st = np.append(w_st, w_t * tax / nu)
+            w_cohort_st = w_st * cohort_size / dt
+
+        # update beliefs
+        Delta_s_t = fadingmemo(v, tau, sigma_Y, Vhat, int_zt, delta_ss)
+        if i < Npre-1:
+           init_bias = (np.sum(biasvec[i+1:]) + np.sum(dZ[:i+1])) / T_hat
+        else:
+           init_bias = np.sum(dZ[i+1 - Npre: i+1]) / T_hat
+        delta_ss = np.append(delta_ss[1:], init_bias)
+        int_zt = np.append(int_zt[1:], 0)
+        int_zt = int_zt * (1 - v) ** dt + dZ_t
+        Delta_s_t = np.append(Delta_s_t[1:], init_bias)
+
+
+        # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
+        if mode == 'drop':
+            invest_tracker = invest_tracker[1:]
+            invest_tracker = np.append(invest_tracker, 1)
+            possible_cons_share = f_st * dt * invest_tracker
+            possible_delta_st = Delta_s_t * invest_tracker
+            lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+            theta_t = bisection(
+                solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+            )  # solve for theta
+            a = Delta_s_t + theta_t
+            invest = (a >= 0)
+            #want_to_short_t = invest_tracker * (1 - invest)
+            invest_tracker = invest * invest_tracker
+            d_eta_st_ss = a * invest_tracker - theta_t
+            invest_fst = invest_tracker * f_st * dt
+            popu_parti_t = np.sum(cohort_size * invest_tracker)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest_tracker)
+            n_parti_t = np.sum(invest_tracker) / Nc
+
+        elif mode == 'keep':
+            lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
+            f_st_standard = f_st * dt
+            theta_t = bisection(
+                solve_theta, lowest_bound, 50, f_st_standard, Delta_s_t, sigma_Y
+            )  # solve for theta
+            d_eta_st_ss = np.maximum(
+                -theta_t, Delta_s_t
+            )  # update max(Delta_s_t, -theta)
+            invest = Delta_s_t >= -theta_t
+            invest_fst = invest * f_st_standard
+            popu_parti_t = np.sum(cohort_size * invest)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest)
+            n_parti_t = np.sum(invest) / Nc
+
+        elif mode == 'comp':
+            f_st_standard = f_st * dt
+            Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
+            theta_t = sigma_Y - Delta_bar_parti_t
+            d_eta_st_ss = Delta_s_t
+            invest = Delta_s_t >= -theta_t  # long stock
+            popu_parti_t = 1
+
+            f_parti_t = 1
+            pi_st = (d_eta_st_ss + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest)
+            n_parti_t = np.sum(invest) / Nc
+
+        else:
+            print('Warning! Mode not defined')
+            exit()
+
+        r_t = (
+                rho
+                + mu_Y
+                + nu - tax
+                - sigma_Y * theta_t
+        )
+
+        mu_S_t = sigma_S * theta_t + r_t
+
+        # store the results
+        dR[i] = dR_t  # realized return from t-1 to t
+        theta[i] = theta_t
+        r[i] = r_t
+        f[i, :] = f_st
+        Delta[i, :] = Delta_s_t
+        max[i, :] = d_eta_st_ss
+        f_parti[i] = f_parti_t
+        Delta_bar_parti[i] = Delta_bar_parti_t
+        pi[i, :] = pi_st
+        parti[i] = popu_parti_t
+        w_cohort[i, :] = w_cohort_st
+        age[i] = age_t
+        n_parti[i] = n_parti_t
+
+    return (
+        r,
+        theta,
+        f,
+        Delta,
+        max,
+        pi,
+        parti,
+        f_parti,
+        Delta_bar_parti,
+        dR,
+        w_cohort,
+        age,
+        n_parti,
+    )

@@ -8,9 +8,9 @@ from src.param import *
 # modes = ['drop', 'ric_free']
 # modes = ['rich_free']
 modes = ['drop']
-# zoom_in = 'small'
-zoom_in = 'large'
-T_hats = dt * np.arange(1, 7, 1) if zoom_in == 'small' else np.arange(1, 31, 2)
+zoom_in = 'small'
+# zoom_in = 'large'
+T_hats = dt * np.arange(1, 12, 1) if zoom_in == 'small' else np.arange(1, 31, 2)
 T_hat_dimension = len(T_hats)
 
 # for graphs:
