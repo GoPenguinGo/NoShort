@@ -49,13 +49,20 @@ wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
 # Vt_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 
-for l in range(Mpaths):
-    s = time.time()
-    # same shocks for the different T_hats
-    dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-    dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
-    dZ_matrix[l, :] = dZ
-    dZ_build_matrix[l, :] = dZ_build
+# for l in range(Mpaths):
+#     s = time.time()
+#     # same shocks for the different T_hats
+#     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
+#     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+#     dZ_matrix[l, :] = dZ
+#     dZ_build_matrix[l, :] = dZ_build
+#
+# np.save('dZ_matrix.npy', dZ_matrix)
+# np.save('dZ_build_matrix.npy', dZ_build_matrix)
+
+
+dZ_matrix = np.load('dZ_matrix.npy')
+dZ_build_matrix = np.load('dZ_build_matrix.npy')
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for l in range(Mpaths):
@@ -67,6 +74,17 @@ for l in range(Mpaths):
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 
         for m, nu in enumerate(nus):
+
+            tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
+            cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+
+            # create age quartiles for analysis
+            cummu_popu = np.cumsum(cohort_size)
+            tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+            tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+            tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
+            cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+
             if mode == 'drop' or mode == 'keep' or mode == 'comp':
                 (
                     r,
@@ -118,38 +136,38 @@ for l in range(Mpaths):
                 ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
                                                 Ninit,
                                                 T_hat, dZ_build, dZ, tau, cohort_size)
-            dR_matrix[k, m, l] = np.mean(dR[1200:])
-            r_matrix[k, m, l] = np.mean(r[1200:])
-            theta_matrix[k, m, l] = np.mean(theta[1200:])
-            popu_parti_matrix[k, m, l] = np.mean(popu_parti[1200:])
+            dR_matrix[k, m, l] = np.mean(dR)
+            r_matrix[k, m, l] = np.mean(r)
+            theta_matrix[k, m, l] = np.mean(theta)
+            popu_parti_matrix[k, m, l] = np.mean(popu_parti)
             parti_rate = invest_tracker * cohort_size
 
             belief = (Delta * sigma_Y + mu_Y)
             belief_weights = f * dt
 
             for i in range(4):
-                popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[1200:, cutoffs[i + 1]:], axis=1))
+                popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
 
                 weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
                                        axis=1) == 0)  # no one from the age group is participating
                 belief_copy = belief.copy()
-                if np.sum(weights_zero[1200:]) == Nt - 1200:
+                if np.sum(weights_zero) == Nt:
                     belief_age_matrix[k, m, l, i] = np.nan
                 else:
                     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
                     a = np.where(weights_zero == 1)
                     belief_copy[a, :] = np.nan
                     belief_age_matrix[k, m, l, i] = np.nanmean(
-                        np.average(belief_copy[1200:, cutoffs[i + 1]:cutoffs[i]],
-                                   weights=belief_weights[1200:, cutoffs[i + 1]:cutoffs[i]], axis=1)
+                        np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
+                                   weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
                     )
 
                 wealthshare_age_matrix[k, m, l, i] = np.mean(
-                    np.sum(f[1200:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+                    np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
                 )
 
-            age_parti_matrix[k, m, l] = np.mean(age_parti[1200:])
-            n_parti_matrix[k, m, l] = np.mean(n_parti[1200:])
+            age_parti_matrix[k, m, l] = np.mean(age_parti)
+            n_parti_matrix[k, m, l] = np.mean(n_parti)
 
         # covariance:
     print(l)
@@ -175,8 +193,11 @@ ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8]
 for i in range(len(ys)):
     for j in range(nu_dimension):
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
-        y_nu = ys[i]
-        y = y_nu[j]
+        if i == 0:
+            y = ys[i]
+        else:
+            y_nu = ys[i]
+            y = y_nu[:, j]
         if i == 3:
             ax.fill_between(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
             ax.fill_between(x, y[:, 1], y[:, 0], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
@@ -197,10 +218,10 @@ for i in range(len(ys)):
         else:
             ax.set_ylabel('mean ' + xlabels[i])
 
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=500,
-                    format="png")
+        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=500,
+                    # format="png")
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
-        plt.close()
+        # plt.close()
 
 

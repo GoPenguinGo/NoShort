@@ -4,7 +4,7 @@ import numpy as np
 rho = 0.001  # Time discount factor
 # nu = 0.02  # Death rate
 # nu = 0.01
-nu = 0.03
+# nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
@@ -31,15 +31,16 @@ Nc = int(T_cohort / dt)  # number of cohorts
 
 
 # generate values that are fixed in the main loop
-tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
-cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+# tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
+# cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+#
+# # create age quartiles for analysis
+# cummu_popu = np.cumsum(cohort_size)
+# tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+# tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+# tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
+# cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 
-# create age quartiles for analysis
-cummu_popu = np.cumsum(cohort_size)
-tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
-tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
-tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 Mpaths = 1000
 
 # for graphs:
