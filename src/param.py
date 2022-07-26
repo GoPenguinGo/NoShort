@@ -2,9 +2,9 @@ import numpy as np
 
 # Parameters
 rho = 0.001  # Time discount factor
-nu = 0.02  # Death rate
-# nu = 0.015
-# nu = 0.025
+# nu = 0.02  # Death rate
+# nu = 0.01
+nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
