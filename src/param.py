@@ -17,7 +17,7 @@ v = 0.018  # from Nagel and Xu (2021 RFS)
 tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
 # tax = 0.01
-beta = rho + nu - tax  # marginal propensity to consume
+# beta = rho + nu - tax  # marginal propensity to consume
 
 # Setting prior variance
 dt = 1 / 12  # time incremental

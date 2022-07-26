@@ -74,6 +74,7 @@ for l in range(Mpaths):
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 
         for m, nu in enumerate(nus):
+            beta = rho + nu - tax
 
             tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
             cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
