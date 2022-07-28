@@ -104,3 +104,12 @@ def good_times(
     good_time_build = cummu_dZt_build >= z * sigma_cummu
     good_time_simulate = cummu_dZt >= z * sigma_cummu
     return good_time_build, good_time_simulate
+
+
+def fadingmemo(v, tau, sigma_Y, V_hat, int_zt, delta_ss):
+    v_st = np.log(1-v) / (
+        (1-v) ** tau - 1
+    )
+    coef = v_st / (v_st * sigma_Y ** 2 + V_hat)
+    delta_st = coef * (sigma_Y ** 2 * delta_ss + V_hat * int_zt)
+    return delta_st

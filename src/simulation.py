@@ -1,9 +1,8 @@
 import time
 import numpy as np
 from typing import Tuple
-from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
-from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
-from src.param import *
+from src.cohort_builder import build_cohorts
+from src.cohort_simulator import simulate_cohorts
 from src.stats import shocks, good_times
 
 
@@ -68,9 +67,10 @@ def simulate(
 
     (
         Delta_s_t,
-        d_eta_st_ss,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
         invest_tracker,
-        intvec,
     ) = build_cohorts(
         dZ_build,
         Nc,
@@ -86,7 +86,7 @@ def simulate(
         Ninit,
         T_hat,
         mode,
-    )
+        )
 
     (
         r,
@@ -123,9 +123,10 @@ def simulate(
         Ninit,
         mode,
         cohort_size,
-        intvec,
         Delta_s_t,
-        d_eta_st_ss,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
         invest_tracker,
         )
 

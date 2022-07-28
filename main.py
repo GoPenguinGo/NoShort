@@ -6,11 +6,9 @@ from typing import Callable, Tuple
 from src.simulation import simulate, simulate_partial_constraint
 from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
 from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
-# from src.param import *
+from src.param import *
 from src.stats import shocks, tau_calculator, good_times
-# import concurrent.futures
 from numba import jit
-# from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
 import tabulate as tabulate
 
