@@ -1,9 +1,8 @@
 import time
 import numpy as np
 from typing import Tuple
-from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
-from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
-from src.param import *
+from src.cohort_builder import build_cohorts
+from src.cohort_simulator import simulate_cohorts
 from src.stats import shocks, good_times
 
 
