@@ -68,9 +68,10 @@ def simulate(
 
     (
         Delta_s_t,
-        d_eta_st_ss,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
         invest_tracker,
-        intvec,
     ) = build_cohorts(
         dZ_build,
         Nc,
@@ -86,7 +87,7 @@ def simulate(
         Ninit,
         T_hat,
         mode,
-    )
+        )
 
     (
         r,
@@ -123,9 +124,10 @@ def simulate(
         Ninit,
         mode,
         cohort_size,
-        intvec,
         Delta_s_t,
-        d_eta_st_ss,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
         invest_tracker,
         )
 

@@ -7,14 +7,31 @@ from src.param import *
 
 # modes = ['drop', 'ric_free']
 # mode = 'rich_free'
-# mode = 'drop'
-mode = 'comp'
+mode = 'drop'
+# mode = 'comp'
 zoom_in = 'small'
 # zoom_in = 'large'
-T_hats = dt * np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 31, 2)
+Npres = np.arange(1, 13, 1)
+T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-nus = [0.01, 0.02, 0.03]
+# nus = [0.01, 0.02, 0.03]
 nu_dimension = len(nus)
+
+Mpaths = 300
+
+# dZ_matrix = np.zeros((Mpaths, Nt))
+# dZ_build_matrix = np.zeros((Mpaths, Nc-1))
+# for l in range(Mpaths):
+#     s = time.time()
+#     # same shocks for the different T_hats
+#     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
+#     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+#     dZ_matrix[l, :] = dZ
+#     dZ_build_matrix[l, :] = dZ_build
+#
+# np.save('dZ_matrix.npy', dZ_matrix)
+# np.save('dZ_build_matrix.npy', dZ_build_matrix)
+
 
 # for graphs:
 Tkeep = 100
@@ -23,8 +40,7 @@ Tsample = int(T_cohort / 100)
 Nsamples = 500
 
 # Generate matrix to store the results
-dZ_matrix = np.zeros((Mpaths, Nt))
-dZ_build_matrix = np.zeros((Mpaths, Nc-1))
+
 # mu_C_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 # sigma_C_matrix = np.zeros((T_hat_dimension, Mpaths))
 # delta_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
@@ -47,18 +63,7 @@ wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
 
 # Et_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 # Vt_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-
-# for l in range(Mpaths):
-#     s = time.time()
-#     # same shocks for the different T_hats
-#     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-#     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
-#     dZ_matrix[l, :] = dZ
-#     dZ_build_matrix[l, :] = dZ_build
-#
-# np.save('dZ_matrix.npy', dZ_matrix)
-# np.save('dZ_build_matrix.npy', dZ_build_matrix)
+# dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 
 
 dZ_matrix = np.load('dZ_matrix.npy')
@@ -70,10 +75,12 @@ for l in range(Mpaths):
     dZ_build = dZ_build_matrix[l, :]
 
     for k, T_hat in enumerate(T_hats):
-        Npre = int(T_hat / dt)
+        Npre = int(Npres[k])
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+        print(T_hat, Npre, Vhat)
 
         for m, nu in enumerate(nus):
+            # this part is repetitive when there is only one value of nu
             beta = rho + nu - tax
 
             tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
@@ -149,19 +156,22 @@ for l in range(Mpaths):
             for i in range(4):
                 popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
 
-                weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
-                                       axis=1) == 0)  # no one from the age group is participating
-                belief_copy = belief.copy()
-                if np.sum(weights_zero) == Nt:
-                    belief_age_matrix[k, m, l, i] = np.nan
-                else:
-                    # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
-                    a = np.where(weights_zero == 1)
-                    belief_copy[a, :] = np.nan
-                    belief_age_matrix[k, m, l, i] = np.nanmean(
-                        np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
-                                   weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
-                    )
+                # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
+                #                        axis=1) == 0)  # no one from the age group is participating
+                # belief_copy = belief.copy()
+                # if np.sum(weights_zero) == Nt:
+                #     belief_age_matrix[k, m, l, i] = np.nan
+                # else:
+                #     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
+                #     a = np.where(weights_zero == 1)
+                #     belief_copy[a, :] = np.nan
+                #     belief_age_matrix[k, m, l, i] = np.nanmean(
+                #         np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
+                #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
+                #     )
+                belief_age_matrix[k, m, l, i] = np.mean(
+                    belief[:, cutoffs[i + 1]:cutoffs[i]]
+                )
 
                 wealthshare_age_matrix[k, m, l, i] = np.mean(
                     np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
@@ -173,10 +183,9 @@ for l in range(Mpaths):
         # covariance:
     print(l)
 
-
 # graphs:
-x = T_hats
-y0 = (np.ones(len(T_hats)) * sigma_Y ** 2) / x
+x = Npres
+y0 = (np.ones(len(Npres)) * sigma_Y ** 2) / x
 y1 = np.mean(r_matrix, axis=2)
 y2 = np.mean(theta_matrix, axis=2)
 y3 = np.mean(popu_age_matrix, axis=2)
@@ -213,7 +222,7 @@ for i in range(len(ys)):
             plt.legend()
         else:
             ax.plot(x, y)
-        ax.set_xlabel('initial window')
+        ax.set_xlabel('initial window (months)')
         if i == 0 or i == 6:
             ax.set_ylabel(xlabels[i])
         else:
