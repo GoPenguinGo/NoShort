@@ -9,9 +9,9 @@ from src.param import *
 # mode = 'rich_free'
 mode = 'drop'
 # mode = 'comp'
-zoom_in = 'small'
-# zoom_in = 'large'
-Npres = np.arange(1, 13, 1)
+# zoom_in = 'small'
+zoom_in = 'large'
+Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(6, 126, 6)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
 # nus = [0.01, 0.02, 0.03]
@@ -19,6 +19,8 @@ nu_dimension = len(nus)
 
 Mpaths = 300
 
+# todo: run T_hat [1, 10] years;
+#  I think in the model, interest rate and erp is still one for one though.
 # dZ_matrix = np.zeros((Mpaths, Nt))
 # dZ_build_matrix = np.zeros((Mpaths, Nc-1))
 # for l in range(Mpaths):
@@ -63,7 +65,7 @@ wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
 
 # Et_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 # Vt_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-# dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
+dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 
 
 dZ_matrix = np.load('dZ_matrix.npy')
@@ -228,10 +230,9 @@ for i in range(len(ys)):
         else:
             ax.set_ylabel('mean ' + xlabels[i])
 
-        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=500,
-                    # format="png")
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200, format="png")
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
-        # plt.close()
+        plt.close()
 
 

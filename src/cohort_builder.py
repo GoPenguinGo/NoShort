@@ -62,6 +62,9 @@ def build_cohorts(
     invest_tracker = np.ones(Nc) if mode == 'comp' else np.ones(Ninit)
     # reduction = np.exp(-tax * dt)
     # intvec = 1 / dt
+    # f_st_matrix = np.empty(Nc)
+    # f_st_matrix1 = np.empty(Nc)
+
 
 
     for i in tqdm(range(1, Nc)):
@@ -75,7 +78,8 @@ def build_cohorts(
         )  # equation (11)
 
         eta_bar_parts = tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt    # equation (18)
-        eta_bar_t = np.sum(eta_bar_parts) / ( 1 - tax * dt)  # equation (18)
+        eta_bar_t = np.sum(eta_bar_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, 1)
         eta_bar = np.append(eta_bar, eta_bar_t)
