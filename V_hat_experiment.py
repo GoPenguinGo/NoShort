@@ -1,20 +1,20 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate, simulate_partial_constraint
+from src.simulation import simulate
 from src.param import *
 
 
 # modes = ['drop', 'ric_free']
 # mode = 'rich_free'
-mode = 'drop'
-# mode = 'comp'
-# zoom_in = 'small'
-zoom_in = 'large'
-Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(6, 126, 6)
+# mode = 'drop'
+mode = 'comp'
+zoom_in = 'small'
+# zoom_in = 'large'
+Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 121, 12)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-# nus = [0.01, 0.02, 0.03]
+nus = [0.01, 0.02, 0.03]
 nu_dimension = len(nus)
 
 Mpaths = 300
@@ -52,7 +52,7 @@ theta_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 pi_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 f_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 popu_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-# Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
+Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
 # w_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 # w_cohort_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 age_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
@@ -150,6 +150,7 @@ for l in range(Mpaths):
             r_matrix[k, m, l] = np.mean(r)
             theta_matrix[k, m, l] = np.mean(theta)
             popu_parti_matrix[k, m, l] = np.mean(popu_parti)
+            Delta_bar_parti_matrix[k, m, l] = np.mean(Delta_bar_parti)
             parti_rate = invest_tracker * cohort_size
 
             belief = (Delta * sigma_Y + mu_Y)
