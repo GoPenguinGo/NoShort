@@ -1,8 +1,8 @@
 import time
 import numpy as np
 from typing import Tuple
-from src.cohort_builder import build_cohorts
-from src.cohort_simulator import simulate_cohorts
+from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
+from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
 from src.stats import shocks, good_times
 
 
@@ -242,10 +242,11 @@ def simulate_partial_constraint(
 
     (
         Delta_s_t,
-        d_eta_st_ss,
-        invest_tracker_build,
-        can_short_tracker_build,
-        intvec,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
+        invest_tracker,
+        can_short_tracker,
     ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode)
 
     (

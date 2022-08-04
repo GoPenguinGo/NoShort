@@ -216,13 +216,13 @@ def build_cohorts_partial_constraint(
         can_short_tracker (np.ndarray): track if a cohort can short
     """
     Delta_s_t = np.zeros(1)  # belief bias, eq(3)
-    d_eta_st_ss = np.zeros(1)  # disagreement, eq(11)
+    d_eta_st = np.zeros(1)  # disagreement, eq(11)
     eta_bar = np.ones(1)
-    eta_st_ss = np.ones(1)
-    f_st = np.ones(1)
+    eta_st_eta_ss = np.ones(1)
+    theta = np.zeros(Nc)
     invest_tracker = np.ones(Ninit)
     can_short_tracker = np.ones(Ninit)
-    intvec = 1 / dt
+
 
     for i in tqdm(range(1, Nc)):
         # new cohort born (age 0), get wealth transfer, observe, invest
@@ -311,7 +311,7 @@ def build_cohorts_partial_constraint(
             )
             want_to_short = (Delta_s_t + theta_t) < 0
             constrained = invest_tracker * want_to_short * (1 - can_short_tracker)  # in the market * want to short * can't short
-            invest_tracker = invest_tracker - constrained  # constrained people drop, update invest_tracker
+            invest_tracker = (invest_tracker - constrained > 0)  # constrained people drop, update invest_tracker
             d_eta_st = Delta_s_t * invest_tracker - theta_t * (1 - invest_tracker)
 
     return (
