@@ -158,6 +158,7 @@ def simulate_partial_constraint(
     Vhat: float,
     mu_Y: float,
     sigma_Y: float,
+    sigma_S: float,
     tax: float,
     beta: float,
     Npre: int,
@@ -245,8 +246,8 @@ def simulate_partial_constraint(
         eta_st_eta_ss,
         eta_bar,
         d_eta_st,
-        invest_tracker,
-        can_short_tracker,
+        invest_tracker_build,
+        can_short_tracker_build,
     ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode)
 
     (
@@ -297,9 +298,10 @@ def simulate_partial_constraint(
         Ninit,
         mode,
         cohort_size,
-        intvec,
         Delta_s_t,
-        d_eta_st_ss,
+        eta_st_eta_ss,
+        eta_bar,
+        d_eta_st,
         invest_tracker_build,
         can_short_tracker_build,
         good_time_simulate,

@@ -1,21 +1,22 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate
+from src.simulation import simulate, simulate_partial_constraint
 from src.param import *
 
 
 # modes = ['drop', 'ric_free']
-# mode = 'rich_free'
-mode = 'drop'
+mode = 'rich_free'
+# mode = 'drop'
 # mode = 'comp'
 # mode = 'keep'
 # zoom_in = 'small'
 zoom_in = 'large'
-Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 121, 12)
+Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 241, 12)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-nus = [0.01, 0.02, 0.03]
+# nus = [0.01, 0.02, 0.03]
+nus = [0.02]
 nu_dimension = len(nus)
 
 # todo: run T_hat [1, 10] years;
@@ -107,7 +108,7 @@ for l in range(Mpaths):
                              cohort_size)
                 invest_tracker = pi > 0
 
-            else:
+            elif mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
                 (
                     r,
                     theta,
@@ -135,9 +136,11 @@ for l in range(Mpaths):
                     Delta_bar_parti,
                     Delta_bar_long,
                     Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
-                                                Ninit,
-                                                T_hat, dZ_build, dZ, tau, cohort_size)
+                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre,
+                                                Ninit, T_hat, dZ_build, dZ, tau, cohort_size)
+            else:
+                print('Error! Mode not defined')
+                break
             dR_matrix[k, m, l] = np.mean(dR)
             r_matrix[k, m, l] = np.mean(r)
             theta_matrix[k, m, l] = np.mean(theta)
