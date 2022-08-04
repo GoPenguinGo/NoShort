@@ -17,6 +17,7 @@ def simulate(
     Vhat: float,
     mu_Y: float,
     sigma_Y: float,
+    sigma_S: float,
     tax: float,
     beta: float,
     Npre: int,

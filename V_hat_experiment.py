@@ -7,17 +7,16 @@ from src.param import *
 
 # modes = ['drop', 'ric_free']
 # mode = 'rich_free'
-# mode = 'drop'
-mode = 'comp'
-zoom_in = 'small'
-# zoom_in = 'large'
+mode = 'drop'
+# mode = 'comp'
+# mode = 'keep'
+# zoom_in = 'small'
+zoom_in = 'large'
 Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 121, 12)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
 nus = [0.01, 0.02, 0.03]
 nu_dimension = len(nus)
-
-Mpaths = 300
 
 # todo: run T_hat [1, 10] years;
 #  I think in the model, interest rate and erp is still one for one though.
@@ -33,13 +32,6 @@ Mpaths = 300
 #
 # np.save('dZ_matrix.npy', dZ_matrix)
 # np.save('dZ_build_matrix.npy', dZ_build_matrix)
-
-
-# for graphs:
-Tkeep = 100
-Nkeep = int(Tkeep / dt)
-Tsample = int(T_cohort / 100)
-Nsamples = 500
 
 # Generate matrix to store the results
 
@@ -110,7 +102,7 @@ for l in range(Mpaths):
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, Ninit, T_hat,
+                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
                              dZ_build, dZ, tau,
                              cohort_size)
                 invest_tracker = pi > 0
@@ -205,6 +197,7 @@ ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8]
 
 for i in range(len(ys)):
     for j in range(nu_dimension):
+        nu = nus[j]
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         if i == 0:
             y = ys[i]

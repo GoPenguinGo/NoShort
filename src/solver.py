@@ -121,12 +121,16 @@ def solve_theta_partial_constraint(
     :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
     :param consumption_share (np.ndarray): shape (Nc,)
     :param sigma_Y (float): volatility of aggregate output
-    :return: the distance from converge
+    :return: the distance to converge
     '''
+    constrained = 1 - unconstrained
     pi_constrained = np.maximum(Delta_s_t + theta_guess, 0)  # investment if a cohort can't short
-    part_constrained = np.sum(pi_constrained * consumption_share * (1-unconstrained))  # for those cohorts that can't short
+    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
     part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
-    return part_constrained + part_unconstrained - sigma_Y
+
+    diff = (part_constrained + part_unconstrained) / sigma_Y - 1
+
+    return diff
 
 
 @jit(nopython=True)

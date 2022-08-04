@@ -41,7 +41,7 @@ Nc = int(T_cohort / dt)  # number of cohorts
 # tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 # cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 
-Mpaths = 1000
+Mpaths = 300
 
 # for graphs:
 Tkeep = 100
