@@ -276,7 +276,7 @@ def build_cohorts_partial_constraint(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Ninit:
+        if i < Ninit or i < Npre:
             d_eta_st = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
@@ -294,7 +294,7 @@ def build_cohorts_partial_constraint(
 
                 if mode == 'back_renew':
                     invest_tracker_t = np.ones(i + 1)
-                    renew_bias = np.sum(dZ_build[int(i - window): i]) / (window * dt)
+                    renew_bias = np.sum(dZ_build[int(i - Npre): i]) / (Npre * dt)
                     Delta_s_t = Delta_s_t * invest_tracker_t + renew_bias * (1 - invest_tracker_t)
 
             f_st_possible = f_st * dt * invest_tracker
