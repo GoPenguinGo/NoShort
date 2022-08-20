@@ -225,6 +225,7 @@ def build_cohorts_partial_constraint(
 
 
     for i in tqdm(range(1, Nc)):
+    # for i in tqdm(range(1, Ninit)):
         # new cohort born (age 0), get wealth transfer, observe, invest
         tau_short = tau[-i:]
 
@@ -307,7 +308,7 @@ def build_cohorts_partial_constraint(
             can_short_tracker = (can_short_tracker + can_short >= 1)   # once rich, always can short
 
             theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, Delta_s_t_possible, f_st_possible, sigma_Y
+                    solve_theta_partial_constraint, -10, 10, can_short_tracker, Delta_s_t_possible, f_st_possible, sigma_Y
             )
             want_to_short = (Delta_s_t + theta_t) < 0
             constrained = invest_tracker * want_to_short * (1 - can_short_tracker)  # in the market * want to short * can't short

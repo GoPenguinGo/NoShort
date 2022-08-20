@@ -4,15 +4,20 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate, simulate_partial_constraint
 from src.param import *
 
-
+# todo: the connection between belief and wealth?
+#  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 # modes = ['drop', 'ric_free']
-mode = 'rich_free'
-# mode = 'drop'
+# mode = 'rich_free'
+mode = 'drop'
 # mode = 'comp'
 # mode = 'keep'
 # zoom_in = 'small'
-zoom_in = 'large'
-Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 241, 12)
+# zoom_in = 'large'
+zoom_in = 'overall'
+a = np.arange(1, 13, 1)
+b = np.arange(24, 241, 12)
+Npres = np.append(a, b)
+# Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 241, 12)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
 # nus = [0.01, 0.02, 0.03]
@@ -146,6 +151,7 @@ for l in range(Mpaths):
             theta_matrix[k, m, l] = np.mean(theta)
             popu_parti_matrix[k, m, l] = np.mean(popu_parti)
             Delta_bar_parti_matrix[k, m, l] = np.mean(Delta_bar_parti)
+            f_parti_matrix[k, m, l] = np.mean(f_parti)
             parti_rate = invest_tracker * cohort_size
 
             belief = (Delta * sigma_Y + mu_Y)
@@ -192,11 +198,16 @@ y5 = np.mean(n_parti_matrix, axis=2)
 y6 = -y2 * sigma_Y + mu_Y
 y7 = np.nanmean(belief_age_matrix, axis=2)  # consumption-weighted beliefs for participants from each age group
 y8 = np.nanmean(wealthshare_age_matrix, axis=2)  # wealth share each age group
+y9 = np.mean(f_parti_matrix, axis=2)
+y10 = np.mean(Delta_bar_parti_matrix, axis=2)
 
-xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'age of participants',
-           'number of cohorts', 'cutoff belief', 'cst belief of participants in age groups',
-           'wealth share in age groups']
-ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8]
+
+xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'average age of participants',
+           'number of cohorts', 'cutoff belief to participate', 'average belief in age groups',
+           'wealth share in age groups', 'consumption share of participants', 'estimation error of participants']
+ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
+
+
 
 for i in range(len(ys)):
     for j in range(nu_dimension):
@@ -231,5 +242,4 @@ for i in range(len(ys)):
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
         plt.close()
-
 
