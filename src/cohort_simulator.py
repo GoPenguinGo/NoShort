@@ -492,7 +492,7 @@ def simulate_cohorts_partial_constraint(
                      ) * (
             -Delta_s_t * dt + dZ_t
         )  # from eq(5)
-        if mode == 'back_renew':
+        if mode_learn == 'back_renew':
             tau_info = np.append(tau_info[1:], 0) + dt
 
         if i < Npre - 1:
@@ -508,12 +508,12 @@ def simulate_cohorts_partial_constraint(
 
         if good_time_simulate[i] == 1:
 
-            if mode == 'back_collect':
+            if mode_learn == 'back_collect':
                 # agents who have left the market respond to the recent positive shocks
                 # they collect all the information they missed during the drop period
                 invest_tracker_t = np.ones(Nc)  # all can invest
 
-            if mode == 'back_renew':
+            if mode_learn == 'back_renew':
                 if i < Npre - 1:
                     renew_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / (Npre * dt)
                 else:
