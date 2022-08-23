@@ -121,12 +121,53 @@ def solve_theta_partial_constraint(
     :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
     :param consumption_share (np.ndarray): shape (Nc,)
     :param sigma_Y (float): volatility of aggregate output
-    :return: the distance from converge
+    :return: the distance to converge
     '''
+    constrained = 1 - unconstrained
     pi_constrained = np.maximum(Delta_s_t + theta_guess, 0)  # investment if a cohort can't short
-    part_constrained = np.sum(pi_constrained * consumption_share * (1-unconstrained))  # for those cohorts that can't short
+    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
     part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
-    return part_constrained + part_unconstrained - sigma_Y
+
+    diff = (part_constrained + part_unconstrained) / sigma_Y - 1
+
+    return diff
+
+
+@jit(nopython = True)
+def solve_theta_partial_constraint_2(
+        theta_guess: float,
+        unconstrained: np.ndarray,
+        Delta_s_t: np.ndarray,
+        consumption_share: np.ndarray,
+        sigma_Y: float,
+) -> np.float64:
+    '''
+    solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
+    :param theta_guess (float): any guess of theta
+    :param unconstrained (np.ndarray): the cohorts that can short
+    :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
+    :param consumption_share (np.ndarray): shape (Nc,)
+    :param sigma_Y (float): volatility of aggregate output
+    :return: the distance to converge
+    '''
+    constrained = 1 - unconstrained
+    invest = (Delta_s_t >= -theta_guess) * constrained + unconstrained  # eq(10) and eq(11), invest if theta_s_t >= -theta, constrained if otherwise
+    invest_consumption_share = invest * consumption_share
+    Delta_bar_parti = np.sum(
+        Delta_s_t * invest_consumption_share
+    )  # Experience component, as defined below eq(24)
+    total_invest_c_share = np.sum(
+        invest_consumption_share
+    )  # Constraint component, as defined below eq(24)
+    if total_invest_c_share == 0:
+        diff = 10000
+    else:
+        diff = (
+                       sigma_Y - Delta_bar_parti
+               ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
+
+    return diff
+
 
 
 @jit(nopython=True)

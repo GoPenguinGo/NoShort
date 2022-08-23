@@ -14,9 +14,9 @@ sigma_S = (
 
 v = 0.018  # from Nagel and Xu (2021 RFS)
 
-tax = 0.015  # marginal rate of wealth tax
+# tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
-# tax = 0.01
+tax = 0.01
 # beta = rho + nu - tax  # marginal propensity to consume
 
 # Setting prior variance
@@ -41,7 +41,7 @@ Nc = int(T_cohort / dt)  # number of cohorts
 # tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 # cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 
-Mpaths = 1000
+Mpaths = 200
 
 # for graphs:
 Tkeep = 100

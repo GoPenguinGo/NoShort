@@ -4,21 +4,28 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate, simulate_partial_constraint
 from src.param import *
 
-
+# todo: the connection between belief and wealth?
+#  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 # modes = ['drop', 'ric_free']
-# mode = 'rich_free'
-mode = 'drop'
+mode = 'rich_free'
+# mode = 'drop'
 # mode = 'comp'
-zoom_in = 'small'
+# mode = 'keep'
+# zoom_in = 'small'
 # zoom_in = 'large'
-Npres = np.arange(1, 13, 1)
+zoom_in = 'overall'
+a = np.arange(1, 13, 1)
+b = np.arange(24, 241, 12)
+Npres = np.append(a, b)
+# Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 241, 12)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
 # nus = [0.01, 0.02, 0.03]
+nus = [0.02]
 nu_dimension = len(nus)
 
-Mpaths = 300
-
+# todo: run T_hat [1, 10] years;
+#  I think in the model, interest rate and erp is still one for one though.
 # dZ_matrix = np.zeros((Mpaths, Nt))
 # dZ_build_matrix = np.zeros((Mpaths, Nc-1))
 # for l in range(Mpaths):
@@ -32,13 +39,6 @@ Mpaths = 300
 # np.save('dZ_matrix.npy', dZ_matrix)
 # np.save('dZ_build_matrix.npy', dZ_build_matrix)
 
-
-# for graphs:
-Tkeep = 100
-Nkeep = int(Tkeep / dt)
-Tsample = int(T_cohort / 100)
-Nsamples = 500
-
 # Generate matrix to store the results
 
 # mu_C_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
@@ -50,7 +50,7 @@ theta_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 pi_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 f_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 popu_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-# Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
+Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
 # w_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 # w_cohort_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 age_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
@@ -63,7 +63,7 @@ wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
 
 # Et_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 # Vt_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-# dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
+dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 
 
 dZ_matrix = np.load('dZ_matrix.npy')
@@ -108,12 +108,12 @@ for l in range(Mpaths):
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, Ninit, T_hat,
+                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
                              dZ_build, dZ, tau,
                              cohort_size)
                 invest_tracker = pi > 0
 
-            else:
+            elif mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
                 (
                     r,
                     theta,
@@ -141,13 +141,17 @@ for l in range(Mpaths):
                     Delta_bar_parti,
                     Delta_bar_long,
                     Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
-                                                Ninit,
-                                                T_hat, dZ_build, dZ, tau, cohort_size)
+                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre,
+                                                Ninit, T_hat, dZ_build, dZ, tau, cohort_size)
+            else:
+                print('Error! Mode not defined')
+                break
             dR_matrix[k, m, l] = np.mean(dR)
             r_matrix[k, m, l] = np.mean(r)
             theta_matrix[k, m, l] = np.mean(theta)
             popu_parti_matrix[k, m, l] = np.mean(popu_parti)
+            Delta_bar_parti_matrix[k, m, l] = np.mean(Delta_bar_parti)
+            f_parti_matrix[k, m, l] = np.mean(f_parti)
             parti_rate = invest_tracker * cohort_size
 
             belief = (Delta * sigma_Y + mu_Y)
@@ -194,14 +198,20 @@ y5 = np.mean(n_parti_matrix, axis=2)
 y6 = -y2 * sigma_Y + mu_Y
 y7 = np.nanmean(belief_age_matrix, axis=2)  # consumption-weighted beliefs for participants from each age group
 y8 = np.nanmean(wealthshare_age_matrix, axis=2)  # wealth share each age group
+y9 = np.mean(f_parti_matrix, axis=2)
+y10 = np.mean(Delta_bar_parti_matrix, axis=2)
 
-xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'age of participants',
-           'number of cohorts', 'cutoff belief', 'cst belief of participants in age groups',
-           'wealth share in age groups']
-ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8]
+
+xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'average age of participants',
+           'number of cohorts', 'cutoff belief to participate', 'average belief in age groups',
+           'wealth share in age groups', 'consumption share of participants', 'estimation error of participants']
+ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
+
+
 
 for i in range(len(ys)):
     for j in range(nu_dimension):
+        nu = nus[j]
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         if i == 0:
             y = ys[i]
@@ -228,10 +238,8 @@ for i in range(len(ys)):
         else:
             ax.set_ylabel('mean ' + xlabels[i])
 
-        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=500,
-                    # format="png")
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200, format="png")
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
-        # plt.close()
-
+        plt.close()
 
