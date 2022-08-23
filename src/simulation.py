@@ -8,7 +8,8 @@ from src.stats import shocks, good_times
 
 
 def simulate(
-    mode: str,
+    mode_trade: str,
+    mode_learn: str,
     Nc: int,
     Nt: int,
     dt: float,
@@ -67,11 +68,25 @@ def simulate(
         )
 
     (
+        good_time_build,
+        good_time_simulate,
+    ) = good_times(
+        dZ_build,
+        dZ,
+        dt,
+        Nt,
+        Nc,
+        window=12,
+        z=1.28,
+    )
+
+    (
         Delta_s_t,
         eta_st_eta_ss,
         eta_bar,
         d_eta_st,
         invest_tracker,
+        tau_info_build,
     ) = build_cohorts(
         dZ_build,
         Nc,
@@ -86,7 +101,9 @@ def simulate(
         Npre,
         Ninit,
         T_hat,
-        mode,
+        good_time_build,
+        mode_trade,
+        mode_learn,
         )
 
     (
@@ -122,13 +139,16 @@ def simulate(
         T_hat,
         Npre,
         Ninit,
-        mode,
+        mode_trade,
+        mode_learn,
         cohort_size,
         Delta_s_t,
         eta_st_eta_ss,
         eta_bar,
         d_eta_st,
         invest_tracker,
+        tau_info_build,
+        good_time_simulate,
         )
 
     return (
@@ -149,7 +169,8 @@ def simulate(
 
 
 def simulate_partial_constraint(
-    mode: str,
+    mode_trade: str,
+    mode_learn: str,
     Nc: int,
     Nt: int,
     dt: float,
@@ -248,7 +269,8 @@ def simulate_partial_constraint(
         d_eta_st,
         invest_tracker_build,
         can_short_tracker_build,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode)
+        tau_info_build,
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode_trade, mode_learn)
 
     (
         r,
@@ -296,7 +318,8 @@ def simulate_partial_constraint(
         T_hat,
         Npre,
         Ninit,
-        mode,
+        mode_trade,
+        mode_learn,
         cohort_size,
         Delta_s_t,
         eta_st_eta_ss,
@@ -304,6 +327,7 @@ def simulate_partial_constraint(
         d_eta_st,
         invest_tracker_build,
         can_short_tracker_build,
+        tau_info_build,
         good_time_simulate,
     )
 
