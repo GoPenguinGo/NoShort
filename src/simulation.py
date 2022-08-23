@@ -270,7 +270,7 @@ def simulate_partial_constraint(
         invest_tracker_build,
         can_short_tracker_build,
         tau_info_build,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode_trade, mode_learn)
+    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, Npre, Ninit, T_hat, good_time_build, mode_trade, mode_learn)
 
     (
         r,

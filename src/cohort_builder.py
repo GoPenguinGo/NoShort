@@ -173,6 +173,7 @@ def build_cohorts_partial_constraint(
         Vhat: float,
         mu_Y: float,
         sigma_Y: float,
+        sigma_S: float,
         tax: float,
         Npre: int,
         Ninit: int,

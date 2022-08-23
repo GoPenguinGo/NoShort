@@ -7,8 +7,8 @@ from src.param import *
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 # modes = ['drop', 'ric_free']
-# mode_trade = 'rich_free'
-mode_trade = 'drop'
+mode_trade = 'rich_free'
+# mode_trade = 'drop'
 # mode_trade = 'comp'
 # mode_trade = 'keep'
 mode_learn = 'give_up'
