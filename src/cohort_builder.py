@@ -18,6 +18,7 @@ def build_cohorts_SI(
     mu_Y: float,
     sigma_Y: float,
     tax: float,
+    phi: float,
     Npre: int,
     Ninit: int,
     T_hat: float,

@@ -23,6 +23,7 @@ def simulate_cohorts_SI(
         sigma_S: float,
         tax: float,
         beta: float,
+        phi: float,
         T_hat: float,
         Npre: float,
         Ninit: int,

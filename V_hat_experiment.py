@@ -94,8 +94,8 @@ for l in range(Mpaths):
                 w_cohort,
                 age_parti,
                 n_parti,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
-                         dZ_build, dZ, dZ_SI_build, dZ_SI, tau)
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi, Npre, Ninit, T_hat,
+                         dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
             invest_tracker = pi > 0
 
         else:
