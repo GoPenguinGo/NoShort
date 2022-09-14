@@ -6,191 +6,259 @@ from src.param import *
 
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
-# modes = ['drop', 'ric_free']
 
-mode_trade = 'rich_free'
-# mode_trade = 'drop'
-# mode_trade = 'comp'
-# mode_trade = 'keep'
-# mode_learn = 'give_up'
-# mode_learn = 'back_collect'
-mode_learn = 'back_renew'
+mode_learn = 'drop'
+# mode_learn = 'keep'
+# mode_trade = 'complete'
+mode_trade = 'w_constraint'
+# mode_trade = 'partial_constraint'
 
-# zoom_in = 'small'
-# zoom_in = 'large'
-zoom_in = 'overall'
-a = np.arange(1, 13, 1)
-b = np.arange(24, 241, 12)
-Npres = np.append(a, b)
-# Npres = np.arange(1, 13, 1) if zoom_in == 'small' else np.arange(1, 241, 12)
+Npres_a = np.arange(1, 13, 1)
+Npres_b = np.arange(24, 241, 12)
+Npres = np.append(Npres_a, Npres_b)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-# nus = [0.01, 0.02, 0.03]
-nus = [0.02]
-nu_dimension = len(nus)
 
-# todo: run T_hat [1, 10] years;
-#  I think in the model, interest rate and erp is still one for one though.
-# dZ_matrix = np.zeros((Mpaths, Nt))
-# dZ_build_matrix = np.zeros((Mpaths, Nc-1))
-# for l in range(Mpaths):
-#     s = time.time()
-#     # same shocks for the different T_hats
-#     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-#     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
-#     dZ_matrix[l, :] = dZ
-#     dZ_build_matrix[l, :] = dZ_build
+# # generate the shocks for the simulation paths:
+# dZ_build_long = dt ** 0.5 * np.random.randn(int(Nc - 1) * Mpaths)  # dZ^Y for the build function
+# dZ_long = dt ** 0.5 * np.random.randn(Nt * Mpaths)  # dZ^Y for the simulate function
+# dZ_SI_build_long = dt ** 0.5 * np.random.randn(int(Nc - 1) * Mpaths)  # dZ^SI for the build function
+# dZ_SI_long = dt ** 0.5 * np.random.randn(Nt * Mpaths)  # dZ^Y for the simulate function
+#
+# dZ_build_matrix = np.reshape(dZ_build_long, (Mpaths, -1))
+# dZ_matrix = np.reshape(dZ_long, (Mpaths, -1))
+# dZ_SI_build_matrix = np.reshape(dZ_SI_build_long, (Mpaths, -1))
+# dZ_SI_matrix = np.reshape(dZ_SI_long, (Mpaths, -1))
 #
 # np.save('dZ_matrix.npy', dZ_matrix)
 # np.save('dZ_build_matrix.npy', dZ_build_matrix)
+# np.save('dZ_SI_matrix.npy', dZ_SI_matrix)
+# np.save('dZ_SI_build_matrix.npy', dZ_SI_build_matrix)
 
 # Generate matrix to store the results
 
-# mu_C_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
+# mu_C_matrix = np.zeros((T_hat_dimension, Mpaths))
 # sigma_C_matrix = np.zeros((T_hat_dimension, Mpaths))
 # delta_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
-r_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
+r_matrix = np.zeros((T_hat_dimension, Mpaths))
 # f_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
-theta_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-pi_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-f_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-popu_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
+theta_matrix = np.zeros((T_hat_dimension, Mpaths))
+pi_matrix = np.zeros((T_hat_dimension, Mpaths))
+f_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
+popu_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
 Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
 # w_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 # w_cohort_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
-age_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-n_parti_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-popu_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
-belief_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
-wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
+age_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
+n_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
+popu_age_matrix = np.zeros((T_hat_dimension, Mpaths, 4))
+belief_age_matrix = np.zeros((T_hat_dimension, Mpaths, 4))
+wealthshare_age_matrix = np.zeros((T_hat_dimension, Mpaths, 4))
 
 # invest_tracker_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 
-# Et_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-# Vt_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
-
+# Et_matrix = np.zeros((T_hat_dimension, Mpaths))
+# Vt_matrix = np.zeros((T_hat_dimension, Mpaths))
+dR_matrix = np.zeros((T_hat_dimension, Mpaths))
 
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
+dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
+dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
-# The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
+
 for l in range(Mpaths):
-    dZ = dZ_matrix[l, :]
-    dZ_build = dZ_build_matrix[l, :]
+    dZ = dZ_matrix[l]
+    dZ_build = dZ_build_matrix[l]
 
     for k, T_hat in enumerate(T_hats):
         Npre = int(Npres[k])
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
         print(T_hat, Npre, Vhat)
 
-        for m, nu in enumerate(nus):
-            # this part is repetitive when there is only one value of nu
-            beta = rho + nu - tax
+        if mode_trade == 'complete' or mode_trade == 'w_constraint':
+            (
+                r,
+                theta,
+                f,
+                Delta,
+                max,
+                pi,
+                popu_parti,
+                f_parti,
+                Delta_bar_parti,
+                dR,
+                w_cohort,
+                age_parti,
+                n_parti,
+            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
+                         dZ_build, dZ, tau)
+            invest_tracker = pi > 0
 
-            tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
-            cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+        else:
+            print('Error! Mode not defined')
+            break
 
-            # create age quartiles for analysis
-            cummu_popu = np.cumsum(cohort_size)
-            tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
-            tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
-            tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-            cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+        dR_matrix[k, l] = np.mean(dR)
+        r_matrix[k, l] = np.mean(r)
+        theta_matrix[k, l] = np.mean(theta)
+        popu_parti_matrix[k, l] = np.mean(popu_parti)
+        Delta_bar_parti_matrix[k, l] = np.mean(Delta_bar_parti)
+        f_parti_matrix[k, l] = np.mean(f_parti)
+        parti_rate = invest_tracker * cohort_size
 
-            if mode == 'drop' or mode == 'keep' or mode == 'comp':
-                (
-                    r,
-                    theta,
-                    f,
-                    Delta,
-                    max,
-                    pi,
-                    popu_parti,
-                    f_parti,
-                    Delta_bar_parti,
-                    dR,
-                    w_cohort,
-                    age_parti,
-                    n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
-                             dZ_build, dZ, tau,
-                             cohort_size)
-                invest_tracker = pi > 0
+        belief = (Delta * sigma_Y + mu_Y)
+        belief_weights = f * dt
 
-            elif mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
-                (
-                    r,
-                    theta,
-                    f,
-                    Delta,
-                    d_eta,
-                    pi,
-                    dR,
-                    w_cohort,
-                    popu_parti,
-                    popu_can_short,
-                    popu_short,
-                    popu_long,
-                    f_parti,
-                    f_short,
-                    f_long,
-                    age_parti,
-                    age_short,
-                    age_long,
-                    n_parti,
-                    invest_tracker,
-                    can_short_tracker,
-                    long,
-                    short,
-                    Delta_bar_parti,
-                    Delta_bar_long,
-                    Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre,
-                                                Ninit, T_hat, dZ_build, dZ, tau, cohort_size)
-            else:
-                print('Error! Mode not defined')
-                break
-            dR_matrix[k, m, l] = np.mean(dR)
-            r_matrix[k, m, l] = np.mean(r)
-            theta_matrix[k, m, l] = np.mean(theta)
-            popu_parti_matrix[k, m, l] = np.mean(popu_parti)
-            Delta_bar_parti_matrix[k, m, l] = np.mean(Delta_bar_parti)
-            f_parti_matrix[k, m, l] = np.mean(f_parti)
-            parti_rate = invest_tracker * cohort_size
+        for i in range(4):
+            popu_age_matrix[k, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
 
-            belief = (Delta * sigma_Y + mu_Y)
-            belief_weights = f * dt
+            # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
+            #                        axis=1) == 0)  # no one from the age group is participating
+            # belief_copy = belief.copy()
+            # if np.sum(weights_zero) == Nt:
+            #     belief_age_matrix[k, m, l, i] = np.nan
+            # else:
+            #     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
+            #     a = np.where(weights_zero == 1)
+            #     belief_copy[a, :] = np.nan
+            #     belief_age_matrix[k, m, l, i] = np.nanmean(
+            #         np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
+            #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
+            #     )
+            belief_age_matrix[k, l, i] = np.mean(
+                belief[:, cutoffs[i + 1]:cutoffs[i]]
+            )
 
-            for i in range(4):
-                popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+            wealthshare_age_matrix[k, l, i] = np.mean(
+                np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+            )
 
-                # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
-                #                        axis=1) == 0)  # no one from the age group is participating
-                # belief_copy = belief.copy()
-                # if np.sum(weights_zero) == Nt:
-                #     belief_age_matrix[k, m, l, i] = np.nan
-                # else:
-                #     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
-                #     a = np.where(weights_zero == 1)
-                #     belief_copy[a, :] = np.nan
-                #     belief_age_matrix[k, m, l, i] = np.nanmean(
-                #         np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
-                #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
-                #     )
-                belief_age_matrix[k, m, l, i] = np.mean(
-                    belief[:, cutoffs[i + 1]:cutoffs[i]]
-                )
+        age_parti_matrix[k, l] = np.mean(age_parti)
+        n_parti_matrix[k, l] = np.mean(n_parti)
 
-                wealthshare_age_matrix[k, m, l, i] = np.mean(
-                    np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-                )
-
-            age_parti_matrix[k, m, l] = np.mean(age_parti)
-            n_parti_matrix[k, m, l] = np.mean(n_parti)
 
         # covariance:
     print(l)
+
+
+# The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
+# for l in range(Mpaths):
+#     dZ = dZ_matrix[l]
+#     dZ_build = dZ_build_matrix[l]
+#
+#     for k, T_hat in enumerate(T_hats):
+#         Npre = int(Npres[k])
+#         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+#         print(T_hat, Npre, Vhat)
+#
+#         for m, nu in enumerate(nus):
+#             # this part is repetitive when there is only one value of nu
+#             beta = rho + nu - tax
+#
+#             tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
+#             cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+#
+#             # create age quartiles for analysis
+#             cummu_popu = np.cumsum(cohort_size)
+#             tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+#             tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+#             tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
+#             cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+#
+#             if mode == 'drop' or mode == 'keep' or mode == 'comp':
+#                 (
+#                     r,
+#                     theta,
+#                     f,
+#                     Delta,
+#                     max,
+#                     pi,
+#                     popu_parti,
+#                     f_parti,
+#                     Delta_bar_parti,
+#                     dR,
+#                     w_cohort,
+#                     age_parti,
+#                     n_parti,
+#                 ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
+#                              dZ_build, dZ, tau,
+#                              cohort_size)
+#                 invest_tracker = pi > 0
+#
+#             elif mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
+#                 (
+#                     r,
+#                     theta,
+#                     f,
+#                     Delta,
+#                     d_eta,
+#                     pi,
+#                     dR,
+#                     w_cohort,
+#                     popu_parti,
+#                     popu_can_short,
+#                     popu_short,
+#                     popu_long,
+#                     f_parti,
+#                     f_short,
+#                     f_long,
+#                     age_parti,
+#                     age_short,
+#                     age_long,
+#                     n_parti,
+#                     invest_tracker,
+#                     can_short_tracker,
+#                     long,
+#                     short,
+#                     Delta_bar_parti,
+#                     Delta_bar_long,
+#                     Delta_bar_short,
+#                 ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre,
+#                                                 Ninit, T_hat, dZ_build, dZ, tau, cohort_size)
+#             else:
+#                 print('Error! Mode not defined')
+#                 break
+#             dR_matrix[k, m, l] = np.mean(dR)
+#             r_matrix[k, m, l] = np.mean(r)
+#             theta_matrix[k, m, l] = np.mean(theta)
+#             popu_parti_matrix[k, m, l] = np.mean(popu_parti)
+#             Delta_bar_parti_matrix[k, m, l] = np.mean(Delta_bar_parti)
+#             f_parti_matrix[k, m, l] = np.mean(f_parti)
+#             parti_rate = invest_tracker * cohort_size
+#
+#             belief = (Delta * sigma_Y + mu_Y)
+#             belief_weights = f * dt
+#
+#             for i in range(4):
+#                 popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+#
+#                 # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
+#                 #                        axis=1) == 0)  # no one from the age group is participating
+#                 # belief_copy = belief.copy()
+#                 # if np.sum(weights_zero) == Nt:
+#                 #     belief_age_matrix[k, m, l, i] = np.nan
+#                 # else:
+#                 #     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
+#                 #     a = np.where(weights_zero == 1)
+#                 #     belief_copy[a, :] = np.nan
+#                 #     belief_age_matrix[k, m, l, i] = np.nanmean(
+#                 #         np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
+#                 #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
+#                 #     )
+#                 belief_age_matrix[k, m, l, i] = np.mean(
+#                     belief[:, cutoffs[i + 1]:cutoffs[i]]
+#                 )
+#
+#                 wealthshare_age_matrix[k, m, l, i] = np.mean(
+#                     np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+#                 )
+#
+#             age_parti_matrix[k, m, l] = np.mean(age_parti)
+#             n_parti_matrix[k, m, l] = np.mean(n_parti)
+#
+#         # covariance:
+#     print(l)
 
 # graphs:
 x = Npres
@@ -215,7 +283,7 @@ ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
 
 
 for i in range(len(ys)):
-    for j in range(nu_dimension):
+    for j in range:
         nu = nus[j]
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         if i == 0:

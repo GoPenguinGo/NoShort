@@ -4,7 +4,7 @@ from typing import Tuple
 
 
 @jit(nopython=True)
-def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray, phi, type) -> np.ndarray:
+def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray, phi: float, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:

@@ -8,6 +8,7 @@ from numba import jit
 
 def build_cohorts_SI(
     dZ_build: np.ndarray,
+    dZ_SI_build: np.ndarray,
     Nc: int,
     dt: float,
     tau: np.ndarray,
@@ -99,7 +100,7 @@ def build_cohorts_SI(
 
         dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
                 phi ** 2 / (1 - phi ** 2)) * (
-                              -Delta_s_t * dt + dZ_build[i - 1] + 1 / phi * dZ_SI[i - 1]
+                              -Delta_s_t * dt + dZ_build[i - 1] + 1 / phi * dZ_SI_build[i - 1]
                       )  # from eq(8)
         dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
@@ -119,7 +120,7 @@ def build_cohorts_SI(
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Ninit or mode_trade == 'comp':  # Ninit: initial rounds where the short-sale constraint is relaxed
+        if i < Ninit or mode_trade == 'complete':  # Ninit: initial rounds where the short-sale constraint is relaxed
             d_eta_st = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
