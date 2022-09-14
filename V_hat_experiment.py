@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate, simulate_partial_constraint
+from src.simulation import simulate_SI
 from src.param import *
 
 # todo: the connection between belief and wealth?
@@ -15,7 +15,8 @@ mode_trade = 'w_constraint'
 
 Npres_a = np.arange(1, 13, 1)
 Npres_b = np.arange(24, 241, 12)
-Npres = np.append(Npres_a, Npres_b)
+# Npres = np.append(Npres_a, Npres_b)
+Npres = np.arange(120, 240, 20)
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
 
@@ -93,8 +94,8 @@ for l in range(Mpaths):
                 w_cohort,
                 age_parti,
                 n_parti,
-            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
-                         dZ_build, dZ, tau)
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
+                         dZ_build, dZ, dZ_SI_build, dZ_SI, tau)
             invest_tracker = pi > 0
 
         else:
