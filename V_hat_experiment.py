@@ -67,7 +67,6 @@ dZ_build_matrix = np.load('dZ_build_matrix.npy')
 dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
 dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
-
 for l in range(Mpaths):
     dZ = dZ_matrix[l]
     dZ_build = dZ_build_matrix[l]
@@ -94,8 +93,9 @@ for l in range(Mpaths):
                 w_cohort,
                 age_parti,
                 n_parti,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi, Npre, Ninit, T_hat,
-                         dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
+                            Npre, Ninit, T_hat,
+                            dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
             invest_tracker = pi > 0
 
         else:
@@ -116,22 +116,10 @@ for l in range(Mpaths):
         for i in range(4):
             popu_age_matrix[k, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
 
-            # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
-            #                        axis=1) == 0)  # no one from the age group is participating
-            # belief_copy = belief.copy()
-            # if np.sum(weights_zero) == Nt:
-            #     belief_age_matrix[k, m, l, i] = np.nan
-            # else:
-            #     # weights_zero = np.transpose(np.tile(weights_zero, (Nc, 1)))
-            #     a = np.where(weights_zero == 1)
-            #     belief_copy[a, :] = np.nan
-            #     belief_age_matrix[k, m, l, i] = np.nanmean(
-            #         np.average(belief_copy[:, cutoffs[i + 1]:cutoffs[i]],
-            #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
-            #     )
             belief_age_matrix[k, l, i] = np.mean(
-                belief[:, cutoffs[i + 1]:cutoffs[i]]
-            )
+                np.average(
+                    belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
+                ))
 
             wealthshare_age_matrix[k, l, i] = np.mean(
                 np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
@@ -140,10 +128,8 @@ for l in range(Mpaths):
         age_parti_matrix[k, l] = np.mean(age_parti)
         n_parti_matrix[k, l] = np.mean(n_parti)
 
-
         # covariance:
     print(l)
-
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 # for l in range(Mpaths):
@@ -277,13 +263,10 @@ y8 = np.nanmean(wealthshare_age_matrix, axis=2)  # wealth share each age group
 y9 = np.mean(f_parti_matrix, axis=2)
 y10 = np.mean(Delta_bar_parti_matrix, axis=2)
 
-
 xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'average age of participants',
            'number of cohorts', 'cutoff belief to participate', 'average belief in age groups',
            'wealth share in age groups', 'consumption share of participants', 'estimation error of participants']
 ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
-
-
 
 for i in range(len(ys)):
     for j in range:
@@ -314,8 +297,8 @@ for i in range(len(ys)):
         else:
             ax.set_ylabel('mean ' + xlabels[i])
 
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200, format="png")
+        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200,
+                    format="png")
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
         plt.close()
-

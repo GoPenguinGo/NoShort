@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Callable, Tuple
-from src.simulation import simulate, simulate_partial_constraint
-from src.cohort_builder import build_cohorts, build_cohorts_partial_constraint
-from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_constraint
+from src.simulation import simulate_SI
+from src.cohort_builder import build_cohorts_SI
+from src.cohort_simulator import simulate_cohorts_SI
 from src.param import *
 from src.stats import shocks, tau_calculator, good_times
 from numba import jit
@@ -13,10 +13,11 @@ import statsmodels.api as sm
 import tabulate as tabulate
 
 # different scenarios
-# modes = ['keep', 'drop', 'comp', 'rich_free', 'back_collect', 'back_renew']
-# modes = ['drop']
-# modes = ['rich_free']
-modes = ['keep']
+mode_learn = 'drop'
+# mode_learn = 'keep'
+# mode_trade = 'complete'
+mode_trade = 'w_constraint'
+# mode_trade = 'partial_constraint'
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 survey_view_parti_matrix = np.zeros((Mpaths, Nt))  # average perceived risk premia among investors
