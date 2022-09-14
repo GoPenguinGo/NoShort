@@ -31,6 +31,7 @@ def build_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
@@ -60,12 +61,12 @@ def build_cohorts_SI(
     d_eta_st = np.zeros(1)  # disagreement, eq(11)
     eta_bar = np.ones(1)
     eta_st_eta_ss = np.ones(1)
-    invest_tracker = np.ones(Ninit) if mode_trade == 'drop' else np.ones(Nc)
+    invest_tracker = np.ones(Ninit) if mode_trade != 'complete' else np.ones(Nc)
     tau_info = np.ones(1) * dt
     Vhat_vector = np.ones(1) * Vhat
 
     for i in tqdm(range(1, Nc)):
-
+    #for i in tqdm(range(1, Ninit)):
         # new cohort born (age 0), get wealth transfer, observe, invest
         tau_short = tau[-i:]
 
@@ -89,24 +90,32 @@ def build_cohorts_SI(
         f_st = np.append(f_st, tax)
 
         # update beliefs
-        # todo: make Vhat a vector
-        Vhat_vector = np.append(Vhat_vector, Vhat)
-        V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
-        V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-        dDelta_s_t_N = (V_st_N / sigma_Y**2
-                      ) * (
-                -Delta_s_t * dt + dZ_build[i - 1]
-        )  # from eq(5)
 
-        dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
+
+        if i < Ninit:
+            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t = V_st_P / sigma_Y ** 2 * (
                 phi ** 2 / (1 - phi ** 2)) * (
                               -Delta_s_t * dt + dZ_build[i - 1] + 1 / phi * dZ_SI_build[i - 1]
                       )  # from eq(8)
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+        else:
+            V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+            dDelta_s_t_N = (V_st_N / sigma_Y ** 2
+                            ) * (
+                                   -Delta_s_t * dt + dZ_build[i - 1]
+                           )  # from eq(5)
+            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
+                    phi ** 2 / (1 - phi ** 2)) * (
+                                   -Delta_s_t * dt + dZ_build[i - 1] + 1 / phi * dZ_SI_build[i - 1]
+                           )  # from eq(8)
+            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+
+        Vhat_vector = np.append(Vhat_vector, Vhat)  # iterate Vhat (Vhat is either the initial variance or the starting point after state switch)
 
         if mode_learn == 'keep' or mode_trade == 'complete':  # where tau_info is the same with age
             tau_info = tau[-i - 1:]
-        else:
+        else:  # where tau_info is the distance from state switch
             tau_info = np.append(tau_info, 0) + dt
 
         if i < Npre:
@@ -136,14 +145,14 @@ def build_cohorts_SI(
             a = Delta_s_t + theta_t
             invest = (a >= 0)
             if mode_learn == 'drop':  # agents switch from type P to type N once constrained
-                switch = invest_tracker * (1 - invest)
+                switch_P_to_N = invest_tracker * (1 - invest)
                 invest_tracker = invest * invest_tracker
                 d_eta_st = a * invest_tracker - theta_t
                 # tau_info and V_hat has to change for the agents who switched to N
-                Vhat_vector = V_st_P * switch + Vhat_vector * (1 - switch)
-                tau_info = dt * switch + tau_info * (1 - switch)
+                Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
+                tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            # if mode_learn == 'keep':   # agents stay as type P even if constrained
+            # elif mode_learn == 'keep':   # agents stay as type P even if constrained
             #     invest_tracker = np.append(invest_tracker[:-1], invest[-1])
             #     d_eta_st = a * invest_tracker - theta_t
 

@@ -70,6 +70,8 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 for l in range(Mpaths):
     dZ = dZ_matrix[l]
     dZ_build = dZ_build_matrix[l]
+    dZ_SI = dZ_SI_matrix[l]
+    dZ_SI_build = dZ_SI_build_matrix[l]
 
     for k, T_hat in enumerate(T_hats):
         Npre = int(Npres[k])
