@@ -4,7 +4,7 @@ from typing import Tuple
 
 
 @jit(nopython=True)
-def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
+def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray, phi, type) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:
@@ -16,7 +16,14 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray) -> np.ndarray:
         np.ndarray: shape (T, )
     """
     sigma_Y_sq = sigma_Y ** 2
-    V = sigma_Y_sq * V_hat / (sigma_Y_sq + V_hat * tau)
+    if type == 'N':
+        V = sigma_Y_sq * V_hat / (sigma_Y_sq + V_hat * tau)
+    elif type == 'P':
+        a_phi = 1 - phi ** 2
+        V = sigma_Y_sq * a_phi * V_hat / (sigma_Y_sq * a_phi + V_hat * tau)
+    else:
+        print('type not defined')
+        V = V_hat
     return V
 
 
@@ -104,6 +111,7 @@ def good_times(
     good_time_build = cummu_dZt_build >= z * sigma_cummu
     good_time_simulate = cummu_dZt >= z * sigma_cummu
     return good_time_build, good_time_simulate
+
 
 
 def fadingmemo(v, tau, sigma_Y, V_hat, int_zt, delta_ss):

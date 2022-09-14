@@ -11,6 +11,9 @@ sigma_Y_sqr = sigma_Y ** 2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
+# for the SI signal:
+sigma_SI = 0.3
+phi = 0.3
 
 v = 0.018  # from Nagel and Xu (2021 RFS)
 
