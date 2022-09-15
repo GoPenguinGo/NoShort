@@ -34,20 +34,27 @@ Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
 dY_Y_matrix = np.zeros((Mpaths, Nt))
 obj_rp_matrix = np.zeros((Mpaths, Nt))
 
+dZ_matrix = np.load('dZ_matrix.npy')
+dZ_build_matrix = np.load('dZ_build_matrix.npy')
+dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
+dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
 for k in range(Mpaths):
     s = time.time()
     time_s = time.time()
 
-    if k == Mpaths - 1:  # in the last round, use the shocks seen in the slides
-        dZ_build = np.load('dZt_build_demo.npy')  # dZt for the build function
-        dZ = np.load('dZt_demo.npy')  # dZt for the simulate function
+    dZ = dZ_matrix[k]
+    dZ_build = dZ_build_matrix[k]
+    dZ_SI = dZ_SI_matrix[k]
+    dZ_SI_build = dZ_SI_build_matrix[k]
 
-    else:
-        dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-        dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
-
-    biasvec = dZ_build[-Npre:]  # dZt in the building cohorts stage, but also used in the simulation function
+    # if k == Mpaths - 1:  # in the last round, use the shocks seen in the slides
+    #     dZ_build = np.load('dZt_build_demo.npy')  # dZt for the build function
+    #     dZ = np.load('dZt_demo.npy')  # dZt for the simulate function
+    #
+    # else:
+    #     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
+    #     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
 
     dY_Y_matrix[k, :] = mu_Y * dt + sigma_Y * dZ
 
@@ -55,162 +62,120 @@ for k in range(Mpaths):
     # Z = np.cumsum(dZ)
     # Z_matrix[k, :] = Z
 
-    for mode in modes:
-        if mode == 'keep' or mode == 'drop' or mode == 'complete':
-            (
-                mu_S,
-                mu_S_s,
-                r,
-                theta,
-                f,
-                Delta,
-                max,
-                pi,
-                popu_parti,
-                f_parti,
-                Delta_bar_parti,
-                dR,
-                w,
-                w_cohort,
-                age_parti,
-                n_parti,
-            ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre, T_hat, dZ_build, dZ, tau,
-                         cohort_size)
+    if mode_trade == 'complete' or mode_trade == 'w_constraint':
+        phi = 0.0001
+        (
+            r,
+            theta,
+            f,
+            Delta,
+            max,
+            pi,
+            popu_parti,
+            f_parti,
+            Delta_bar_parti,
+            dR,
+            w_cohort,
+            age_parti,
+            n_parti,
+        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
+        invest_tracker = pi > 0
 
-            invest_tracker = pi > 0
-            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+        y1 = Delta
 
+    # else:
+    #     print('Error! Mode not defined')
+    #     break
+    theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
 
-        if mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
-            (
-                mu_S,
-                mu_S_s,
-                r,
-                theta,
-                f,
-                Delta,
-                d_eta,
-                pi,
-                dR,
-                w,
-                w_cohort,
-                popu_parti,
-                popu_can_short,
-                popu_short,
-                popu_long,
-                f_parti,
-                f_short,
-                f_long,
-                age_parti,
-                age_short,
-                age_long,
-                n_parti,
-                invest_tracker,
-                can_short_tracker,
-                long,
-                short,
-                Delta_bar_parti,
-                Delta_bar_long,
-                Delta_bar_short,
-            ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax, beta, Npre,
-                                            T_hat, dZ_build, dZ, tau, cohort_size)
+    erp_S = mu_S - r
+    # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
 
-            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+    dR_matrix[k] = dR
+    # delta_matrix[k] = Delta
+    r_matrix[k] = r
+    # theta_matrix[k] = theta
+    # mu_S_matrix[k] = mu_S
+    # mu_S_s_matrix[k] = mu_S_s
+    erp_S_matrix[k] = erp_S
+    # erp_S_s_matrix[k] = erp_S_s
+    # pi_matrix[k] = pi
 
-            long_only_weights = (invest_tracker - can_short_tracker) * cohort_size
-            can_short_weights = can_short_tracker * cohort_size
-            survey_view_long_only_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
-                                                           weights=long_only_weights, axis=1)
-            survey_view_can_short_matrix[k] = np.average((Delta + theta_mat) * sigma_S,
-                                                         weights=can_short_weights, axis=1)
+    # w_matrix[k] = w
+    # w_cohort_matrix[k] = w_cohort
+    # n_parti_matrix[k] = n_parti
 
-        erp_S = mu_S - r
-        # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
+    popu_parti_matrix[k] = popu_parti
+    # popu_can_short_matrix[k] = popu_can_short
+    # popu_short_matrix[k] = popu_short
+    # popu_long_matrix[k] = popu_long
+    # f_matrix[k] = f
+    # f_parti_matrix[k] = f_parti
+    # f_short_matrix[k] = f_short
+    # f_long_matrix[k] = f_long
+    age_parti_matrix[k] = age_parti
+    # age_short_matrix[k] = age_short
+    # age_long_matrix[k] = age_long
 
-        dR_matrix[k] = dR
-        # delta_matrix[k] = Delta
-        r_matrix[k] = r
-        # theta_matrix[k] = theta
-        # mu_S_matrix[k] = mu_S
-        # mu_S_s_matrix[k] = mu_S_s
-        erp_S_matrix[k] = erp_S
-        # erp_S_s_matrix[k] = erp_S_s
-        # pi_matrix[k] = pi
+    # invest_tracker_matrix[k] = invest_tracker
+    # can_short_tracker_matrix[k] = can_short_tracker
+    # long_indicator_matrix[k] = long
+    # short_indicator_matrix[k] = short
 
-        # w_matrix[k] = w
-        # w_cohort_matrix[k] = w_cohort
-        # n_parti_matrix[k] = n_parti
+    Delta_bar_parti_matrix[k] = Delta_bar_parti
+    # Delta_bar_long_matrix[k] = Delta_bar_long
+    # Delta_bar_short_matrix[k] = Delta_bar_short
 
-        popu_parti_matrix[k] = popu_parti
-        # popu_can_short_matrix[k] = popu_can_short
-        # popu_short_matrix[k] = popu_short
-        # popu_long_matrix[k] = popu_long
-        # f_matrix[k] = f
-        # f_parti_matrix[k] = f_parti
-        # f_short_matrix[k] = f_short
-        # f_long_matrix[k] = f_long
-        age_parti_matrix[k] = age_parti
-        # age_short_matrix[k] = age_short
-        # age_long_matrix[k] = age_long
+    # todo: correct the code about survey view
+    cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+    survey_view_parti = (Delta + theta_mat) * invest_tracker * sigma_S
+    survey_view_parti_matrix[k] = np.average(survey_view_parti,
+                                             weights=cohort_size_mat, axis=1)
 
-        # invest_tracker_matrix[k] = invest_tracker
-        # can_short_tracker_matrix[k] = can_short_tracker
-        # long_indicator_matrix[k] = long
-        # short_indicator_matrix[k] = short
+    weights_zero = (np.sum(survey_view_parti[:, tau_cutoff1:], axis=1) == 0)
+    view_copy = np.copy(survey_view_parti)
+    a = np.where(weights_zero == 1)
+    view_copy[a, :] = np.nan
+    survey_view_parti_young_matrix[k] = np.average(view_copy[:, tau_cutoff1:],
+                                                   weights=cohort_size_mat[:, tau_cutoff1:], axis=1)
 
-        Delta_bar_parti_matrix[k] = Delta_bar_parti
-        # Delta_bar_long_matrix[k] = Delta_bar_long
-        # Delta_bar_short_matrix[k] = Delta_bar_short
+    weights_zero1 = (np.sum(survey_view_parti[:, tau_cutoff3:tau_cutoff2], axis=1) == 0)
+    view_copy1 = np.copy(survey_view_parti)
+    a1 = np.where(weights_zero1 == 1)
+    view_copy1[a1, :] = np.nan
+    survey_view_parti_old_matrix[k] = np.average(view_copy1[:, tau_cutoff3:tau_cutoff2],
+                                                 weights=cohort_size_mat[:, tau_cutoff3:tau_cutoff2], axis=1)
 
-        # todo: correct the code about survey view
-        cohort_size_mat = np.tile(cohort_size, (Nt, 1))
-        survey_view_parti = (Delta + theta_mat) * invest_tracker * sigma_S
-        survey_view_parti_matrix[k] = np.average(survey_view_parti,
-                                                 weights=cohort_size_mat, axis=1)
+    obj_rp_matrix[k] = theta * sigma_S
 
-        weights_zero = (np.sum(survey_view_parti[:, tau_cutoff1:], axis=1) == 0)
-        view_copy = np.copy(survey_view_parti)
-        a = np.where(weights_zero == 1)
-        view_copy[a, :] = np.nan
-        survey_view_parti_young_matrix[k] = np.average(view_copy[:, tau_cutoff1:],
-                                                       weights = cohort_size_mat[:, tau_cutoff1:], axis=1)
+    parti_track = cohort_size_mat * invest_tracker
+    popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
+    popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
 
-        weights_zero1 = (np.sum(survey_view_parti[:, tau_cutoff3:tau_cutoff2], axis=1) == 0)
-        view_copy1 = np.copy(survey_view_parti)
-        a1 = np.where(weights_zero1 == 1)
-        view_copy1[a1, :] = np.nan
-        survey_view_parti_old_matrix[k] = np.average(view_copy1[:, tau_cutoff3:tau_cutoff2],
-                                                     weights=cohort_size_mat[:, tau_cutoff3:tau_cutoff2], axis=1)
-
-        obj_rp_matrix[k] = theta * sigma_S
-
-        parti_track = cohort_size_mat * invest_tracker
-        popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
-        popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
-
-        # # for graphs specific to one random path:
-        # if dZ_build == np.load('dZt_build_demo.npy'):
-        #     if mode == 'comp':
-        #         y21 = theta
-        #         y31 = r
-        #         y41 = Delta_bar_parti
-        #     if mode == 'drop':
-        #         y1 = Delta
-        #         y22 = theta
-        #         y32 = r
-        #         y42 = Delta_bar_parti / f_parti
-        #         y43 = f_parti
-        #         y44 = popu_parti
-        #         invest = pi > 0
-        #         parti_rate = invest * cohort_size
-        #         y5 = parti_rate
-        #         y6 = pi
-        #     if mode == 'free':
-        #         y71 = theta
-        #         y72 = popu_parti
-        #         y73 = popu_short
-        #         y74 = Delta_bar_long
-        #         y75 = Delta_bar_short
+    # # for graphs specific to one random path:
+    # if dZ_build == np.load('dZt_build_demo.npy'):
+    #     if mode == 'comp':
+    #         y21 = theta
+    #         y31 = r
+    #         y41 = Delta_bar_parti
+    #     if mode == 'drop':
+    #         y1 = Delta
+    #         y22 = theta
+    #         y32 = r
+    #         y42 = Delta_bar_parti / f_parti
+    #         y43 = f_parti
+    #         y44 = popu_parti
+    #         invest = pi > 0
+    #         parti_rate = invest * cohort_size
+    #         y5 = parti_rate
+    #         y6 = pi
+    #     if mode == 'free':
+    #         y71 = theta
+    #         y72 = popu_parti
+    #         y73 = popu_short
+    #         y74 = Delta_bar_long
+    #         y75 = Delta_bar_short
 
     print(time.time() - s)
     print(mode)
@@ -226,55 +191,77 @@ for k in range(Mpaths):
 # #######################################
 #
 # # the x-axis
-# t = np.arange(0, T_cohort, dt)
-# y0 = Z
-#
-#
-# # define colors
-# color1 = 'black'
-# color2 = 'mediumblue'
-# color3 = 'darkgreen'
-# color4 = 'orange'
-# color5 = 'red'
-# color6 = 'b'
-# color7 = 'g'
+t = np.arange(0, T_cohort, dt)
+y0 = np.cumsum(dZ)
+y01 = np.cumsum(dZ_SI)
+
+
+# define colors
+color1 = 'black'
+color2 = 'mediumblue'
+color3 = 'darkgreen'
+color4 = 'orange'
+color5 = 'red'
+color6 = 'b'
+color7 = 'g'
 #
 # #######################################
 # ############# GRAPH ONE ###############
 # #######################################
 # # illustrate the learning process
 #
-# nn = 3
-# length = len(t)
-# Delta_time_series = np.zeros((nn, length))
-# for i in range(3):
-#     start = int((i + 1) * 100 * (1 / dt))
-#     for j in range(length):
-#         if j < start:
-#             Delta_time_series[i, j] = np.nan
-#         else:
-#             cohort_rank = length - (j - start) - 1
-#             Delta_time_series[i, j] = y1[j, cohort_rank]
-#
-# y11 = Delta_time_series[0]
-# y12 = Delta_time_series[1]
-# y13 = Delta_time_series[2]
-#
-# fig, ax1 = plt.subplots(figsize=(10, 5))
-# ax1.set_xlabel('Time in simulation, one random path')
-# ax1.set_ylabel('Zt', color=color5)
-# ax1.plot(t, y0, color=color5, linewidth=0.5)
-# ax1.tick_params(axis='y', labelcolor=color5)
-# ax2 = ax1.twinx()
-# ax2.set_ylabel('Bias in belief and learning', color=color2)
-# ax2.set_ylim([-0.5, 0.5])
-# ax2.plot(t, y11, color=color2, linewidth=0.4)
-# ax2.plot(t, y12, color=color3, linewidth=0.4)
-# ax2.plot(t, y13, color=color4, linewidth=0.4)
-# ax2.tick_params(axis='y', labelcolor=color2)
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig('Zt and bias time series' + '.png', dpi=500)
-# plt.show()
+phi_vector = np.arange(0,1,5)
+(
+    r,
+    theta,
+    f,
+    Delta,
+    max,
+    pi,
+    popu_parti,
+    f_parti,
+    Delta_bar_parti,
+    dR,
+    w_cohort,
+    age_parti,
+    n_parti,
+) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
+                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
+invest_tracker = pi > 0
+
+y1 = Delta
+
+nn = 3
+length = len(t)
+Delta_time_series = np.zeros((nn, length))
+for i in range(3):
+    start = int((i + 1) * 100 * (1 / dt))
+    for j in range(length):
+        if j < start:
+            Delta_time_series[i, j] = np.nan
+        else:
+            cohort_rank = length - (j - start) - 1
+            Delta_time_series[i, j] = y1[j, cohort_rank]
+
+y11 = Delta_time_series[0]
+y12 = Delta_time_series[1]
+y13 = Delta_time_series[2]
+
+fig, ax1 = plt.subplots(figsize=(10, 5))
+ax1.set_xlabel('Time in simulation, one random path')
+ax1.set_ylabel('Zt', color=color5)
+ax1.plot(t, y0, color=color5, linewidth=0.5)
+ax1.tick_params(axis='y', labelcolor=color5)
+ax2 = ax1.twinx()
+ax2.set_ylabel('Bias in belief and learning', color=color2)
+ax2.set_ylim([-0.5, 0.5])
+ax2.plot(t, y11, color=color2, linewidth=0.4)
+ax2.plot(t, y12, color=color3, linewidth=0.4)
+ax2.plot(t, y13, color=color4, linewidth=0.4)
+ax2.tick_params(axis='y', labelcolor=color2)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Zt and bias time series' + str(phi) + '.png', dpi=500)
+plt.show()
 #
 # #######################################
 # ############# GRAPH TWO ###############

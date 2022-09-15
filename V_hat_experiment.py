@@ -47,7 +47,7 @@ theta_matrix = np.zeros((T_hat_dimension, Mpaths))
 pi_matrix = np.zeros((T_hat_dimension, Mpaths))
 f_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
 popu_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
-Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths, Nt))
+Delta_bar_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
 # w_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 # w_cohort_matrix = np.zeros((T_hat_dimension, Mpaths, Nt, Nc))
 age_parti_matrix = np.zeros((T_hat_dimension, Mpaths))
@@ -252,53 +252,47 @@ for l in range(Mpaths):
 # graphs:
 x = Npres
 y0 = (np.ones(len(Npres)) * sigma_Y ** 2) / x
-y1 = np.mean(r_matrix, axis=2)
-y2 = np.mean(theta_matrix, axis=2)
-y3 = np.mean(popu_age_matrix, axis=2)
-y4 = np.mean(age_parti_matrix, axis=2)
-y5 = np.mean(n_parti_matrix, axis=2)
+y1 = np.mean(r_matrix, axis=1)
+y2 = np.mean(theta_matrix, axis=1)
+y3 = np.mean(popu_age_matrix, axis=1)
+y4 = np.mean(age_parti_matrix, axis=1)
+y5 = np.mean(n_parti_matrix, axis=1)
 y6 = -y2 * sigma_Y + mu_Y
-y7 = np.nanmean(belief_age_matrix, axis=2)  # consumption-weighted beliefs for participants from each age group
-y8 = np.nanmean(wealthshare_age_matrix, axis=2)  # wealth share each age group
-y9 = np.mean(f_parti_matrix, axis=2)
-y10 = np.mean(Delta_bar_parti_matrix, axis=2)
+y7 = np.nanmean(belief_age_matrix, axis=1)  # consumption-weighted beliefs for participants from each age group
+y8 = np.nanmean(wealthshare_age_matrix, axis=1)  # wealth share each age group
+y9 = np.mean(f_parti_matrix, axis=1)
+y10 = np.mean(Delta_bar_parti_matrix, axis=1)
 
 xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'average age of participants',
            'number of cohorts', 'cutoff belief to participate', 'average belief in age groups',
            'wealth share in age groups', 'consumption share of participants', 'estimation error of participants']
-ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
+ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9]
 
 for i in range(len(ys)):
-    for j in range:
-        nu = nus[j]
-        fig, ax = plt.subplots()  # Create a figure containing a single axes.
-        if i == 0:
-            y = ys[i]
-        else:
-            y_nu = ys[i]
-            y = y_nu[:, j]
-        if i == 3:
-            ax.fill_between(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-            ax.fill_between(x, y[:, 1], y[:, 0], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-            ax.fill_between(x, y[:, 2], y[:, 1], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-            ax.fill_between(x, y[:, 3], y[:, 2], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
-            plt.legend()
-        elif i == 7 or i == 8:
-            ax.plot(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-            ax.plot(x, y[:, 1], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-            ax.plot(x, y[:, 2], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-            ax.plot(x, y[:, 3], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
-            plt.legend()
-        else:
-            ax.plot(x, y)
-        ax.set_xlabel('initial window (months)')
-        if i == 0 or i == 6:
-            ax.set_ylabel(xlabels[i])
-        else:
-            ax.set_ylabel('mean ' + xlabels[i])
+    fig, ax = plt.subplots()  # Create a figure containing a single axes.
+    y = ys[i]
+    if i == 3:
+        ax.fill_between(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
+        ax.fill_between(x, y[:, 1], y[:, 0], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
+        ax.fill_between(x, y[:, 2], y[:, 1], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
+        ax.fill_between(x, y[:, 3], y[:, 2], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+        plt.legend()
+    elif i == 7 or i == 8:
+        ax.plot(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
+        ax.plot(x, y[:, 1], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
+        ax.plot(x, y[:, 2], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
+        ax.plot(x, y[:, 3], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+        plt.legend()
+    else:
+        ax.plot(x, y)
+    ax.set_xlabel('initial window (months)')
+    if i == 0 or i == 6:
+        ax.set_ylabel(xlabels[i])
+    else:
+        ax.set_ylabel('mean ' + xlabels[i])
 
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200,
-                    format="png")
-        # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
-        plt.show()
-        plt.close()
+    # plt.savefig('initial window and ' + xlabels[i] + '_' + mode_learn + '_' + mode_trade + str(nu) + '.png', dpi=200, format="png")
+    # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
+    plt.show()
+    # plt.close()
+

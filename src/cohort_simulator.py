@@ -167,9 +167,10 @@ def simulate_cohorts_SI(
                        )  # from eq(5)
         V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
         dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
-                phi ** 2 / (1 - phi ** 2)) * (
-                               -Delta_s_t * dt + dZ_t + 1 / phi * dZ_SI_t
-                       )  # from eq(8)
+                        1 / (1 - phi ** 2)
+                    ) * (
+                        -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+                           )
         dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         Vhat_vector = np.append(Vhat_vector[1:], Vhat)

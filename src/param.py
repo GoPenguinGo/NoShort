@@ -13,7 +13,7 @@ sigma_S = (
 )
 # for the SI signal:
 sigma_SI = 0.3
-phi = 0.3
+# phi = 0.3
 
 v = 0.018  # from Nagel and Xu (2021 RFS)
 

@@ -107,8 +107,9 @@ def build_cohorts_SI(
                            )  # from eq(5)
             V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
             dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
-                    phi ** 2 / (1 - phi ** 2)) * (
-                                   -Delta_s_t * dt + dZ_build[i - 1] + 1 / phi * dZ_SI_build[i - 1]
+                        1 / (1 - phi ** 2)
+                    ) * (
+                        -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
                            )  # from eq(8)
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
