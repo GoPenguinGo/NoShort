@@ -63,7 +63,7 @@ for k in range(Mpaths):
     # Z_matrix[k, :] = Z
 
     if mode_trade == 'complete' or mode_trade == 'w_constraint':
-        phi = 0.0001
+        phi = 0
         (
             r,
             theta,
