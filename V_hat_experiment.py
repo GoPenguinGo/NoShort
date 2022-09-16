@@ -78,6 +78,8 @@ for l in range(Mpaths):
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
         print(T_hat, Npre, Vhat)
 
+        phi = 0.2
+
         if mode_trade == 'complete' or mode_trade == 'w_constraint':
             (
                 r,
