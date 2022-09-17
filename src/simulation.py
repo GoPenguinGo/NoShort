@@ -70,19 +70,6 @@ def simulate_SI(
         )
 
     (
-        good_time_build,
-        good_time_simulate,
-    ) = good_times(
-        dZ_build,
-        dZ,
-        dt,
-        Nt,
-        Nc,
-        window=12,
-        z=1.28,
-    )
-
-    (
         Delta_s_t,
         eta_st_eta_ss,
         eta_bar,
@@ -106,7 +93,6 @@ def simulate_SI(
         Npre,
         Ninit,
         T_hat,
-        good_time_build,
         mode_trade,
         mode_learn,
         )
@@ -156,7 +142,6 @@ def simulate_SI(
         invest_tracker_build,
         tau_info_build,
         Vhat_vector,
-        good_time_simulate,
         )
 
     return (

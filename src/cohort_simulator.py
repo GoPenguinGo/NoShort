@@ -37,7 +37,6 @@ def simulate_cohorts_SI(
         invest_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
-        good_time_simulate: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -123,6 +122,9 @@ def simulate_cohorts_SI(
     age = np.zeros(Nt)
     n_parti = np.zeros(Nt)
 
+    a_phi = 1/(1 - phi ** 2)
+    sigma_Y_sq = sigma_Y ** 2
+
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
@@ -161,21 +163,21 @@ def simulate_cohorts_SI(
 
         # update beliefs
         V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
-        dDelta_s_t_N = (V_st_N / sigma_Y ** 2
+        dDelta_s_t_N = (V_st_N / sigma_Y_sq
                         ) * (
                                -Delta_s_t * dt + dZ_t
                        )  # from eq(5)
         V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-        dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
-                        1 / (1 - phi ** 2)
+        dDelta_s_t_P = V_st_P / sigma_Y_sq * (
+                            a_phi
                     ) * (
                         -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
                            )
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
 
         Vhat_vector = np.append(Vhat_vector[1:], Vhat)
 
-        if mode_learn == 'keep' or mode_trade == 'complete':  # where tau_info is the same with age
+        if mode_trade == 'complete':  # where tau_info is the same with age
             tau_info = tau
         else:  # where tau_info is the distance from state switch
             tau_info = np.append(tau_info[1:], 0) + dt
@@ -192,38 +194,54 @@ def simulate_cohorts_SI(
         invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 
         if mode_trade == 'w_constraint':
-            possible_cons_share = f_st * dt * invest_tracker
-            possible_delta_st = Delta_s_t * invest_tracker
-            lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-            theta_t = bisection(
-                solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
-            )  # solve for theta
-            a = Delta_s_t + theta_t
-            invest = (a >= 0)
+
 
             if mode_learn == 'drop':
+                possible_cons_share = f_st * dt * invest_tracker
+                possible_delta_st = Delta_s_t * invest_tracker
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                theta_t = bisection(
+                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                )  # solve for theta
+                a = Delta_s_t + theta_t
+                invest = (a > 0)
                 switch_P_to_N = invest_tracker * (1 - invest)
+                invest_tracker = invest * invest_tracker  # update invest tracker
+
                 # tau_info and V_hat has to change for the agents who switched to N
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-                invest_tracker = invest * invest_tracker  # update invest tracker
-                d_eta_st = a * invest_tracker - theta_t
-                invest_fst = invest_tracker * f_st * dt
-                popu_parti_t = np.sum(cohort_size * invest_tracker)
-                Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
-                f_parti_t = np.sum(invest_fst)
-                pi_st = (d_eta_st + theta_t) / sigma_S
-                age_t = np.sum(cohort_size * tau * invest_tracker)
-                n_parti_t = np.sum(invest_tracker) / Nc
+            elif mode_learn == 'keep':   # agents stay as type P even if constrained
+                possible_cons_share = f_st * dt
+                possible_delta_st = Delta_s_t
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                theta_t = bisection(
+                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                )  # solve for theta
+                a = Delta_s_t + theta_t
+                invest = (a > 0)
+                switch_P_to_N = invest_tracker * (1 - invest)
+                switch_N_to_P = np.maximum(invest - invest_tracker, 0)
+                # tau_info and V_hat has to change for the agents who switched to N
+                switch = switch_N_to_P + switch_P_to_N
+                invest_tracker = invest
 
-            # elif mode_learn == 'keep':   # agents stay as type P even if constrained
-            #     invest_tracker = np.append(invest_tracker[:-1], invest[-1])
-            #     d_eta_st = a * invest_tracker - theta_t
+                Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + np.append(V_st_N[1:], Vhat) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
+                tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
 
             else:
                 print('mode_learn not found')
                 break
+
+            d_eta_st = a * invest_tracker - theta_t
+            invest_fst = invest_tracker * f_st * dt
+            popu_parti_t = np.sum(cohort_size * invest_tracker)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (d_eta_st + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest_tracker)
+            n_parti_t = np.sum(invest_tracker) / Nc
 
         elif mode_trade == 'complete':
             f_st_standard = f_st * dt
