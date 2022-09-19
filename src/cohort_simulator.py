@@ -118,8 +118,8 @@ def simulate_cohorts_SI(
     Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
     parti = np.zeros((Nt))  # participation rate
 
-    upperbound = np.arange(10,55,5)
-    theta_t_matrix = np.zeros((Nt, len(upperbound)))
+    # upperbound = np.arange(10,55,5)
+    # theta_t_matrix = np.zeros((Nt, len(upperbound)))
 
     dR_t = 0
     age = np.zeros(Nt)
@@ -219,13 +219,13 @@ def simulate_cohorts_SI(
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-                # theta_t = bisection(
-                #     solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
-                # )  # solve for theta
-                theta_t_vector = bisection_test_multi_equi(
-                    solve_theta, lowest_bound, upperbound, possible_cons_share, possible_delta_st, sigma_Y
+                theta_t = bisection(
+                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
                 )  # solve for theta
-                theta_t = theta_t_vector[-1]
+                # theta_t_vector = bisection_test_multi_equi(
+                #     solve_theta, lowest_bound, upperbound, possible_cons_share, possible_delta_st, sigma_Y
+                # )  # solve for theta
+                # theta_t = theta_t_vector[-1]
                 a = Delta_s_t + theta_t
                 invest = (a > 0)
                 switch_P_to_N = invest_tracker * (1 - invest)
@@ -291,7 +291,7 @@ def simulate_cohorts_SI(
         age[i] = age_t
         n_parti[i] = n_parti_t
 
-        theta_t_matrix[i] = theta_t_vector
+        # theta_t_matrix[i] = theta_t_vector
 
     return (
         r,
