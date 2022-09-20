@@ -51,7 +51,6 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -128,6 +127,9 @@ def simulate_cohorts_SI(
     a_phi = 1/(1 - phi ** 2)
     sigma_Y_sq = sigma_Y ** 2
 
+    switch_P_to_N_ts = np.empty((Nt))
+    switch_N_to_P_ts = np.empty((Nt))
+
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
@@ -166,26 +168,34 @@ def simulate_cohorts_SI(
 
         # update beliefs
         if mode_trade == 'complete':
-
-        V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
-        dDelta_s_t_N = (V_st_N / sigma_Y_sq
-                        ) * (
-                               -Delta_s_t * dt + dZ_t
-                       )  # from eq(5)
-        V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-        dDelta_s_t_P = V_st_P / sigma_Y_sq * (
-                            a_phi
-                    ) * (
-                        -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+            dDelta_s_t_P = V_st_P / sigma_Y_sq * (
+                a_phi
+            ) * (
+                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
                            )
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
+            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+            tau_info = tau
+
+        elif mode_trade == 'w_constraint':
+            V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+            dDelta_s_t_N = (V_st_N / sigma_Y_sq
+                            ) * (
+                                   -Delta_s_t * dt + dZ_t
+                           )  # from eq(5)
+            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t_P = V_st_P / sigma_Y_sq * (
+                a_phi
+            ) * (
+                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+                           )
+            dDelta_s_t = invest_tracker * dDelta_s_t_P + (
+                        1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
+            tau_info = np.append(tau_info[1:], 0) + dt
+
+        else:
+            print('mode_trade not found')
 
         Vhat_vector = np.append(Vhat_vector[1:], Vhat)
-
-        if mode_trade == 'complete':  # where tau_info is the same with age
-            tau_info = tau
-        else:  # where tau_info is the distance from state switch
-            tau_info = np.append(tau_info[1:], 0) + dt
 
         if i < Npre-1:
             init_bias = (np.sum(biasvec[i+1:]) + np.sum(dZ[:i+1])) / T_hat
@@ -199,8 +209,6 @@ def simulate_cohorts_SI(
         invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 
         if mode_trade == 'w_constraint':
-
-
             if mode_learn == 'drop':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
@@ -292,6 +300,9 @@ def simulate_cohorts_SI(
         w_cohort[i, :] = w_cohort_st
         age[i] = age_t
         n_parti[i] = n_parti_t
+
+        switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
+        switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
         # theta_t_matrix[i] = theta_t_vector
 

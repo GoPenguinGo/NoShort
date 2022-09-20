@@ -40,8 +40,16 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 # obj_rp_matrix = np.zeros((Mpaths, Nt))
 
 
+mode_learn = 'keep'
+# mode_trade = 'complete'
+mode_trade = 'w_constraint'
 
-N = 20
+dZ_matrix = np.load('dZ_matrix.npy')
+dZ_build_matrix = np.load('dZ_build_matrix.npy')
+dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
+dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
+
+N = 50
 phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
 theta_matrix = np.empty((N, n_phi, Nt))
@@ -53,6 +61,8 @@ pi_matrix = np.empty((N, n_phi, Nt, Nc))
 mu_st_rt_matrix = np.empty((N, n_phi, Nt, Nc))
 r_matrix = np.zeros((N, n_phi, Nt))
 survey_dispersion_matrix = np.zeros((N, n_phi, Nt))
+dR_matrix = np.zeros((N, n_phi, Nt))
+delta_bar_matrix = np.zeros((N, n_phi, Nt))
 
 # run the program for different values of phi, and store the results
 for j in range(N):
@@ -83,12 +93,15 @@ for j in range(N):
         Delta_matrix[j, i] = Delta
         pi_matrix[j, i] = pi
         theta_matrix[j, i] = theta
+        r_matrix[j, i] = r
         theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
         mu_st_rt_matrix[j, i] = theta_mat + Delta
         popu_parti_matrix[j, i] = popu_parti
         market_view_matrix[j, i] = np.average(Delta, axis=1, weights=f)
+        delta_bar_matrix[j, i] = Delta_bar_parti
         survey_view_matrix[j, i] = np.average(Delta, axis=1, weights=cohort_size)
         survey_dispersion_matrix[j, i] = np.std(Delta, axis = 1, weights=cohort_size)
+        dR_matrix[j, i] = dR
 
 
 # for k in range(Mpaths):
@@ -543,6 +556,9 @@ for i in range(N):
 
 mean_regression_results = np.mean(regression_results, axis=0)
 
+
+# What predicts entry and exit?
+# Entry:
 
 
 
