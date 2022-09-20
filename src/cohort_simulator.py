@@ -165,6 +165,8 @@ def simulate_cohorts_SI(
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
+        if mode_trade == 'complete':
+
         V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
         dDelta_s_t_N = (V_st_N / sigma_Y_sq
                         ) * (

@@ -90,7 +90,7 @@ def build_cohorts_SI(
         f_st = np.append(f_st, tax)
 
         # update beliefs
-        if i < Ninit:
+        if i < Ninit or mode_trade == 'complete':
             V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
             dDelta_s_t = V_st_P / sigma_Y ** 2 * (
                         1 / (1 - phi ** 2)
