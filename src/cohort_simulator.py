@@ -35,6 +35,7 @@ def simulate_cohorts_SI(
         eta_bar: np.ndarray,
         d_eta_st: np.ndarray,
         invest_tracker: np.ndarray,
+        can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
 ) -> Tuple[
@@ -167,7 +168,7 @@ def simulate_cohorts_SI(
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
-        if mode_trade == 'complete':
+        if mode_trade == 'complete':  # everyone is P
             V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
             dDelta_s_t = V_st_P / sigma_Y_sq * (
                 a_phi
@@ -176,7 +177,7 @@ def simulate_cohorts_SI(
                            )
             tau_info = tau
 
-        elif mode_trade == 'w_constraint':
+        elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint':
             V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
             dDelta_s_t_N = (V_st_N / sigma_Y_sq
                             ) * (
@@ -272,6 +273,70 @@ def simulate_cohorts_SI(
             pi_st = (d_eta_st + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
+
+        elif mode_trade == 'partial_constraint':
+            can_short_tracker = np.append(can_short_tracker[1:], 0)
+
+            if mode_learn == 'drop':
+                possible_cons_share = f_st * dt * invest_tracker
+                possible_delta_st = Delta_s_t * invest_tracker
+                indiv_w_possible = possible_cons_share / cohort_size_short
+                cohort_size_possible = cohort_size * invest_tracker
+                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
+                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                can_short_tracker = (can_short_tracker + can_short >= 1)
+
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                theta_t = bisection_partial_constraint(
+                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    sigma_Y
+                )
+                a = Delta_s_t + theta_t
+                invest = 1 - (a < 0) * (can_short_tracker < 1)
+                switch_P_to_N = invest_tracker * (1 - invest)
+                invest_tracker = invest * invest_tracker  # update invest tracker
+
+                # tau_info and V_hat has to change for the agents who switched to N
+                Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
+                tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
+            elif mode_learn == 'keep':
+                possible_cons_share = f_st * dt
+                possible_delta_st = Delta_s_t
+                indiv_w_possible = possible_cons_share / cohort_size_short
+                cohort_size_possible = cohort_size * invest_tracker
+                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
+                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                can_short_tracker = (can_short_tracker + can_short >= 1)
+
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                theta_t = bisection_partial_constraint(
+                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    sigma_Y
+                )
+                a = Delta_s_t + theta_t
+                invest = 1 - (a < 0) * (can_short_tracker < 1)
+                switch_P_to_N = invest_tracker * (1 - invest)
+                switch_N_to_P = np.maximum(invest - invest_tracker, 0)
+                # tau_info and V_hat has to change for the agents who switched to N
+                switch = switch_N_to_P + switch_P_to_N
+                invest_tracker = invest
+
+                Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + np.append(V_st_N[1:], Vhat) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
+                tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
+
+            else:
+                print('mode_learn not found')
+                breal()
+            d_eta_st = a * invest_tracker - theta_t
+            invest_fst = invest_tracker * f_st * dt
+            popu_parti_t = np.sum(cohort_size * invest_tracker)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (d_eta_st + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest_tracker)
+            n_parti_t = np.sum(invest_tracker) / Nc
 
         else:
             print('mode_trade not found')
