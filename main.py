@@ -9,6 +9,7 @@ from src.cohort_simulator import simulate_cohorts_SI
 from src.param import *
 from src.stats import shocks, tau_calculator, good_times
 from numba import jit
+import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tabulate
 
@@ -52,6 +53,27 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 N = 50
 phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
+
+# define colors
+color1 = 'black'
+color2 = 'mediumblue'
+color3 = 'darkgreen'
+color4 = 'orange'
+color5 = 'red'
+color6 = 'gold'
+color7 = 'g'
+
+colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
+          'olivedrab', 'darkviolet']
+
+modes_trade = ['complete', 'w_constraint']
+index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
+index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
+
+
+
+
+
 theta_matrix = np.empty((N, n_phi, Nt))
 popu_parti_matrix = np.empty((N, n_phi, Nt))
 market_view_matrix = np.empty((N, n_phi, Nt))
@@ -236,17 +258,6 @@ for j in range(N):
 
 
 
-# define colors
-color1 = 'black'
-color2 = 'mediumblue'
-color3 = 'darkgreen'
-color4 = 'orange'
-color5 = 'red'
-color6 = 'gold'
-color7 = 'g'
-
-colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
-          'olivedrab', 'darkviolet']
 
 
 # ######################################
@@ -256,9 +267,7 @@ colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'f
 # ONE SPECIFIC PATH:
 
 # generate data for the graphs:
-modes_trade = ['complete', 'w_constraint']
-index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
-index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
+
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
 

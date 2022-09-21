@@ -126,9 +126,9 @@ def simulate_cohorts_SI(
 
     a_phi = 1/(1 - phi ** 2)
     sigma_Y_sq = sigma_Y ** 2
-
-    switch_P_to_N_ts = np.empty((Nt))
-    switch_N_to_P_ts = np.empty((Nt))
+    #
+    # switch_P_to_N_ts = np.empty((Nt))
+    # switch_N_to_P_ts = np.empty((Nt))
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -301,8 +301,8 @@ def simulate_cohorts_SI(
         age[i] = age_t
         n_parti[i] = n_parti_t
 
-        switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
-        switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
+        # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
+        # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
         # theta_t_matrix[i] = theta_t_vector
 
