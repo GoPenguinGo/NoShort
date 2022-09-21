@@ -41,10 +41,6 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 # obj_rp_matrix = np.zeros((Mpaths, Nt))
 
 
-mode_learn = 'keep'
-# mode_trade = 'complete'
-mode_trade = 'w_constraint'
-
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
 dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
@@ -66,11 +62,12 @@ color7 = 'g'
 colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet']
 
-modes_trade = ['complete', 'w_constraint']
+modes_trade = ['complete', 'w_constraint', 'partial_constraint']
+modes_learn = ['keep', 'drop']
+n_modes_trade = len(modes_trade)
+n_modes_learn = len(modes_learn)
 index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
 index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
-
-
 
 
 
@@ -272,16 +269,16 @@ dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
 
 
-theta_compare = np.empty((2, 2, 2, n_phi, Nt))
-popu_parti_compare = np.empty((2, 2, 2, n_phi, Nt))
-market_view_compare = np.empty((2, 2, 2, n_phi, Nt))
-survey_view_compare = np.empty((2, 2, 2, n_phi, Nt))
-Delta_compare = np.empty((2, 2, 2, n_phi, Nt, Nc))
-pi_compare = np.empty((2, 2, 2, n_phi, Nt, Nc))
-r_compare = np.zeros((2, 2, 2, n_phi, Nt))
-belief_dispersion_compare = np.zeros((2, 2, 2, n_phi, Nt))
-delta_bar_compare = np.zeros((2, 2, 2, n_phi, Nt))
-cons_compare = np.zeros((2, 2, 2, n_phi, Nt, Nc))
+theta_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
+popu_parti_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
+market_view_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
+survey_view_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
+Delta_compare = np.empty((n_modes, 2, 2, n_phi, Nt, Nc))
+pi_compare = np.empty((n_modes, 2, 2, n_phi, Nt, Nc))
+r_compare = np.zeros((n_modes, 2, 2, n_phi, Nt))
+belief_dispersion_compare = np.zeros((n_modes, 2, 2, n_phi, Nt))
+delta_bar_compare = np.zeros((n_modes, 2, 2, n_phi, Nt))
+cons_compare = np.zeros((n_modes, 2, 2, n_phi, Nt, Nc))
 cohort_size_mat = np.transpose(np.tile(cohort_size, (Nc, 1)))
 
 for g, mode_trade in enumerate(modes_trade):
@@ -346,7 +343,7 @@ for i, cohort_matrix in enumerate(cohort_matrix_list):
             yellow_case = yellow_cases[k]
             for l, phi in enumerate(phi_vector):
                 phi = phi_vector[l]
-                y_interest = cohort_matrix[j, k, l]
+                y_interest = cohort_matrix[1, j, k, l]  # with short-sale constraint
                 y_interest_time_series = np.zeros((nn, length))
                 for m in range(nn):
                     start = int((m + 1) * 100 * (1 / dt))
@@ -597,6 +594,7 @@ for i, cohort_matrix in enumerate(cohort_matrix_list):
 market_matrix_list = [theta_compare, r_compare, popu_parti_compare, survey_view_compare, market_view_compare, delta_bar_compare, belief_dispersion_compare]
 y_title_list = ['Market price of risk', 'Interest rate', 'Participation rate', 'Survey view', 'Market view', 'Market view_parti', 'Belief dispersion']
 
+# Graphs for the short-sale constraint case, comparing different phi values
 for i, market_matrix in enumerate(market_matrix_list):
     y_title = y_title_list[i]
     for j, index_Z_Y in enumerate(index_Z_Ys):
@@ -605,7 +603,7 @@ for i, market_matrix in enumerate(market_matrix_list):
         for k, index_Z_SI in enumerate(index_Z_SIs):
             Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
             yellow_case = yellow_cases[k]
-            y = market_matrix[j, k]
+            y = market_matrix[1, j, k]
 
             fig, ax1 = plt.subplots(figsize=(15, 5))
             ax1.set_xlabel('Time in simulation, one random path')
@@ -630,6 +628,44 @@ for i, market_matrix in enumerate(market_matrix_list):
             plt.savefig(red_case + yellow_case + ' Zt and ' + y_title + ' different phi'+ '.png', dpi=500)
             plt.show()
             plt.close()
+
+
+# Comparing with the complete market case:
+y_title_list = ['Market price of risk', 'Interest rate', 'Survey view', 'Market view']
+market_matrix_list = [theta_compare, r_compare, survey_view_compare, market_view_compare]
+label_modes = ['complete market', 'short-sale constraint']
+for i, market_matrix in enumerate(market_matrix_list):
+    y_title = y_title_list[i]
+    for j, index_Z_Y in enumerate(index_Z_Ys):
+        Z = np.cumsum(dZ_matrix[index_Z_Y])
+        red_case = red_cases[j]
+        for k, index_Z_SI in enumerate(index_Z_SIs):
+            Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
+            yellow_case = yellow_cases[k]
+            for l, phi in enumerate(phi_vector):
+                y = market_matrix[:, j, k, l]
+                fig, ax1 = plt.subplots(figsize=(15, 5))
+                ax1.set_xlabel('Time in simulation, one random path')
+                ax1.set_ylabel('Zt', color=color5)
+                ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+                ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+                ax1.tick_params(axis='y', labelcolor=color5)
+                ax2 = ax1.twinx()
+                ax2.set_ylabel(y_title, color=color2)
+                lower = np.nanmin(market_matrix)
+                upper = np.nanmax(market_matrix)
+                ax2.set_ylim([lower, upper])
+                for i in range(2):
+                    yy = y[i]
+                    ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_modes[i])
+                ax2.tick_params(axis='y', labelcolor=color2)
+                plt.legend()
+                # fig.suptitle('Zt and Market Price of Risk')
+                fig.tight_layout()  # otherwise the right y-label is slightly clipped
+                plt.savefig(red_case + yellow_case + 'vs complete' +' Zt and ' + y_title + str(round(phi, 2)) + '.png', dpi=500)
+                plt.show()
+                plt.close()
+
 
 
 # for j, y_mat in enumerate(y_list):

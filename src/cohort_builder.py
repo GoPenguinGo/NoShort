@@ -61,9 +61,11 @@ def build_cohorts_SI(
     eta_bar = np.ones(1)
     eta_st_eta_ss = np.ones(1)
     invest_tracker = np.ones(Ninit) if mode_trade != 'complete' else np.ones(Nc)
+    can_short_tracker = np.ones(Ninit) if mode_trade != 'partial_constraint' else np.zeros(Nc)
     tau_info = np.ones(1) * dt
     Vhat_vector = np.ones(1) * Vhat
     a_phi = 1/(1 - phi ** 2)
+    cohort_size = nu * np.exp(-nu * (tau - dt)) * dt
 
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Ninit)):
@@ -97,7 +99,7 @@ def build_cohorts_SI(
                     ) * (
                         -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
                            )
-        elif mode_trade == 'w_constraint':
+        elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint':
             if i < Ninit:
                 V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
                 dDelta_s_t = V_st_P / sigma_Y ** 2 * (
@@ -146,6 +148,7 @@ def build_cohorts_SI(
             d_eta_st = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
+
         elif mode_trade == 'w_constraint':
             invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P
 
@@ -188,19 +191,96 @@ def build_cohorts_SI(
                 print('mode_learn not found')
                 break
 
+        elif mode_trade == 'partial_constraint':
+            invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P, by default type == P as newborn
+            can_short_tracker = np.append(can_short_tracker, 0)
+            cohort_size_short = cohort_size[-i-1]  # todo: think about cohort size in the building function
+
+            if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+                possible_cons_share = f_st * dt * invest_tracker
+                possible_delta_st = Delta_s_t * invest_tracker
+                indiv_w_possible = possible_cons_share / cohort_size_short
+                cohort_size_possible = cohort_size_short * invest_tracker
+                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
+                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                can_short_tracker = (can_short_tracker + can_short >= 1)
+
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
+                theta_t = bisection_partial_constraint(
+                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    sigma_Y
+                )
+                a = Delta_s_t + theta_t
+                invest = (a > 0 or can_short_tracker > 0)
+                switch_P_to_N = invest_tracker * (1 - invest)
+                invest_tracker = invest * invest_tracker
+                d_eta_st = a * invest_tracker - theta_t
+
+                # tau_info and V_hat has to change for the agents who switched to N
+                Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (
+                        1 - switch_P_to_N)  # reset initial variance
+                tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
+
+            elif mode_learn == 'keep':  # agents switch between type P and type N
+                possible_cons_share = f_st * dt
+                possible_delta_st = Delta_s_t
+                indiv_w_possible = possible_cons_share / cohort_size_short
+                cohort_size_possible = cohort_size_short * invest_tracker
+                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
+                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                can_short_tracker = (can_short_tracker + can_short >= 1)
+
+                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
+                theta_t = bisection_partial_constraint(
+                    solve_theta_partial_constraint, -50, 50, can_short_tracker, Delta_s_t_possible, f_st_possible,
+                    sigma_Y
+                )
+                a = Delta_s_t + theta_t
+                invest = (a > 0 or can_short_tracker > 0)
+                switch_P_to_N = invest_tracker * (1 - invest)
+                switch_N_to_P = np.maximum(invest - invest_tracker, 0)
+                switch = switch_N_to_P + switch_P_to_N
+                invest_tracker = invest
+                d_eta_st = a * invest_tracker - theta_t
+
+                # tau_info and V_hat has to change for the agents who switched to N
+                Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + np.append(V_st_N,
+                                  Vhat) * switch_N_to_P + Vhat_vector * (
+                                  1 - switch)  # reset initial variance
+                tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
+
+            else:
+                print('mode_learn not found')
+                break
+
         else:
             print('mode_trade not found')
             break
 
-    return (
-        Delta_s_t,
-        eta_st_eta_ss,
-        eta_bar,
-        d_eta_st,
-        invest_tracker,
-        tau_info,
-        Vhat_vector,
-    )
+    if mode_trade == 'partial_equilibrium':
+        return (
+            Delta_s_t,
+            eta_st_eta_ss,
+            eta_bar,
+            d_eta_st,
+            invest_tracker,
+            tau_info,
+            Vhat_vector,
+            can_short_tracker,
+        )
+    else:
+        return (
+            Delta_s_t,
+            eta_st_eta_ss,
+            eta_bar,
+            d_eta_st,
+            invest_tracker,
+            tau_info,
+            Vhat_vector,
+        )
+
 
 
 

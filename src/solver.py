@@ -154,7 +154,8 @@ def find_the_rich(
     wealth_rank = indiv_w.argsort()
     indiv_w_sorted = indiv_w[wealth_rank[::-1]]
     cohort_size_sorted = cohort_size[wealth_rank[::-1]]
-    popu_cum = np.cumsum(cohort_size_sorted)
+    popu_cumsum = np.cumsum(cohort_size_sorted)
+    popu_cum = popu_cumsum / popu_cumsum[-1]
     cutoff = np.searchsorted(popu_cum, top)
     wealth_cutoff = indiv_w_sorted[cutoff]
     return wealth_cutoff
