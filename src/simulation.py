@@ -76,7 +76,8 @@ def simulate_SI(
         d_eta_st,
         invest_tracker_build,
         tau_info_build,
-        Vhat_vector
+        Vhat_vector,
+        can_short_tracker_build,
     ) = build_cohorts_SI(
         dZ_build,
         dZ_SI_build,
@@ -140,6 +141,7 @@ def simulate_SI(
         eta_bar,
         d_eta_st,
         invest_tracker_build,
+        can_short_tracker_build,
         tau_info_build,
         Vhat_vector,
         )
