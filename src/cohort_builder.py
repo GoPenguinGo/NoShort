@@ -119,6 +119,10 @@ def build_cohorts_SI(
                                )  # from eq(8)
                 dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
+        else:
+            print('mode_trade not found')
+            exit()
+
 
         # add a new cohort to Vhat_vector and tau_info
         Vhat_vector = np.append(Vhat_vector, Vhat)
