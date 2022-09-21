@@ -168,12 +168,12 @@ def simulate_cohorts_SI(
 
         # update beliefs
         if mode_trade == 'complete':
-            dDelta_s_t_P = V_st_P / sigma_Y_sq * (
+            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t = V_st_P / sigma_Y_sq * (
                 a_phi
             ) * (
                                    -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
                            )
-            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
             tau_info = tau
 
         elif mode_trade == 'w_constraint':

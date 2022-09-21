@@ -60,7 +60,7 @@ Delta_matrix = np.empty((N, n_phi, Nt, Nc))
 pi_matrix = np.empty((N, n_phi, Nt, Nc))
 mu_st_rt_matrix = np.empty((N, n_phi, Nt, Nc))
 r_matrix = np.zeros((N, n_phi, Nt))
-survey_dispersion_matrix = np.zeros((N, n_phi, Nt))
+belief_dispersion_matrix = np.zeros((N, n_phi, Nt))
 dR_matrix = np.zeros((N, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_phi, Nt))
 
@@ -100,9 +100,8 @@ for j in range(N):
         market_view_matrix[j, i] = np.average(Delta, axis=1, weights=f)
         delta_bar_matrix[j, i] = Delta_bar_parti
         survey_view_matrix[j, i] = np.average(Delta, axis=1, weights=cohort_size)
-        survey_dispersion_matrix[j, i] = np.std(Delta, axis = 1, weights=cohort_size)
+        belief_dispersion_matrix[j, i] = np.std(Delta, axis = 1)  # todo: maybe add weights
         dR_matrix[j, i] = dR
-
 
 # for k in range(Mpaths):
 #     s = time.time()
@@ -233,9 +232,8 @@ for j in range(N):
 # #######################################
 #
 # # the x-axis
-t = np.arange(0, T_cohort, dt)
-y0 = np.cumsum(dZ_matrix[0])
-y01 = np.cumsum(dZ_SI_matrix[0])
+
+
 
 
 # define colors
@@ -249,20 +247,177 @@ color7 = 'g'
 
 colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet']
-# # ######################################
-# # ############ GRAPH ONE ###############
-# # ######################################
-#
-# # illustrate the learning process
-# # Delta
+
+
+# ######################################
+# ############ GRAPH ONE ###############
+# ######################################
+
+# ONE SPECIFIC PATH:
+
+# generate data for the graphs:
+modes_trade = ['complete', 'w_constraint']
+index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
+index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
+dZ_build = dZ_build_matrix[0]
+dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
+
+
+theta_compare = np.empty((2, 2, 2, n_phi, Nt))
+popu_parti_compare = np.empty((2, 2, 2, n_phi, Nt))
+market_view_compare = np.empty((2, 2, 2, n_phi, Nt))
+survey_view_compare = np.empty((2, 2, 2, n_phi, Nt))
+Delta_compare = np.empty((2, 2, 2, n_phi, Nt, Nc))
+pi_compare = np.empty((2, 2, 2, n_phi, Nt, Nc))
+r_compare = np.zeros((2, 2, 2, n_phi, Nt))
+belief_dispersion_compare = np.zeros((2, 2, 2, n_phi, Nt))
+delta_bar_compare = np.zeros((2, 2, 2, n_phi, Nt))
+cons_compare = np.zeros((2, 2, 2, n_phi, Nt, Nc))
+cohort_size_mat = np.transpose(np.tile(cohort_size, (Nc, 1)))
+
+for g, mode_trade in enumerate(modes_trade):
+    for i, index_Z_Y in enumerate(index_Z_Ys):
+        dZ = dZ_matrix[index_Z_Y]
+        log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
+        log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
+
+        for j, index_Z_SI in enumerate(index_Z_SIs):
+            dZ_SI = dZ_SI_matrix[index_Z_SI]
+            for k, phi in enumerate(phi_vector):
+                (
+                    r,
+                    theta,
+                    f,
+                    Delta,
+                    max,
+                    pi,
+                    popu_parti,
+                    f_parti,
+                    Delta_bar_parti,
+                    dR,
+                    w_cohort,
+                    age_parti,
+                    n_parti,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                                phi,
+                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
+                # invest_tracker = pi > 0
+                Delta_compare[g, i, j, k] = Delta
+                pi_compare[g, i, j, k] = pi
+                theta_compare[g, i, j, k] = theta
+                r_compare[g, i, j, k] = r
+                theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+                popu_parti_compare[g, i, j, k] = popu_parti
+                market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f)
+                delta_bar_compare[g, i, j, k] = Delta_bar_parti
+                survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_size)
+                belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
+                cons_compare[g, i, j, k] = log_Yt_mat + np.log(f / cohort_size_mat)
+
+# graphs:
+cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
+
+# Delta
+red_cases = ['G', 'B']
+yellow_cases = ['G', 'B']
+nn = 3  # number of cohorts illustrated
+t = np.arange(0, T_cohort, dt)
+length = len(t)
+starts = np.zeros(nn)
+cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
+var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumption']
+figure_labels = ['pi', 'Delta', 'Log cons']
+
+for i, cohort_matrix in enumerate(cohort_matrix_list):
+    for j, index_Z_Y in enumerate(index_Z_Ys):
+        Z = np.cumsum(dZ_matrix[index_Z_Y])
+        red_case = red_cases[j]
+        for k, index_Z_SI in enumerate(index_Z_SIs):
+            Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
+            yellow_case = yellow_cases[k]
+            for l, phi in enumerate(phi_vector):
+                phi = phi_vector[l]
+                y_interest = cohort_matrix[j, k, l]
+                y_interest_time_series = np.zeros((nn, length))
+                for m in range(nn):
+                    start = int((m + 1) * 100 * (1 / dt))
+                    starts[m] = start * dt
+                    for n in range(length):
+                        if n < start:
+                            y_interest_time_series[m, n] = np.nan
+                        else:
+                            cohort_rank = length - (n - start) - 1
+                            y_interest_time_series[m, n] = y_interest[n, cohort_rank]
+                if i == 0:
+                    parti_time_series = (y_interest_time_series > 0)
+                    fig, ax1 = plt.subplots(figsize=(15, 5))
+                    ax1.set_xlabel('Time in simulation, one random path')
+                    ax1.set_ylabel('Zt', color=color5)
+                    ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+                    ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+                    ax1.tick_params(axis='y', labelcolor=color5)
+                    ax2 = ax1.twinx()
+                    ax2.set_ylabel(var_y_labels[i], color=colors[0])
+                    ax2.set_ylim([0.01, 20])
+                    for m in range(nn):
+                        y_cohort = y_interest_time_series[m]
+                        plt.vlines(starts[m], ymax=20, ymin=0, color='grey', linestyle='--', linewidth=0.4)
+                        ax2.plot(t, y_cohort, label = cohort_labels[m], color=colors[m], linewidth=0.4)
+                    ax2.tick_params(axis='y', labelcolor=colors[0])
+                    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+                    plt.savefig(red_case + yellow_case + ' Zt and ' + figure_labels[i] + ' time series' + str(round(phi, 2)) + '.png', dpi=500)
+                    plt.show()
+                    plt.close()
+
+                else:
+                    if i == 1:
+                        lower = -0.5
+                        upper = 0.5
+                    else:
+                        lower = 4
+                        upper = 15
+                    switch = abs(parti_time_series[:, 1:] ^ parti_time_series[:, :-1])
+                    col = np.reshape(switch[:, -1], (3, -1))
+                    switch = np.append(switch, col, axis=1)
+                    fig, ax1 = plt.subplots(figsize=(15, 5))
+                    ax1.set_xlabel('Time in simulation, one random path')
+                    ax1.set_ylabel('Zt', color=color5)
+                    ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+                    ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+                    ax1.tick_params(axis='y', labelcolor=color5)
+                    ax2 = ax1.twinx()
+                    ax2.set_ylabel(var_y_labels[i], color=color2)
+                    ax2.set_ylim([lower, upper])
+                    for m in range(nn):
+                        # switch[m, starts[m]] = 1
+                        y_cohort = y_interest_time_series[m]
+                        y_cohort_N = np.ma.masked_where(parti_time_series[0] == 1, y_cohort)
+                        y_cohort_P = np.ma.masked_where(parti_time_series[0] == 0, y_cohort)
+                        y_cohort_switch = np.ma.masked_where(switch[0] == 0, y_cohort)
+                        plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
+                        ax2.plot(t, y_cohort_P, label=cohort_labels[m], color=colors[m], linewidth=0.4)
+                        ax2.plot(t, y_cohort_N,  color=colors[m], linewidth=0.4, linestyle='dotted')
+                        if m == 0:
+                            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='state switch')
+                        else:
+                            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
+                    ax2.tick_params(axis='y', labelcolor=color2)
+                    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+                    plt.legend()
+                    plt.savefig(red_case + yellow_case + ' Zt and ' + figure_labels[i] + ' time series' + str(round(phi, 2)) + '.png', dpi=500)
+                    plt.show()
+                    plt.close()
+
+
+
+
 # for k in range(n_phi):
 #     y1 = Delta_matrix[0, k]
 #     y6 = pi_matrix[0, k]
 #     phi = phi_vector[k]
 #
 #     # Delta:
-#     nn = 3
-#     length = len(t)
+#
 #     Delta_time_series = np.zeros((nn, length))
 #     parti_time_series = np.zeros((nn, length))
 #     for i in range(nn):
@@ -428,10 +583,46 @@ colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'f
 #     plt.savefig('Zt and pi time series' + str(round(phi, 2)) + '.png', dpi=500)
 #     plt.show()
 #     # plt.close()
-#
-# # popu, theta, market view and survey view:
-# y_list = [theta_matrix, popu_parti_matrix, survey_view_matrix, market_view_matrix]
-# y_title_list = ['Market price of risk', 'Participation rate', 'Market view', 'Survey view']
+
+# popu, theta, market view and survey view:
+market_matrix_list = [theta_compare, r_compare, popu_parti_compare, survey_view_compare, market_view_compare, delta_bar_compare, belief_dispersion_compare]
+y_title_list = ['Market price of risk', 'Interest rate', 'Participation rate', 'Survey view', 'Market view', 'Market view_parti', 'Belief dispersion']
+
+for i, market_matrix in enumerate(market_matrix_list):
+    y_title = y_title_list[i]
+    for j, index_Z_Y in enumerate(index_Z_Ys):
+        Z = np.cumsum(dZ_matrix[index_Z_Y])
+        red_case = red_cases[j]
+        for k, index_Z_SI in enumerate(index_Z_SIs):
+            Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
+            yellow_case = yellow_cases[k]
+            y = market_matrix[j, k]
+
+            fig, ax1 = plt.subplots(figsize=(15, 5))
+            ax1.set_xlabel('Time in simulation, one random path')
+            ax1.set_ylabel('Zt', color=color5)
+            ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+            ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+            ax1.tick_params(axis='y', labelcolor=color5)
+            ax2 = ax1.twinx()
+            ax2.set_ylabel(y_title, color=color2)
+            lower = np.nanmin(market_matrix)
+            upper = np.nanmax(market_matrix)
+            ax2.set_ylim([lower, upper])
+
+            for i in range(n_phi):
+                label_i = 'phi = ' + str(round(phi_vector[i], 2))
+                yy = y[i]
+                ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
+            ax2.tick_params(axis='y', labelcolor=color2)
+            plt.legend()
+            # fig.suptitle('Zt and Market Price of Risk')
+            fig.tight_layout()  # otherwise the right y-label is slightly clipped
+            plt.savefig(red_case + yellow_case + ' Zt and ' + y_title + ' different phi'+ '.png', dpi=500)
+            plt.show()
+            plt.close()
+
+
 # for j, y_mat in enumerate(y_list):
 #     y_title = y_title_list[j]
 #     y = y_mat[0]
@@ -458,95 +649,79 @@ colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'f
 #     plt.savefig('Zt and ' + y_title + ' different phi' + '.png', dpi=500)
 #     plt.show()
 #     plt.close()
-#
-#
-# # illustrate how beliefs respond to shocks
-# age_group = 5
-# corrstep = int(age_group / dt)
-# age_max = 100
-# n_group = int(age_max / age_group - 1)
-# # todo: rename a, b
-# a0 = np.empty((N, n_phi, n_group))
-# # a1 = np.empty((N, n_phi, n_group))
-# # a2 = np.empty((N, n_phi, n_group))
-# b0 = np.empty((N, n_phi, n_group))
-# # b1 = np.empty((N, n_phi, n_group))
-# # b2 = np.empty((N, n_phi, n_group))
-#
-# for i in range(N):  # N paths
-#     dZ_Y = dZ_matrix[i]
-#     dZ_SI = dZ_SI_matrix[i]
-#     for j in range(n_phi):
-#         beliefs = Delta_matrix[i, j] * sigma_Y + mu_Y
-#         parti_indicator = (pi_matrix[i, j] > 0)
-#         for k in range(n_group):
-#             if k == 0:
-#                 beliefs_group = np.mean(beliefs[:, -corrstep * (k + 1):],
-#                                         axis=1)
-#                 # weights_zero = np.sum(parti_indicator[:, -corrstep * (k + 1):], axis=1)
-#                 # beliefs_parti_group = np.average(beliefs[:, -corrstep * (k + 1):],
-#                 #                                  weights=parti_indicator[:, -corrstep * (k + 1):],
-#                 #                                  axis=1)
-#                 # beliefs_noparti_group = np.average(beliefs[:, -corrstep * (k + 1):],
-#                 #                                  weights=(1-parti_indicator[:, -corrstep * (k + 1):]),
-#                 #                                    axis=1)
-#             else:
-#                 beliefs_group = np.mean(beliefs[:, -corrstep * (k + 1):-corrstep * k],
-#                                         axis=1)
-#                 # beliefs_parti_group = np.average(beliefs[:, -corrstep * (k + 1):-corrstep * k],
-#                 #                                  weights=parti_indicator[:, -corrstep * (k + 1):-corrstep * k],
-#                 #                                  axis=1)
-#                 # beliefs_noparti_group = np.average(beliefs[:, -corrstep * (k + 1):-corrstep * k],
-#                 #                                  weights=(1-parti_indicator[:, -corrstep * (k + 1):-corrstep * k]),
-#                 #                                     axis=1)
-#
-#             a0[i, j, k] = np.corrcoef(dZ_Y, beliefs_group)[1, 0]
-#             # a1[i, j, k] = np.corrcoef(dZ_Y, beliefs_parti_group)[1, 0]
-#             # a2[i, j, k] = np.corrcoef(dZ_Y, beliefs_noparti_group)[1, 0]
-#             b0[i, j, k] = np.corrcoef(dZ_SI, beliefs_group)[1, 0]
-#             # b1[i, j, k] = np.corrcoef(dZ_SI, beliefs_parti_group)[1, 0]
-#             # b2[i, j, k] = np.corrcoef(dZ_SI, beliefs_noparti_group)[1, 0]
-#
-# corr_a0 = np.average(a0, axis=0)
-# corr_b0 = np.average(b0, axis=0)
-# var_list = [corr_a0, corr_b0]
-# var_label = ['corr(dz^Y_t, mu_st)', 'corr(dz^SI_t, mu_st)']
-# x_age = np.linspace(age_group, age_max, n_group)
-# for i, var in enumerate(var_list):
-#     y_label = var_label[i]
-#     fig, ax1 = plt.subplots(figsize=(10, 10))
-#     ax1.set_xlabel('Age')
-#     ax1.set_ylabel(y_label, color=color5)
-#     for j, phi in enumerate(phi_vector):
-#         y = var[j]
-#         phi_label = str(round(phi,2))
-#         ax1.plot(x_age, y, color=colors[j], label = phi_label, linewidth=0.5)
-#     plt.legend()
-#     # fig.suptitle('Zt and Market Price of Risk')
-#     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-#     plt.savefig(y_label + '.png', dpi=500)
-#     plt.show()
+
+
+
+
+# illustrate how beliefs respond to shocks
+age_group = 5
+corrstep = int(age_group / dt)
+age_max = 100
+n_group = int(age_max / age_group - 1)
+# todo: rename a, b
+a0 = np.empty((N, n_phi, n_group))
+b0 = np.empty((N, n_phi, n_group))
+
+for i in range(N):  # N paths
+    dZ_Y = dZ_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
+    for j in range(n_phi):
+        beliefs = Delta_matrix[i, j] * sigma_Y + mu_Y
+        for k in range(n_group):
+            if k == 0:
+                beliefs_group = np.mean(beliefs[:, -corrstep * (k + 1):],
+                                        axis=1)
+            else:
+                beliefs_group = np.mean(beliefs[:, -corrstep * (k + 1):-corrstep * k],
+                                        axis=1)
+
+            a0[i, j, k] = np.corrcoef(dZ_Y, beliefs_group)[1, 0]
+            b0[i, j, k] = np.corrcoef(dZ_SI, beliefs_group)[1, 0]
+
+corr_a0 = np.average(a0, axis=0)
+corr_b0 = np.average(b0, axis=0)
+var_list = [corr_a0, corr_b0]
+var_label = ['corr(dz^Y_t, mu_st)', 'corr(dz^SI_t, mu_st)']
+x_age = np.linspace(age_group, age_max, n_group)
+for i, var in enumerate(var_list):
+    y_label = var_label[i]
+    fig, ax1 = plt.subplots(figsize=(10, 10))
+    ax1.set_xlabel('Age')
+    ax1.set_ylabel(y_label, color=color5)
+    for j, phi in enumerate(phi_vector):
+        y = var[j]
+        phi_label = str(round(phi,2))
+        ax1.plot(x_age, y, color=colors[j], label = phi_label, linewidth=0.5)
+    plt.legend()
+    # fig.suptitle('Zt and Market Price of Risk')
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig(y_label + '.png', dpi=500)
+    plt.show()
 
 
 
 horizons = [3, 6, 12, 24]
 n_horizon = len(horizons)
-regression_results = np.empty(N, n_phi, n_horizon, 3)
+report = ['coef', 't-stats', 'R-sqrd']
+n_report = len(report)
+var_names = ['Participation rate', 'Belief dispersion']
+regression_results = np.empty((N, n_phi, n_horizon, len(var_names), n_report))
 # predictive regression of stock returns on pariticipation rate
 for i in range(N):
     for j in range(n_phi):
-        excess_return_vector = np.cumsum(dR_matrix[i, j, 1: ] - r_matrix[i, j, :-1])
+        excess_return_vector = np.cumsum(dR_matrix[i, j, 1: ] - r_matrix[i, j, :-1] * dt)
         popu_parti_vector = popu_parti_matrix[i, j, :-1]
-        survey_dispersion_vector = survey_dispersion_matrix[i, j, :-1]
-        x_list = [popu_parti_vector, survey_dispersion_vector]
+        belief_dispersion_vector = belief_dispersion_matrix[i, j, :-1]
+        x_list = [popu_parti_vector, belief_dispersion_vector]
         for k, horizon in enumerate(horizons):
-            y_horizon1 = excess_return[horizon:] - excess_return[: -horizon]  # make sure the timing alligns
+            y_horizon1 = (excess_return_vector[horizon:] - excess_return_vector[: -horizon]) / (dt * horizon)  # make sure the timing alligns
+            y_horizon = y_horizon1.reshape(-1, 1)
             for l, x_horizon_raw in enumerate(x_list):
                 x_horizon1 = x_horizon_raw[: -horizon]
                 x_horizon1 = x_horizon1 / np.std(x_horizon1)
                 x_horizon1 = x_horizon1.reshape(-1, 1)
                 x_horizon = sm.add_constant(x_horizon1)
-                y_horizon = y_horizon1.reshape(-1, 1)
+
 
                 model = sm.OLS(y_horizon, x_horizon)
                 est = model.fit()
@@ -555,6 +730,17 @@ for i in range(N):
                 regression_results[i, j, k, l, 2] = est.rsquared
 
 mean_regression_results = np.mean(regression_results, axis=0)
+header = ['(1) phi = 0', '(2) phi = 0.4', '(3) phi = 0.8']
+# present the regression results in tables:
+
+for j, var in enumerate(var_names):
+    for i, horizon in enumerate(horizons):
+        reg_data = np.empty((n_report, n_phi))
+        for k in range(n_phi):
+            reg_data[:, k] = mean_regression_results[k, i, j]
+        report1 = [var, 't-stats', 'R-sqrd']
+        print(var, ', ' + str(horizon) + ' months')
+        print(tabulate.tabulate(reg_data, headers=header, showindex=report1, floatfmt=".4f", tablefmt='fancy_grid'))
 
 
 # What predicts entry and exit?
@@ -563,52 +749,52 @@ mean_regression_results = np.mean(regression_results, axis=0)
 
 
 
-# # Replicate figure 1 in REStud
-# age_group = 5
-# corrstep = int(age_group / dt)
-# age_max = 100
-# n_group = int(age_max / age_group - 1)
-# mu_t_S_rt_matrix = theta_matrix * sigma_S
-# a = np.empty((N, n_phi, n_group))
-# b = np.empty((N, n_phi, n_group))
-# c = np.empty((N, n_phi, n_group))
-#
-# for i in range(N):  # N paths
-#     dZ_Y = dZ_matrix[i]
-#     dZ_SI = dZ_SI_matrix[i]
-#     for j in range(n_phi):
-#         mu_t_S_rt = mu_t_S_rt_matrix[i, j]
-#         mu_st_S_rt = mu_st_rt_matrix[i, j]
-#         for k in range(n_group):
-#             if k == 0:
-#                 mu_st_S_rt_group = np.mean(mu_st_S_rt[:, -corrstep * (k + 1):], axis=1)
-#             else:
-#                 mu_st_S_rt_group = np.mean(mu_st_S_rt[:, -corrstep * (k + 1):-corrstep * k], axis=1)
-#
-#             a[i, j, k] = np.corrcoef(mu_t_S_rt, mu_st_S_rt_group)[1, 0]
-#             b[i, j, k] = np.corrcoef(dZ_Y, mu_st_S_rt_group)[1, 0]
-#             c[i, j, k] = np.corrcoef(dZ_SI, mu_st_S_rt_group)[1, 0]
-#
-# corr_a = np.average(a, axis=0)
-# corr_b = np.average(b, axis=0)
-# corr_c = np.average(c, axis=0)
-# var_list = [corr_a, corr_b, corr_c]
-# var_label = ['corr(mu^S-r_t, mu^S_{s,t}-r_t)', 'corr(dz^Y_t, mu^S_{s,t}-r_t)', 'corr(dz^SI_t, mu^S_{s,t}-r_t)']
-# x_age = np.linspace(age_group, age_max, n_group)
-# for i, var in enumerate(var_list):
-#     y_label = var_label[i]
-#     fig, ax1 = plt.subplots(figsize=(10, 10))
-#     ax1.set_xlabel('Age')
-#     ax1.set_ylabel(y_label, color=color5)
-#     for j, phi in enumerate(phi_vector):
-#         y = var[j]
-#         phi_label = str(round(phi,2))
-#         ax1.plot(x_age, y, color=colors[j], label = phi_label, linewidth=0.5)
-#     plt.legend()
-#     # fig.suptitle('Zt and Market Price of Risk')
-#     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-#     plt.savefig(y_label + '.png', dpi=500)
-#     plt.show()
+# Replicate figure 1 in REStud
+age_group = 5
+corrstep = int(age_group / dt)
+age_max = 100
+n_group = int(age_max / age_group - 1)
+mu_t_S_rt_matrix = theta_matrix * sigma_S
+a = np.empty((N, n_phi, n_group))
+b = np.empty((N, n_phi, n_group))
+c = np.empty((N, n_phi, n_group))
+
+for i in range(N):  # N paths
+    dZ_Y = dZ_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
+    for j in range(n_phi):
+        mu_t_S_rt = mu_t_S_rt_matrix[i, j]
+        mu_st_S_rt = mu_st_rt_matrix[i, j]
+        for k in range(n_group):
+            if k == 0:
+                mu_st_S_rt_group = np.mean(mu_st_S_rt[:, -corrstep * (k + 1):], axis=1)
+            else:
+                mu_st_S_rt_group = np.mean(mu_st_S_rt[:, -corrstep * (k + 1):-corrstep * k], axis=1)
+
+            a[i, j, k] = np.corrcoef(mu_t_S_rt, mu_st_S_rt_group)[1, 0]
+            b[i, j, k] = np.corrcoef(dZ_Y, mu_st_S_rt_group)[1, 0]
+            c[i, j, k] = np.corrcoef(dZ_SI, mu_st_S_rt_group)[1, 0]
+
+corr_a = np.average(a, axis=0)
+corr_b = np.average(b, axis=0)
+corr_c = np.average(c, axis=0)
+var_list = [corr_a, corr_b, corr_c]
+var_label = ['corr(mu^S-r_t, mu^S_{s,t}-r_t)', 'corr(dz^Y_t, mu^S_{s,t}-r_t)', 'corr(dz^SI_t, mu^S_{s,t}-r_t)']
+x_age = np.linspace(age_group, age_max, n_group)
+for i, var in enumerate(var_list):
+    y_label = var_label[i]
+    fig, ax1 = plt.subplots(figsize=(10, 10))
+    ax1.set_xlabel('Age')
+    ax1.set_ylabel(y_label, color=color5)
+    for j, phi in enumerate(phi_vector):
+        y = var[j]
+        phi_label = str(round(phi,2))
+        ax1.plot(x_age, y, color=colors[j], label = phi_label, linewidth=0.5)
+    plt.legend()
+    # fig.suptitle('Zt and Market Price of Risk')
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig(y_label + '.png', dpi=500)
+    plt.show()
 
 
 # #######################################
