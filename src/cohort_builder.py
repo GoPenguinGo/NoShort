@@ -69,6 +69,7 @@ def build_cohorts_SI(
     cohort_size = nu * np.exp(-nu * (tau - dt)) * dt
     theta_mat = np.empty(Nc)
     top = 0.05
+    old_limit = 100
 
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Ninit)):
@@ -261,19 +262,16 @@ def build_cohorts_SI(
 
         elif mode_trade == 'partial_constraint_old':
             invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P, by default type == P as newborn
-            can_short_tracker = np.append(can_short_tracker, 0)
-            cohort_size_short = cohort_size[-i-1:]
+            # can_short_tracker = np.append(can_short_tracker, 0)
+            # cohort_size_short = cohort_size[-i-1:]
             tau_short_1 = tau[-i-1:]
 
             if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+                # cohorts older than 100 years can short, if they are still type P by the time
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                indiv_w_possible = possible_cons_share / cohort_size_short
-                cohort_size_possible = cohort_size_short * invest_tracker
-                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
-                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-                can_short_tracker = (can_short_tracker + can_short >= 1)
+                can_short_possible = (tau_short_1 >= old_limit)
+                can_short_tracker = can_short_possible * invest_tracker
 
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection_partial_constraint(
@@ -295,12 +293,7 @@ def build_cohorts_SI(
             elif mode_learn == 'keep':  # agents switch between type P and type N
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
-                indiv_w_possible = possible_cons_share / cohort_size_short
-                cohort_size_possible = cohort_size_short * invest_tracker
-                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
-                                              top=0.05)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-                can_short_tracker = (can_short_tracker + can_short >= 1)
+                can_short_tracker = (tau_short_1 >= old_limit)
 
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection_partial_constraint(
