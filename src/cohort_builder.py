@@ -90,26 +90,35 @@ def build_cohorts_SI(
         f_st = np.append(f_st, tax)
 
         # update beliefs
-        if i < Ninit or mode_trade == 'complete':
+        if mode_trade == 'complete':
             V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
             dDelta_s_t = V_st_P / sigma_Y ** 2 * (
                         1 / (1 - phi ** 2)
                     ) * (
                         -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
                            )
-        else:
-            V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
-            dDelta_s_t_N = (V_st_N / sigma_Y ** 2
-                            ) * (
-                                   -Delta_s_t * dt + dZ_build[i - 1]
-                           )  # from eq(5)
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-            dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
-                        a_phi
-                    ) * (
-                        -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
-                           )  # from eq(8)
-            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+        elif mode_trade == 'w_constraint':
+            if i < Ninit:
+                V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+                dDelta_s_t = V_st_P / sigma_Y ** 2 * (
+                        1 / (1 - phi ** 2)
+                ) * (
+                                     -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
+                             )
+            else:
+                V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+                dDelta_s_t_N = (V_st_N / sigma_Y ** 2
+                                ) * (
+                                       -Delta_s_t * dt + dZ_build[i - 1]
+                               )  # from eq(5)
+                V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+                dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
+                    a_phi
+                ) * (
+                                       -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
+                               )  # from eq(8)
+                dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+
 
         # add a new cohort to Vhat_vector and tau_info
         Vhat_vector = np.append(Vhat_vector, Vhat)
