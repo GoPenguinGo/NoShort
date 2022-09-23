@@ -17,8 +17,9 @@ import tabulate as tabulate
 # mode_learn = 'drop'
 mode_learn = 'keep'
 # mode_trade = 'complete'
-mode_trade = 'w_constraint'
-# mode_trade = 'partial_constraint'
+# mode_trade = 'w_constraint'
+mode_trade = 'partial_constraint_old'
+# mode_trade = 'partial_constraint_rich'
 
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
@@ -41,10 +42,10 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 # obj_rp_matrix = np.zeros((Mpaths, Nt))
 
 
-dZ_matrix = np.load('dZ_matrix.npy')
-dZ_build_matrix = np.load('dZ_build_matrix.npy')
-dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
-dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
+# dZ_matrix = np.load('dZ_matrix.npy')
+# dZ_build_matrix = np.load('dZ_build_matrix.npy')
+# dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
+# dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
 N = 50
 phi_vector = [0, 0.4, 0.8]

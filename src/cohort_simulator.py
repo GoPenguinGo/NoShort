@@ -367,7 +367,7 @@ def simulate_cohorts_SI(
             elif mode_learn == 'keep':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
-                can_short_tracker = (tau_short_1 >= old_limit)
+                can_short_tracker = (tau >= old_limit)
 
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection_partial_constraint(
