@@ -332,7 +332,7 @@ def simulate_cohorts_SI(
 
             else:
                 print('mode_learn not found')
-                breal()
+                exit()
             d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
@@ -384,6 +384,17 @@ def simulate_cohorts_SI(
 
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + np.append(V_st_N[1:], Vhat) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
                 tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
+            else:
+                print('mode_learn not found')
+                exit()
+
+            invest_fst = invest_tracker * f_st * dt
+            popu_parti_t = np.sum(cohort_size * invest_tracker)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
+            f_parti_t = np.sum(invest_fst)
+            pi_st = (d_eta_st + theta_t) / sigma_S
+            age_t = np.sum(cohort_size * tau * invest_tracker)
+            n_parti_t = np.sum(invest_tracker) / Nc
 
         else:
             print('mode_trade not found')
