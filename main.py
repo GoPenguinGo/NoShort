@@ -14,12 +14,12 @@ import statsmodels.api as sm
 import tabulate as tabulate
 
 # different scenarios
-# mode_learn = 'drop'
-mode_learn = 'keep'
+mode_learn = 'drop'
+# mode_learn = 'keep'
 # mode_trade = 'complete'
 # mode_trade = 'w_constraint'
-mode_trade = 'partial_constraint_old'
-# mode_trade = 'partial_constraint_rich'
+# mode_trade = 'partial_constraint_old'
+mode_trade = 'partial_constraint_rich'
 
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')

@@ -280,11 +280,10 @@ def simulate_cohorts_SI(
 
         elif mode_trade == 'partial_constraint_rich':
             can_short_tracker = np.append(can_short_tracker[1:], 0)
-
             if mode_learn == 'drop':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                indiv_w_possible = possible_cons_share / cohort_size_short
+                indiv_w_possible = possible_cons_share / cohort_size
                 cohort_size_possible = cohort_size * invest_tracker
                 wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
                                               top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
@@ -307,7 +306,7 @@ def simulate_cohorts_SI(
             elif mode_learn == 'keep':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
-                indiv_w_possible = possible_cons_share / cohort_size_short
+                indiv_w_possible = possible_cons_share / cohort_size
                 cohort_size_possible = cohort_size * invest_tracker
                 wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
                                               top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
