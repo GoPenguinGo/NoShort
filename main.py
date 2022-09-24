@@ -6,7 +6,10 @@ from typing import Callable, Tuple
 from src.simulation import simulate_SI
 from src.cohort_builder import build_cohorts_SI
 from src.cohort_simulator import simulate_cohorts_SI
-from src.param import *
+from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
+    beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
+    cutoffs, phi_vector, n_phi, colors, modes_trade, modes_learn,\
+    scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix
 from src.stats import shocks, tau_calculator, good_times
 from numba import jit
 import matplotlib.pyplot as plt
@@ -14,63 +17,19 @@ import statsmodels.api as sm
 import tabulate as tabulate
 
 # different scenarios
-mode_learn = 'drop'
-# mode_learn = 'keep'
+# mode_learn = 'drop'
+mode_learn = 'keep'
 # mode_trade = 'complete'
 # mode_trade = 'w_constraint'
-mode_trade = 'partial_constraint_old'
-# mode_trade = 'partial_constraint_rich'
-
-dZ_matrix = np.load('dZ_matrix.npy')
-dZ_build_matrix = np.load('dZ_build_matrix.npy')
-dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
-dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
-
-# The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
-# survey_view_parti_matrix = np.zeros((Mpaths, Nt))  # average perceived risk premia among investors
-# survey_view_long_only_matrix = np.zeros((Mpaths, Nt))
-# survey_view_can_short_matrix = np.zeros((Mpaths, Nt))
-# survey_view_parti_young_matrix = np.zeros((Mpaths, Nt))
-# survey_view_parti_old_matrix = np.zeros((Mpaths, Nt))
-# popu_parti_young_matrix = np.zeros((Mpaths, Nt))
-# popu_parti_old_matrix = np.zeros((Mpaths, Nt))
-# age_parti_matrix = np.zeros((Mpaths, Nt))
-# r_matrix = np.zeros((Mpaths, Nt))
-# erp_S_matrix = np.zeros((Mpaths, Nt))
-# Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
-# dY_Y_matrix = np.zeros((Mpaths, Nt))
-# obj_rp_matrix = np.zeros((Mpaths, Nt))
+# mode_trade = 'partial_constraint_old'
+mode_trade = 'partial_constraint_rich'
 
 
-# dZ_matrix = np.load('dZ_matrix.npy')
-# dZ_build_matrix = np.load('dZ_build_matrix.npy')
-# dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
-# dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
-N = 50
-phi_vector = [0, 0.4, 0.8]
-n_phi = len(phi_vector)
+N = 50  # for smaller number of paths
 
-# define colors
-color1 = 'black'
-color2 = 'mediumblue'
-color3 = 'darkgreen'
-color4 = 'orange'
-color5 = 'red'
-color6 = 'gold'
-color7 = 'g'
-
-colors = ['darkmagenta', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
-          'olivedrab', 'darkviolet']
-
-modes_trade = ['complete', 'w_constraint', 'partial_constraint']
-modes_learn = ['keep', 'drop']
-n_modes_trade = len(modes_trade)
-n_modes_learn = len(modes_learn)
 index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
 index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
-
-
 
 theta_matrix = np.empty((N, n_phi, Nt))
 popu_parti_matrix = np.empty((N, n_phi, Nt))
@@ -126,149 +85,13 @@ for j in range(N):
         belief_dispersion_matrix[j, i] = np.std(Delta, axis = 1)  # todo: maybe add weights
         dR_matrix[j, i] = dR
 
-# for k in range(Mpaths):
-#     s = time.time()
-#     time_s = time.time()
-#
-#     dZ = dZ_matrix[k]
-#     dZ_build = dZ_build_matrix[k]
-#     dZ_SI = dZ_SI_matrix[k]
-#     dZ_SI_build = dZ_SI_build_matrix[k]
-#
-#     # if k == Mpaths - 1:  # in the last round, use the shocks seen in the slides
-#     #     dZ_build = np.load('dZt_build_demo.npy')  # dZt for the build function
-#     #     dZ = np.load('dZt_demo.npy')  # dZt for the simulate function
-#     #
-#     # else:
-#     #     dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-#     #     dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
-#
-#     dY_Y_matrix[k, :] = mu_Y * dt + sigma_Y * dZ
-#
-#     # dZ_matrix[k, :] = dZ
-#     # Z = np.cumsum(dZ)
-#     # Z_matrix[k, :] = Z
-#
-#     if mode_trade == 'complete' or mode_trade == 'w_constraint':
-#         (
-#             r,
-#             theta,
-#             f,
-#             Delta,
-#             max,
-#             pi,
-#             popu_parti,
-#             f_parti,
-#             Delta_bar_parti,
-#             dR,
-#             w_cohort,
-#             age_parti,
-#             n_parti,
-#         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
-#                         Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-#                         top=0.05,
-#                         old_limit=100)
-#         invest_tracker = pi > 0
-#
-#         y1 = Delta
-#
-#     # else:
-#     #     print('Error! Mode not defined')
-#     #     break
-#     theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-#
-#     erp_S = mu_S - r
-#     # erp_S_s = mu_S_s - np.reshape(r, (Nt, 1))
-#
-#     dR_matrix[k] = dR
-#     # delta_matrix[k] = Delta
-#     r_matrix[k] = r
-#     # theta_matrix[k] = theta
-#     # mu_S_matrix[k] = mu_S
-#     # mu_S_s_matrix[k] = mu_S_s
-#     erp_S_matrix[k] = erp_S
-#     # erp_S_s_matrix[k] = erp_S_s
-#     # pi_matrix[k] = pi
-#
-#     # w_matrix[k] = w
-#     # w_cohort_matrix[k] = w_cohort
-#     # n_parti_matrix[k] = n_parti
-#
-#     popu_parti_matrix[k] = popu_parti
-#     # popu_can_short_matrix[k] = popu_can_short
-#     # popu_short_matrix[k] = popu_short
-#     # popu_long_matrix[k] = popu_long
-#     # f_matrix[k] = f
-#     # f_parti_matrix[k] = f_parti
-#     # f_short_matrix[k] = f_short
-#     # f_long_matrix[k] = f_long
-#     age_parti_matrix[k] = age_parti
-#     # age_short_matrix[k] = age_short
-#     # age_long_matrix[k] = age_long
-#
-#     # invest_tracker_matrix[k] = invest_tracker
-#     # can_short_tracker_matrix[k] = can_short_tracker
-#     # long_indicator_matrix[k] = long
-#     # short_indicator_matrix[k] = short
-#
-#     Delta_bar_parti_matrix[k] = Delta_bar_parti
-#     # Delta_bar_long_matrix[k] = Delta_bar_long
-#     # Delta_bar_short_matrix[k] = Delta_bar_short
-#
-#     obj_rp_matrix[k] = theta * sigma_S
-#
-#     parti_track = cohort_size_mat * invest_tracker
-#     popu_parti_young_matrix[k] = np.sum(parti_track[:, tau_cutoff1:], axis=1)  # the first age quartile
-#     popu_parti_old_matrix[k] = np.sum(parti_track[:, tau_cutoff3:tau_cutoff2], axis=1)  # the third age quartile
-#
-#     # # for graphs specific to one random path:
-#     # if dZ_build == np.load('dZt_build_demo.npy'):
-#     #     if mode == 'comp':
-#     #         y21 = theta
-#     #         y31 = r
-#     #         y41 = Delta_bar_parti
-#     #     if mode == 'drop':
-#     #         y1 = Delta
-#     #         y22 = theta
-#     #         y32 = r
-#     #         y42 = Delta_bar_parti / f_parti
-#     #         y43 = f_parti
-#     #         y44 = popu_parti
-#     #         invest = pi > 0
-#     #         parti_rate = invest * cohort_size
-#     #         y5 = parti_rate
-#     #         y6 = pi
-#     #     if mode == 'free':
-#     #         y71 = theta
-#     #         y72 = popu_parti
-#     #         y73 = popu_short
-#     #         y74 = Delta_bar_long
-#     #         y75 = Delta_bar_short
-#
-#     print(time.time() - s)
-#     print(mode)
-#     print(k)
-#
-#     # for graphs using information from all simulated paths
-
-
-# #######################################
-# ########## ONE RANDOM PATH ############
-# #######################################
-#
-# # the x-axis
-
-
-
-
-
 
 # ######################################
+# ########## ONE RANDOM PATH ############
 # ############ GRAPH ONE ###############
 # ######################################
 
 # ONE SPECIFIC PATH:
-
 # generate data for the graphs:
 
 dZ_build = dZ_build_matrix[0]

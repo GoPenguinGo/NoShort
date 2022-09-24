@@ -43,6 +43,7 @@ tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
 tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
 tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+n_age_groups = 4
 
 Mpaths = 200
 
@@ -52,71 +53,30 @@ Nkeep = int(Tkeep / dt)
 Tsample = int(T_cohort / 100)
 Nsamples = 500
 stepcorr = int(Tsample / dt)
-# corrZport = np.zeros((Mpaths, Nsamples))
-# corrZMUs_t = np.zeros((Mpaths, Nsamples))
-# corrMU_sMUs_t = np.zeros((Mpaths, Nsamples))
-# corrMuSmuHat = np.zeros((Mpaths, 1))
-#
-# mu_C_s_t = np.zeros((Mpaths, Nsamples))
-# log_mu_C_s_t = np.zeros((Mpaths, Nsamples))
-# sigma_C_s_t = np.zeros((Mpaths, Nsamples))
-# std_C_s_t = np.zeros((Mpaths, Nsamples))
 
-# ####################################################################################
-# # Store the values from the main loop
-# dZ_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# Z_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # mu_C_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # sigma_C_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # delta_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # r_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # f_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # f_short_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # f_long_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # theta_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # pi_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # f_parti_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# popu_parti_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # popu_can_short_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # popu_short_matrix = np.zeros((Mpaths, Nt), dtype=np.float32)
-# # popu_long_matrix = np.zeros((Mpaths, Nt))
-# Delta_bar_parti_matrix = np.zeros((Mpaths, Nt))
-# # Delta_bar_long_matrix = np.zeros((Mpaths, Nt))
-# # Delta_bar_short_matrix = np.zeros((Mpaths, Nt))
-# # w_matrix = np.zeros((Mpaths, Nt, Nc))
-# # w_cohort_matrix = np.zeros((Mpaths, Nt, Nc))
-# # age_parti_matrix = np.zeros((Mpaths, Nt))
-# # age_short_matrix = np.zeros((Mpaths, Nt))
-# # age_long_matrix = np.zeros((Mpaths, Nt))
-# # n_parti_matrix = np.zeros((Mpaths, Nt))
-# #
-# # invest_tracker_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # can_short_tracker_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # long_indicator_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-# # short_indicator_matrix = np.zeros((Mpaths, Nt, Nc), dtype=np.float32)
-#
-# # Expected returns
-# # mu_S_matrix = np.zeros((Mpaths, Nt))  # Expected returns under the true measure
-# # mu_S_s_matrix = np.zeros(
-# #     (Mpaths, Nt, Nc)
-# # )  # Expected returns under the measure of the agent we track
-# # mu_hat_S_matrix = np.zeros(
-# #     (Mpaths, Nt)
-# # )  # Simple average of expected returns, or consensus belief
-# #
-# # # Equity risk premium
-# # erp_S_matrix = np.zeros(
-# #     (Mpaths, Nt)
-# # )
-# #
-# # erp_S_s_matrix = np.zeros(
-# #     (Mpaths, Nt, Nc)
-# # )
-# # erp_hat_S_matrix = np.zeros(
-# #     (Mpaths, Nt)
-# # )
-#
-#
-# Et_matrix = np.zeros((Mpaths, Nt))
-# Vt_matrix = np.zeros((Mpaths, Nt))
-# dR_matrix = np.zeros((Mpaths, Nt))
+phi_vector = [0, 0.4, 0.8]
+n_phi = len(phi_vector)
+
+# for V_hat_experiment:
+Npres_a = np.arange(1, 13, 1)
+Npres_b = np.arange(24, 241, 12)
+Npres = np.append(Npres_a, Npres_b)
+
+dZ_matrix = np.load('dZ_matrix.npy')
+dZ_build_matrix = np.load('dZ_build_matrix.npy')
+dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
+dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
+
+colors = ['black', 'mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
+          'olivedrab', 'darkviolet']
+modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
+modes_learn = ['keep', 'drop']
+scenarios = []
+for mode_trade in modes_trade:
+    if mode_trade == 'complete':
+        scenarios.append([mode_trade, modes_learn[0]])
+    else:
+        for mode_learn in modes_learn:
+            scenarios.append([mode_trade, mode_learn])
+
+
