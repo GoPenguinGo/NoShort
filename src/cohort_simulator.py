@@ -171,7 +171,7 @@ def simulate_cohorts_SI(
             w_indiv_st = w_indiv_st + dw_indiv_st
             w_st = w_indiv_st * cohort_size / dt
             adjust_scale = w_t * (1 / dt - tax) / np.sum(w_st[1:])
-            w_st = np.append(w_st[1:] * adjust_scale, w_t * tax)
+            w_st = np.append(w_st[1:] * adjust_scale, w_t * tax) / w_t
             w_indiv_st = np.append(w_indiv_st[1:] * adjust_scale, w_t * tax / nu)
 
         # update beliefs
@@ -422,7 +422,7 @@ def simulate_cohorts_SI(
         Delta_bar_parti[i] = Delta_bar_parti_t
         pi[i, :] = pi_st
         parti[i] = popu_parti_t
-        w_cohort[i, :] = w_st
+        w[i, :] = w_st
         age[i] = age_t
         n_parti[i] = n_parti_t
 
@@ -442,7 +442,7 @@ def simulate_cohorts_SI(
         f_parti,
         Delta_bar_parti,
         dR,
-        w_cohort,
+        w,
         age,
         n_parti,
     )

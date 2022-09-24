@@ -113,7 +113,7 @@ def simulate_SI(
         f_parti,
         Delta_bar_parti,
         dR,
-        w_cohort,
+        w,
         age,
         n_parti,
     ) = simulate_cohorts_SI(
@@ -163,7 +163,7 @@ def simulate_SI(
         f_parti,
         Delta_bar_parti,
         dR,
-        w_cohort,
+        w,
         age,
         n_parti,
     )
