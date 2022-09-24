@@ -109,7 +109,7 @@ def simulate_cohorts_SI(
     max = np.zeros((Nt, Nc))  # stores max(delta, -theta)
     f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
     pi = np.zeros((Nt, Nc))  # portfolio choices
-    w_cohort = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
+    w = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
     short = np.zeros((Nt, Nc))
 
     # aggregate terms:
