@@ -162,16 +162,17 @@ def simulate_cohorts_SI(
 
         # Wealth
         if i == 0:
-            w_cohort_st = Y[i] / beta * f_st
-            w_st = w_cohort_st / cohort_size * dt
+            w_st = Y[i] / beta * f_st  # cohort
+            w_indiv_st = w_st / cohort_size * dt  # indiv
         else:
             dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
-            w_t = Y[i] / beta
-            dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
-            w_st = w_st[1:] + dw_st[1:]
-            adjust_scale = w_t / np.sum(w_st)  # make sure the sum of wealth is not changed
-            w_st = np.append(w_st * adjust_scale, w_t * tax / nu)
-            w_cohort_st = w_st * cohort_size / dt
+            w_t = Y[i] / beta  # total wealth at time t
+            dw_indiv_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_indiv_st * dt + w_indiv_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            w_indiv_st = w_indiv_st + dw_indiv_st
+            w_st = w_indiv_st * cohort_size / dt
+            adjust_scale = w_t * (1 / dt - tax) / np.sum(w_st[1:])
+            w_st = np.append(w_st[1:] * adjust_scale, w_t * tax)
+            w_indiv_st = np.append(w_indiv_st[1:] * adjust_scale, w_t * tax / nu)
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
@@ -256,7 +257,7 @@ def simulate_cohorts_SI(
 
             else:
                 print('mode_learn not found')
-                break
+                exit()
 
             d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
@@ -421,7 +422,7 @@ def simulate_cohorts_SI(
         Delta_bar_parti[i] = Delta_bar_parti_t
         pi[i, :] = pi_st
         parti[i] = popu_parti_t
-        w_cohort[i, :] = w_cohort_st
+        w_cohort[i, :] = w_st
         age[i] = age_t
         n_parti[i] = n_parti_t
 
