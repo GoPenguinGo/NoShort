@@ -306,7 +306,7 @@ def simulate_cohorts_SI(
                 # tau_info and V_hat has to change for the agents who switched to N
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
-                
+
             elif mode_learn == 'keep':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
@@ -367,6 +367,7 @@ def simulate_cohorts_SI(
                 # tau_info and V_hat has to change for the agents who switched to N
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
+
             elif mode_learn == 'keep':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t

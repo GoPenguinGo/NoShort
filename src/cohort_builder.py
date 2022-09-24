@@ -233,7 +233,7 @@ def build_cohorts_SI(
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 indiv_w_possible = possible_cons_share / cohort_size_short
-                cohort_size_possible = cohort_size_short * invest_tracker
+                cohort_size_possible = cohort_size_short
                 wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible, top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
                 can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
                 can_short_tracker = (can_short_tracker + can_short >= 1)
