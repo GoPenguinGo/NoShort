@@ -286,7 +286,7 @@ def simulate_cohorts_SI(
             if mode_learn == 'drop':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                indiv_w_possible = possible_cons_share / cohort_size
+                indiv_w_possible = w_indiv_st * invest_tracker
                 cohort_size_possible = cohort_size * invest_tracker
                 wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
                                               top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
@@ -306,11 +306,12 @@ def simulate_cohorts_SI(
                 # tau_info and V_hat has to change for the agents who switched to N
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
+                
             elif mode_learn == 'keep':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
-                indiv_w_possible = possible_cons_share / cohort_size
-                cohort_size_possible = cohort_size * invest_tracker
+                indiv_w_possible = w_indiv_st
+                cohort_size_possible = cohort_size
                 wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
                                               top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
                 can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
