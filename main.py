@@ -14,12 +14,12 @@ import statsmodels.api as sm
 import tabulate as tabulate
 
 # different scenarios
-# mode_learn = 'drop'
-mode_learn = 'keep'
+mode_learn = 'drop'
+# mode_learn = 'keep'
 # mode_trade = 'complete'
 # mode_trade = 'w_constraint'
-# mode_trade = 'partial_constraint_old'
-mode_trade = 'partial_constraint_rich'
+mode_trade = 'partial_constraint_old'
+# mode_trade = 'partial_constraint_rich'
 
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
@@ -108,7 +108,10 @@ for j in range(N):
             age_parti,
             n_parti,
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size)
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                        top=0.05,
+                        old_limit=100
+                        )
         # invest_tracker = pi > 0
         Delta_matrix[j, i] = Delta
         pi_matrix[j, i] = pi

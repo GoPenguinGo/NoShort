@@ -169,7 +169,8 @@ def simulate_cohorts_SI(
             w_t = Y[i] / beta
             dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
             w_st = w_st[1:] + dw_st[1:]
-            w_st = np.append(w_st, w_t * tax / nu)
+            adjust_scale = w_t / np.sum(w_st)  # make sure the sum of wealth is not changed
+            w_st = np.append(w_st * adjust_scale, w_t * tax / nu)
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
