@@ -38,6 +38,8 @@ def simulate_cohorts_SI(
         can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
+        top: float,
+        old_limit: int,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -128,8 +130,7 @@ def simulate_cohorts_SI(
     a_phi = 1/(1 - phi ** 2)
     sigma_Y_sq = sigma_Y ** 2
 
-    top = 0.05
-    old_limit = 100
+
 
     #
     # switch_P_to_N_ts = np.empty((Nt))

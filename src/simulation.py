@@ -3,47 +3,49 @@ import numpy as np
 from typing import Tuple
 from src.cohort_builder import build_cohorts_SI
 from src.cohort_simulator import simulate_cohorts_SI
-from src.stats import shocks, good_times
+from src.stats import shocks
 
 
 def simulate_SI(
-    mode_trade: str,
-    mode_learn: str,
-    Nc: int,
-    Nt: int,
-    dt: float,
-    rho: float,
-    nu: float,
-    Vhat: float,
-    mu_Y: float,
-    sigma_Y: float,
-    sigma_S: float,
-    tax: float,
-    beta: float,
-    phi: float,
-    Npre: int,
-    Ninit: int,
-    T_hat: int,
-    dZ_build: np.ndarray,
-    dZ: np.ndarray,
-    dZ_SI_build: np.ndarray,
-    dZ_SI: np.ndarray,
-    tau: np.ndarray,
-    cohort_size: np.ndarray,
+        mode_trade: str,
+        mode_learn: str,
+        Nc: int,
+        Nt: int,
+        dt: float,
+        rho: float,
+        nu: float,
+        Vhat: float,
+        mu_Y: float,
+        sigma_Y: float,
+        sigma_S: float,
+        tax: float,
+        beta: float,
+        phi: float,
+        Npre: int,
+        Ninit: int,
+        T_hat: int,
+        dZ_build: np.ndarray,
+        dZ: np.ndarray,
+        dZ_SI_build: np.ndarray,
+        dZ_SI: np.ndarray,
+        tau: np.ndarray,
+        cohort_size: np.ndarray,
+        top: float,
+        old_limit: int,
 ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     :param mode: scenario of the function, see param for scenario names
@@ -67,7 +69,7 @@ def simulate_SI(
         mu_Y,
         sigma_Y,
         dt,
-        )
+    )
 
     (
         Delta_s_t,
@@ -96,7 +98,9 @@ def simulate_SI(
         T_hat,
         mode_trade,
         mode_learn,
-        )
+        top,
+        old_limit,
+    )
 
     (
         r,
@@ -144,7 +148,9 @@ def simulate_SI(
         can_short_tracker_build,
         tau_info_build,
         Vhat_vector,
-        )
+        top,
+        old_limit,
+    )
 
     return (
         r,
@@ -161,7 +167,6 @@ def simulate_SI(
         age,
         n_parti,
     )
-
 
 #
 #

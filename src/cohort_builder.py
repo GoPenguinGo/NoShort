@@ -23,6 +23,8 @@ def build_cohorts_SI(
     T_hat: float,
     mode_trade: str,
     mode_learn: str,
+    top: float,
+    old_limit: int,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
