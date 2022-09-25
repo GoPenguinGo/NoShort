@@ -67,7 +67,7 @@ dZ_build_matrix = np.load('dZ_build_matrix.npy')
 dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
 dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
-colors = ['black', 'mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
+colors = ['steelblue', 'darkseagreen', 'moccasin', 'pink', 'black', 'mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet']
 modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
 modes_learn = ['keep', 'drop']
