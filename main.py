@@ -26,21 +26,24 @@ scenarios_short = scenarios[:n_scenarios]
 phi_vector = np.arange(0,1,0.1)
 n_phi = len(phi_vector)
 
+age_cutoff = cutoffs[2]
+
 index_Z_Ys = [6, 0]  # indices of a good and a bad shock for Z^Y
 index_Z_SIs = [0, 13]  # indices of a good and a bad shock for Z^SI
 
 theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
 popu_parti_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-market_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
+# market_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
 survey_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-Delta_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
-pi_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
-mu_st_rt_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
+# Delta_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
+# pi_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
+# mu_st_rt_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
 r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 belief_dispersion_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-invest_tracker_matrix = np.zeros((N, n_scenarios, n_phi, Nt, Nc))
+parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
 # run the program for different values of phi, and store the results
 for j in range(N):
@@ -70,20 +73,23 @@ for j in range(N):
                             top=0.05,
                             old_limit=100
                             )
-            # invest_tracker = pi > 0
-            Delta_matrix[j, k, l] = Delta
-            pi_matrix[j, k, l] = pi
+
+            # Delta_matrix[j, k, l] = Delta
+            # pi_matrix[j, k, l] = pi
             theta_matrix[j, k, l] = theta
             r_matrix[j, k, l] = r
             theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-            mu_st_rt_matrix[j, k, l] = theta_mat + Delta
+            # mu_st_rt_matrix[j, k, l] = theta_mat + Delta
             popu_parti_matrix[j, k, l] = popu_parti
-            market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
+            # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
             delta_bar_matrix[j, k, l] = Delta_bar_parti
             survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
             belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
             dR_matrix[j, k, l] = dR
-            invest_tracker_matrix[j, k, l] = invest_tracker
+            # invest_tracker_matrix[j, k, l] = invest_tracker
+            parti_young_matrix = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
+            parti_old_matrix = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
+            # ( parti_young + parti_old )/2 = popu_parti
 
 # ######################################
 # ########## ONE RANDOM PATH ############
@@ -95,7 +101,6 @@ for j in range(N):
 
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
-
 
 theta_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
 popu_parti_compare = np.empty((n_modes, 2, 2, n_phi, Nt))
@@ -378,18 +383,9 @@ horizons = [3, 6, 12, 24]
 n_horizon = len(horizons)
 report = ['coef', 't-stats', 'R-sqrd']
 n_report = len(report)
-var_names = ['Participation rate', 'Belief dispersion']
+var_names = ['Participation rate', 'Belief dispersion', 'survey view', 'Participation rate, young', 'Participation rate, old']
 regression_results = np.empty((N, n_phi, n_horizon, len(var_names), n_report))
-
-# construct average belief ts: (from Delta_matrix)
-# N, n_scenarios, n_phi, Nt, Nc
-mu_st_matrix = Delta_matrix * sigma_Y + mu_Y  # N, n_scenarios, n_phi, Nt, Nc
-mu_t_matrix = np.average(mu_st_matrix, axis=3, weights=cohort_size)  # todo: make sure axis
-
-# construct age-specific participation rate ts: (from invest_tracker_matrix)
-age_cutoff = tau_cutoff2
-old_parti_matrix = np.sum(invest_tracker_matrix[:, :, :, :, :age_cutoff], axis = 4)  # todo: make sure axis
-young_parti_matrix = np.sum(invest_tracker_matrix[:, :, :, :, age_cutoff:], axis = 4)
+var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix, parti_young_matrix, parti_old_matrix]
 
 # predictive regression of stock returns on pariticipation rate
 for i in range(N):
