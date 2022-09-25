@@ -163,6 +163,8 @@ cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
 var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumption']
 figure_labels = ['pi', 'Delta', 'Log cons']
 
+
+print(mode_trade, mode_learn)
 for i, cohort_matrix in enumerate(cohort_matrix_list):
     for j, index_Z_Y in enumerate(index_Z_Ys):
         Z = np.cumsum(dZ_matrix[index_Z_Y])
@@ -183,6 +185,7 @@ for i, cohort_matrix in enumerate(cohort_matrix_list):
                         else:
                             cohort_rank = length - (n - start) - 1
                             y_interest_time_series[m, n] = y_interest[n, cohort_rank]
+                Delta_benchmarks = Delta_benchmark(post_var, sigma_Y, Nt, Vhat, phi, starts, dZ, dZ_SI, Npre, T_hat, dt)
                 if i == 0:
                     parti_time_series = (y_interest_time_series > 0)
                     fig, ax1 = plt.subplots(figsize=(15, 5))
@@ -232,6 +235,8 @@ for i, cohort_matrix in enumerate(cohort_matrix_list):
                         plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
                         ax2.plot(t, y_cohort_P, label=cohort_labels[m], color=colors[m], linewidth=0.4)
                         ax2.plot(t, y_cohort_N,  color=colors[m], linewidth=0.4, linestyle='dotted')
+                        if i == 1:
+                            ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
                         if m == 0:
                             ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='state switch')
                         else:

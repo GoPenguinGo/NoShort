@@ -1,6 +1,6 @@
 import numpy as np
 from numba import jit
-from typing import Tuple
+from typing import Tuple, Callable
 
 
 @jit(nopython=True)
@@ -111,6 +111,48 @@ def good_times(
     good_time_build = cummu_dZt_build >= z * sigma_cummu
     good_time_simulate = cummu_dZt >= z * sigma_cummu
     return good_time_build, good_time_simulate
+
+
+def Delta_benchmark(post_var: Callable[[float, float, float, float, str], np.float64],
+                    sigma_Y, Nt, Vhat, phi, s_vector, dZ, dZ_SI, Npre, T_hat, dt):
+    sigma_Y_sq = sigma_Y ** 2
+    n_cohorts = len(s_vector)
+    Delta_N = np.empty(Nt, n_cohorts)
+    Delta_P = np.empty(Nt, n_cohorts)
+    a_phi = 1/(1 - phi ** 2)
+
+    for n, s in enumerate(s_vector):
+        init_bias = np.sum(dZ[s + 1 - Npre: s + 1]) / T_hat
+        for t in range(Nt, n_cohorts):
+            tau = t - s
+            dZ_t = dZ[t]
+            dZ_SI_t = dZ_SI[t]
+            if tau < 0:
+                Delta_N[t, n] = np.nan
+                Delta_P[t, n] = np.nan
+            elif tau == 0:
+                Delta_N[t, n] = init_bias
+                Delta_P[t, n] = init_bias
+            else:
+                Delta_N_1 = Delta_N[t - 1, n]
+                Delta_P_1 = Delta_P[t - 1, n]
+                V_st_N = post_var(sigma_Y, Vhat, tau, phi, 'N')
+                dDelta_s_t_N = (V_st_N / sigma_Y_sq
+                                ) * (
+                                       -Delta_N_1 * dt + dZ_t
+                               )
+                V_st_P = post_var(sigma_Y, Vhat, tau, phi, 'P')
+                dDelta_s_t_P = V_st_P / sigma_Y_sq * a_phi * (
+                                       -Delta_P_1 * dt + dZ_t + phi * dZ_SI_t
+                               )
+
+                Delta_N[t, n] = Delta_N_1 + dDelta_s_t_N
+                Delta_P[t, n] = Delta_P_1 + dDelta_s_t_P
+
+    return Delta_N, Delta_P
+
+
+
 
 
 
