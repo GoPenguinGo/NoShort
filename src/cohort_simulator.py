@@ -52,8 +52,6 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -111,6 +109,7 @@ def simulate_cohorts_SI(
     pi = np.zeros((Nt, Nc))  # portfolio choices
     w = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
     short = np.zeros((Nt, Nc))
+    invest_mat = np.zeros((Nt, Nc))
 
     # aggregate terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -129,12 +128,6 @@ def simulate_cohorts_SI(
 
     a_phi = 1/(1 - phi ** 2)
     sigma_Y_sq = sigma_Y ** 2
-
-
-
-    #
-    # switch_P_to_N_ts = np.empty((Nt))
-    # switch_N_to_P_ts = np.empty((Nt))
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -419,34 +412,34 @@ def simulate_cohorts_SI(
         r[i] = r_t
         f[i, :] = f_st
         Delta[i, :] = Delta_s_t
-        max[i, :] = d_eta_st
+        # max[i, :] = d_eta_st
         f_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         pi[i, :] = pi_st
         parti[i] = popu_parti_t
         w[i, :] = w_st
-        age[i] = age_t
-        n_parti[i] = n_parti_t
+        # age[i] = age_t
+        # n_parti[i] = n_parti_t
+        invest_mat[i] = invest_tracker
 
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
-
-        # theta_t_matrix[i] = theta_t_vector
 
     return (
         r,
         theta,
         f,
         Delta,
-        max,
+        # max,
         pi,
         parti,
         f_parti,
         Delta_bar_parti,
         dR,
         w,
-        age,
-        n_parti,
+        # age,
+        # n_parti,
+        invest_mat,
     )
 
 

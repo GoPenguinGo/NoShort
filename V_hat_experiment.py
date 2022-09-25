@@ -78,7 +78,7 @@ n_scenarios = len(scenarios_short)
 #                 Delta_bar_parti_matrix[l, m, n, o, 1] = np.std(Delta_bar_parti)
 #                 f_parti_matrix[l, m, n, o, 0] = np.mean(f_parti)
 #                 f_parti_matrix[l, m, n, o, 1] = np.std(f_parti)
-#                 invest = (pi > 0)
+#                 invest = (pi > 0)  # todo: change this
 #                 parti_rate = invest * cohort_size
 #
 #                 belief = (Delta * sigma_Y + mu_Y)

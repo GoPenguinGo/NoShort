@@ -44,8 +44,6 @@ def simulate_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     :param mode: scenario of the function, see param for scenario names
@@ -107,15 +105,13 @@ def simulate_SI(
         theta,
         f,
         Delta,
-        max,
         pi,
         parti,
         f_parti,
         Delta_bar_parti,
         dR,
         w,
-        age,
-        n_parti,
+        invest_tracker
     ) = simulate_cohorts_SI(
         Y,
         biasvec,
@@ -157,15 +153,13 @@ def simulate_SI(
         theta,
         f,
         Delta,
-        max,
         pi,
         parti,
         f_parti,
         Delta_bar_parti,
         dR,
         w,
-        age,
-        n_parti,
+        invest_tracker
     )
 
 #
