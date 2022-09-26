@@ -119,8 +119,8 @@ age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <
 
 x = Npres
 
-for i, var in enumerate(var_list):
-    y_mat = np.mean(var, axis=1)
+for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat_dimension * 2
+    y_mat = np.mean(var, axis=0)    # shape y_mat: n_scenarios * n_phi * T_hat_dimension * 2
     var_name = var_name_list[i]
     for j, scenario in enumerate(scenarios_short):
         mode_trade = scenario[0]
@@ -129,36 +129,42 @@ for i, var in enumerate(var_list):
             for k, type in enumerate(type_list):
                 fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
                 for l, phi in enumerate(phi_vector):
-                    y = y_mat[j, l, :, k]
-                    ax.plot(x, y, label = str(round(phi, 2)))
+                    y = y_mat[j, l, :, k]  # shape y: T_hat_dimension
+                    ax.plot(x, y, label=str(round(phi, 2)))
                 ax.set_ylabel(var_name)
                 ax.set_xlabel('initial window (months)')
                 ax.legend()
-                plt.savefig(type + ' initial window and ' + var_name + '_' + mode_learn + '_' + mode_trade + '.png', dpi=500, format="png")
+                mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
+                plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
+                            dpi=500, format="png")
                 plt.show()
                 plt.close()
+
         elif i == 4:
-            for k, type in enumerate(type_list):
-                for l, phi in enumerate(phi_vector):
-                    fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
-                    y = y_mat[j, l, :, :, k]
-                    for m in range(n_age_groups):
-                        y_age_group = y[:, m]
-                        if m == 0:
-                            ax.fill_between(x, y_age_group, color=colors[m], linewidth=0.4,
+            for l, phi in enumerate(phi_vector):
+                fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
+                y = y_mat[j, l, :, :, 0]
+                for m in range(n_age_groups):
+                    y_age_group = y[:, m]
+                    if m == 0:
+                        ax.fill_between(x, y_age_group, color=colors[m], linewidth=0.4,
                                         label=age_labels[m])
-                        else:
-                            y_age_group_1 = y[:, m-1]
-                            ax.fill_between(x, y_age_group, y_age_group_1, color=colors[m], linewidth=0.4,
+                    else:
+                        y_age_group_1 = y[:, m - 1]
+                        ax.fill_between(x, y_age_group, y_age_group_1, color=colors[m], linewidth=0.4,
                                         label=age_labels[m])
-                    plt.legend()
-                    ax.set_ylabel(var_name)
-                    ax.set_xlabel('initial window (months)')
-                    ax.legend()
-                    plt.savefig(type + ' initial window and ' + var_name + '_' + mode_learn + '_' + mode_trade + '.png',
-                                dpi=500, format="png")
-                    plt.show()
-                    plt.close()
+                plt.legend()
+                ax.set_ylabel(var_name)
+                ax.set_xlabel('initial window (months)')
+                ax.legend()
+                mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
+                plt.savefig('mean initial window and ' + var_name + '_' + mode_label + '_' + str(
+                    round(phi, 2)) + '.png',
+                            dpi=500, format="png")
+                plt.show()
+                plt.close()
+
+
         else:
             for k, type in enumerate(type_list):
                 for l, phi in enumerate(phi_vector):
@@ -177,7 +183,8 @@ for i, var in enumerate(var_list):
                     ax.set_ylabel(var_name)
                     ax.set_xlabel('initial window (months)')
                     ax.legend()
-                    plt.savefig(type + ' initial window and ' + var_name + '_' + mode_learn + '_' + mode_trade + '.png',
+                    mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
+                    plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
                                 dpi=500, format="png")
                     plt.show()
                     plt.close()

@@ -274,7 +274,7 @@ def simulate_cohorts_SI(
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
-        elif mode_trade == 'partial_constraint_rich':
+        elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
             can_short_tracker = np.append(can_short_tracker[1:], 0)
             if mode_learn == 'drop':
                 possible_cons_share = f_st * dt * invest_tracker

@@ -42,6 +42,7 @@ r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 belief_dispersion_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+f_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
@@ -87,8 +88,9 @@ for j in range(N):
             belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
             dR_matrix[j, k, l] = dR
             # invest_tracker_matrix[j, k, l] = invest_tracker
-            parti_young_matrix = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
-            parti_old_matrix = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
+            f_parti_1_matrix[j, k, l] = 1/f_parti
+            parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
+            parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
             # ( parti_young + parti_old )/2 = popu_parti
 
 # ######################################
@@ -343,7 +345,7 @@ var_list = [r_matrix, theta_matrix, delta_bar_matrix, popu_parti_matrix, belief_
 var_name_list = ['interest rate', 'market price of risk',
                  'consumption-weighted estimation error of participants',
                  'participation rate', 'belief dispersion']
-type_list = ['mean', 'vola']
+type_list = ['mean', 'vola', 'scaled vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 x = phi_vector
@@ -354,7 +356,8 @@ for i, var in enumerate(var_list):
     y_std_mat = np.std(var, axis=3)  # shape = N * n_scenarios * n_phi
     y_mean = np.mean(y_mean_mat, axis=0)
     y_std = np.mean(y_std_mat, axis=0)  # shape = n_scenarios * n_phi
-    y_list = [y_mean, y_std]
+    y_std_mean = y_std / abs(y_mean)
+    y_list = [y_mean, y_std, y_std_mean]
     for j, y in enumerate(y_list):
         type = type_list[j]
         fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
@@ -367,11 +370,9 @@ for i, var in enumerate(var_list):
         ax.set_ylabel(var_name)
         ax.set_xlabel('phi')
         ax.legend()
-        # plt.savefig(type + ' compare ' + var_name + '_' + mode_learn + '_' + mode_trade + '.png', dpi=500, format="png")
+        plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
         plt.show()
-        # plt.close()
-
-
+        plt.close()
 
 
 # ######################################
@@ -383,45 +384,60 @@ horizons = [3, 6, 12, 24]
 n_horizon = len(horizons)
 report = ['coef', 't-stats', 'R-sqrd']
 n_report = len(report)
-var_names = ['Participation rate', 'Belief dispersion', 'survey view', 'Participation rate, young', 'Participation rate, old']
-regression_results = np.empty((N, n_phi, n_horizon, len(var_names), n_report))
-var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix, parti_young_matrix, parti_old_matrix]
+# var_names = ['Participation rate', 'Belief dispersion', 'survey view', 'Participation rate, young', 'Participation rate, old']
+var_names = ['Participation rate', 'Belief dispersion', 'survey view']
+phi_indeces = [0, 4, 8]
+n_phi_short = len(phi_indeces)
+regression_results_uni = np.empty((N, n_scenarios, n_phi_short, n_horizon, len(var_names), n_report))
+# var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix, parti_young_matrix, parti_old_matrix]
+var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix]
 
 # predictive regression of stock returns on pariticipation rate
 for i in range(N):
-    for j in range(n_phi):
-        excess_return_vector = np.cumsum(dR_matrix[i, j, 1: ] - r_matrix[i, j, :-1] * dt)
-        popu_parti_vector = popu_parti_matrix[i, j, :-1]
-        belief_dispersion_vector = belief_dispersion_matrix[i, j, :-1]
-        x_list = [popu_parti_vector, belief_dispersion_vector]
-        for k, horizon in enumerate(horizons):
-            y_horizon1 = (excess_return_vector[horizon:] - excess_return_vector[: -horizon]) / (dt * horizon)  # make sure the timing alligns
-            y_horizon = y_horizon1.reshape(-1, 1)
-            for l, x_horizon_raw in enumerate(x_list):
-                x_horizon1 = x_horizon_raw[: -horizon]
-                x_horizon1 = x_horizon1 / np.std(x_horizon1)
-                x_horizon1 = x_horizon1.reshape(-1, 1)
-                x_horizon = sm.add_constant(x_horizon1)
+    for j in range(n_scenarios):
+        for k, phi_index in enumerate(phi_indeces):
+            excess_return_vector = np.cumsum(dR_matrix[i, j, phi_index, 1:] - r_matrix[i, j, phi_index, :-1] * dt)
+            x_list = []
+            for var in var_list:
+                var_vector = var[i, j, phi_index, :-1]
+                x_list.append(var_vector)
+            for l, horizon in enumerate(horizons):
+                y_horizon1 = (excess_return_vector[horizon:] - excess_return_vector[: -horizon]) / (
+                            dt * horizon)  # make sure the timings allign
+                y_horizon = y_horizon1.reshape(-1, 1)
+                for m, x_horizon_raw in enumerate(x_list):
+                    if scenarios[j][0] == 'complete' and var == popu_parti_matrix:
+                        regression_results_uni[i, j, k, l, m, 0] = est.params[1]
+                        regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
+                        regression_results_uni[i, j, k, l, m, 2] = est.rsquared
+                    x_horizon1 = x_horizon_raw[: -horizon]
+                    x_horizon1 = x_horizon1 / np.std(x_horizon1)
+                    x_horizon1 = x_horizon1.reshape(-1, 1)
+                    x_horizon = sm.add_constant(x_horizon1)
+
+                    model = sm.OLS(y_horizon, x_horizon)
+                    est = model.fit()
+                    regression_results_uni[i, j, k, l, m, 0] = est.params[1]
+                    regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
+                    regression_results_uni[i, j, k, l, m, 2] = est.rsquared
 
 
-                model = sm.OLS(y_horizon, x_horizon)
-                est = model.fit()
-                regression_results[i, j, k, l, 0] = est.params[1]
-                regression_results[i, j, k, l, 1] = est.tvalues[1]
-                regression_results[i, j, k, l, 2] = est.rsquared
-
-mean_regression_results = np.mean(regression_results, axis=0)
+mean_regression_results = np.mean(regression_results_uni, axis=0)
 header = ['(1) phi = 0', '(2) phi = 0.4', '(3) phi = 0.8']
 # present the regression results in tables:
 
-for j, var in enumerate(var_names):
-    for i, horizon in enumerate(horizons):
-        reg_data = np.empty((n_report, n_phi))
-        for k in range(n_phi):
-            reg_data[:, k] = mean_regression_results[k, i, j]
-        report1 = [var, 't-stats', 'R-sqrd']
-        print(var, ', ' + str(horizon) + ' months')
-        print(tabulate.tabulate(reg_data, headers=header, showindex=report1, floatfmt=".4f", tablefmt='fancy_grid'))
+for k, scenario in enumerate(scenarios):
+    label_scenario = scenario[0] if scenario[0] == 'complete' else scenario[0] + scenario[1]
+    print(label_scenario)
+    for j, var in enumerate(var_names):
+        for i, horizon in enumerate(horizons):
+            reg_data = np.empty((n_report, n_phi))
+            for l in range(n_phi):
+                reg_data[:, l] = mean_regression_results[k, l, i, j]
+            report1 = [var, 't-stats', 'R-sqrd']
+            print(var, ', ' + str(horizon) + ' months')
+            print(tabulate.tabulate(reg_data, headers=header, showindex=report1, floatfmt=".4f", tablefmt='fancy_grid'))
+
 
 
 
