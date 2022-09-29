@@ -16,9 +16,11 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tabulate
 
+
+# todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
 # todo: remove variables that are never used, to save space
 # different scenarios
-N = 50  # for smaller number of paths
+N = 100  # for smaller number of paths
 
 n_scenarios = 3
 scenarios_short = scenarios[:n_scenarios]
@@ -42,7 +44,7 @@ r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 belief_dispersion_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-f_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
@@ -341,23 +343,26 @@ for i, market_matrix in enumerate(market_matrix_list):
 # ######################################
 
 # N, n_scenarios, n_phi, Nt
-var_list = [r_matrix, theta_matrix, delta_bar_matrix, popu_parti_matrix, belief_dispersion_matrix]
+var_list = [r_matrix, theta_matrix, delta_bar_matrix, f_parti_1_matrix, popu_parti_matrix, belief_dispersion_matrix]
 var_name_list = ['interest rate', 'market price of risk',
-                 'consumption-weighted estimation error of participants',
+                 'consumption-weighted estimation error of participants', 'consumption share of participants',
                  'participation rate', 'belief dispersion']
 type_list = ['mean', 'vola', 'scaled vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 x = phi_vector
 
-for i, var in enumerate(var_list):
+for i, variable in enumerate(var_list):
     var_name = var_name_list[i]
-    y_mean_mat = np.mean(var, axis=3)
-    y_std_mat = np.std(var, axis=3)  # shape = N * n_scenarios * n_phi
+    y_mean_mat = np.mean(variable, axis=3)
+    y_std_mat = np.std(variable, axis=3)  # shape = N * n_scenarios * n_phi
     y_mean = np.mean(y_mean_mat, axis=0)
     y_std = np.mean(y_std_mat, axis=0)  # shape = n_scenarios * n_phi
     y_std_mean = y_std / abs(y_mean)
-    y_list = [y_mean, y_std, y_std_mean]
+    if i<= 4:
+        y_list = [y_mean, y_std, y_std_mean]
+    else:
+        y_list = [y_mean]
     for j, y in enumerate(y_list):
         type = type_list[j]
         fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
@@ -370,9 +375,50 @@ for i, var in enumerate(var_list):
         ax.set_ylabel(var_name)
         ax.set_xlabel('phi')
         ax.legend()
-        plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
+        #plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
         plt.show()
-        plt.close()
+        #plt.close()
+
+
+# decomposition of variance for theta:
+theta_vola = np.mean(np.var(theta_matrix, axis=3), axis=0)   # shape = n_scenarios * n_phi
+delta_bar_vola = np.mean(np.var((sigma_Y - delta_bar_matrix), axis=3), axis=0)
+f_parti_1_vola = np.mean(np.var(f_parti_1_matrix, axis=3), axis=0)
+cov_fparti_deltabar_matrix = np.empty((N, n_scenarios, n_phi))
+for i in range(N):
+    for j in range(n_scenarios):
+        for k in range(n_phi):
+            delta_bar = delta_bar_matrix[i, j, k]
+            f_parti1 = f_parti_1_matrix[i, j, k]
+            cova = np.cov(delta_bar, f_parti1)
+            cov_fparti_deltabar_matrix[i, j, k] = cova[0,1] * -2
+cov_fparti_deltabar = np.mean(cov_fparti_deltabar_matrix, axis=0)
+
+for i in range(1, 3, 1):
+    scenario = scenarios[i]
+    label_i = scenario[0] + '_' + scenario[1]
+    fig, axs = plt.subplots(nrows=2, ncols=2, sharey='all', sharex='all', figsize=(20, 20))
+    axs[0,0].set_title('market price of risk')
+    axs[0,0].plot(phi_vector, theta_vola[i], label=label_i)
+    axs[0,0].plot(phi_vector, theta_vola[0], label='complete', linestyle='--')
+    axs[0,0].legend()
+
+    axs[0,1].set_title('consumption-weighted estimation error of participants')
+    axs[0,1].plot(phi_vector, delta_bar_vola[i], label=label_i)
+
+    axs[1,0].set_title('consumption share of participants')
+    axs[1,0].plot(phi_vector, f_parti_1_vola[i], label=label_i)
+
+    axs[1,1].set_title('covariance')
+    axs[1,1].plot(phi_vector, cov_fparti_deltabar[i], label=label_i)
+    plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
+    fig.supxlabel('phi')
+    fig.supylabel('variance')
+    #plt.savefig('Variance decomposition, market price of risk ' + label_i+ ' .png', dpi=500, format="png")
+    plt.show()
+    #plt.close()
+
+
 
 
 # ######################################

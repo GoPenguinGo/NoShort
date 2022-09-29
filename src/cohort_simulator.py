@@ -115,8 +115,8 @@ def simulate_cohorts_SI(
     dR = np.zeros(Nt)  # stores stock returns
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
-    f_parti = np.zeros((Nt))  # consumption share of the stock market participants
-    Delta_bar_parti = np.zeros((Nt))  # disagreement of the stock market participants
+    Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
+    Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
     parti = np.zeros((Nt))  # participation rate
 
     # upperbound = np.arange(10,55,5)
@@ -332,8 +332,8 @@ def simulate_cohorts_SI(
             d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
@@ -387,8 +387,8 @@ def simulate_cohorts_SI(
 
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
@@ -413,7 +413,7 @@ def simulate_cohorts_SI(
         f[i, :] = f_st
         Delta[i, :] = Delta_s_t
         # max[i, :] = d_eta_st
-        f_parti[i] = f_parti_t
+        Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         pi[i, :] = pi_st
         parti[i] = popu_parti_t
@@ -433,7 +433,7 @@ def simulate_cohorts_SI(
         # max,
         pi,
         parti,
-        f_parti,
+        Phi_parti,
         Delta_bar_parti,
         dR,
         w,
