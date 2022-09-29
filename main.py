@@ -379,24 +379,24 @@ for i, variable in enumerate(var_list):
         ax.set_ylabel(var_name)
         ax.set_xlabel('phi')
         ax.legend()
-        #plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
+        plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
         plt.show()
-        #plt.close()
+        plt.close()
 
 
 # decomposition of variance for theta:
 theta_vola = np.mean(np.var(theta_matrix, axis=3), axis=0)   # shape = n_scenarios * n_phi
-delta_bar_vola = np.mean(np.var((sigma_Y - delta_bar_matrix), axis=3), axis=0)
-Phi_parti_1_vola = np.mean(np.var(Phi_parti_1_matrix, axis=3), axis=0)
-cov_fparti_deltabar_matrix = np.empty((N, n_scenarios, n_phi))
+delta_bar_vola = np.mean(np.var((delta_bar_matrix), axis=3), axis=0)
+Phi_parti_1_vola = sigma_Y_sqr * np.mean(np.var(Phi_parti_1_matrix, axis=3), axis=0)
+cov_Phiparti_deltabar_matrix = np.empty((N, n_scenarios, n_phi))
 for i in range(N):
     for j in range(n_scenarios):
         for k in range(n_phi):
             delta_bar = delta_bar_matrix[i, j, k]
             Phi_parti1 = Phi_parti_1_matrix[i, j, k]
             cova = np.cov(delta_bar, Phi_parti1)
-            cov_Phiparti_deltabar_matrix[i, j, k] = cova[0,1] * -2
-cov_fparti_deltabar = np.mean(cov_Phiparti_deltabar_matrix, axis=0)
+            cov_Phiparti_deltabar_matrix[i, j, k] = cova[0,1] * -2 * sigma_Y
+cov_Phiparti_deltabar = np.mean(cov_Phiparti_deltabar_matrix, axis=0)
 
 for i in range(1, 3, 1):
     scenario = scenarios[i]
@@ -414,7 +414,7 @@ for i in range(1, 3, 1):
     axs[1,0].plot(phi_vector, Phi_parti_1_vola[i], label=label_i)
 
     axs[1,1].set_title('covariance')
-    axs[1,1].plot(phi_vector, cov_fparti_deltabar[i], label=label_i)
+    axs[1,1].plot(phi_vector, cov_Phiparti_deltabar[i], label=label_i)
     plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
     fig.supxlabel('phi')
     fig.supylabel('variance')

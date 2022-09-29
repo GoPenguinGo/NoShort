@@ -407,6 +407,7 @@ def simulate_cohorts_SI(
         mu_S_t = sigma_S * theta_t + r_t
 
         # store the results
+        # storing the values takes a lot of time
         dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
