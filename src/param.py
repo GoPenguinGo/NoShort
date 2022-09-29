@@ -74,7 +74,7 @@ modes_learn = ['keep', 'drop']
 scenarios = []
 for mode_trade in modes_trade:
     if mode_trade == 'complete':
-        scenarios.append([mode_trade, mode_learn])
+        scenarios.append([mode_trade, 'keep'])
     else:
         for mode_learn in modes_learn:
             scenarios.append([mode_trade, mode_learn])
