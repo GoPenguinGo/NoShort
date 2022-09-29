@@ -44,7 +44,7 @@ r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 belief_dispersion_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
@@ -56,8 +56,12 @@ for j in range(N):
     dZ_SI = dZ_SI_matrix[j]
     dZ_SI_build = dZ_SI_build_matrix[j]
     for k, scenario in enumerate(scenarios_short):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
+        if scenario == 'complete':
+            mode_trade = scenario
+            mode_learn = 'keep'
+        else:
+            mode_trade = scenario[0]
+            mode_learn = scenario[1]
         for l, phi in enumerate(phi_vector):
             (
                 r,
@@ -90,7 +94,7 @@ for j in range(N):
             belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
             dR_matrix[j, k, l] = dR
             # invest_tracker_matrix[j, k, l] = invest_tracker
-            f_parti_1_matrix[j, k, l] = 1/f_parti
+            Phi_parti_1_matrix[j, k, l] = 1/f_parti
             parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
             parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
             # ( parti_young + parti_old )/2 = popu_parti
@@ -343,7 +347,7 @@ for i, market_matrix in enumerate(market_matrix_list):
 # ######################################
 
 # N, n_scenarios, n_phi, Nt
-var_list = [r_matrix, theta_matrix, delta_bar_matrix, f_parti_1_matrix, popu_parti_matrix, belief_dispersion_matrix]
+var_list = [r_matrix, theta_matrix, delta_bar_matrix, Phi_parti_1_matrix, popu_parti_matrix, belief_dispersion_matrix]
 var_name_list = ['interest rate', 'market price of risk',
                  'consumption-weighted estimation error of participants', 'consumption share of participants',
                  'participation rate', 'belief dispersion']
@@ -383,16 +387,16 @@ for i, variable in enumerate(var_list):
 # decomposition of variance for theta:
 theta_vola = np.mean(np.var(theta_matrix, axis=3), axis=0)   # shape = n_scenarios * n_phi
 delta_bar_vola = np.mean(np.var((sigma_Y - delta_bar_matrix), axis=3), axis=0)
-f_parti_1_vola = np.mean(np.var(f_parti_1_matrix, axis=3), axis=0)
+Phi_parti_1_vola = np.mean(np.var(Phi_parti_1_matrix, axis=3), axis=0)
 cov_fparti_deltabar_matrix = np.empty((N, n_scenarios, n_phi))
 for i in range(N):
     for j in range(n_scenarios):
         for k in range(n_phi):
             delta_bar = delta_bar_matrix[i, j, k]
-            f_parti1 = f_parti_1_matrix[i, j, k]
-            cova = np.cov(delta_bar, f_parti1)
-            cov_fparti_deltabar_matrix[i, j, k] = cova[0,1] * -2
-cov_fparti_deltabar = np.mean(cov_fparti_deltabar_matrix, axis=0)
+            Phi_parti1 = Phi_parti_1_matrix[i, j, k]
+            cova = np.cov(delta_bar, Phi_parti1)
+            cov_Phiparti_deltabar_matrix[i, j, k] = cova[0,1] * -2
+cov_fparti_deltabar = np.mean(cov_Phiparti_deltabar_matrix, axis=0)
 
 for i in range(1, 3, 1):
     scenario = scenarios[i]
@@ -407,7 +411,7 @@ for i in range(1, 3, 1):
     axs[0,1].plot(phi_vector, delta_bar_vola[i], label=label_i)
 
     axs[1,0].set_title('consumption share of participants')
-    axs[1,0].plot(phi_vector, f_parti_1_vola[i], label=label_i)
+    axs[1,0].plot(phi_vector, Phi_parti_1_vola[i], label=label_i)
 
     axs[1,1].set_title('covariance')
     axs[1,1].plot(phi_vector, cov_fparti_deltabar[i], label=label_i)
