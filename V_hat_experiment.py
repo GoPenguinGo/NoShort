@@ -40,7 +40,7 @@ popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups
 belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups, 2))
 wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups, 2))
 
-
+# write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
     print(l)
     dZ = dZ_matrix[l]
@@ -49,12 +49,8 @@ for l in range(N):
     dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
     for m, scenario in enumerate(scenarios_short):
-        if scenario == 'complete':
-            mode_trade = scenario
-            mode_learn = 'keep'
-        else:
-            mode_trade = scenario[0]
-            mode_learn = scenario[1]
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
         for n, phi in enumerate(phi_vector):
             for o, T_hat in enumerate(T_hats):
                 Npre = int(Npres[o])
@@ -90,31 +86,30 @@ for l in range(N):
                 Delta_bar_parti_matrix[l, m, n, o, 1] = np.std(Delta_bar_parti)
                 Phi_parti_matrix[l, m, n, o, 0] = np.mean(Phi_parti)
                 Phi_parti_matrix[l, m, n, o, 1] = np.std(Phi_parti)
-                invest = (pi > 0)  # todo: change this
-                parti_rate = invest * cohort_size
+                parti_rate = invest_tracker * cohort_size
 
                 belief = (Delta * sigma_Y + mu_Y)
                 belief_weights = f * dt
 
                 for i in range(4):
                     popu_age_matrix[l, m, n, o, i, 0] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
-                    popu_age_matrix[l, m, n, o, i, 1] = np.std(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+                    # popu_age_matrix[l, m, n, o, i, 1] = np.std(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
 
                     belief_age_matrix[l, m, n, o, i, 0] = np.mean(
                         np.average(
                             belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
                         ))
-                    belief_age_matrix[l, m, n, o, i, 1] = np.std(
-                        np.average(
-                            belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
-                        ))
+                    # belief_age_matrix[l, m, n, o, i, 1] = np.std(
+                    #     np.average(
+                    #         belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
+                    #     ))
 
                     wealthshare_age_matrix[l, m, n, o, i, 0] = np.mean(
                         np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
                     )
-                    wealthshare_age_matrix[l, m, n, o, i, 1] = np.std(
-                        np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-                    )
+                    # wealthshare_age_matrix[l, m, n, o, i, 1] = np.std(
+                    #     np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+                    # )
 
     print(time.time() - time_s)
 
@@ -147,57 +142,56 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                 ax.set_xlabel('initial window (months)')
                 ax.legend()
                 mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-                # plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
-                #             dpi=500, format="png")
+                plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
+                             dpi=500, format="png")
                 plt.show()
-                # plt.close()
+                plt.close()
 
-        # elif i == 4:
-        #     for l, phi in enumerate(phi_vector):
-        #         fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
-        #         y = y_mat[j, l, :, :, 0]
-        #         for m in range(n_age_groups):
-        #             y_age_group = y[:, m]
-        #             if m == 0:
-        #                 ax.fill_between(x, y_age_group, color=colors[m], linewidth=0.4,
-        #                                 label=age_labels[m])
-        #             else:
-        #                 y_age_group_1 = y[:, m - 1]
-        #                 ax.fill_between(x, y_age_group, y_age_group_1, color=colors[m], linewidth=0.4,
-        #                                 label=age_labels[m])
-        #         plt.legend()
-        #         ax.set_ylabel(var_name)
-        #         ax.set_xlabel('initial window (months)')
-        #         ax.legend()
-        #         mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-        #         plt.savefig('mean initial window and ' + var_name + '_' + mode_label + '_' + str(
-        #             round(phi, 2)) + '.png',
-        #                     dpi=500, format="png")
-        #         plt.show()
-        #         plt.close()
-        #
-        #
-        # else:
-        #     for k, type in enumerate(type_list):
-        #         for l, phi in enumerate(phi_vector):
-        #             fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
-        #             y = y_mat[j, l, :, :, k]
-        #             for m in range(n_age_groups):
-        #                 y_age_group = y[:, m]
-        #                 if m == 0:
-        #                     ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
-        #                                     label=age_labels[m])
-        #                 else:
-        #                     y_age_group_1 = y[:, m - 1]
-        #                     ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
-        #                                     label=age_labels[m])
-        #             plt.legend()
-        #             ax.set_ylabel(var_name)
-        #             ax.set_xlabel('initial window (months)')
-        #             ax.legend()
-        #             mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-        #             plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
-        #                         dpi=500, format="png")
-        #             plt.show()
-        #             plt.close()
+        elif i == 4:
+            for l, phi in enumerate(phi_vector):
+                fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
+                y = y_mat[j, l, :, :, 0]
+                for m in range(n_age_groups):
+                    y_age_group = y[:, m]
+                    if m == 0:
+                        ax.fill_between(x, y_age_group, color=colors[m], linewidth=0.4,
+                                        label=age_labels[m])
+                    else:
+                        y_age_group_1 = y[:, m - 1]
+                        ax.fill_between(x, y_age_group, y_age_group_1, color=colors[m], linewidth=0.4,
+                                        label=age_labels[m])
+                plt.legend()
+                ax.set_ylabel(var_name)
+                ax.set_xlabel('initial window (months)')
+                ax.legend()
+                mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
+                plt.savefig('mean initial window and ' + var_name + '_' + mode_label + '_' + str(
+                    round(phi, 2)) + '.png',
+                            dpi=500, format="png")
+                plt.show()
+                plt.close()
+
+        else:
+            for k, type in enumerate(type_list):
+                for l, phi in enumerate(phi_vector):
+                    fig, ax = plt.subplots()  # consider include Vhat in the graphs on the LHS axis
+                    y = y_mat[j, l, :, :, k]
+                    for m in range(n_age_groups):
+                        y_age_group = y[:, m]
+                        if m == 0:
+                            ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
+                                            label=age_labels[m])
+                        else:
+                            y_age_group_1 = y[:, m - 1]
+                            ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
+                                            label=age_labels[m])
+                    plt.legend()
+                    ax.set_ylabel(var_name)
+                    ax.set_xlabel('initial window (months)')
+                    ax.legend()
+                    mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
+                    plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
+                                dpi=500, format="png")
+                    plt.show()
+                    plt.close()
 
