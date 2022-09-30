@@ -30,8 +30,9 @@ n_phi = len(phi_vector)
 
 age_cutoff = cutoffs[2]
 
-index_Z_Ys = [9, 3]  # indices of a good and a bad shock for Z^Y
-index_Z_SIs = [0, 10]  # indices of a good and a bad shock for Z^SI
+# todo: save the two paths and read directly, instead of using the index
+# index_Z_Ys = [9, 3]  # indices of a good and a bad shock for Z^Y
+# index_Z_SIs = [0, 10]  # indices of a good and a bad shock for Z^SI
 
 theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
 popu_parti_matrix = np.empty((N, n_scenarios, n_phi, Nt))
@@ -468,8 +469,8 @@ for i in range(n_phi_short):
 labels = [label_phi, label_scenarios, label_phi]
 lower = min(np.min(y1), np.min(y2))
 upper = max(np.max(y1), np.max(y2))
-
-fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 12))
+colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
+fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 15))
 for j, ax in enumerate(axes):
     Z = np.cumsum(dZ_matrix[index_Z_Ys[red_index]])
     Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SIs[yellow_index]])
@@ -486,69 +487,30 @@ for j, ax in enumerate(axes):
     ax2.set_ylabel(y_title, color=colors[4])
     for i in range(n_lines[j]):
         y = y_vec[i]  # Nt
-        color_i = colors[i] if j == 1 else colors_short[i]
+        color_i = colors_short2[i] if j == 1 else colors_short[i]
         ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)
     if i<2:
         ax2.set_ylim(lower, upper)
-    ax.legend()
-    ax2.legend()
+    if j==0:
+        ax.legend(loc='upper left')
+    ax2.legend(loc='upper right')
     ax.set_title(y_title)
 fig.tight_layout(h_pad=2)
-#plt.savefig('r and theta, Bad Z^Y, Bad Z^SI.png', dpi=500)
+plt.savefig('r and theta, Bad Z^Y, Bad Z^SI.png', dpi=500)
 plt.show()
 #plt.close()
 
 
 
 
+# ######################################
+# ############# Figure 4.2 #############
+# ######################################
+# time-series of interest rate and market price of risk, good z^Y, bad z&SI
+# 4.1.1 interest rate across different phi values, keep
+# 4.1.2 interest rate across different scenarios, phi = 0
+# 4.1.3 market price of risk across different phi values, keep
 
-    red_index = 0 if j == 0 or j == 1 else 1
-    yellow_index = 0 if j == 0 or j == 2 else 1
-    red_case = red_cases[red_index]
-    yellow_case = yellow_cases[yellow_index]
-    Z = np.cumsum(dZ_matrix[index_Z_Ys[red_index]])
-    Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SIs[yellow_index]])
-    if j == 3:
-        ax.set_xlabel('Time in simulation, one random path')
-    ax.set_ylabel('Zt', color=colors[4])
-    ax.plot(t, Z, color=colors[8], linewidth=0.5, label='Z^Y_t')
-    ax.plot(t, Z_SI, color=colors[6], linewidth=0.5, label='Z^SI_t')
-    ax.set_ylim([lower, upper])
-    ax.tick_params(axis='y', labelcolor=colors[4])
-    if j == 0:
-        ax.legend()
-    ax.set_title(red_case + yellow_case)
-
-    ax2 = ax.twinx()
-    ax2.set_ylabel(var_y_labels[1], color=colors[4])
-    ax2.set_ylim([-0.3, 0.7])
-    for m in range(nn):
-        # switch[m, starts[m]] = 1
-        y_cohort = Delta_time_series[scenario_index, red_index, yellow_index, i, m]
-        # y_cohort_N = np.ma.masked_where(parti_time_series[0] == 1, y_cohort)
-        # y_cohort_P = np.ma.masked_where(parti_time_series[0] == 0, y_cohort)
-        y_cohort_switch = np.ma.masked_where(switch_time_series[scenario_index, red_index, yellow_index, i, m] == 0,
-                                             y_cohort)
-        plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
-        ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-        # ax2.plot(t, y_cohort_P, label=cohort_labels[m], color=colors[m], linewidth=0.4)
-        # ax2.plot(t, y_cohort_N, color=colors[m], linewidth=0.4, linestyle='dotted')
-        # if i == 1:
-        #     ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
-        if m == 0:
-            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='state switch')
-        else:
-            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-    ax2.tick_params(axis='y', labelcolor=colors[4])
-    if j == 0:
-        ax2.legend()
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig(
-    'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
-    dpi=300)
-plt.show()
-# plt.close()
 
 
 # ######################################

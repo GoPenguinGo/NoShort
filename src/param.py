@@ -62,10 +62,16 @@ Npres_a = np.arange(1, 13, 1)
 Npres_b = np.arange(24, 241, 12)
 Npres = np.append(Npres_a, Npres_b)
 
+
+# todo: can endogenize
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
 dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
 dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
+
+# the shocks in the time-series
+Z_Y_cases = np.load('Z_Y_cases.npy')
+Z_SI_cases = np.load('Z_SI_cases.npy')
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
