@@ -67,7 +67,6 @@ for l in range(N):
                     Phi_parti,
                     Delta_bar_parti,
                     dR,
-                    w,
                     invest_tracker
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                                 phi,
