@@ -254,8 +254,8 @@ def simulate_cohorts_SI(
             d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
