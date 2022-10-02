@@ -306,10 +306,6 @@ for o in range(n_scenarios):
 
 
 
-
-
-
-
 # ######################################
 # ########### Figure 1 & 2 #############
 # ######################################
@@ -391,7 +387,8 @@ t_indexes = np.empty((2,2,2))
 # condition_matrix = parti_time_series[:,0,1]
 # switch_matrix = switch_time_series[:,0,1]
 
-
+red_case = 1
+yellow_case = 0
 t_indexes[0, 0, 0] = t_indexes[1, 0, 0] = t_indexes[1, 1, 0] = t_length * 3
 t_indexes[0, 0, 1] = t_indexes[1, 0, 1] = t_indexes[1, 1, 1] = t_length * 4
 t_indexes[0, 1, 0] = t_length
@@ -400,10 +397,10 @@ phi_where = [(1, 1), (1, 1)]
 cohort_indexes = [(2, 0), (2, 2)]
 scenario_indexs = [(1, 1), (0, 2)]
 titles_subfig = [('Cohort 3', 'Cohort 1'), ('Cohort 3, complete market', 'Cohort 3, drop')]
-y_interest = Delta_time_series[:,1,1]  # n_scenarios, n_phi_short, nn, length
-condition_matrix = parti_time_series[:,1,1]
-switch_matrix = switch_time_series[:,1,1]
-
+y_interest = Delta_time_series[:, red_case, yellow_case]  # n_scenarios, n_phi_short, nn, length
+condition_matrix = parti_time_series[:, red_case, yellow_case]
+switch_matrix = switch_time_series[:, red_case, yellow_case]
+theta = theta_compare[:, red_case, yellow_case]  # n_scenarios, 2, 2, n_phi_short, Nt
 fig, axes = plt.subplots(nrows=2, ncols=2, sharey='all', figsize=(10, 10))
 # fig.suptitle('Good Z^Y, Bad Z^SI')
 for i, ax_row in enumerate(axes):
@@ -417,6 +414,7 @@ for i, ax_row in enumerate(axes):
         y = y_interest[scenario_index, phi_index, cohort_index, left:right]
         condition = condition_matrix[scenario_index, phi_index, cohort_index, left:right]
         switch = switch_matrix[scenario_index, phi_index, cohort_index, left:right]
+        cutoff_belief = -theta[scenario_index, phi_index, left:right]
         y_N = np.ma.masked_where(condition >= 0.8, y)
         y_P = np.ma.masked_where(condition <= 0.2, y)
         # y_N = np.ma.masked_where(condition >= 0.05, y)
@@ -424,10 +422,11 @@ for i, ax_row in enumerate(axes):
         y_switch = np.ma.masked_where(switch == 0, y)
         # ax.plot(x, y, label=cohort_labels[cohort_index], color='black', linewidth=0.4)
         if i == 1 and j == 0:
-            ax.plot(x, y, color='black', linewidth=0.4)
+            ax.plot(x, y, color='black', linewidth=0.6)
         else:
-            ax.plot(x, y_P, label='P', color='black', linewidth=0.4)
-            ax.plot(x, y_N, label='N', color='black', linewidth=0.4, linestyle='dotted')
+            ax.plot(x, cutoff_belief, label='cutoff Delta', color='blue', alpha=0.6, linewidth=0.4)
+            ax.plot(x, y_P, label='P', color='black', linewidth=0.6)
+            ax.plot(x, y_N, label='N', color='black', linewidth=0.6, linestyle='dotted')
             # ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
             ax.scatter(x, y_switch, color='red', s=10, marker='o', label='state switch')
         if i == j == 0:
@@ -439,9 +438,9 @@ for i, ax_row in enumerate(axes):
         ax.set_title(titles_subfig[i][j])
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Delta, zoom in, Bad Z^Y, Bad Z^SI.png', dpi=500)
+plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
 plt.show()
-plt.close()
+#plt.close()
 
 
 
@@ -456,24 +455,24 @@ red_index = 1
 yellow_index = 1
 r_mat = r_compare[:, red_index, yellow_index]  # n_scenarios, n_phi_short, Nt
 theta_mat = theta_compare[:, red_index, yellow_index]
-y1 = r_mat[1]  # n_phi_short, Nt
-y2 = r_mat[:,0]  # n_scenarios, Nt
+y1 = r_mat[:,0]  # n_phi_short, Nt
+y2 = r_mat[1]  # n_scenarios, Nt
 y3 = theta_mat[1]  # n_phi_short, Nt
 y_list = [y1, y2, y3]
 Z = np.cumsum(Z_Y_cases[red_index])
 Z_SI = np.cumsum(Z_SI_cases[yellow_index])
-n_lines = [n_phi_short, n_scenarios, n_phi_short]
+n_lines = [n_scenarios, n_phi_short, n_phi_short]
 y_title_list = ['Interest rate', 'Interest rate', 'Market price of risk']
 
 label_phi = []
 for i in range(n_phi_short):
     label_phi.append('phi = ' + str(phi_vector_short[i]))
-labels = [label_phi, scenario_labels, label_phi]
+labels = [scenario_labels, label_phi, label_phi]
 lower = min(np.min(y1), np.min(y2))
 upper = max(np.max(y1), np.max(y2))
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
-fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 15))
 
+fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 15))
 for j, ax in enumerate(axes):
     ax.set_ylabel('Zt', color=colors[4])
     ax.plot(t, Z, color=colors[8], linewidth=0.5, label='Z^Y_t')
@@ -488,7 +487,7 @@ for j, ax in enumerate(axes):
     ax2.set_ylabel(y_title, color=colors[4])
     for i in range(n_lines[j]):
         y = y_vec[i]  # Nt
-        color_i = colors_short2[i] if j == 1 else colors_short[i]
+        color_i = colors_short2[i] if j == 0 else colors_short[i]
         ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)
     if i<2:
         ax2.set_ylim(lower, upper)
@@ -497,7 +496,7 @@ for j, ax in enumerate(axes):
     ax2.legend(loc='upper right')
     ax.set_title(y_title)
 fig.tight_layout(h_pad=2)
-plt.savefig('r and theta, Bad Z^Y, Bad Z^SI.png', dpi=500)
+plt.savefig('r and theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=500)
 plt.show()
 plt.close()
 
@@ -649,31 +648,31 @@ for g, scenario in enumerate(scenarios_short):
         log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
         for j in range(2):
             dZ_SI = Z_SI_cases[j]
-            if i == 1 and j == 1:
-                for k, tax_try in enumerate(tax_vector):
-                    for l, phi in enumerate(phi_vector_short):
-                        (
-                            r,
-                            theta,
-                            f,
-                            Delta,
-                            pi,
-                            popu_parti,
-                            Phi_parti,
-                            Delta_bar_parti,
-                            dR,
-                            invest_tracker
-                        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
-                                        tax_try,
-                                        beta,
-                                        phi,
-                                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                        top=0.05,
-                                        old_limit=100
-                                        )
-                        # invest_tracker = pi > 0
-                        cons_compare_tau[g, i, j, k, l] = log_Yt_mat + np.log(f / cohort_size_mat)
-                        pi_compare_tau[g, i, j, k, l] = pi
+            for k, tax_try in enumerate(tax_vector):
+                for l, phi in enumerate(phi_vector_short):
+                    (
+                        r,
+                        theta,
+                        f,
+                        Delta,
+                        pi,
+                        popu_parti,
+                        Phi_parti,
+                        Delta_bar_parti,
+                        dR,
+                        invest_tracker
+                    ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+                                    tax_try,
+                                    beta,
+                                    phi,
+                                    Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                    top=0.05,
+                                    old_limit=100
+                                    )
+                    # invest_tracker = pi > 0
+                    cons_compare_tau[g, i, j, k, l] = f / cohort_size_mat
+                    pi_compare_tau[g, i, j, k, l] = pi
+
 
 pi_time_series_tau = np.zeros((n_scenarios, 2, 2, n_tax, n_phi_short, nn, length))
 log_cons_time_series_tau = np.zeros((n_scenarios, 2, 2, n_tax, n_phi_short, nn, length))
@@ -761,87 +760,87 @@ plt.show()
 
 
 
-
-# ######################################
-# ############ GRAPH TWO ###############
-# ######################################
-market_matrix_list = [theta_compare, r_compare, popu_parti_compare, survey_view_compare, market_view_compare, delta_bar_compare, belief_dispersion_compare]
-y_title_list = ['Market price of risk', 'Interest rate', 'Participation rate', 'Survey view', 'Market view', 'Market view_parti', 'Belief dispersion']
-
-# Graphs for the short-sale constraint case, comparing different phi values
-for i, market_matrix in enumerate(market_matrix_list):
-    y_title = y_title_list[i]
-    for j, index_Z_Y in enumerate(index_Z_Ys):
-        Z = np.cumsum(dZ_matrix[index_Z_Y])
-        red_case = red_cases[j]
-        for k, index_Z_SI in enumerate(index_Z_SIs):
-            Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
-            yellow_case = yellow_cases[k]
-            y = market_matrix[1, j, k]
-
-            fig, ax1 = plt.subplots(figsize=(15, 5))
-            ax1.set_xlabel('Time in simulation, one random path')
-            ax1.set_ylabel('Zt', color=color5)
-            ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
-            ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
-            ax1.tick_params(axis='y', labelcolor=color5)
-            ax2 = ax1.twinx()
-            ax2.set_ylabel(y_title, color=color2)
-            lower = np.nanmin(market_matrix)
-            upper = np.nanmax(market_matrix)
-            ax2.set_ylim([lower, upper])
-
-            for i in range(n_phi):
-                label_i = 'phi = ' + str(round(phi_vector[i], 2))
-                yy = y[i]
-                ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
-            ax2.tick_params(axis='y', labelcolor=color2)
-            plt.legend()
-            # fig.suptitle('Zt and Market Price of Risk')
-            fig.tight_layout()  # otherwise the right y-label is slightly clipped
-            plt.savefig(red_case + yellow_case + ' Zt and ' + y_title + ' different phi'+ '.png', dpi=500)
-            plt.show()
-            plt.close()
-
-# ######################################
-# ########### GRAPH THREE ##############
-# ######################################
-# Comparing with the complete market case:
-y_title_list = ['Market price of risk', 'Interest rate', 'Survey view', 'Market view']
-market_matrix_list = [theta_compare, r_compare, survey_view_compare, market_view_compare]
-label_modes = ['complete market', 'short-sale constraint']
-for i, market_matrix in enumerate(market_matrix_list):
-    y_title = y_title_list[i]
-    for j, index_Z_Y in enumerate(index_Z_Ys):
-        Z = np.cumsum(dZ_matrix[index_Z_Y])
-        red_case = red_cases[j]
-        for k, index_Z_SI in enumerate(index_Z_SIs):
-            Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
-            yellow_case = yellow_cases[k]
-            for l, phi in enumerate(phi_vector):
-                y = market_matrix[:, j, k, l]
-                fig, ax1 = plt.subplots(figsize=(15, 5))
-                ax1.set_xlabel('Time in simulation, one random path')
-                ax1.set_ylabel('Zt', color=color5)
-                ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
-                ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
-                ax1.tick_params(axis='y', labelcolor=color5)
-                ax2 = ax1.twinx()
-                ax2.set_ylabel(y_title, color=color2)
-                lower = np.nanmin(market_matrix)
-                upper = np.nanmax(market_matrix)
-                ax2.set_ylim([lower, upper])
-                for i in range(2):
-                    yy = y[i]
-                    ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_modes[i])
-                ax2.tick_params(axis='y', labelcolor=color2)
-                plt.legend()
-                # fig.suptitle('Zt and Market Price of Risk')
-                fig.tight_layout()  # otherwise the right y-label is slightly clipped
-                plt.savefig(red_case + yellow_case + 'vs complete' +' Zt and ' + y_title + str(round(phi, 2)) + '.png', dpi=500)
-                plt.show()
-                plt.close()
-
+#
+# # ######################################
+# # ############ GRAPH TWO ###############
+# # ######################################
+# market_matrix_list = [theta_compare, r_compare, popu_parti_compare, survey_view_compare, market_view_compare, delta_bar_compare, belief_dispersion_compare]
+# y_title_list = ['Market price of risk', 'Interest rate', 'Participation rate', 'Survey view', 'Market view', 'Market view_parti', 'Belief dispersion']
+#
+# # Graphs for the short-sale constraint case, comparing different phi values
+# for i, market_matrix in enumerate(market_matrix_list):
+#     y_title = y_title_list[i]
+#     for j, index_Z_Y in enumerate(index_Z_Ys):
+#         Z = np.cumsum(dZ_matrix[index_Z_Y])
+#         red_case = red_cases[j]
+#         for k, index_Z_SI in enumerate(index_Z_SIs):
+#             Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
+#             yellow_case = yellow_cases[k]
+#             y = market_matrix[1, j, k]
+#
+#             fig, ax1 = plt.subplots(figsize=(15, 5))
+#             ax1.set_xlabel('Time in simulation, one random path')
+#             ax1.set_ylabel('Zt', color=color5)
+#             ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+#             ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+#             ax1.tick_params(axis='y', labelcolor=color5)
+#             ax2 = ax1.twinx()
+#             ax2.set_ylabel(y_title, color=color2)
+#             lower = np.nanmin(market_matrix)
+#             upper = np.nanmax(market_matrix)
+#             ax2.set_ylim([lower, upper])
+#
+#             for i in range(n_phi):
+#                 label_i = 'phi = ' + str(round(phi_vector[i], 2))
+#                 yy = y[i]
+#                 ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
+#             ax2.tick_params(axis='y', labelcolor=color2)
+#             plt.legend()
+#             # fig.suptitle('Zt and Market Price of Risk')
+#             fig.tight_layout()  # otherwise the right y-label is slightly clipped
+#             plt.savefig(red_case + yellow_case + ' Zt and ' + y_title + ' different phi'+ '.png', dpi=500)
+#             plt.show()
+#             plt.close()
+#
+# # ######################################
+# # ########### GRAPH THREE ##############
+# # ######################################
+# # Comparing with the complete market case:
+# y_title_list = ['Market price of risk', 'Interest rate', 'Survey view', 'Market view']
+# market_matrix_list = [theta_compare, r_compare, survey_view_compare, market_view_compare]
+# label_modes = ['complete market', 'short-sale constraint']
+# for i, market_matrix in enumerate(market_matrix_list):
+#     y_title = y_title_list[i]
+#     for j, index_Z_Y in enumerate(index_Z_Ys):
+#         Z = np.cumsum(dZ_matrix[index_Z_Y])
+#         red_case = red_cases[j]
+#         for k, index_Z_SI in enumerate(index_Z_SIs):
+#             Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
+#             yellow_case = yellow_cases[k]
+#             for l, phi in enumerate(phi_vector):
+#                 y = market_matrix[:, j, k, l]
+#                 fig, ax1 = plt.subplots(figsize=(15, 5))
+#                 ax1.set_xlabel('Time in simulation, one random path')
+#                 ax1.set_ylabel('Zt', color=color5)
+#                 ax1.plot(t, Z, color=color5, linewidth=0.5, label='Z^Y_t')
+#                 ax1.plot(t, Z_SI, color=color6, linewidth=0.5, label='Z^SI_t')
+#                 ax1.tick_params(axis='y', labelcolor=color5)
+#                 ax2 = ax1.twinx()
+#                 ax2.set_ylabel(y_title, color=color2)
+#                 lower = np.nanmin(market_matrix)
+#                 upper = np.nanmax(market_matrix)
+#                 ax2.set_ylim([lower, upper])
+#                 for i in range(2):
+#                     yy = y[i]
+#                     ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_modes[i])
+#                 ax2.tick_params(axis='y', labelcolor=color2)
+#                 plt.legend()
+#                 # fig.suptitle('Zt and Market Price of Risk')
+#                 fig.tight_layout()  # otherwise the right y-label is slightly clipped
+#                 plt.savefig(red_case + yellow_case + 'vs complete' +' Zt and ' + y_title + str(round(phi, 2)) + '.png', dpi=500)
+#                 plt.show()
+#                 plt.close()
+#
 
 
 
@@ -891,8 +890,8 @@ for i, variable in enumerate(var_list):
 
 # decomposition of variance for theta:
 theta_vola = np.mean(np.var(theta_matrix, axis=3), axis=0)   # shape = n_scenarios * n_phi
-delta_bar_vola = np.mean(np.var((delta_bar_matrix), axis=3), axis=0)
-Phi_parti_1_vola = np.mean(np.var(Phi_parti_1_matrix, axis=3), axis=0)
+delta_bar_vola = np.mean(np.var((-delta_bar_matrix), axis=3), axis=0)
+Phi_parti_1_vola = np.mean(np.var(Phi_parti_1_matrix * sigma_Y, axis=3), axis=0)
 cov_Phiparti_deltabar_matrix = np.empty((N, n_scenarios, n_phi))
 for i in range(N):
     for j in range(n_scenarios):
@@ -902,32 +901,30 @@ for i in range(N):
             cova = np.cov(-delta_bar, Phi_parti1 * sigma_Y)
             cov_Phiparti_deltabar_matrix[i, j, k] = cova[0,1]
 cov_Phiparti_deltabar = np.mean(cov_Phiparti_deltabar_matrix, axis=0)
-
-for i in range(1, 3, 1):
-    scenario = scenarios[i]
-    label_i = scenario[0] + '_' + scenario[1]
-    fig, axs = plt.subplots(nrows=2, ncols=2, sharey='all', sharex='all', figsize=(20, 20))
-    axs[0,0].set_title('market price of risk')
-    axs[0,0].plot(phi_vector, theta_vola[i], label=label_i)
-    axs[0,0].plot(phi_vector, theta_vola[0], label='complete', linestyle='--')
-    axs[0,0].legend()
-
-    axs[0,1].set_title('consumption-weighted estimation error of participants')
-    axs[0,1].plot(phi_vector, delta_bar_vola[i], label=label_i)
-
-    axs[1,0].set_title('consumption share of participants')
-    axs[1,0].plot(phi_vector, Phi_parti_1_vola[i], label=label_i)
-
-    axs[1,1].set_title('covariance')
-    axs[1,1].plot(phi_vector, cov_Phiparti_deltabar[i], label=label_i)
-    plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
-    fig.supxlabel('phi')
-    fig.supylabel('variance')
-    #plt.savefig('Variance decomposition, market price of risk ' + label_i+ ' .png', dpi=500, format="png")
-    plt.show()
-    #plt.close()
-
-
+line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
+titles_subfig = ['market price of risk', 'consumption-weighted estimation error of participants', 'consumption share of participants * sigmaY', 'covariance']
+y_list = [theta_vola, delta_bar_vola, Phi_parti_1_vola, cov_Phiparti_deltabar]
+fig, axs = plt.subplots(nrows=2, ncols=2, sharey='all', sharex='all', figsize=(10, 10))
+for j, ax in enumerate(axs.flat):
+    y = y_list[j]
+    ax.set_title(titles_subfig[j])
+    for k in range(n_scenarios):
+        y_sce = y[k]
+        label_i = scenario_labels[k]
+        ax.plot(phi_vector, y_sce, color='black', linewidth=0.7, label=label_i, linestyle=line_styles[k])
+    if j == 0:
+        ax.legend()
+    if j == 0 or j == 2:
+        ax.set_ylabel('Variance')
+    if j == 2 or j == 3:
+        ax.set_xlabel('phi values')
+fig.tight_layout()
+# plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
+# fig.supxlabel('phi')
+# fig.supylabel('variance')
+plt.savefig('Variance decomposition, market price of risk.png', dpi=500, format="png")
+plt.show()
+# plt.close()
 
 
 # ######################################
