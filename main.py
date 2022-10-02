@@ -714,8 +714,9 @@ for o in range(n_scenarios):
                         parti_time_series_tau[o, j, k, i, l, m] = parti
                         switch_time_series_tau[o, j, k, i, l, m] = sw
 
-left_t = 300
-right_t = 400
+cohort_index = 1
+left_t = starts[cohort_index]
+right_t = 500
 red_index = 1
 yellow_index = 1
 Z = np.cumsum(Z_Y_cases[red_index])[int(left_t/dt):int(right_t/dt)]
@@ -731,14 +732,14 @@ for i, ax in enumerate(axes.flat):
     scenario_index = scenario_indexs[i]
     ax.set_title(titles_subfig[i])
     if i == 0 or i == 2:
-        ax.set_ylabel('log consumption', color='black')
+        ax.set_ylabel('Share of consumption', color='black')
     if i == 2 or i == 3:
         ax.set_xlabel('Time in simulation, one random path')
     for k in range(n_tax):
-        y = cons_share_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, 2,
+        y = cons_share_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
             int(left_t / dt):int(right_t / dt)]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
         # condition = pi_time_series_tau[scenario_index, red_index, yellow_index, k, 2, phi_index, int(left_t/dt):int(right_t/dt)]
-        switch = switch_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, 2,
+        switch = switch_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
                  int(left_t / dt):int(right_t / dt)]
         y_switch = np.ma.masked_where(switch == 0, y)
         # y_N = np.ma.masked_where(condition >= 0.8, y)
@@ -762,7 +763,7 @@ for i, ax in enumerate(axes.flat):
     if i ==0:
         ax.legend()
 fig.tight_layout(h_pad=2)
-#plt.savefig('Log Consumption, Bad Z^Y, Bad Z^SI.png', dpi=500)
+plt.savefig('Individual consumption share,' + str(red_case) + str(yellow_case) + str(cohort_index) + '.png', dpi=500)
 plt.show()
 #plt.close()
 
