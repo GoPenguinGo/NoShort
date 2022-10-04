@@ -479,10 +479,9 @@ def simulate_cohorts_mean_vola(
         Vhat_vector: np.ndarray,
         top: float,
         old_limit: int,
+        cutoffs: np.ndarray,
+        n_age_groups: int,
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -542,18 +541,23 @@ def simulate_cohorts_mean_vola(
     """ ""
     # Initializing variables
     # cohort-specific terms:
-    Delta = np.zeros((Nt, Nc))  # stores bias in beliefs
-    f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
-    pi = np.zeros((Nt, Nc))  # portfolio choices
-    w = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
-    invest_mat = np.zeros((Nt, Nc))
+    #Delta = np.zeros((Nt, Nc))  # stores bias in beliefs
+    #f = np.zeros((Nt, Nc))  # evolution of cohort consumption share
+    #pi = np.zeros((Nt, Nc))  # portfolio choices
+    #w = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
+    #invest_mat = np.zeros((Nt, Nc))
 
     # aggregate terms:
+    #dR = np.zeros(Nt)
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
     Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
     parti = np.zeros((Nt))  # participation rate
+    popu_age = np.zeros((Nt, n_age_groups))
+    belief_age = np.zeros((Nt, n_age_groups))
+    wealthshare_age = np.zeros((Nt, n_age_groups))
+
 
     dR_t = 0
 
@@ -686,11 +690,11 @@ def simulate_cohorts_mean_vola(
             d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst)
             f_parti_t = np.sum(invest_fst)
+            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
-            age_t = np.sum(cohort_size * tau * invest_tracker)
-            n_parti_t = np.sum(invest_tracker) / Nc
+            # age_t = np.sum(cohort_size * tau * invest_tracker)
+            # n_parti_t = np.sum(invest_tracker) / Nc
 
         elif mode_trade == 'complete':
             f_st_standard = f_st * dt
@@ -702,8 +706,8 @@ def simulate_cohorts_mean_vola(
 
             f_parti_t = 1
             pi_st = (d_eta_st + theta_t) / sigma_S
-            age_t = np.sum(cohort_size * tau * invest)
-            n_parti_t = np.sum(invest) / Nc
+            # age_t = np.sum(cohort_size * tau * invest)
+            # n_parti_t = np.sum(invest) / Nc
 
         # elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
         #     can_short_tracker = np.append(can_short_tracker[1:], 0)
@@ -837,49 +841,48 @@ def simulate_cohorts_mean_vola(
 
         mu_S_t = sigma_S * theta_t + r_t
 
-        # store the results
-        # storing the values takes a lot of time
-        # dR[i] = dR_t  # realized return from t-1 to t
+        # store the results, only the aggregate values
+        #dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
-        f[i, :] = f_st
-        Delta[i, :] = Delta_s_t
+        # f[i, :] = f_st
+        # Delta[i, :] = Delta_s_t
         # max[i, :] = d_eta_st
         Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
-        pi[i, :] = pi_st
+        # pi[i, :] = pi_st
         parti[i] = popu_parti_t
-        #w[i, :] = w_st
+        # w[i, :] = w_st
         # age[i] = age_t
         # n_parti[i] = n_parti_t
-        invest_mat[i] = invest_tracker
+        # invest_mat[i] = invest_tracker
+        parti_rate = invest_tracker * cohort_size
+        belief = (Delta * sigma_Y + mu_Y)
+        for j in range(4):
+            popu_age[i, j] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+
+            belief_age[i, j] = np.mean(
+                np.average(
+                    belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
+                ))
+
+            wealthshare_age[i, j] = np.mean(
+                np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+            )
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
     popu_parti_matrix = [np.mean(popu_parti), np.std(popu_parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
-    Phi_parti_matrix[l, m, n, o, 0] = [np.mean(Phi_parti), np.std(Phi_parti)]
-    parti_rate = invest_tracker * cohort_size
-
-    belief = (Delta * sigma_Y + mu_Y)
-
-    for i in range(4):
-        popu_age_matrix[i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
-
-        belief_age_matrix[i] = np.mean(
-            np.average(
-                belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
-            ))
-
-        wealthshare_age_matrix[i] = np.mean(
-            np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-        )
+    Phi_parti_matrix = [np.mean(Phi_parti), np.std(Phi_parti)]
+    popu_age_matrix = [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
+    belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
+    wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
 
     return (
         r_matrix,
         theta_matrix,
         popu_parti_matrix,
-        Delta,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
         popu_age_matrix,
