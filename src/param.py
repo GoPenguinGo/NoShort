@@ -80,6 +80,9 @@ dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 Z_Y_cases = np.load('Z_Y_cases.npy')
 Z_SI_cases = np.load('Z_SI_cases.npy')
 
+top = 0.05
+old_limit = 100
+
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
 modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']

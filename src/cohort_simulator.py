@@ -857,18 +857,15 @@ def simulate_cohorts_mean_vola(
         # n_parti[i] = n_parti_t
         # invest_mat[i] = invest_tracker
         parti_rate = invest_tracker * cohort_size
-        belief = (Delta * sigma_Y + mu_Y)
+        belief = (Delta_s_t * sigma_Y + mu_Y)
         for j in range(4):
-            popu_age[i, j] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+            popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
 
-            belief_age[i, j] = np.mean(
-                np.average(
-                    belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
-                ))
+            belief_age[i, j] = np.average(
+                    belief[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]]
+                )
 
-            wealthshare_age[i, j] = np.mean(
-                np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-            )
+            wealthshare_age[i, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
