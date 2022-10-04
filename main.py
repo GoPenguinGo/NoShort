@@ -428,6 +428,7 @@ for i, ax_row in enumerate(axes):
         # ax.plot(x, y, label=cohort_labels[cohort_index], color='black', linewidth=0.4)
         if i == 1 and j == 0:
             ax.plot(x, y, color='black', linewidth=0.6)
+            #ax.plot(x, cutoff_belief, label='cutoff Delta', color='pink', alpha=0.8, linewidth=0.4)
         else:
             ax.plot(x, cutoff_belief, label='cutoff Delta', color='blue', alpha=0.6, linewidth=0.4)
             ax.plot(x, y_P, label='P', color='black', linewidth=0.6)
@@ -443,7 +444,7 @@ for i, ax_row in enumerate(axes):
         ax.set_title(titles_subfig[i][j])
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
+#plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
 plt.show()
 #plt.close()
 
@@ -714,61 +715,64 @@ for o in range(n_scenarios):
                         parti_time_series_tau[o, j, k, i, l, m] = parti
                         switch_time_series_tau[o, j, k, i, l, m] = sw
 
-cohort_index = 1
-left_t = starts[cohort_index]
+
 right_t = 500
-red_index = 1
-yellow_index = 1
-Z = np.cumsum(Z_Y_cases[red_index])[int(left_t/dt):int(right_t/dt)]
-Z_SI = np.cumsum(Z_SI_cases[yellow_index])[int(left_t/dt):int(right_t/dt)]
-x = t[int(left_t/dt):int(right_t/dt)]
-phi_indexes = [1, 2, 1, 1]
+# phi_indexes = [1, 2, 1, 1]
+phi_indexes = [0, 2, 0, 0]
 scenario_indexs = [1, 1, 0, 2]
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
 titles_subfig = ['Keep', 'Keep, phi = 0.8', 'Complete', 'Drop']
-fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
-for i, ax in enumerate(axes.flat):
-    phi_index = phi_indexes[i]
-    scenario_index = scenario_indexs[i]
-    ax.set_title(titles_subfig[i])
-    if i == 0 or i == 2:
-        ax.set_ylabel('Share of consumption', color='black')
-    if i == 2 or i == 3:
-        ax.set_xlabel('Time in simulation, one random path')
-    for k in range(n_tax):
-        y = cons_share_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
-            int(left_t / dt):int(right_t / dt)]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
-        # condition = pi_time_series_tau[scenario_index, red_index, yellow_index, k, 2, phi_index, int(left_t/dt):int(right_t/dt)]
-        switch = switch_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
-                 int(left_t / dt):int(right_t / dt)]
-        y_switch = np.ma.masked_where(switch == 0, y)
-        # y_N = np.ma.masked_where(condition >= 0.8, y)
-        # y_P = np.ma.masked_where(condition <= 0.2, y)
-        label_i = 'tau = ' + str(tax_vector[k])
-        if k == 1:
-            ax.plot(x, y, color='black', linewidth=0.6, linestyle=line_styles[k], label=label_i)
-        else:
-            ax.plot(x, y, color='black', linewidth=0.4, linestyle=line_styles[k], label=label_i)
-        if scenario_index != 0:
-            if k == 0:
-                ax.scatter(x, y_switch, color='red', s=10, marker='o', label='state switch')
-            else:
-                ax.scatter(x, y_switch, color='red', s=10, marker='o')
-        # else:
-        #     ax.plot(x, y_P, label='P', color='black', linewidth=0.4)
-        #     ax.plot(x, y_N, label='N', color='black', linewidth=0.4, linestyle='dotted')
-        #     # ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
-    ax.tick_params(axis='both', labelcolor='black')
-    # ax.set_xlim(left_t, right_t)
-    if i ==0:
-        ax.legend()
-fig.tight_layout(h_pad=2)
-plt.savefig('Individual consumption share,' + str(red_case) + str(yellow_case) + str(cohort_index) + '.png', dpi=500)
-plt.show()
-#plt.close()
-
-
-
+cases = ['Good ', 'Bad ']
+for cohort_index in range(3):
+    left_t = starts[cohort_index]
+    for red_index in range(2):
+        red_case = cases[red_index] + 'z^Y '
+        Z = np.cumsum(Z_Y_cases[red_index])[int(left_t / dt):int(right_t / dt)]
+        for yellow_index in range(2):
+            yellow_case = cases[yellow_index] + 'z^SI '
+            Z_SI = np.cumsum(Z_SI_cases[yellow_index])[int(left_t / dt):int(right_t / dt)]
+            x = t[int(left_t / dt):int(right_t / dt)]
+            fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
+            for i, ax in enumerate(axes.flat):
+                phi_index = phi_indexes[i]
+                scenario_index = scenario_indexs[i]
+                ax.set_title(titles_subfig[i])
+                if i == 0 or i == 2:
+                    ax.set_ylabel('Share of consumption', color='black')
+                if i == 2 or i == 3:
+                    ax.set_xlabel('Time in simulation, one random path')
+                for k in range(n_tax):
+                    y = cons_share_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
+                        int(left_t / dt):int(right_t / dt)]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
+                    # condition = pi_time_series_tau[scenario_index, red_index, yellow_index, k, 2, phi_index, int(left_t/dt):int(right_t/dt)]
+                    switch = switch_time_series_tau[scenario_index, red_index, yellow_index, k, phi_index, cohort_index,
+                             int(left_t / dt):int(right_t / dt)]
+                    y_switch = np.ma.masked_where(switch == 0, y)
+                    # y_N = np.ma.masked_where(condition >= 0.8, y)
+                    # y_P = np.ma.masked_where(condition <= 0.2, y)
+                    label_i = 'tau = ' + str(tax_vector[k])
+                    if k == 1:
+                        ax.plot(x, y, color='black', linewidth=0.6, linestyle=line_styles[k], label=label_i)
+                    else:
+                        ax.plot(x, y, color='black', linewidth=0.4, linestyle=line_styles[k], label=label_i)
+                    if scenario_index != 0:
+                        if k == 0:
+                            ax.scatter(x, y_switch, color='red', s=10, marker='o', label='state switch')
+                        else:
+                            ax.scatter(x, y_switch, color='red', s=10, marker='o')
+                    # else:
+                    #     ax.plot(x, y_P, label='P', color='black', linewidth=0.4)
+                    #     ax.plot(x, y_N, label='N', color='black', linewidth=0.4, linestyle='dotted')
+                    #     # ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
+                ax.tick_params(axis='both', labelcolor='black')
+                # ax.set_xlim(left_t, right_t)
+                if i == 0:
+                    ax.legend()
+            fig.tight_layout(h_pad=2)
+            plt.savefig('Individual consumption share,' + str(red_case) + str(yellow_case) + 'cohort' + str(cohort_index) + 'phi=' + str(phi_vector_short[phi_indexes[0]]) + '.png',
+                        dpi=500)
+            plt.show()
+            plt.close()
 
 #
 # # ######################################

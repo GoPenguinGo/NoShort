@@ -58,9 +58,16 @@ phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
 
 # for V_hat_experiment:
-Npres_a = np.arange(1, 13, 1)
-Npres_b = np.arange(24, 241, 12)
-Npres = np.append(Npres_a, Npres_b)
+Npres_a = np.arange(1, 6, 1)
+Npres_b = np.arange(6, 13, 3)
+Npres_c = np.arange(24, 61, 12)
+Npres_d = np.arange(84, 181, 24)
+Npres_e = np.arange(204, 361, 48)
+Npre_list = [Npres_b, Npres_c, Npres_d, Npres_e]
+Npres = Npres_a
+for i in Npre_list:
+    Npres = np.append(Npres, i)
+
 
 
 # todo: can endogenize
