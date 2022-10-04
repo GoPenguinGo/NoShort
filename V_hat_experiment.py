@@ -35,9 +35,9 @@ theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 Delta_bar_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups, 2))
-belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups, 2))
-wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, n_age_groups, 2))
+popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 
 # write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
@@ -47,7 +47,7 @@ for l in range(N):
     dZ_SI = dZ_SI_matrix[l]
     dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
-    for m in range(n_scenarios):
+    for m in range(1,n_scenarios+1,1):
         scenario = scenarios[m]
         mode_trade = scenario[0]
         mode_learn = scenario[1]

@@ -873,7 +873,7 @@ def simulate_cohorts_mean_vola(
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
-    popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(popu_parti), np.std(popu_parti)]
+    popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(parti), np.std(parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
     Phi_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(Phi_parti), np.std(Phi_parti)]
     popu_age_matrix = [(0.25, 0.25, 0.25, 0.25), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
