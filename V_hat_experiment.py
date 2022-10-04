@@ -1,21 +1,20 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate_SI
+from src.simulation import simulate_SI_mean_vola
 from src.param import Npres, rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
-    beta, dt, Ninit, Nt, Nc, tau, cohort_size, n_age_groups,\
+    beta, dt, Ninit, Nt, Nc, tau, cohort_size, n_age_groups, \
     cutoffs, phi_vector, n_phi, colors, modes_trade, modes_learn, scenarios, \
-    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix
+    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, top, old_limit
 
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-#N = 30  # can choose a smaller number than Mpaths as the number of paths
+# N = 30  # can choose a smaller number than Mpaths as the number of paths
 
-scenarios_short = scenarios[0]
-n_scenarios = len(scenarios_short)
+n_scenarios = 1
 N = 200
 
 # scenarios_short = scenarios[1]
@@ -48,70 +47,41 @@ for l in range(N):
     dZ_SI = dZ_SI_matrix[l]
     dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
-    for m, scenario in enumerate(scenarios_short):
+    for m in range(n_scenarios):
+        scenario = scenarios[m]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
-        for n, phi in enumerate(phi_vector):
-            for o, T_hat in enumerate(T_hats):
-                Npre = int(Npres[o])
-                Vhat = (sigma_Y ** 2) / T_hat  # prior variance
-                # print(T_hat, Npre, Vhat)
-
+        for n, phi_try in enumerate(phi_vector):
+            for o, T_hat_try in enumerate(T_hats):
+                Npre_try = int(Npres[o])
+                Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
                 (
                     r,
                     theta,
-                    f,
-                    Delta,
-                    pi,
                     popu_parti,
-                    Phi_parti,
                     Delta_bar_parti,
-                    dR,
-                    invest_tracker
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                                phi,
-                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                top=0.05,
-                                old_limit=100
-                                )
-
-                r_matrix[l, m, n, o, 0] = np.mean(r)
-                r_matrix[l, m, n, o, 1] = np.std(r)  # todo: maybe adjust the std level against mean later
-                theta_matrix[l, m, n, o, 0] = np.mean(theta)
-                theta_matrix[l, m, n, o, 1] = np.std(theta)
-                popu_parti_matrix[l, m, n, o, 0] = np.mean(popu_parti)
-                popu_parti_matrix[l, m, n, o, 1] = np.std(popu_parti)
-                Delta_bar_parti_matrix[l, m, n, o, 0] = np.mean(Delta_bar_parti)
-                Delta_bar_parti_matrix[l, m, n, o, 1] = np.std(Delta_bar_parti)
-                Phi_parti_matrix[l, m, n, o, 0] = np.mean(Phi_parti)
-                Phi_parti_matrix[l, m, n, o, 1] = np.std(Phi_parti)
-                parti_rate = invest_tracker * cohort_size
-
-                belief = (Delta * sigma_Y + mu_Y)
-                belief_weights = f * dt
-
-                for i in range(4):
-                    popu_age_matrix[l, m, n, o, i, 0] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
-                    # popu_age_matrix[l, m, n, o, i, 1] = np.std(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
-
-                    belief_age_matrix[l, m, n, o, i, 0] = np.mean(
-                        np.average(
-                            belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
-                        ))
-                    # belief_age_matrix[l, m, n, o, i, 1] = np.std(
-                    #     np.average(
-                    #         belief[:, cutoffs[i + 1]:cutoffs[i]], weights=cohort_size[cutoffs[i + 1]:cutoffs[i]], axis=1
-                    #     ))
-
-                    wealthshare_age_matrix[l, m, n, o, i, 0] = np.mean(
-                        np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-                    )
-                    # wealthshare_age_matrix[l, m, n, o, i, 1] = np.std(
-                    #     np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
-                    # )
-
+                    Phi_parti,
+                    popu_age,
+                    belief_age,
+                    wealthshare_age,
+                ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                          Vhat_try,
+                                          mu_Y, sigma_Y, sigma_S, tax, beta,
+                                          phi_try,
+                                          Npre_try,
+                                          Ninit,
+                                          T_hat_try,
+                                          dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size, top, old_limit, cutoffs, n_age_groups,
+                                          )
+                r_matrix[l, m, n, o] = r
+                theta_matrix[l, m, n, o] = theta
+                popu_parti_matrix[l, m, n, o] = popu_parti
+                Delta_bar_parti_matrix[l, m, n, o] = Delta_bar_parti
+                Phi_parti_matrix[l, m, n, o] = Phi_parti
+                popu_age_matrix[l, m, n, o] = popu_age
+                belief_age_matrix[l, m, n, o] = belief_age
+                wealthshare_age_matrix[l, m, n, o] = wealthshare_age
     print(time.time() - time_s)
-
 
 # graphs:
 var_list = [r_matrix, theta_matrix, Phi_parti_matrix,
@@ -126,7 +96,7 @@ age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <
 # x = Npres
 x = Npres[1:]
 for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat_dimension * 2
-    y_mat = np.mean(var, axis=0)    # shape y_mat: n_scenarios * n_phi * T_hat_dimension * 2
+    y_mat = np.mean(var, axis=0)  # shape y_mat: n_scenarios * n_phi * T_hat_dimension * 2
     var_name = var_name_list[i]
     for j, scenario in enumerate(scenarios_short):
         mode_trade = scenario[0]
@@ -142,7 +112,7 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                 ax.legend()
                 mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
                 plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
-                             dpi=500, format="png")
+                            dpi=500, format="png")
                 plt.show()
                 plt.close()
 
@@ -179,18 +149,18 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                         y_age_group = y[:, m]
                         if m == 0:
                             ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
-                                            label=age_labels[m])
+                                    label=age_labels[m])
                         else:
                             y_age_group_1 = y[:, m - 1]
                             ax.plot(x, y_age_group, color=colors[m], linewidth=0.4,
-                                            label=age_labels[m])
+                                    label=age_labels[m])
                     plt.legend()
                     ax.set_ylabel(var_name)
                     ax.set_xlabel('initial window (months)')
                     ax.legend()
                     mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-                    plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
-                                dpi=500, format="png")
+                    plt.savefig(
+                        type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
+                        dpi=500, format="png")
                     plt.show()
                     plt.close()
-

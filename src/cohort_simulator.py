@@ -558,6 +558,9 @@ def simulate_cohorts_mean_vola(
     belief_age = np.zeros((Nt, n_age_groups))
     wealthshare_age = np.zeros((Nt, n_age_groups))
 
+    if mode_trade == 'complete':
+        invest_tracker = np.ones(Nc)
+
 
     dR_t = 0
 
@@ -642,7 +645,8 @@ def simulate_cohorts_mean_vola(
         Delta_s_t = np.append(Delta_s_t, init_bias)
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
-        invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
+        if mode_trade != 'complete':
+            invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 
         if mode_trade == 'w_constraint':
             if mode_learn == 'drop':
@@ -869,10 +873,10 @@ def simulate_cohorts_mean_vola(
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
-    popu_parti_matrix = [np.mean(popu_parti), np.std(popu_parti)]
+    popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(popu_parti), np.std(popu_parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
-    Phi_parti_matrix = [np.mean(Phi_parti), np.std(Phi_parti)]
-    popu_age_matrix = [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
+    Phi_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(Phi_parti), np.std(Phi_parti)]
+    popu_age_matrix = [(0.25, 0.25, 0.25, 0.25), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
     belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
 
