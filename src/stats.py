@@ -4,7 +4,7 @@ from typing import Tuple, Callable
 
 
 @jit(nopython=True)
-def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray, phi: float, type: str) -> np.ndarray:
+def post_var(sigma_Y: float, sigma_SI: float, V_hat: float, tau: np.ndarray, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:
@@ -16,11 +16,13 @@ def post_var(sigma_Y: float, V_hat: float, tau: np.ndarray, phi: float, type: st
         np.ndarray: shape (T, )
     """
     sigma_Y_sq = sigma_Y ** 2
+    sigma_SI_sq = sigma_SI ** 2
     if type == 'N':
         V = sigma_Y_sq * V_hat / (sigma_Y_sq + V_hat * tau)
     elif type == 'P':
-        a_phi = 1 - phi ** 2
-        V = sigma_Y_sq * a_phi * V_hat / (sigma_Y_sq * a_phi + V_hat * tau)
+        numerator = V_hat * sigma_SI_sq * sigma_Y_sq
+        denominator = sigma_SI_sq * sigma_Y_sq + (sigma_Y_sq + sigma_SI_sq) * V_hat * tau
+        V = numerator / denominator
     else:
         print('type not defined')
         V = V_hat

@@ -17,7 +17,7 @@ def build_cohorts_SI(
     mu_Y: float,
     sigma_Y: float,
     tax: float,
-    phi: float,
+    sigma_SI: float,
     Npre: int,
     Ninit: int,
     T_hat: float,
@@ -67,11 +67,12 @@ def build_cohorts_SI(
     can_short_tracker = np.zeros(Ninit) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros(Nc)
     tau_info = np.ones(1) * dt
     Vhat_vector = np.ones(1) * Vhat
-    a_phi = 1/(1 - phi ** 2)
     cohort_size = nu * np.exp(-nu * (tau - dt)) * dt
     theta_mat = np.empty(Nc)
     top = 0.05
     old_limit = 100
+    sigma_Y_sq = sigma_Y ** 2
+    sigma_SI_sq = sigma_SI ** 2
 
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Ninit)):
@@ -99,27 +100,27 @@ def build_cohorts_SI(
 
         # update beliefs
         if mode_trade == 'complete':
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-            dDelta_s_t = V_st_P / sigma_Y ** 2 * (
-                        1 / (1 - phi ** 2)
-                    ) * (
-                        -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
+            V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
+            dDelta_s_t = V_st_P * (
+                    (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
+                    + 1 / sigma_Y_sq * dZ_build[i - 1]
+                    + 1 / sigma_Y / sigma_SI * dZ_SI_build[i - 1]
                            )
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             if i < Ninit:
-                V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-                dDelta_s_t = V_st_P / sigma_Y ** 2 * (
-                        1 / (1 - phi ** 2)
-                ) * (
-                                     -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
-                             )
+                V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
+                dDelta_s_t = V_st_P * (
+                    (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
+                    + 1 / sigma_Y_sq * dZ_build[i - 1]
+                    + 1 / sigma_Y / sigma_SI * dZ_SI_build[i - 1]
+                           )
             else:
-                V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+                V_st_N = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'N')
                 dDelta_s_t_N = (V_st_N / sigma_Y ** 2
                                 ) * (
                                        -Delta_s_t * dt + dZ_build[i - 1]
                                )  # from eq(5)
-                V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+                V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
                 dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
                     a_phi
                 ) * (

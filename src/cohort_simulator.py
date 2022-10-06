@@ -23,7 +23,7 @@ def simulate_cohorts_SI(
         sigma_S: float,
         tax: float,
         beta: float,
-        phi: float,
+        sigma_SI: float,
         T_hat: float,
         Npre: float,
         Ninit: int,
@@ -125,8 +125,8 @@ def simulate_cohorts_SI(
     # age = np.zeros(Nt)
     # n_parti = np.zeros(Nt)
 
-    a_phi = 1/(1 - phi ** 2)
     sigma_Y_sq = sigma_Y ** 2
+    sigma_SI_sq = sigma_SI ** 2
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -168,25 +168,25 @@ def simulate_cohorts_SI(
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-            dDelta_s_t = V_st_P / sigma_Y_sq * (
-                a_phi
-            ) * (
-                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+            V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
+            dDelta_s_t = V_st_P * (
+                    (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
+                    + 1 / sigma_Y_sq * dZ_t
+                    + 1 / sigma_Y / sigma_SI * dZ_SI_t
                            )
             tau_info = tau
 
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+            V_st_N = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'N')
             dDelta_s_t_N = (V_st_N / sigma_Y_sq
                             ) * (
                                    -Delta_s_t * dt + dZ_t
                            )  # from eq(5)
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
-            dDelta_s_t_P = V_st_P / sigma_Y_sq * (
-                a_phi
-            ) * (
-                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+            V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t_P = V_st_P * (
+                    (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
+                    + 1 / sigma_Y_sq * dZ_t
+                    + 1 / sigma_Y / sigma_SI * dZ_SI_t
                            )
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (
                         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
