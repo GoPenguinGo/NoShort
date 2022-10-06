@@ -182,7 +182,7 @@ def simulate_cohorts_SI(
                             ) * (
                                    -Delta_s_t * dt + dZ_t
                            )  # from eq(5)
-            V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, phi, 'P')
+            V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
             dDelta_s_t_P = V_st_P * (
                     (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
                     + 1 / sigma_Y_sq * dZ_t

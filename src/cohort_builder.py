@@ -121,14 +121,15 @@ def build_cohorts_SI(
                                        -Delta_s_t * dt + dZ_build[i - 1]
                                )  # from eq(5)
                 V_st_P = post_var(sigma_Y, sigma_SI, Vhat_vector, tau_info, 'P')
-                dDelta_s_t_P = V_st_P / sigma_Y ** 2 * (
-                    a_phi
-                ) * (
-                                       -Delta_s_t * dt + dZ_build[i - 1] + phi * dZ_SI_build[i - 1]
-                               )  # from eq(8)
+                dDelta_s_t_P = V_st_P * (
+                    (1 / sigma_Y_sq + 1 / sigma_SI_sq) * -Delta_s_t * dt
+                    + 1 / sigma_Y_sq * dZ_build[i - 1]
+                    + 1 / sigma_Y / sigma_SI * dZ_SI_build[i - 1]
+                           )  # from eq(8)
                 dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         else:
+
             print('mode_trade not found')
             exit()
 
