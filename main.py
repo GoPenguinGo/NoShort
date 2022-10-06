@@ -117,8 +117,9 @@ Phi_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt))
 Delta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 pi_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 cons_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-#cohort_size_mat = np.transpose(np.tile(cohort_size, (Nc, 1)))
+invest_tracker_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+
 
 for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
@@ -160,6 +161,7 @@ for g, scenario in enumerate(scenarios_short):
                 survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_size)
                 belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
                 cons_compare[g, i, j, k] = f / cohort_size_mat
+                invest_tracker_compare[g, i, j, k] = invest_tracker
 
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 
@@ -592,6 +594,132 @@ plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case) 
 plt.show()
 #plt.close()
 
+# ######################################
+# ############ Figure 4.2' #############
+# ######################################
+# market view and distribution of beliefs
+# red_case = 1
+# yellow_case = 1
+x = t
+# left_t = 300
+# right_t = 400
+# Z = np.cumsum(Z_Y_cases[red_case])[int(left_t/dt):int(right_t/dt)]
+# Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t/dt):int(right_t/dt)]
+# x = t[int(left_t/dt):int(right_t/dt)]
+invest_tracker_mat = invest_tracker_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
+Delta_mat = Delta_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
+y1_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # overall
+y2_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # participants / long
+y3_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # non-participants / short
+y_cases = [y1_case, y2_case, y3_case]
+for i in range(n_scenarios):
+    for j in range(2):
+        for k in range(2):
+            for l in range(n_phi_short):
+                for m in range(Nt):
+                    Delta = Delta_mat[i, j, k, l, m]  # ((Nt, Nc))
+                    parti_cohorts = invest_tracker_mat[i, j, k, l, m]
+                    Delta1 = parti_cohorts * Delta
+                    Delta2 = (1 - parti_cohorts) * Delta
+                    cohort_size1 = parti_cohorts * cohort_size
+                    cohort_size2 = (1 - parti_cohorts) * cohort_size
+
+                    cohort_sizes = [cohort_size, cohort_size1, cohort_size2]
+                    Deltas = [Delta, Delta1, Delta2]
+
+                    for n in range(3):
+                        Del = Deltas[n]
+                        cohort_siz = cohort_sizes[n]
+                        Delta_rank = Del.argsort()
+                        Delta_sorted = Del[Delta_rank[::-1]]
+                        cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
+                        popu_cumsum = np.cumsum(cohort_size_sorted)
+                        total_popu = popu_cumsum[-1]
+                        cutoff = np.searchsorted(popu_cumsum, [0, 0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu, total_popu])
+                        Delta_cutoff = Delta_sorted[cutoff]  # highest to lowest
+                        y_cases[n][i, j, k, l, m] = Delta_cutoff
+
+scenario_index = 2
+phi_index = 2
+
+for i in range(2):
+    Z = np.cumsum(Z_Y_cases[i])
+    for j in range(2):
+        Z_SI = np.cumsum(Z_SI_cases[j])
+        y1 = y1_case[scenario_index, i, j, phi_index]  #  ((Nt, 4))
+
+        fig, ax1 = plt.subplots(figsize=(15, 5))
+        ax1.set_xlabel('Time in simulation, one random path')
+        ax1.set_ylabel('Zt', color='black')
+        ax1.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
+        ax1.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+        ax1.tick_params(axis='y', labelcolor='black')
+        ax1.legend()
+
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Estimation error', color='black')
+
+        y10 = y1[:, 0]
+        y11 = y1[:, 1]
+        y12 = y1[:, 2]
+        y13 = y1[:, 3]
+        y14 = y1[:, 4]
+
+        ax2.fill_between(x, y10, y14, color='gray', linewidth=0., alpha=0.3)
+        ax2.fill_between(x, y11, y13, color='gray', linewidth=0., alpha=0.5)
+        ax2.plot(x, y12, color='black', linewidth=0.4)
+        ax2.tick_params(axis='y', labelcolor='black')
+        #plt.legend()
+        # fig.suptitle('Zt and Market Price of Risk')
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.savefig('Distribution of Delta ' + str(i) + str(j) + ' phi=' + str(phi_vector_short[phi_index]) + 'scenario =' + str(scenario_index) + '.png', dpi=500)
+        plt.show()
+        plt.close()
+
+for i in range(2):
+    Z = np.cumsum(Z_Y_cases[i])
+    for j in range(2):
+        Z_SI = np.cumsum(Z_SI_cases[j])
+        y2 = y2_case[scenario_index, i, j, phi_index]  #  ((Nt, 4))
+        y3 = y3_case[scenario_index, i, j, phi_index]  # ((Nt, 4))
+
+        fig, ax1 = plt.subplots(figsize=(15, 5))
+        ax1.set_xlabel('Time in simulation, one random path')
+        ax1.set_ylabel('Zt', color='black')
+        ax1.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
+        ax1.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+        ax1.tick_params(axis='y', labelcolor='black')
+        ax1.legend()
+
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Estimation error', color='black')
+
+        y20 = y2[:, 0]
+        y21 = y2[:, 1]
+        y22 = y2[:, 2]
+        y23 = y2[:, 3]
+        y24 = y2[:, 4]
+
+        y30 = y3[:, 0]
+        y31 = y3[:, 1]
+        y32 = y3[:, 2]
+        y33 = y3[:, 3]
+        y34 = y3[:, 4]
+
+        ax2.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
+        ax2.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5)
+        ax2.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
+        ax2.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5)
+        ax2.plot(x, y22, color='blue', linewidth=0.4)
+        ax2.plot(x, y32, color='green', linewidth=0.4)
+        #ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
+        ax2.tick_params(axis='y', labelcolor='black')
+        #plt.legend()
+        # fig.suptitle('Zt and Market Price of Risk')
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.savefig('Distribution of Delta parti nonparti ' + str(i) + str(j) + ' phi=' + str(phi_vector_short[phi_index]) + 'scenario =' + str(scenario_index) + '.png', dpi=500)
+        plt.show()
+        plt.close()
 
 
 # ######################################

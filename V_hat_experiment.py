@@ -15,6 +15,7 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios = 1
+a_sce = 2
 N = 200
 
 # scenarios_short = scenarios[1]
@@ -47,8 +48,8 @@ for l in range(N):
     dZ_SI = dZ_SI_matrix[l]
     dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
-    for m in range(1,n_scenarios+1,1):
-        scenario = scenarios[m]
+    for m in range(n_scenarios):
+        scenario = scenarios[m+a_sce]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for n, phi_try in enumerate(phi_vector):
@@ -83,22 +84,27 @@ for l in range(N):
                 wealthshare_age_matrix[l, m, n, o] = wealthshare_age
     print(time.time() - time_s)
 
+
 # graphs:
-var_list = [r_matrix, theta_matrix, Phi_parti_matrix,
+var_list = [r_matrix, theta_matrix, Phi_parti_matrix, popu_parti_matrix,
             Delta_bar_parti_matrix, popu_age_matrix,
             belief_age_matrix, wealthshare_age_matrix]
-var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants',
-                 'consumption-weighted estimation error of participants', 'participation rate',
+var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'participation rate',
+                 'consumption-weighted estimation error of participants', 'participation rate in age groups',
                  'average belief in age groups', 'wealth share in age groups']
 type_list = ['mean', 'vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+
+for i, var in enumerate(var_list):
+    np.save(var_name_list[i] + str(a_sce), var)
 
 # x = Npres
 x = Npres[1:]
 for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat_dimension * 2
     y_mat = np.mean(var, axis=0)  # shape y_mat: n_scenarios * n_phi * T_hat_dimension * 2
     var_name = var_name_list[i]
-    for j, scenario in enumerate(scenarios_short):
+    for j in range(n_scenarios):
+        scenario = scenarios[j + a_sce]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         if i <= 3:
@@ -111,10 +117,10 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                 ax.set_xlabel('initial window (months)')
                 ax.legend()
                 mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-                plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
-                            dpi=500, format="png")
+                #plt.savefig(type + ' initial window and ' + var_name + '_' + mode_label + '.png',
+                            # dpi=500, format="png")
                 plt.show()
-                plt.close()
+                # plt.close()
 
         elif i == 4:
             for l, phi in enumerate(phi_vector):
@@ -134,11 +140,11 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                 ax.set_xlabel('initial window (months)')
                 ax.legend()
                 mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-                plt.savefig('mean initial window and ' + var_name + '_' + mode_label + '_' + str(
-                    round(phi, 2)) + '.png',
-                            dpi=500, format="png")
+                #plt.savefig('mean initial window and ' + var_name + '_' + mode_label + '_' + str(
+                    #round(phi, 2)) + '.png',
+                            #dpi=500, format="png")
                 plt.show()
-                plt.close()
+                # plt.close()
 
         else:
             for k, type in enumerate(type_list):
@@ -159,8 +165,8 @@ for i, var in enumerate(var_list):  # shape var: N * n_scenarios * n_phi * T_hat
                     ax.set_xlabel('initial window (months)')
                     ax.legend()
                     mode_label = mode_trade if mode_trade == 'complete' else (mode_learn + '_' + mode_trade)
-                    plt.savefig(
-                        type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
-                        dpi=500, format="png")
+                    # plt.savefig(
+                    #     type + ' initial window and ' + var_name + '_' + mode_label + '_' + str(round(phi, 2)) + '.png',
+                    #     dpi=500, format="png")
                     plt.show()
-                    plt.close()
+                    # plt.close()
