@@ -21,7 +21,7 @@ import tabulate as tabulate
 # todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
 # todo: remove variables that are never used, to save space
 # different scenarios
-N = 100  # for smaller number of paths
+N = 10  # for smaller number of paths
 
 n_scenarios = 3
 scenarios_short = scenarios[:n_scenarios]
@@ -56,7 +56,7 @@ for j in range(N):
     for k, scenario in enumerate(scenarios_short):
         mode_trade = scenario[0]
         mode_learn = scenario[1]
-        for l, phi in enumerate(phi_vector):
+        for l, phi_try in enumerate(phi_vector):
             (
                 r,
                 theta,
@@ -68,7 +68,7 @@ for j in range(N):
                 Delta_bar_parti,
                 dR,
                 invest_tracker,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
                             top=0.05,
                             old_limit=100
