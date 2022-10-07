@@ -109,7 +109,7 @@ def build_cohorts_SI(
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             if i < Ninit:
                 V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-                dDelta_s_t_P = V_st_P / sigma_Y_sq * (
+                dDelta_s_t = V_st_P / sigma_Y_sq * (
                         - a_phi_1 * Delta_s_t * dt + dZ_build[i - 1] - phi_sqr_a_phi  * dZ_SI_build[i - 1]
                            )
             else:
