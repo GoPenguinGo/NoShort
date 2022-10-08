@@ -562,7 +562,9 @@ def simulate_cohorts_mean_vola(
 
     dR_t = 0
 
-    a_phi = 1/(1 - phi ** 2)
+    a_phi = (1 - phi ** 2)
+    phi_sqr_a_phi = phi / np.sqrt(a_phi)
+    a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
     for i in tqdm(range(Nt)):
@@ -605,25 +607,21 @@ def simulate_cohorts_mean_vola(
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
             dDelta_s_t = V_st_P / sigma_Y_sq * (
-                a_phi
-            ) * (
-                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+                        - a_phi_1 * Delta_s_t * dt + dZ_t - phi_sqr_a_phi * dZ_SI_t
                            )
             tau_info = tau
 
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            V_st_N = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'N')
+            V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')
             dDelta_s_t_N = (V_st_N / sigma_Y_sq
                             ) * (
                                    -Delta_s_t * dt + dZ_t
                            )  # from eq(5)
-            V_st_P = post_var(sigma_Y, Vhat_vector, tau_info, phi, 'P')
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
             dDelta_s_t_P = V_st_P / sigma_Y_sq * (
-                a_phi
-            ) * (
-                                   -Delta_s_t * dt + dZ_t + phi * dZ_SI_t
+                        - a_phi_1 * Delta_s_t * dt + dZ_t - phi_sqr_a_phi * dZ_SI_t
                            )
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (
                         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern

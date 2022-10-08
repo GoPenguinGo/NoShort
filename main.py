@@ -183,8 +183,8 @@ label_phi = []
 for i in range(n_phi_short):
     label_phi.append('phi = ' + str(phi_vector_short[i]))
 labels = [scenario_labels, label_phi, label_phi]
-lower = min(np.min(y1), np.min(y2))
-upper = max(np.max(y1), np.max(y2))
+# lower = min(np.min(y1), np.min(y2))
+# upper = max(np.max(y1), np.max(y2))
 
 # # plot the complicated figures...
 # for i, cohort_matrix in enumerate(cohort_matrix_list):
@@ -329,15 +329,15 @@ for i in range(1, n_phi_short, 1):
         yellow_index = 0 if j == 0 or j == 2 else 1
         red_case = red_cases[red_index]
         yellow_case = yellow_cases[yellow_index]
-        Z = np.cumsum(dZ_matrix[index_Z_Ys[red_index]])
-        Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SIs[yellow_index]])
+        Z = np.cumsum(Z_Y_cases[red_index])
+        Z_SI = np.cumsum(Z_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
         if j == 3:
             ax.set_xlabel('Time in simulation, one random path')
-        ax.set_ylabel('Zt', color=colors[4])
-        ax.plot(t, Z, color=colors[8], linewidth=0.5, label='Z^Y_t')
-        ax.plot(t, Z_SI, color=colors[6], linewidth=0.5, label='Z^SI_t')
+        ax.set_ylabel('Zt', color='black')
+        ax.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
         ax.set_ylim([lower, upper])
-        ax.tick_params(axis='y', labelcolor=colors[4])
+        ax.tick_params(axis='y', labelcolor='black')
         if j == 0:
             ax.legend()
         ax.set_title(red_case + yellow_case)
@@ -361,7 +361,7 @@ for i in range(1, n_phi_short, 1):
                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='state switch')
             else:
                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-        ax2.tick_params(axis='y', labelcolor=colors[4])
+        ax2.tick_params(axis='y', labelcolor='black')
         if j == 0:
             ax2.legend()
 
@@ -370,7 +370,7 @@ for i in range(1, n_phi_short, 1):
                 'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
                 dpi=300)
     plt.show()
-    # plt.close()
+    plt.close()
 
 
 # ######################################
@@ -446,9 +446,9 @@ for i, ax_row in enumerate(axes):
         ax.set_title(titles_subfig[i][j])
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-#plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
+plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
 plt.show()
-#plt.close()
+plt.close()
 
 
 
@@ -474,17 +474,17 @@ y_title_list = ['Interest rate', 'Interest rate', 'Market price of risk']
 
 fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 15))
 for j, ax in enumerate(axes):
-    ax.set_ylabel('Zt', color=colors[4])
-    ax.plot(t, Z, color=colors[8], linewidth=0.5, label='Z^Y_t')
-    ax.plot(t, Z_SI, color=colors[6], linewidth=0.5, label='Z^SI_t')
-    ax.tick_params(axis='y', labelcolor=colors[4])
+    ax.set_ylabel('Zt', color='black')
+    ax.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+    ax.tick_params(axis='y', labelcolor='black')
     if j == 2:
         ax.set_xlabel('Time in simulation, one random path')
 
     y_vec = y_list[j]  # n_phi_short, Nt
     y_title = y_title_list[j]
     ax2 = ax.twinx()
-    ax2.set_ylabel(y_title, color=colors[4])
+    ax2.set_ylabel(y_title, color='black')
     for i in range(n_lines[j]):
         y = y_vec[i]  # Nt
         color_i = colors_short2[i] if j == 0 else colors_short[i]
@@ -592,7 +592,7 @@ axes[1,1].set_xlabel('Time in simulation, one random path')
 fig.tight_layout(h_pad=2)
 plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=500)
 plt.show()
-#plt.close()
+plt.close()
 
 # ######################################
 # ############ Figure 4.2' #############
@@ -639,7 +639,7 @@ for i in range(n_scenarios):
                         Delta_cutoff = Delta_sorted[cutoff]  # highest to lowest
                         y_cases[n][i, j, k, l, m] = Delta_cutoff
 
-scenario_index = 2
+scenario_index = 1
 phi_index = 2
 
 for i in range(2):
@@ -1066,7 +1066,7 @@ fig.tight_layout()
 # fig.supylabel('variance')
 plt.savefig('Variance decomposition, market price of risk.png', dpi=500, format="png")
 plt.show()
-# plt.close()
+plt.close()
 
 
 # ######################################

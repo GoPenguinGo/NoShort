@@ -1,4 +1,3 @@
-import time
 import numpy as np
 from typing import Tuple
 from src.cohort_builder import build_cohorts_SI
@@ -44,20 +43,20 @@ def simulate_SI(
     np.ndarray,
     np.ndarray,
 ]:
-    '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
-    :param mode: scenario of the function, see param for scenario names
-    :param Nc: number of cohorts
-    :param dt: time increment
-    :param rho: time preference
-    :param nu: birth and death rate
-    :param Vhat: initial variance
-    :param mu_Y: mean of aggregate output growth rate
-    :param sigma_Y: volatility of aggregate output growth rate
-    :param tax: initial consumption ratio
-    :param Npre: pre-trading periods
-    :param T_hat: pre-trading years
-    :return:
-    '''
+    # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
+    # :param mode: scenario of the function, see param for scenario names
+    # :param Nc: number of cohorts
+    # :param dt: time increment
+    # :param rho: time preference
+    # :param nu: birth and death rate
+    # :param Vhat: initial variance
+    # :param mu_Y: mean of aggregate output growth rate
+    # :param sigma_Y: volatility of aggregate output growth rate
+    # :param tax: initial consumption ratio
+    # :param Npre: pre-trading periods
+    # :param T_hat: pre-trading years
+    # :return:
+    # '''
 
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
@@ -67,6 +66,8 @@ def simulate_SI(
         sigma_Y,
         dt,
     )
+
+    # todo: SI have to change
 
     (
         Delta_s_t,
@@ -200,20 +201,20 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
 ]:
-    '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
-    :param mode: scenario of the function, see param for scenario names
-    :param Nc: number of cohorts
-    :param dt: time increment
-    :param rho: time preference
-    :param nu: birth and death rate
-    :param Vhat: initial variance
-    :param mu_Y: mean of aggregate output growth rate
-    :param sigma_Y: volatility of aggregate output growth rate
-    :param tax: initial consumption ratio
-    :param Npre: pre-trading periods
-    :param T_hat: pre-trading years
-    :return:
-    '''
+    # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
+    # :param mode: scenario of the function, see param for scenario names
+    # :param Nc: number of cohorts
+    # :param dt: time increment
+    # :param rho: time preference
+    # :param nu: birth and death rate
+    # :param Vhat: initial variance
+    # :param mu_Y: mean of aggregate output growth rate
+    # :param sigma_Y: volatility of aggregate output growth rate
+    # :param tax: initial consumption ratio
+    # :param Npre: pre-trading periods
+    # :param T_hat: pre-trading years
+    # :return:
+    # '''
 
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
