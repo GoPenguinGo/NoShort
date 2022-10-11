@@ -167,8 +167,8 @@ for g, scenario in enumerate(scenarios_short):
 
 
 
-red_cases = ['Good Z^Y ', 'Bad Z^Y ']
-yellow_cases = ['Good Z^SI', 'Bad Z^SI']
+red_cases = [r'Good $z^Y$ ', r'Bad $z^Y$ ']
+yellow_cases = [r'Good $z^{SI}$ ', r'Bad $z^{SI}$ ']
 nn = 3  # number of cohorts illustrated
 t = np.arange(0, T_cohort, dt)
 length = len(t)
@@ -178,10 +178,10 @@ var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumpti
 scenario_labels = ['Complete', 'Keep', 'Drop']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
-figure_labels = ['pi', 'Delta', 'Log cons']
+figure_labels = [r'$\pi_{s,t}$', '$\Delta_{s,t}$', 'log$c_{s,t}$']
 label_phi = []
 for i in range(n_phi_short):
-    label_phi.append('phi = ' + str(phi_vector_short[i]))
+    label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
 labels = [scenario_labels, label_phi, label_phi]
 # lower = min(np.min(y1), np.min(y2))
 # upper = max(np.max(y1), np.max(y2))
@@ -334,8 +334,8 @@ for i in range(1, n_phi_short, 1):
         if j == 3:
             ax.set_xlabel('Time in simulation, one random path')
         ax.set_ylabel('Zt', color='black')
-        ax.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
-        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+        ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
         ax.set_ylim([lower, upper])
         ax.tick_params(axis='y', labelcolor='black')
         if j == 0:
@@ -432,7 +432,7 @@ for i, ax_row in enumerate(axes):
             ax.plot(x, y, color='black', linewidth=0.6)
             #ax.plot(x, cutoff_belief, label='cutoff Delta', color='pink', alpha=0.8, linewidth=0.4)
         else:
-            ax.plot(x, cutoff_belief, label='cutoff Delta', color='blue', alpha=0.6, linewidth=0.4)
+            ax.plot(x, cutoff_belief, label=r'cutoff $\Delta_{s,t}$', color='blue', alpha=0.6, linewidth=0.4)
             ax.plot(x, y_P, label='P', color='black', linewidth=0.6)
             ax.plot(x, y_N, label='N', color='black', linewidth=0.6, linestyle='dotted')
             # ax2.fill_between(t, Delta_benchmarks[0], Delta_benchmarks[1], color=colors[m], alpha=0.4)
@@ -440,7 +440,7 @@ for i, ax_row in enumerate(axes):
         if i == j == 0:
             ax.legend()
         if j == 0:
-            ax.set_ylabel('Standardized estimation error')
+            ax.set_ylabel(r'Standardized estimation error $\Delta_{s,t}$')
         if i == 1:
             ax.set_xlabel('Time in simulation')
         ax.set_title(titles_subfig[i][j])
@@ -470,13 +470,13 @@ y_list = [y1, y2, y3]
 Z = np.cumsum(Z_Y_cases[red_case])
 Z_SI = np.cumsum(Z_SI_cases[yellow_case])
 n_lines = [n_scenarios, n_phi_short, n_phi_short]
-y_title_list = ['Interest rate', 'Interest rate', 'Market price of risk']
+y_title_list = [r'Interest rate $r_t$', r'Interest rate $r_t$', r'Market price of risk $\theta_t$']
 labels = [scenario_labels, label_phi, label_phi]
 fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 15))
 for j, ax in enumerate(axes):
     ax.set_ylabel('Zt', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
     ax.tick_params(axis='y', labelcolor='black')
     if j == 2:
         ax.set_xlabel('Time in simulation, one random path')
@@ -512,7 +512,7 @@ plt.show()
 # 4.2.3 participation rate (keep + drop) * (phi = 0, 0.8)
 red_case = 1
 yellow_case = 1
-titles_subfig = ['bar_Delta', 'Phi', 'Participation rate']
+titles_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
 phi_indexes = [0, 2]
 y1_case = delta_bar_compare[:, red_case, yellow_case]
 y2_case = Phi_compare[:, red_case, yellow_case]
@@ -537,8 +537,8 @@ fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 15))
 #             ax.legend(loc='upper left')
 axes[0,0].set_title('The shocks')
 axes[0,0].set_ylabel('Zt', color='black')
-axes[0,0].plot(x, Z, color='black', linewidth=0.5, linestyle = 'solid', label='Z^Y_t')
-axes[0,0].plot(x, Z_SI, color='gray', linewidth=0.5, linestyle = 'solid', label='Z^SI_t')
+axes[0,0].plot(x, Z, color='black', linewidth=0.5, linestyle = 'solid', label=r'$z^Y_t$')
+axes[0,0].plot(x, Z_SI, color='gray', linewidth=0.5, linestyle = 'solid', label=r'$z^{SI}_t$')
 axes[0,0].tick_params(axis='y', labelcolor='black')
 axes[0,0].legend(loc='upper left')
 
@@ -709,8 +709,8 @@ for i, ax in enumerate(axes):
     belief_cutoff_case = -theta_compare[scenario_index, red_case, yellow_case, phi_index]
     ax.set_xlabel('Time in simulation, one random path')
     ax.set_ylabel('Zt', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.5, label='Z^Y_t')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label='Z^SI_t')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
     ax.tick_params(axis='y', labelcolor='black')
     ax.legend(loc='upper left')
     ax.set_title(scenario_labels[scenario_index] + ', ' + label_phi[phi_index])
@@ -779,7 +779,7 @@ Delta_bar_vec = delta_bar_compare[:, red_case, yellow_case, phi_index] # (n_scen
 y3_case = (Delta_vec - Delta_bar_vec) / sigma_Y
 y4_case = 1 / Phi_compare[:, red_case, yellow_case, phi_index]
 y_cases = [y1_case, y2_case, y3_case, y4_case]
-titles_subfig = ['Constraints', 'phi values', 'Belief element', 'Phi element']
+titles_subfig = ['Constraints', r'$\phi$ values', r'$\bar{\mu}_t$ element', r'$\Phi_t$ element']
 fig, axes = plt.subplots(nrows=2, ncols=2, sharey='all', figsize=(15, 15))
 for i, ax in enumerate(axes.flat):
     n_loop = n_phi_short if i == 0 else n_scenarios
@@ -882,15 +882,15 @@ right_t = 500
 phi_indexes = [0, 2, 0, 0]
 scenario_indexs = [1, 1, 0, 2]
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
-titles_subfig = ['Keep', 'Keep, phi = 0.8', 'Complete', 'Drop']
+titles_subfig = ['Keep', r'Keep, $\phi$ = 0.8', 'Complete', 'Drop']
 cases = ['Good ', 'Bad ']
 for cohort_index in range(3):
     left_t = starts[cohort_index]
     for red_index in range(2):
-        red_case = cases[red_index] + 'z^Y '
+        red_case = cases[red_index] + r'$z^Y_t$ '
         Z = np.cumsum(Z_Y_cases[red_index])[int(left_t / dt):int(right_t / dt)]
         for yellow_index in range(2):
-            yellow_case = cases[yellow_index] + 'z^SI '
+            yellow_case = cases[yellow_index] + r'$z^{SI}_t$ '
             Z_SI = np.cumsum(Z_SI_cases[yellow_index])[int(left_t / dt):int(right_t / dt)]
             x = t[int(left_t / dt):int(right_t / dt)]
             fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
@@ -899,7 +899,7 @@ for cohort_index in range(3):
                 scenario_index = scenario_indexs[i]
                 ax.set_title(titles_subfig[i])
                 if i == 0 or i == 2:
-                    ax.set_ylabel('Share of consumption', color='black')
+                    ax.set_ylabel(r'Share of consumption $c_{s,t}$', color='black')
                 if i == 2 or i == 3:
                     ax.set_xlabel('Time in simulation, one random path')
                 for k in range(n_tax):
@@ -1056,7 +1056,7 @@ for i, variable in enumerate(var_list):
             label_i = mode_trade if mode_trade == 'complete' else mode_trade + mode_learn
             ax.plot(x, y_vector, label=label_i)
         ax.set_ylabel(var_name)
-        ax.set_xlabel('phi')
+        ax.set_xlabel(r'$\phi$')
         ax.legend()
         # plt.savefig(type + ' compare ' + var_name + '.png', dpi=500, format="png")
         plt.show()
@@ -1077,7 +1077,7 @@ for i in range(N):
             cov_Phiparti_deltabar_matrix[i, j, k] = cova[0,1]
 cov_Phiparti_deltabar = np.mean(cov_Phiparti_deltabar_matrix, axis=0)
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
-titles_subfig = ['market price of risk', 'consumption-weighted estimation error of participants', 'consumption share of participants * sigmaY', 'covariance']
+titles_subfig = [r'Market price of risk $\theta$', r'Consumption-weighted estimation error of participants $\bar{\Delta}$', r'Consumption share of participants $\Phi * \sigma_Y$', 'covariance']
 y_list = [theta_vola, delta_bar_vola, Phi_parti_1_vola, cov_Phiparti_deltabar]
 fig, axs = plt.subplots(nrows=2, ncols=2, sharey='all', sharex='all', figsize=(10, 10))
 for j, ax in enumerate(axs.flat):
@@ -1092,7 +1092,7 @@ for j, ax in enumerate(axs.flat):
     if j == 0 or j == 2:
         ax.set_ylabel('Variance')
     if j == 2 or j == 3:
-        ax.set_xlabel('phi values')
+        ax.set_xlabel(r'$\phi$ values')
 fig.tight_layout()
 # plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
 # fig.supxlabel('phi')

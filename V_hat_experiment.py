@@ -129,9 +129,10 @@ for i, var in enumerate(var_list):
 # plot market price of risk, Phi, Delta_bar over Npre
 x = Npres/12
 # x = Npres[1:]
-var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
+var_name_list = [r'$\theta_t$', r'$\Phi_t$', r'$\bar{\Delta}_t$']
+# var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
 var_list = [theta_Mat, Phi_parti_Mat, Delta_bar_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
-phi_index = [0, 2]
+phi_index = [0, 1]
 scenario_list = ['Complete', 'Keep', 'Drop']
 phi_list = ['phi=0.0', 'phi=0.4']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
@@ -153,7 +154,7 @@ for i, axes_row in enumerate(axes):
                 else:
                     ax.plot(x, y_i, linestyle=line_style, color=colors_short[l])
         if j == 0:
-            ax.set_ylabel(row_name)
+            ax.set_ylabel(row_name, rotation=0)
         if i == 2:
             # ax.set_xlabel('initial window (months)')
             ax.set_xlabel('initial window (years)')
