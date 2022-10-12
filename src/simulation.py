@@ -101,16 +101,16 @@ def simulate_SI(
     )
 
     (
-        r,
-        theta,
-        f,
+        # r,
+        # theta,
+        # f,
         Delta,
-        pi,
-        parti,
-        Phi_parti,
-        Delta_bar_parti,
-        dR,
-        invest_tracker
+        # pi,
+        # parti,
+        # Phi_parti,
+        # Delta_bar_parti,
+        # dR,
+        # invest_tracker
     ) = simulate_cohorts_SI(
         Y,
         biasvec,

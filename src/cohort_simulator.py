@@ -42,15 +42,6 @@ def simulate_cohorts_SI(
         old_limit: int,
 ) -> Tuple[
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -405,39 +396,39 @@ def simulate_cohorts_SI(
 
         # store the results
         # storing the values takes a lot of time
-        dR[i] = dR_t  # realized return from t-1 to t
-        theta[i] = theta_t
-        r[i] = r_t
-        f[i, :] = f_st
+        # dR[i] = dR_t  # realized return from t-1 to t
+        # theta[i] = theta_t
+        # r[i] = r_t
+        # f[i, :] = f_st
         Delta[i, :] = Delta_s_t
         # max[i, :] = d_eta_st
-        Phi_parti[i] = f_parti_t
-        Delta_bar_parti[i] = Delta_bar_parti_t
-        pi[i, :] = pi_st
-        parti[i] = popu_parti_t
+        # Phi_parti[i] = f_parti_t
+        # Delta_bar_parti[i] = Delta_bar_parti_t
+        # pi[i, :] = pi_st
+        # parti[i] = popu_parti_t
         # w[i, :] = w_st
         # age[i] = age_t
         # n_parti[i] = n_parti_t
-        invest_mat[i] = invest_tracker
+        # invest_mat[i] = invest_tracker
 
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
     return (
-        r,
-        theta,
-        f,
+        # r,
+        # theta,
+        # f,
         Delta,
         # max,
-        pi,
-        parti,
-        Phi_parti,
-        Delta_bar_parti,
-        dR,
+        # pi,
+        # parti,
+        # Phi_parti,
+        # Delta_bar_parti,
+        # dR,
         # w,
         # age,
         # n_parti,
-        invest_mat,
+        # invest_mat,
     )
 
 

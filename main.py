@@ -46,6 +46,9 @@ Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
+Delta_gap_coef_matrix = np.zeros((N, n_scenarios, n_phi))
+belief_dispersion_coef_matrix = np.zeros((N, n_scenarios, n_phi))
+
 # run the program for different values of phi, and store the results
 for j in range(N):
     print(j)
@@ -58,39 +61,50 @@ for j in range(N):
         mode_learn = scenario[1]
         for l, phi_try in enumerate(phi_vector):
             (
-                r,
-                theta,
-                f,
+                # r,
+                # theta,
+                # f,
                 Delta,
-                pi,
-                popu_parti,
-                f_parti,
-                Delta_bar_parti,
-                dR,
-                invest_tracker,
+                # pi,
+                # popu_parti,
+                # f_parti,
+                # Delta_bar_parti,
+                # dR,
+                # invest_tracker,
             ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
                             top=0.05,
                             old_limit=100
                             )
 
-            # Delta_matrix[j, k, l] = Delta
-            # pi_matrix[j, k, l] = pi
-            theta_matrix[j, k, l] = theta
-            r_matrix[j, k, l] = r
-            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-            # mu_st_rt_matrix[j, k, l] = theta_mat + Delta
-            popu_parti_matrix[j, k, l] = popu_parti
-            # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
-            delta_bar_matrix[j, k, l] = Delta_bar_parti
-            survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
-            belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
-            dR_matrix[j, k, l] = dR
-            # invest_tracker_matrix[j, k, l] = invest_tracker
-            Phi_parti_1_matrix[j, k, l] = 1/f_parti
-            parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
-            parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
-            # ( parti_young + parti_old )/2 = popu_parti
+            # # Delta_matrix[j, k, l] = Delta
+            # # pi_matrix[j, k, l] = pi
+            # theta_matrix[j, k, l] = theta
+            # r_matrix[j, k, l] = r
+            # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+            # # mu_st_rt_matrix[j, k, l] = theta_mat + Delta
+            # popu_parti_matrix[j, k, l] = popu_parti
+            # # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
+            # delta_bar_matrix[j, k, l] = Delta_bar_parti
+            # survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
+            # belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
+            # dR_matrix[j, k, l] = dR
+            # # invest_tracker_matrix[j, k, l] = invest_tracker
+            # Phi_parti_1_matrix[j, k, l] = 1/f_parti
+            # parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
+            # parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
+            # # ( parti_young + parti_old )/2 = popu_parti
+            Delta_gap = np.max(Delta, axis=1) - np.min(Delta, axis=1)
+            belief_dispersion = np.std(Delta, axis=1)
+            corr_shocks = []
+            for m in range(120, Nt):
+                corr = np.cov(dZ[m-120:m], dZ_SI[m-120:m])[0,1]
+                corr_shocks.append(corr)
+            Delta_gap_coef_matrix[j, k, l] = np.corrcoef(Delta_gap[120:], corr_shocks)[0,1]
+            belief_dispersion_coef_matrix[j, k, l] = np.corrcoef(belief_dispersion[120:], corr_shocks)[0, 1]
+
+
+
 
 
 # ######################################
