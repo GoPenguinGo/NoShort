@@ -608,21 +608,17 @@ def simulate_cohorts_mean_vola(
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t = V_st_P / sigma_Y_sq * (
-                        - a_phi_1 * Delta_s_t * dt + dZ_t - phi_sqr_a_phi * dZ_SI_t
-                           )
+            dDelta_s_t = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
+                      'P')
             tau_info = tau
 
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')
-            dDelta_s_t_N = (V_st_N / sigma_Y_sq
-                            ) * (
-                                   -Delta_s_t * dt + dZ_t
-                           )  # from eq(5)
+            dDelta_s_t_N = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
+                      'N')  # from eq(5)
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t_P = V_st_P / sigma_Y_sq * (
-                        - a_phi_1 * Delta_s_t * dt + dZ_t - phi_sqr_a_phi * dZ_SI_t
-                           )
+            dDelta_s_t_P = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
+                      'P')
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (
                         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
             tau_info = np.append(tau_info[1:], 0) + dt
@@ -872,7 +868,7 @@ def simulate_cohorts_mean_vola(
     popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(parti), np.std(parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
     Phi_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(Phi_parti), np.std(Phi_parti)]
-    popu_age_matrix = [(0.25, 0.25, 0.25, 0.25), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
+    popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
     belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
 

@@ -92,6 +92,7 @@ for j in range(N):
             parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
             # ( parti_young + parti_old )/2 = popu_parti
 
+
 # ######################################
 # ########## ONE RANDOM PATH ############
 # ############ GRAPH ONE ###############

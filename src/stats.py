@@ -20,9 +20,39 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
     elif type == 'P':
         V = sigma_Y_sq * a_phi * V_hat / (sigma_Y_sq * a_phi + V_hat * tau)
     else:
-        print('type not defined')
+        print('Error: type not found')
         V = V_hat
     return V
+
+@jit(nopython=True)
+def dDelta_st(sigma_Y_sq: float,
+              a1: float,
+              a2: float,
+              dt: float,
+              V_st: np.ndarray,
+              Delta_s_t: np.ndarray,
+              dZ_t: float,
+              dZ_SI_t: float,
+              type: str) -> np.ndarray:
+    """Calculate change in beliefs
+
+    Args:
+
+    Returns:
+        np.ndarray: shape (T, )
+    """
+    if type == 'P':
+        dDelta_s_t = V_st / sigma_Y_sq * (
+                - a1 * Delta_s_t * dt + dZ_t - a2 * dZ_SI_t
+        )
+    elif type == 'N':
+        dDelta_s_t = V_st / sigma_Y_sq * (
+            -Delta_s_t * dt + dZ_t
+        )
+    else:
+        print('Error: type not found')
+        dDelta_s_t = 0
+    return dDelta_s_t
 
 
 @jit(nopython=True)

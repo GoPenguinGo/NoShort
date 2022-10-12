@@ -2,7 +2,7 @@ import numpy as np
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from typing import Tuple
-from src.stats import post_var, fadingmemo
+from src.stats import post_var, dDelta_st
 from numba import jit
 
 def build_cohorts_SI(
@@ -80,10 +80,12 @@ def build_cohorts_SI(
     #for i in tqdm(range(1, Ninit)):
         # new cohort born (age 0), get wealth transfer, observe, invest
         tau_short = tau[-i:]
+        dZ_build_t = dZ_build[i - 1]
+        dZ_SI_build_t = dZ_SI_build[i - 1]
 
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st ** 2) * dt
-            + d_eta_st * dZ_build[i - 1]
+            + d_eta_st * dZ_build_t
         )  # equation (11)
 
         eta_bar_parts = tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt    # equation (18)
@@ -103,24 +105,16 @@ def build_cohorts_SI(
         # update beliefs
         if mode_trade == 'complete':
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t = V_st_P / sigma_Y_sq * (
-                        - a_phi_1 * Delta_s_t * dt + dZ_build[i - 1] - phi_sqr_a_phi  * dZ_SI_build[i - 1]
-                           )
+            dDelta_s_t = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             if i < Ninit:
                 V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-                dDelta_s_t = V_st_P / sigma_Y_sq * (
-                        - a_phi_1 * Delta_s_t * dt + dZ_build[i - 1] - phi_sqr_a_phi  * dZ_SI_build[i - 1]
-                           )
+                dDelta_s_t = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
             else:
                 V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')
-                dDelta_s_t_N = V_st_N / sigma_Y_sq * (
-                                       -Delta_s_t * dt + dZ_build[i - 1]
-                               )  # from eq(5)
+                dDelta_s_t_N = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'N')  # from eq(5)
                 V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-                dDelta_s_t_P = V_st_P / sigma_Y_sq * (
-                        - a_phi_1 * Delta_s_t * dt + dZ_build[i - 1] - phi_sqr_a_phi * dZ_SI_build[i - 1]
-                           )  # from eq(8)
+                dDelta_s_t_P = dDelta_st(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')  # from eq(8)
                 dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         else:
