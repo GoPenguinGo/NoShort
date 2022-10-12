@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdmf
+from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI

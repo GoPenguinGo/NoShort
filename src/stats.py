@@ -198,12 +198,10 @@ def fadingmemo(v, tau, sigma_Y, V_hat, int_zt, delta_ss):
 #     """Calculates the weighted mean"""
 #     return np.average(var, weights=wts, axis=ax)
 
-@jit(nopython=True)
 def weighted_variance(var, wts, ax):
     """Calculates the weighted variance"""
     return np.average((var - np.average(var, weights=wts, axis=ax))**2, weights=wts, axis=ax)
 
-@jit(nopython=True)
 def weighted_skew(var, wts, ax):
     """Calculates the weighted skewness"""
     return (np.average((var - np.average(var, weights=wts, axis=ax))**3, weights=wts, axis=ax) /
