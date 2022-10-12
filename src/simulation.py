@@ -33,15 +33,6 @@ def simulate_SI(
         old_limit: int,
 ) -> Tuple[
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
@@ -146,16 +137,16 @@ def simulate_SI(
     )
 
     return (
-        r,
-        theta,
-        f,
+        # r,
+        # theta,
+        # f,
         Delta,
-        pi,
-        parti,
-        Phi_parti,
-        Delta_bar_parti,
-        dR,
-        invest_tracker
+        # pi,
+        #         # parti,
+        #         # Phi_parti,
+        #         # Delta_bar_parti,
+        #         # dR,
+        #         # invest_tracker
     )
 
 
