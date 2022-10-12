@@ -89,17 +89,20 @@ for l in range(N):
 
 
 # save the data
-# var_list = [r_matrix, theta_matrix, Phi_parti_matrix, popu_parti_matrix,
-#             Delta_bar_parti_matrix, popu_age_matrix,
-#             belief_age_matrix, wealthshare_age_matrix]
-# var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'participation rate',
-#                  'consumption-weighted estimation error of participants', 'participation rate in age groups',
-#                  'average belief in age groups', 'wealth share in age groups']
-# type_list = ['mean', 'vola']
-# age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
-#
-# for i, var in enumerate(var_list):
-#     np.save(var_name_list[i] + str(a_sce), var)
+var_list = [r_matrix, theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix,
+            Delta_bar_parti_matrix, popu_age_matrix,
+            wealthshare_age_matrix]
+var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', '1/consumption share of participants',
+                 'consumption-weighted estimation error of participants', 'participation rate in age groups',
+                 'wealth share in age groups']
+type_list = ['mean', 'vola']
+age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+
+for i, var in enumerate(var_list):
+    np.save(var_name_list[i] + str(a_sce), var)
+
+
+
 
 # read the data:
 r_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std

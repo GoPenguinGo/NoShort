@@ -1,7 +1,8 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from tqdm import tqdmf
+from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI
 from src.cohort_builder import build_cohorts_SI
@@ -11,7 +12,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Z_Y_cases, Z_SI_cases
-from src.stats import shocks, tau_calculator, good_times
+from src.stats import shocks, tau_calculator, good_times, weighted_variance, weighted_skew
 from numba import jit
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
@@ -39,7 +40,8 @@ survey_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
 # pi_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
 # mu_st_rt_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
 r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-belief_dispersion_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+belief_variance_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+belief_skew_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
@@ -84,7 +86,8 @@ for j in range(N):
             # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
             delta_bar_matrix[j, k, l] = Delta_bar_parti
             survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
-            belief_dispersion_matrix[j, k, l] = np.std(Delta, axis=1)  # todo: maybe add weights
+            belief_variance_matrix[j, k, l] = weighted_variance(Delta, cohort_size, 1)  # todo: maybe add weights
+            belief_skew_matrix[j, k, l] = weighted_skew(Delta, cohort_size, 1)
             dR_matrix[j, k, l] = dR
             # invest_tracker_matrix[j, k, l] = invest_tracker
             Phi_parti_1_matrix[j, k, l] = 1/f_parti

@@ -191,3 +191,25 @@ def fadingmemo(v, tau, sigma_Y, V_hat, int_zt, delta_ss):
     coef = v_st / (v_st * sigma_Y ** 2 + V_hat)
     delta_st = coef * (sigma_Y ** 2 * delta_ss + V_hat * int_zt)
     return delta_st
+
+
+
+# def weighted_mean(var, wts, ax):
+#     """Calculates the weighted mean"""
+#     return np.average(var, weights=wts, axis=ax)
+
+@jit(nopython=True)
+def weighted_variance(var, wts, ax):
+    """Calculates the weighted variance"""
+    return np.average((var - np.average(var, weights=wts, axis=ax))**2, weights=wts, axis=ax)
+
+@jit(nopython=True)
+def weighted_skew(var, wts, ax):
+    """Calculates the weighted skewness"""
+    return (np.average((var - np.average(var, weights=wts, axis=ax))**3, weights=wts, axis=ax) /
+            weighted_variance(var, wts, ax)**(1.5))
+
+# def weighted_kurtosis(var, wts):
+#     """Calculates the weighted skewness"""
+#     return (np.average((var - weighted_mean(var, wts))**4, weights=wts) /
+#             weighted_variance(var, wts)**(2))
