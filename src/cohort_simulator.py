@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from src.stats import post_var, fadingmemo
+from src.stats import post_var, dDelta_st
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from numba import jit
