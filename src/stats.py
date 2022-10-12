@@ -25,7 +25,7 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
     return V
 
 @jit(nopython=True)
-def dDelta_st(sigma_Y_sq: float,
+def dDelta_st_calculator(sigma_Y_sq: float,
               a1: float,
               a2: float,
               dt: float,

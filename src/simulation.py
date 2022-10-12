@@ -67,8 +67,6 @@ def simulate_SI(
         dt,
     )
 
-    # todo: SI have to change
-
     (
         Delta_s_t,
         eta_st_eta_ss,
