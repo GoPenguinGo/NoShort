@@ -483,7 +483,6 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -546,10 +545,11 @@ def simulate_cohorts_mean_vola(
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
     Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
+    Phi_parti_1_matrix = np.zeros((Nt))
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
-    parti = np.zeros((Nt))  # participation rate
+    # parti = np.zeros((Nt))  # participation rate
     popu_age = np.zeros((Nt, n_age_groups))
-    belief_age = np.zeros((Nt, n_age_groups))
+    # belief_age = np.zeros((Nt, n_age_groups))
     wealthshare_age = np.zeros((Nt, n_age_groups))
 
     if mode_trade == 'complete':
@@ -843,7 +843,7 @@ def simulate_cohorts_mean_vola(
         Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         # pi[i, :] = pi_st
-        parti[i] = popu_parti_t
+        # parti[i] = popu_parti_t
         # w[i, :] = w_st
         # age[i] = age_t
         # n_parti[i] = n_parti_t
@@ -851,31 +851,34 @@ def simulate_cohorts_mean_vola(
         parti_rate = invest_tracker * cohort_size
         belief = (Delta_s_t * sigma_Y + mu_Y)
         for j in range(4):
-            popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
+            if mode_trade != 'complete':
+                popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
 
-            belief_age[i, j] = np.average(
-                    belief[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]]
-                )
+            # belief_age[i, j] = np.average(
+            #     belief[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]]
+            # )
 
             wealthshare_age[i, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
-    popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(parti), np.std(parti)]
+    # popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(parti), np.std(parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
     Phi_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(Phi_parti), np.std(Phi_parti)]
+    Phi_parti_1_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(1/Phi_parti), np.std(1/Phi_parti)]
     popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
-    belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
+    # belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
 
     return (
         r_matrix,
         theta_matrix,
-        popu_parti_matrix,
+        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
+        Phi_parti_1_matrix,
         popu_age_matrix,
-        belief_age_matrix,
+        #belief_age_matrix,
         wealthshare_age_matrix,
     )
 

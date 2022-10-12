@@ -15,7 +15,7 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios = 1
-# a_sce = 2
+a_sce = 2
 N = 200
 N_scenarios = 3
 # scenarios_short = scenarios[1]
@@ -85,7 +85,7 @@ for l in range(N):
     print(time.time() - time_s)
 
 
-# # save the data
+# save the data
 # var_list = [r_matrix, theta_matrix, Phi_parti_matrix, popu_parti_matrix,
 #             Delta_bar_parti_matrix, popu_age_matrix,
 #             belief_age_matrix, wealthshare_age_matrix]

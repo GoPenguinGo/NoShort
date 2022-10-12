@@ -199,7 +199,6 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
@@ -259,11 +258,12 @@ def simulate_SI_mean_vola(
     (
         r_matrix,
         theta_matrix,
-        popu_parti_matrix,
+        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
+        Phi_parti_1_matrix,
         popu_age_matrix,
-        belief_age_matrix,
+        #belief_age_matrix,
         wealthshare_age_matrix,
     ) = simulate_cohorts_mean_vola(
         Y,
@@ -306,11 +306,12 @@ def simulate_SI_mean_vola(
     return (
         r_matrix,
         theta_matrix,
-        popu_parti_matrix,
+        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
+        Phi_parti_1_matrix,
         popu_age_matrix,
-        belief_age_matrix,
+        #belief_age_matrix,
         wealthshare_age_matrix,
     )
 
