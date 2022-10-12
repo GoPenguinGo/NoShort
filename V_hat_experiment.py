@@ -15,7 +15,7 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios = 1
-a_sce = 2
+# a_sce = 2
 N = 200
 N_scenarios = 3
 # scenarios_short = scenarios[1]
@@ -34,10 +34,11 @@ N_scenarios = 3
 r_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
 theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 Delta_bar_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+# belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 
 # write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
@@ -59,11 +60,12 @@ for l in range(N):
                 (
                     r,
                     theta,
-                    popu_parti,
+                    # popu_parti,
                     Delta_bar_parti,
                     Phi_parti,
+                    Phi_parti_1,
                     popu_age,
-                    belief_age,
+                    # belief_age,
                     wealthshare_age,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
                                           Vhat_try,
@@ -76,11 +78,12 @@ for l in range(N):
                                           )
                 r_matrix[l, m, n, o] = r
                 theta_matrix[l, m, n, o] = theta
-                popu_parti_matrix[l, m, n, o] = popu_parti
+                # popu_parti_matrix[l, m, n, o] = popu_parti
                 Delta_bar_parti_matrix[l, m, n, o] = Delta_bar_parti
                 Phi_parti_matrix[l, m, n, o] = Phi_parti
+                Phi_parti_1_matrix[l, m, n, o] = Phi_parti_1
                 popu_age_matrix[l, m, n, o] = popu_age
-                belief_age_matrix[l, m, n, o] = belief_age
+                # belief_age_matrix[l, m, n, o] = belief_age
                 wealthshare_age_matrix[l, m, n, o] = wealthshare_age
     print(time.time() - time_s)
 
