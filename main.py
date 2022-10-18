@@ -27,29 +27,33 @@ N = 100  # for smaller number of paths
 n_scenarios = 3
 scenarios_short = scenarios[:n_scenarios]
 
-n_scenarios = 1
-scenarios_short = scenarios[1:2]
+# n_scenarios = 1
+# scenarios_short = scenarios[1:2]
 
 phi_vector = np.arange(0,1,0.1)
 n_phi = len(phi_vector)
 
+phi_indexes = [0, 4, 8]
+n_phi_short = len(phi_indexes)
+phi_vector_short = phi_vector[phi_indexes]
+
 age_cutoff = cutoffs[2]
 
-# theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-# popu_parti_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-# # market_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-# survey_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
-Delta_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
-pi_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
-# # mu_st_rt_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
-# r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# belief_variance_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# belief_skew_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
-# parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
+popu_parti_matrix = np.empty((N, n_scenarios, n_phi, Nt))
+# market_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
+survey_view_matrix = np.empty((N, n_scenarios, n_phi, Nt))
+Delta_matrix = np.empty((N, n_scenarios, n_phi_short, Nt, Nc))
+pi_matrix = np.empty((N, n_scenarios, n_phi_short, Nt, Nc))
+# mu_st_rt_matrix = np.empty((N, n_scenarios, n_phi, Nt, Nc))
+r_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+belief_variance_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+belief_skew_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+dR_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+delta_bar_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+parti_old_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
+parti_young_matrix = np.zeros((N, n_scenarios, n_phi, Nt))
 
 # run the program for different values of phi, and store the results
 for j in range(N):
@@ -79,24 +83,24 @@ for j in range(N):
                             old_limit=100
                             )
 
-            Delta_matrix[j, k, l] = Delta
-            pi_matrix[j, k, l] = pi
-            # theta_matrix[j, k, l] = theta
-            # r_matrix[j, k, l] = r
-            # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-            # # mu_st_rt_matrix[j, k, l] = theta_mat + Delta
-            # popu_parti_matrix[j, k, l] = popu_parti
-            # # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
-            # delta_bar_matrix[j, k, l] = Delta_bar_parti
-            # survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
-            # belief_variance_matrix[j, k, l] = weighted_variance(Delta, cohort_size, 1)  # I defined the two weighted functions myself
-            # belief_skew_matrix[j, k, l] = weighted_skew(Delta, cohort_size, 1)
-            # dR_matrix[j, k, l] = dR
-            # # invest_tracker_matrix[j, k, l] = invest_tracker
-            # Phi_parti_1_matrix[j, k, l] = 1/f_parti
-            # parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
-            # parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
-            # # ( parti_young + parti_old )/2 = popu_parti
+            # Delta_matrix[j, k, l] = np.average(Delta, axis = 0)
+            # pi_matrix[j, k, l] = pi
+            theta_matrix[j, k, l] = theta
+            r_matrix[j, k, l] = r
+            theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+            # mu_st_rt_matrix[j, k, l] = theta_mat + Delta
+            popu_parti_matrix[j, k, l] = popu_parti
+            # market_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=f)
+            delta_bar_matrix[j, k, l] = Delta_bar_parti
+            survey_view_matrix[j, k, l] = np.average(Delta, axis=1, weights=cohort_size)
+            belief_variance_matrix[j, k, l] = weighted_variance(Delta, cohort_size, 1)  # I defined the two weighted functions myself
+            belief_skew_matrix[j, k, l] = weighted_skew(Delta, cohort_size, 1)
+            dR_matrix[j, k, l] = dR
+            # invest_tracker_matrix[j, k, l] = invest_tracker
+            Phi_parti_1_matrix[j, k, l] = 1/f_parti
+            parti_young_matrix[j, k, l] = np.average(invest_tracker[:, age_cutoff:], axis=1, weights = cohort_size[age_cutoff:])
+            parti_old_matrix[j, k, l] = np.average(invest_tracker[:, :age_cutoff], axis=1, weights=cohort_size[:age_cutoff])
+            # ( parti_young + parti_old )/2 = popu_parti
 
 
 # ######################################
@@ -106,10 +110,6 @@ for j in range(N):
 
 # ONE SPECIFIC PATH:
 # generate data for the graphs:
-phi_indexes = [0, 4, 8]
-n_phi_short = len(phi_indexes)
-phi_vector_short = phi_vector[phi_indexes]
-
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
 
@@ -126,8 +126,6 @@ pi_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 cons_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 invest_tracker_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
-
-
 for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
     mode_learn = scenario[1]
@@ -169,10 +167,7 @@ for g, scenario in enumerate(scenarios_short):
                 belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
                 cons_compare[g, i, j, k] = f / cohort_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
-
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
-
-
 
 red_cases = [r'Good $z^Y$ ', r'Bad $z^Y$ ']
 yellow_cases = [r'Good $z^{SI}$ ', r'Bad $z^{SI}$ ']
@@ -182,7 +177,7 @@ length = len(t)
 starts = np.zeros(nn)
 cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
 var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumption']
-scenario_labels = ['Complete', 'Keep', 'Drop']
+scenario_labels = ['Complete', 'Reentry', 'Disappointment']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 figure_labels = [r'$\pi_{s,t}$', '$\Delta_{s,t}$', 'log$c_{s,t}$']
@@ -294,7 +289,7 @@ for o in range(n_scenarios):
             # yellow_case = yellow_cases[k]
 
             for i in range(n_phi_short):
-                Delta = Delta_compare[o, j, k, i]  # with short-sale constraint, keep mode
+                Delta = Delta_compare[o, j, k, i]  # with short-sale constraint, reentry mode
                 pi = pi_compare[o, j, k, i]
                 log_cons = cons_compare[o, j, k, i]
                 for m in range(nn):
@@ -385,7 +380,7 @@ for i in range(1, n_phi_short, 1):
 # ######################################
 # the zoom-in ones
 # bad & Bad, phi = 0.4
-# cohort 1; cohort 2; cohort 1, complete; cohort 1, drop
+# cohort 1; cohort 2; cohort 1, complete; cohort 1, disappointment
 year = 100
 t_length = int(year/dt)
 t_indexes = np.empty((2,2,2))
@@ -397,7 +392,7 @@ t_indexes[0, 0, 1] = t_indexes[1, 0, 1] = t_indexes[1, 1, 1] = t_indexes[0, 1, 1
 phi_where = [(1, 2), (1, 1)]
 cohort_indexes = [(cohort_start-1, cohort_start-1), (cohort_start-1, cohort_start-1)]
 scenario_indexs = [(1, 1), (0, 2)]
-titles_subfig = [(r'$\phi=0.4$, keep', r'$\phi=0.8$, keep'), (r'$\phi=0.4$, complete market', r'$\phi=0.4$, drop')]
+titles_subfig = [(r'$\phi=0.4$, reentry', r'$\phi=0.8$, reentry'), (r'$\phi=0.4$, complete market', r'$\phi=0.4$, disappointment')]
 y_interest = Delta_time_series[:, red_case, yellow_case]  # n_scenarios, n_phi_short, nn, length
 condition_matrix = parti_time_series[:, red_case, yellow_case]
 switch_matrix = switch_time_series[:, red_case, yellow_case]
@@ -447,12 +442,70 @@ plt.close()
 
 
 # ######################################
+# ############ Figure 3.1 ##############
+# ######################################
+N_1 = 200
+Delta_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
+invest_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
+for j in range(N_1):
+    print(j)
+    dZ = dZ_matrix[j]
+    dZ_build = dZ_build_matrix[j]
+    dZ_SI = dZ_SI_matrix[j]
+    dZ_SI_build = dZ_SI_build_matrix[j]
+    for k, scenario in enumerate(scenarios_short):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        for l, phi_try in enumerate(phi_vector_short):
+            (
+                r,
+                theta,
+                f,
+                Delta,
+                pi,
+                popu_parti,
+                f_parti,
+                Delta_bar_parti,
+                dR,
+                invest_tracker,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
+                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                            top=0.05,
+                            old_limit=100
+                            )
+            Delta_matrix[j, k, l] = np.average(np.abs(Delta), axis = 0)
+            invest_matrix[j, k, l] = np.average(invest_tracker, axis = 0)
+Delta_vector = np.flip(np.average(Delta_matrix, axis=0), axis=2)
+invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=2)
+
+# Graph:
+x = t[:int(200/dt)]
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 8))
+for j, ax in enumerate(axes):
+    ax.set_xlabel('Age')
+    y_case = Delta_vector if j == 0 else invest_vector
+    for i in range(n_phi_short):
+        y = y_case[0, i, :int(200/dt)]
+        ax.plot(x, y, color=colors_short[i], linewidth=0.5, label=label_phi[i])
+    if j == 0:
+        ax.set_ylabel(r'Average $\mid\Delta_{s,t}\mid$', color='black')
+        ax.legend()
+    else:
+        ax.set_ylabel('Average participation rate', color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Average estimation error and age.png', dpi=300)
+plt.show()
+#plt.close()
+
+
+# ######################################
 # ############# Figure 4.1 #############
 # ######################################
 # time-series of interest rate and market price of risk, bad z^Y, bad z&SI
-# 4.1.1 interest rate across different phi values, keep
+# 4.1.1 interest rate across different phi values, reentry
 # 4.1.2 interest rate across different scenarios, phi = 0
-# 4.1.3 market price of risk across different phi values, keep
+# 4.1.3 market price of risk across different phi values, reentry
 red_case = 1
 yellow_case = 1
 r_mat = r_compare[:, red_case, yellow_case]  # n_scenarios, n_phi_short, Nt
@@ -501,9 +554,9 @@ plt.show()
 # ############# Figure 4.2 #############
 # ######################################
 # time-series of Delta_bar, Phi, and participation rate, bad z^Y, bad z&SI
-# 4.2.1 Delta_bar (keep + complete + drop) * (phi = 0, 0.8)
-# 4.2.2 Phi (keep + drop) * (phi = 0, 0.8), also mark 1 for complete case
-# 4.2.3 participation rate (keep + drop) * (phi = 0, 0.8)
+# 4.2.1 Delta_bar (reentry + complete + disappointment) * (phi = 0, 0.8)
+# 4.2.2 Phi (reentry + disappointment) * (phi = 0, 0.8), also mark 1 for complete case
+# 4.2.3 participation rate (reentry + disappointment) * (phi = 0, 0.8)
 red_case = 1
 yellow_case = 1
 titles_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
@@ -884,7 +937,7 @@ right_ts = [left_t + 200, left_t + 200]
 tax_index = 0
 scenario_indexs = [1, 1, 0, 1, 2, 1]
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
-titles_subfig = ['Keep, single path', 'Scenarios, single path', 'Complete', 'Keep', 'Drop', r'Keep$\phi=0.8$']
+titles_subfig = ['Reentry, single path', 'Scenarios, single path', 'Complete', 'Reentry', 'Disappointment', r'Reentry$\phi=0.8$']
 cases = ['Good ', 'Bad ']
 yellow_index = 1
 red_index = 1
@@ -1514,7 +1567,7 @@ for i, var in enumerate(var_list):
 # specific to one path
 # relates to the information index. right now beliefs of non-participants make little sense
 
-# marginal_belief = (-theta_drop) * sigma_Y + mu_Y
+# marginal_belief = (-theta_disappointment) * sigma_Y + mu_Y
 
 
 #######################################
