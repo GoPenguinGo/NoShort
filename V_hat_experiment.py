@@ -15,7 +15,7 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios = 1
-# a_sce = 2
+a_sce = 2
 N = 200
 N_scenarios = 3
 # scenarios_short = scenarios[1]
@@ -92,7 +92,7 @@ for l in range(N):
 var_list = [r_matrix, theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix,
             Delta_bar_parti_matrix, popu_age_matrix,
             wealthshare_age_matrix]
-var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', '1/consumption share of participants',
+var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
                  'consumption-weighted estimation error of participants', 'participation rate in age groups',
                  'wealth share in age groups']
 type_list = ['mean', 'vola']
@@ -108,15 +108,16 @@ for i, var in enumerate(var_list):
 r_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
 theta_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 Phi_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-popu_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
+Phi_parti_1_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
+#popu_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 Delta_bar_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 popu_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 belief_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 wealthshare_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-var_list = [r_Mat, theta_Mat, Phi_parti_Mat, popu_parti_Mat,
+var_list = [r_Mat, theta_Mat, Phi_parti_Mat, Phi_parti_1_Mat,
             Delta_bar_parti_Mat, popu_age_Mat,
             belief_age_Mat, wealthshare_age_Mat]
-var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'participation rate',
+var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
                  'consumption-weighted estimation error of participants', 'participation rate in age groups',
                  'average belief in age groups', 'wealth share in age groups']
 for i, var in enumerate(var_list):
@@ -238,3 +239,14 @@ fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('initial window and values age groups.png', dpi=500, format="png")
 plt.show()
 plt.close()
+
+
+
+
+
+
+
+
+#############################################################################
+belief_dispersion_coef = np.average(belief_dispersion_coef_matrix, axis=0)
+Delta_gap_coef = np.average(Delta_gap_coef_matrix, axis=0)
