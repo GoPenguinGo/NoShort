@@ -16,7 +16,7 @@ from src.stats import shocks, tau_calculator, good_times, weighted_variance, wei
 from numba import jit
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-import tabulate as tabulate
+# import tabulate as tabulate
 
 
 # todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
@@ -444,15 +444,16 @@ plt.close()
 # ######################################
 # ############ Figure 3.1 ##############
 # ######################################
-N_1 = 200
+N_1 = 1000
 Delta_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
 invest_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
+dt_root = np.sqrt(dt)
 for j in range(N_1):
     print(j)
-    dZ = dZ_matrix[j]
-    dZ_build = dZ_build_matrix[j]
-    dZ_SI = dZ_SI_matrix[j]
-    dZ_SI_build = dZ_SI_build_matrix[j]
+    dZ = np.random.randn(Nt) * dt_root
+    dZ_build = np.random.randn(Nc) * dt_root
+    dZ_SI = np.random.randn(Nt) * dt_root
+    dZ_SI_build = np.random.randn(Nc) * dt_root
     for k, scenario in enumerate(scenarios_short):
         mode_trade = scenario[0]
         mode_learn = scenario[1]
@@ -480,7 +481,7 @@ invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=2)
 
 # Graph:
 x = t[:int(200/dt)]
-fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 8))
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7))
 for j, ax in enumerate(axes):
     ax.set_xlabel('Age')
     y_case = Delta_vector if j == 0 else invest_vector
@@ -491,10 +492,88 @@ for j, ax in enumerate(axes):
         ax.set_ylabel(r'Average $\mid\Delta_{s,t}\mid$', color='black')
         ax.legend()
     else:
-        ax.set_ylabel('Average participation rate', color='black')
+        ax.set_ylabel('Average participation probability', color='black')
     ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Average estimation error and age.png', dpi=300)
+plt.savefig(str(N_1) + 'paths, ' + 'Average estimation error and age.png', dpi=300)
+plt.show()
+#plt.close()
+
+
+# ######################################
+# ############ Figure 3.2 ##############
+# ######################################
+N_1 = 500
+age_cut = 100
+Nc_cut = int(age_cut/dt)
+# drift_N_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
+drift_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
+diffusion_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
+r_matrix = np.empty((N_1, n_scenarios, n_phi_short))
+dt_root = np.sqrt(dt)
+for j in range(N_1):
+    print(j)
+    dZ = np.random.randn(Nt) * dt_root
+    dZ_build = np.random.randn(Nc) * dt_root
+    dZ_SI = np.random.randn(Nt) * dt_root
+    dZ_SI_build = np.random.randn(Nc) * dt_root
+    for k, scenario in enumerate(scenarios_short):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        for l, phi_try in enumerate(phi_vector_short):
+            (
+                r,
+                theta,
+                f,
+                Delta,
+                pi,
+                popu_parti,
+                f_parti,
+                Delta_bar_parti,
+                dR,
+                invest_tracker,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
+                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                            top=0.05,
+                            old_limit=100
+                            )
+            r_matrix[j, k, l] = np.average(r)
+            theta_mat = np.transpose(np.tile(theta, (Nc_cut, 1)))
+            r_mat = np.transpose(np.tile(r, (Nc_cut, 1)))
+            # drift_N = -rho + r_mat
+            drift_P = -rho + r_mat + 0.5 * theta_mat**2 - 0.5 * Delta[:, -Nc_cut:]**2
+            diffusion_P = theta_mat + Delta[:, -Nc_cut:]
+            # drift_N_matrix[j, k, l] = np.average(drift_N, weights=(1-invest_tracker[:, Nc_cut]), axis=0)
+            drift_P_matrix[j, k, l] = np.average(drift_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
+            diffusion_P_matrix[j, k, l] = np.average(diffusion_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
+# drift_N_vector = np.flip(np.average(drift_N_matrix, axis=0), axis=2)
+drift_P_vector = np.flip(np.average(drift_P_matrix, axis=0), axis=2)  # (n_scenarios, n_phi_short, Nc_cut)
+diffusion_P_vector = np.flip(np.average(diffusion_P_matrix, axis=0), axis=2)
+r_vector = np.average(r_matrix, axis=0)  # (n_scenarios, n_phi_short)
+
+# Graph:
+x = t[:Nc_cut]
+fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 7))
+for j, ax in enumerate(axes.flat):
+    ax.set_xlabel('Age')
+    y_case = drift_P_vector if j == 0 or j == 2 else diffusion_P_vector
+    y_sce = y_case[1] if j <= 1 else  y_case[0]  # (n_phi_short, Nc_cut)
+    for i in range(n_phi_short):
+        y = y_sce[i]  # (Nc_cut)
+        ax.plot(x, y, color=colors_short[i], linewidth=0.5, label=label_phi[i])
+        if j == 0:
+            if i == 0:
+                ax.plot(x, r_vector[1, i], color=colors_short[i], linestyle= 'dotted', linewidth=0.5, label='nonparticipants')
+            else:
+                ax.plot(x, r_vector[1, i], color=colors_short[i], linestyle='dotted', linewidth=0.5)
+            ax.legend()
+    if j == 0 or j == 2:
+        ax.set_ylabel('Drift of log consumption', color='black')
+    else:
+        ax.set_ylabel('Volatility of log consumption', color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(str(N_1) + 'paths, ' + 'log consumption and age.png', dpi=300)
 plt.show()
 #plt.close()
 
