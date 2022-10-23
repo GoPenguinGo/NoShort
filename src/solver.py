@@ -5,13 +5,13 @@ from numba import jit
 
 @jit(nopython=True)
 def bisection(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
-        xlow: np.float64,
-        xhigh: np.float64,
-        arg1: np.ndarray,
-        arg2: np.ndarray,
-        arg3: float,
-        eps: float = 1e-9,
+    optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
+    xlow: np.float64,
+    xhigh: np.float64,
+    arg1: np.ndarray,
+    arg2: np.ndarray,
+    arg3: float,
+    eps: float = 1e-9,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 
@@ -52,10 +52,10 @@ def bisection(
 
 @jit(nopython=True)
 def solve_theta(
-        theta_guess: np.float64,
-        consumption_share: np.ndarray,
-        Delta_s_t: np.ndarray,
-        sigma_Y: float,
+    theta_guess: np.float64,
+    consumption_share: np.ndarray,
+    Delta_s_t: np.ndarray,
+    sigma_Y: float,
 ) -> np.float64:
     """RHS - LHS of the eq(24), used to iteratively solve theta
 
@@ -69,7 +69,7 @@ def solve_theta(
         np.float64: RHS - LHS
     """
     invest = (
-            Delta_s_t >= -theta_guess
+        Delta_s_t >= -theta_guess
     )  # eq(10) and eq(11), invest if theta_s_t >= -theta, constrained if otherwise
     invest_consumption_share = invest * consumption_share
     Delta_bar_parti = np.sum(
@@ -82,21 +82,21 @@ def solve_theta(
         diff = 10000
     else:
         diff = (
-                       sigma_Y - Delta_bar_parti
-               ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
+            sigma_Y - Delta_bar_parti
+        ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
     return diff
 
-@jit(nopython = True)
+
+@jit(nopython=True)
 def find_the_rich(
-        indiv_w: np.ndarray,
-        cohort_size: np.ndarray,
-        top: float = 0.05) -> np.float64:
-    '''
+    indiv_w: np.ndarray, cohort_size: np.ndarray, top: float = 0.05
+) -> np.float64:
+    """
     :param indiv_w (np.ndarray): individual wealth of the agents, shape (Nc,)
     :param cohort_size (np.ndarray): shape (Nc,)
     :param top (float): can short criteria
     :return: a cutoff individual wealth level above which agents are then able to short
-    '''
+    """
     wealth_rank = indiv_w.argsort()
     indiv_w_sorted = indiv_w[wealth_rank[::-1]]
     cohort_size_sorted = cohort_size[wealth_rank[::-1]]
@@ -106,15 +106,15 @@ def find_the_rich(
     return wealth_cutoff
 
 
-@jit(nopython = True)
+@jit(nopython=True)
 def solve_theta_partial_constraint(
-        theta_guess: float,
-        unconstrained: np.ndarray,
-        Delta_s_t: np.ndarray,
-        consumption_share: np.ndarray,
-        sigma_Y: float,
+    theta_guess: float,
+    unconstrained: np.ndarray,
+    Delta_s_t: np.ndarray,
+    consumption_share: np.ndarray,
+    sigma_Y: float,
 ) -> np.float64:
-    '''
+    """
     solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
     :param theta_guess (float): any guess of theta
     :param unconstrained (np.ndarray): the cohorts that can short
@@ -122,26 +122,32 @@ def solve_theta_partial_constraint(
     :param consumption_share (np.ndarray): shape (Nc,)
     :param sigma_Y (float): volatility of aggregate output
     :return: the distance to converge
-    '''
+    """
     constrained = 1 - unconstrained
-    pi_constrained = np.maximum(Delta_s_t + theta_guess, 0)  # investment if a cohort can't short
-    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
-    part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
+    pi_constrained = np.maximum(
+        Delta_s_t + theta_guess, 0
+    )  # investment if a cohort can't short
+    part_constrained = np.sum(
+        pi_constrained * consumption_share * constrained
+    )  # for those cohorts that can't short
+    part_unconstrained = np.sum(
+        (Delta_s_t + theta_guess) * consumption_share * unconstrained
+    )  # for those cohorts that can short
 
     diff = (part_constrained + part_unconstrained) / sigma_Y - 1
 
     return diff
 
 
-@jit(nopython = True)
+@jit(nopython=True)
 def solve_theta_partial_constraint_2(
-        theta_guess: float,
-        unconstrained: np.ndarray,
-        Delta_s_t: np.ndarray,
-        consumption_share: np.ndarray,
-        sigma_Y: float,
+    theta_guess: float,
+    unconstrained: np.ndarray,
+    Delta_s_t: np.ndarray,
+    consumption_share: np.ndarray,
+    sigma_Y: float,
 ) -> np.float64:
-    '''
+    """
     solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
     :param theta_guess (float): any guess of theta
     :param unconstrained (np.ndarray): the cohorts that can short
@@ -149,9 +155,11 @@ def solve_theta_partial_constraint_2(
     :param consumption_share (np.ndarray): shape (Nc,)
     :param sigma_Y (float): volatility of aggregate output
     :return: the distance to converge
-    '''
+    """
     constrained = 1 - unconstrained
-    invest = (Delta_s_t >= -theta_guess) * constrained + unconstrained  # eq(10) and eq(11), invest if theta_s_t >= -theta, constrained if otherwise
+    invest = (
+        Delta_s_t >= -theta_guess
+    ) * constrained + unconstrained  # eq(10) and eq(11), invest if theta_s_t >= -theta, constrained if otherwise
     invest_consumption_share = invest * consumption_share
     Delta_bar_parti = np.sum(
         Delta_s_t * invest_consumption_share
@@ -163,23 +171,22 @@ def solve_theta_partial_constraint_2(
         diff = 10000
     else:
         diff = (
-                       sigma_Y - Delta_bar_parti
-               ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
+            sigma_Y - Delta_bar_parti
+        ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
 
     return diff
 
 
-
 @jit(nopython=True)
 def bisection_partial_constraint(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float], np.float64],
-        xlow: np.float64,
-        xhigh: np.float64,
-        arg1: np.ndarray,
-        arg2: np.ndarray,
-        arg3: np.ndarray,
-        arg4: float,
-        eps: float = 1e-6,
+    optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float], np.float64],
+    xlow: np.float64,
+    xhigh: np.float64,
+    arg1: np.ndarray,
+    arg2: np.ndarray,
+    arg3: np.ndarray,
+    arg4: float,
+    eps: float = 1e-6,
 ) -> np.float64:
     """Bisection method to solve x (theta)
 

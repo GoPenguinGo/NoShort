@@ -6,7 +6,6 @@ from src.cohort_simulator import simulate_cohorts, simulate_cohorts_partial_cons
 from src.stats import shocks, good_times
 
 
-
 def simulate(
     mode_trade: str,
     mode_learn: str,
@@ -29,21 +28,21 @@ def simulate(
     tau: np.ndarray,
     cohort_size: np.ndarray,
 ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
-    '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
+    """A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     :param mode: scenario of the function, see param for scenario names
     :param Nc: number of cohorts
     :param dt: time increment
@@ -56,7 +55,7 @@ def simulate(
     :param Npre: pre-trading periods
     :param T_hat: pre-trading years
     :return:
-    '''
+    """
 
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
 
@@ -65,12 +64,9 @@ def simulate(
         mu_Y,
         sigma_Y,
         dt,
-        )
+    )
 
-    (
-        good_time_build,
-        good_time_simulate,
-    ) = good_times(
+    (good_time_build, good_time_simulate,) = good_times(
         dZ_build,
         dZ,
         dt,
@@ -104,7 +100,7 @@ def simulate(
         good_time_build,
         mode_trade,
         mode_learn,
-        )
+    )
 
     (
         r,
@@ -149,7 +145,7 @@ def simulate(
         invest_tracker,
         tau_info_build,
         good_time_simulate,
-        )
+    )
 
     return (
         r,
@@ -190,34 +186,34 @@ def simulate_partial_constraint(
     tau: np.ndarray,
     cohort_size: np.ndarray,
 ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
-    '''
+    """
     :param mode: scenario of the function, see param for scenario names
     :param Nc: number of cohorts
     :param Nt: number of periods
@@ -236,7 +232,7 @@ def simulate_partial_constraint(
     :param tau: age of each cohort
     :param cohort_size: size of each cohort
     :return:
-    '''
+    """
 
     # dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
     biasvec = dZ_build[-Npre:]  # dZt used in the build_cohorts function
@@ -247,12 +243,9 @@ def simulate_partial_constraint(
         mu_Y,
         sigma_Y,
         dt,
-        )
+    )
 
-    (
-        good_time_build,
-        good_time_simulate,
-    ) = good_times(
+    (good_time_build, good_time_simulate,) = good_times(
         dZ_build,
         dZ,
         dt,
@@ -270,7 +263,25 @@ def simulate_partial_constraint(
         invest_tracker_build,
         can_short_tracker_build,
         tau_info_build,
-    ) = build_cohorts_partial_constraint(dZ_build, Nc, dt, tau, cohort_size, rho, nu, Vhat, mu_Y, sigma_Y, tax, Npre, Ninit, T_hat, good_time_build, mode_trade, mode_learn)
+    ) = build_cohorts_partial_constraint(
+        dZ_build,
+        Nc,
+        dt,
+        tau,
+        cohort_size,
+        rho,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        tax,
+        Npre,
+        Ninit,
+        T_hat,
+        good_time_build,
+        mode_trade,
+        mode_learn,
+    )
 
     (
         r,
@@ -359,5 +370,3 @@ def simulate_partial_constraint(
         Delta_bar_long,
         Delta_bar_short,
     )
-
-

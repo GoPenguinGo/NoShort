@@ -1,5 +1,11 @@
 import numpy as np
-from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
+from src.solver import (
+    bisection,
+    solve_theta,
+    find_the_rich,
+    bisection_partial_constraint,
+    solve_theta_partial_constraint,
+)
 from tqdm import tqdm
 from typing import Tuple
 from src.stats import post_var, fadingmemo
@@ -23,14 +29,7 @@ def build_cohorts(
     good_time_build: np.ndarray,
     mode_trade: str,
     mode_learn: str,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,]:
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
@@ -59,7 +58,7 @@ def build_cohorts(
     d_eta_st = np.zeros(1)  # disagreement, eq(11)
     eta_bar = np.ones(1)
     eta_st_eta_ss = np.ones(1)
-    invest_tracker = np.ones(Ninit) if mode_trade == 'drop' else np.ones(Nc)
+    invest_tracker = np.ones(Ninit) if mode_trade == "drop" else np.ones(Nc)
     tau_info = np.ones(1) * dt
 
     for i in tqdm(range(1, Nc)):
@@ -68,17 +67,22 @@ def build_cohorts(
         tau_short = tau[-i:]
 
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
-            (-0.5 * d_eta_st ** 2) * dt
-            + d_eta_st * dZ_build[i - 1]
+            (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_build[i - 1]
         )  # equation (11)
 
-        eta_bar_parts = tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt    # equation (18)
-        eta_bar_t = np.sum(eta_bar_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        eta_bar_parts = (
+            tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt
+        )  # equation (18)
+        eta_bar_t = np.sum(eta_bar_parts) / (
+            1 - tax * dt
+        )  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, 1)
         eta_bar = np.append(eta_bar, eta_bar_t)
-        eta_bar = eta_bar / eta_bar_t  # rescale, does not change the relative magnitude of each cohort
+        eta_bar = (
+            eta_bar / eta_bar_t
+        )  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
@@ -87,59 +91,73 @@ def build_cohorts(
         f_st = np.append(f_st, tax)
 
         # update beliefs
-        dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2
-                      ) * (
-                -Delta_s_t * dt + dZ_build[i - 1]
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2) * (
+            -Delta_s_t * dt + dZ_build[i - 1]
         )  # from eq(5)
 
-        if mode_learn == 'back_renew' and mode_trade == 'drop':
+        if mode_learn == "back_renew" and mode_trade == "drop":
             tau_info = np.append(tau_info, 0) + dt
         else:
-            tau_info = tau[-i - 1:]
+            tau_info = tau[-i - 1 :]
 
         if i < Npre:
             Delta_s_t += dDelta_s_t
-            Delta_s_t = np.append(Delta_s_t, 0)  # newborns begin with 0 bias when there are not enough earlier observations
+            Delta_s_t = np.append(
+                Delta_s_t, 0
+            )  # newborns begin with 0 bias when there are not enough earlier observations
         else:
             init_bias = np.average(dZ_build[int(i - Npre) : i]) / dt
-            Delta_s_t+= dDelta_s_t
+            Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, init_bias
             )  # newborns begin with Npre earlier observations
 
         # find the market clearing theta, given beliefs and consumption shares
-        if i < Ninit or mode_trade == 'comp':  # Ninit: initial rounds where the short-sale constraint is relaxed
-            d_eta_st = (
-                Delta_s_t  # relax the short-sale constraint in the beginning
-            )
+        if (
+            i < Ninit or mode_trade == "comp"
+        ):  # Ninit: initial rounds where the short-sale constraint is relaxed
+            d_eta_st = Delta_s_t  # relax the short-sale constraint in the beginning
         else:
-            invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market, new cohort by default can invest
-            if mode_trade == 'drop':
+            invest_tracker = np.append(
+                invest_tracker, 1
+            )  # all cohorts that are still in the market, new cohort by default can invest
+            if mode_trade == "drop":
                 if good_time_build[i - 1] == 1:
-                    if mode_learn == 'back_collect':
+                    if mode_learn == "back_collect":
                         # agents who have left the market respond to the recent positive shocks
                         # they collect all the information they missed during the drop period
                         invest_tracker = np.ones(i + 1)  # all can invest
 
-                    if mode_learn == 'back_renew':
-                        renew_bias = np.sum(dZ_build[int(i - Npre): i]) / (Npre * dt)
-                        Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (1 - invest_tracker)
+                    if mode_learn == "back_renew":
+                        renew_bias = np.sum(dZ_build[int(i - Npre) : i]) / (Npre * dt)
+                        Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (
+                            1 - invest_tracker
+                        )
                         tau_info = invest_tracker * tau_info + (1 - invest_tracker) * dt
                         invest_tracker = np.ones(i + 1)
 
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
+                lowest_bound = -np.max(
+                    possible_delta_st[np.nonzero(possible_delta_st)]
+                )  # absolute lower bound for theta among active investors
                 theta_t = bisection(
-                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                    solve_theta,
+                    lowest_bound,
+                    50,
+                    possible_cons_share,
+                    possible_delta_st,
+                    sigma_Y,
                 )  # solve for theta, 10 is a far away upper bound for theta
                 a = Delta_s_t + theta_t
-                invest = (a >= 0)
+                invest = a >= 0
                 invest_tracker = invest * invest_tracker
                 d_eta_st = a * invest_tracker - theta_t
 
-            if mode_trade == 'keep':
-                lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
+            if mode_trade == "keep":
+                lowest_bound = -np.max(
+                    Delta_s_t[np.nonzero(Delta_s_t)]
+                )  # absolute lower bound for theta
                 f_st_standard = f_st * dt
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50, f_st_standard, Delta_s_t, sigma_Y
@@ -159,27 +177,24 @@ def build_cohorts(
     )
 
 
-
-
-
 def build_cohorts_partial_constraint(
-        dZ_build: np.ndarray,
-        Nc: int,
-        dt: float,
-        tau: np.ndarray,
-        cohort_size: np.ndarray,
-        rho: float,
-        nu: float,
-        Vhat: float,
-        mu_Y: float,
-        sigma_Y: float,
-        tax: float,
-        Npre: int,
-        Ninit: int,
-        T_hat: float,
-        good_time_build: np.ndarray,
-        mode_trade: str,
-        mode_learn: str,
+    dZ_build: np.ndarray,
+    Nc: int,
+    dt: float,
+    tau: np.ndarray,
+    cohort_size: np.ndarray,
+    rho: float,
+    nu: float,
+    Vhat: float,
+    mu_Y: float,
+    sigma_Y: float,
+    tax: float,
+    Npre: int,
+    Ninit: int,
+    T_hat: float,
+    good_time_build: np.ndarray,
+    mode_trade: str,
+    mode_learn: str,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -224,25 +239,33 @@ def build_cohorts_partial_constraint(
     can_short_tracker = np.ones(Ninit)
     tau_info = np.ones(1) * dt
 
-    if mode_trade in ['rich_free'] and mode_learn in ['give_up', 'back_collect', 'back_renew']:
+    if mode_trade in ["rich_free"] and mode_learn in [
+        "give_up",
+        "back_collect",
+        "back_renew",
+    ]:
         for i in tqdm(range(1, Nc)):
             # for i in tqdm(range(1, Ninit)):
             # new cohort born (age 0), get wealth transfer, observe, invest
             tau_short = tau[-i:]
 
             eta_st_eta_ss = eta_st_eta_ss * np.exp(
-                (-0.5 * d_eta_st ** 2) * dt
-                + d_eta_st * dZ_build[i - 1]
+                (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_build[i - 1]
             )  # equation (11)
 
-            eta_bar_parts = tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt  # equation (18)
+            eta_bar_parts = (
+                tax * np.exp(-tax * tau_short) * eta_bar * eta_st_eta_ss * dt
+            )  # equation (18)
             eta_bar_t = np.sum(eta_bar_parts) / (
-                        1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+                1 - tax * dt
+            )  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
             # eta_bar_t = np.sum(eta_bar_parts)
 
             eta_st_eta_ss = np.append(eta_st_eta_ss, 1)
             eta_bar = np.append(eta_bar, eta_bar_t)
-            eta_bar = eta_bar / eta_bar_t  # rescale, does not change the relative magnitude of each cohort
+            eta_bar = (
+                eta_bar / eta_bar_t
+            )  # rescale, does not change the relative magnitude of each cohort
             # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
             #  eta_bar_t is the denominator; it creates issues if too close to 0
             #  so I rescale eta_bar to keep it away from 0, without changing f_st
@@ -252,22 +275,22 @@ def build_cohorts_partial_constraint(
 
             # update beliefs
 
-            dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y ** 2
-                          ) * (
-                                 -Delta_s_t * dt + dZ_build[i - 1]
-                         )  # from eq(5)
+            dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2) * (
+                -Delta_s_t * dt + dZ_build[i - 1]
+            )  # from eq(5)
 
-            if mode_learn == 'back_renew':
+            if mode_learn == "back_renew":
                 tau_info = np.append(tau_info, 0) + dt
             else:
-                tau_info = tau[-i - 1:]
+                tau_info = tau[-i - 1 :]
 
             if i < Npre:
                 Delta_s_t += dDelta_s_t
-                Delta_s_t = np.append(Delta_s_t,
-                                      0)  # newborns begin with 0 bias when there are not enough earlier observations
+                Delta_s_t = np.append(
+                    Delta_s_t, 0
+                )  # newborns begin with 0 bias when there are not enough earlier observations
             else:
-                init_bias = np.average(dZ_build[int(i - Npre): i]) / dt
+                init_bias = np.average(dZ_build[int(i - Npre) : i]) / dt
                 Delta_s_t += dDelta_s_t
                 Delta_s_t = np.append(
                     Delta_s_t, init_bias
@@ -275,28 +298,30 @@ def build_cohorts_partial_constraint(
 
             # find the market clearing theta, given beliefs and consumption shares
             if i < Ninit:
-                d_eta_st = (
-                    Delta_s_t  # relax the short-sale constraint in the beginning
-                )
+                d_eta_st = Delta_s_t  # relax the short-sale constraint in the beginning
 
             else:
                 # add a new cohort in the trackers
-                invest_tracker = np.append(invest_tracker,
-                                           1)  # all cohorts that are still in the market, new cohort by default can invest
-                can_short_tracker = np.append(can_short_tracker,
-                                                0)  # some cohorts that are allowed to short, new cohort by default can't short
-                cohort_size_short = cohort_size[-i - 1:]
+                invest_tracker = np.append(
+                    invest_tracker, 1
+                )  # all cohorts that are still in the market, new cohort by default can invest
+                can_short_tracker = np.append(
+                    can_short_tracker, 0
+                )  # some cohorts that are allowed to short, new cohort by default can't short
+                cohort_size_short = cohort_size[-i - 1 :]
 
                 if good_time_build[i - 1] == 1:
 
-                    if mode_learn == 'back_collect':
+                    if mode_learn == "back_collect":
                         # agents who have left the market respond to the recent positive shocks
                         # they collect all the information they missed during the drop period
                         invest_tracker = np.ones(i + 1)  # all can invest
 
-                    if mode_learn == 'back_renew':
-                        renew_bias = np.sum(dZ_build[int(i - Npre): i]) / (Npre * dt)
-                        Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (1 - invest_tracker)
+                    if mode_learn == "back_renew":
+                        renew_bias = np.sum(dZ_build[int(i - Npre) : i]) / (Npre * dt)
+                        Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (
+                            1 - invest_tracker
+                        )
                         tau_info = invest_tracker * tau_info + (1 - invest_tracker) * dt
                         invest_tracker = np.ones(i + 1)
 
@@ -307,26 +332,35 @@ def build_cohorts_partial_constraint(
                 wealth_cutoff = find_the_rich(
                     indiv_w_possible, cohort_size_possible, top=0.05
                 )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+                can_short = (
+                    indiv_w_possible >= wealth_cutoff
+                )  # these cohorts can short in this period
                 can_short_tracker = (
-                        can_short_tracker + can_short >= 1
+                    can_short_tracker + can_short >= 1
                 )  # once rich, always can short
 
                 theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, Delta_s_t_possible, f_st_possible,
-                    sigma_Y
+                    solve_theta_partial_constraint,
+                    -50,
+                    50,
+                    can_short_tracker,
+                    Delta_s_t_possible,
+                    f_st_possible,
+                    sigma_Y,
                 )
                 want_to_short = (Delta_s_t + theta_t) < 0
-                constrained = invest_tracker * want_to_short * (
-                        1 - can_short_tracker
+                constrained = (
+                    invest_tracker * want_to_short * (1 - can_short_tracker)
                 )  # in the market * want to short * can't short
                 short_t = want_to_short * can_short_tracker
                 long_t = (1 - want_to_short) * invest_tracker
-                invest_tracker = invest_tracker - constrained  # constrained people drop, update invest_tracker
+                invest_tracker = (
+                    invest_tracker - constrained
+                )  # constrained people drop, update invest_tracker
                 pi_st = (Delta_s_t + theta_t) / sigma_S * invest_tracker
                 d_eta_st = Delta_s_t * invest_tracker - theta_t * (1 - invest_tracker)
     else:
-        print('mode not found')
+        print("mode not found")
 
     return (
         Delta_s_t,
@@ -337,8 +371,6 @@ def build_cohorts_partial_constraint(
         can_short_tracker,
         tau_info,
     )
-
-
 
 
 #
