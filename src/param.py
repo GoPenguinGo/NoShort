@@ -7,7 +7,7 @@ rho = 0.001  # Time discount factor
 # nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
-sigma_Y_sqr = sigma_Y ** 2
+sigma_Y_sqr = sigma_Y**2
 sigma_S = (
     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
 )
@@ -23,7 +23,7 @@ tax = 0.01
 dt = 1 / 12  # time incremental
 T_hat = 20  # Pre-trading period
 Npre = int(T_hat / dt)
-Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+Vhat = (sigma_Y**2) / T_hat  # prior variance
 Ninit = int(20 / dt)
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods

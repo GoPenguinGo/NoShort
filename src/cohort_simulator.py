@@ -1,39 +1,46 @@
 import numpy as np
 from typing import Tuple
 from src.stats import post_var, fadingmemo
-from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
+from src.solver import (
+    bisection,
+    solve_theta,
+    find_the_rich,
+    bisection_partial_constraint,
+    solve_theta_partial_constraint,
+)
 from tqdm import tqdm
 from numba import jit
 
+
 def simulate_cohorts(
-        Y: np.ndarray,
-        biasvec: np.ndarray,
-        dZ: np.ndarray,
-        Nt: int,
-        Nc: int,
-        tau: np.ndarray,
-        dt: float,
-        rho: float,
-        nu: float,
-        Vhat: float,
-        mu_Y: float,
-        sigma_Y: float,
-        sigma_S: float,
-        tax: float,
-        beta: float,
-        T_hat: float,
-        Npre: float,
-        Ninit: int,
-        mode_trade: str,
-        mode_learn: str,
-        cohort_size: np.ndarray,
-        Delta_s_t: np.ndarray,
-        eta_st_eta_ss: np.ndarray,
-        eta_bar: np.ndarray,
-        d_eta_st: np.ndarray,
-        invest_tracker: np.ndarray,
-        tau_info: np.ndarray,
-        good_time_simulate: np.ndarray,
+    Y: np.ndarray,
+    biasvec: np.ndarray,
+    dZ: np.ndarray,
+    Nt: int,
+    Nc: int,
+    tau: np.ndarray,
+    dt: float,
+    rho: float,
+    nu: float,
+    Vhat: float,
+    mu_Y: float,
+    sigma_Y: float,
+    sigma_S: float,
+    tax: float,
+    beta: float,
+    T_hat: float,
+    Npre: float,
+    Ninit: int,
+    mode_trade: str,
+    mode_learn: str,
+    cohort_size: np.ndarray,
+    Delta_s_t: np.ndarray,
+    eta_st_eta_ss: np.ndarray,
+    eta_bar: np.ndarray,
+    d_eta_st: np.ndarray,
+    invest_tracker: np.ndarray,
+    tau_info: np.ndarray,
+    good_time_simulate: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -127,16 +134,19 @@ def simulate_cohorts(
 
         # new cohort born (age 0), get wealth transfer, observe, invest
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
-            (-0.5 * d_eta_st ** 2) * dt
-            + d_eta_st * dZ_t
+            (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t
         )  # equation (11)
 
-        eta_bar_parts = tax * np.exp(-tax * tau) * eta_bar * eta_st_eta_ss * dt  # equation (18)
+        eta_bar_parts = (
+            tax * np.exp(-tax * tau) * eta_bar * eta_st_eta_ss * dt
+        )  # equation (18)
         eta_bar_t = np.sum(eta_bar_parts) / (1 - tax * dt)  # equation (18)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[1:], 1)
         eta_bar = np.append(eta_bar[1:], eta_bar_t)
-        eta_bar = eta_bar / eta_bar_t  # rescale, does not change the relative magnitude of each cohort
+        eta_bar = (
+            eta_bar / eta_bar_t
+        )  # rescale, does not change the relative magnitude of each cohort
 
         f_st = eta_bar_parts / eta_bar_t / dt
         f_st = np.append(f_st[1:], tax)
@@ -146,59 +156,74 @@ def simulate_cohorts(
             w_cohort_st = Y[i] / beta * f_st
             w_st = w_cohort_st / cohort_size * dt
         else:
-            dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+            dR_t = (
+                mu_S_t * dt + sigma_S * dZ_t
+            )  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
             w_t = Y[i] / beta
-            dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            dw_st = (
+                (r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)
+            ) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
             w_st = w_st[1:] + dw_st[1:]
             w_st = np.append(w_st, w_t * tax / nu)
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
-        dDelta_s_t = (
-            post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2
-                     ) * (
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2) * (
             -Delta_s_t * dt + dZ_t
         )  # from eq(5)
 
-        if mode_learn == 'back_renew' and mode_trade == 'drop':
+        if mode_learn == "back_renew" and mode_trade == "drop":
             tau_info = np.append(tau_info[1:], 0) + dt
 
-        if i < Npre-1:
-            init_bias = (np.sum(biasvec[i+1:]) + np.sum(dZ[:i+1])) / T_hat
+        if i < Npre - 1:
+            init_bias = (np.sum(biasvec[i + 1 :]) + np.sum(dZ[: i + 1])) / T_hat
         else:
-            init_bias = np.sum(dZ[i+1 - Npre: i+1]) / T_hat
+            init_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / T_hat
 
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
         Delta_s_t = np.append(Delta_s_t, init_bias)
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
-        invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
+        invest_tracker = np.append(
+            invest_tracker[1:], 1
+        )  # all cohorts that are still in the market, 1 by default
 
-        if mode_trade == 'drop':
+        if mode_trade == "drop":
             if good_time_simulate[i] == 1:
 
-                if mode_learn == 'back_collect':
+                if mode_learn == "back_collect":
                     # agents who have left the market respond to the recent positive shocks
                     # they collect all the information they missed during the drop period
                     invest_tracker = np.ones(Nc)  # all can invest
 
-                if mode_learn == 'back_renew':
+                if mode_learn == "back_renew":
                     if i < Npre - 1:
-                        renew_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / (Npre * dt)
+                        renew_bias = (
+                            np.sum(biasvec[i + 1 :]) + np.sum(dZ[: i + 1])
+                        ) / (Npre * dt)
                     else:
-                        renew_bias = np.sum(dZ[i + 1 - Npre: i + 1]) / (Npre * dt)
-                    Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (1 - invest_tracker)
+                        renew_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / (Npre * dt)
+                    Delta_s_t = Delta_s_t * invest_tracker + renew_bias * (
+                        1 - invest_tracker
+                    )
                     tau_info = invest_tracker * tau_info + (1 - invest_tracker) * dt
                     invest_tracker = np.ones(Nc)  # all can invest
 
             possible_cons_share = f_st * dt * invest_tracker
             possible_delta_st = Delta_s_t * invest_tracker
-            lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+            lowest_bound = -np.max(
+                possible_delta_st
+            )  # absolute lower bound for theta among active investors
             theta_t = bisection(
-                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                solve_theta,
+                lowest_bound,
+                50,
+                possible_cons_share,
+                possible_delta_st,
+                sigma_Y,
             )  # solve for theta
             a = Delta_s_t + theta_t
-            invest = (a >= 0)
+            invest = a >= 0
             # want_to_short_t = invest_tracker * (1 - invest)
             invest_tracker = invest * invest_tracker
             d_eta_st = a * invest_tracker - theta_t
@@ -210,15 +235,13 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
 
-        elif mode_trade == 'keep':
+        elif mode_trade == "keep":
             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
             f_st_standard = f_st * dt
             theta_t = bisection(
                 solve_theta, lowest_bound, 50, f_st_standard, Delta_s_t, sigma_Y
             )  # solve for theta
-            d_eta_st = np.maximum(
-                -theta_t, Delta_s_t
-            )  # update max(Delta_s_t, -theta)
+            d_eta_st = np.maximum(-theta_t, Delta_s_t)  # update max(Delta_s_t, -theta)
             invest = Delta_s_t >= -theta_t
             invest_fst = invest * f_st_standard
             popu_parti_t = np.sum(cohort_size * invest)
@@ -228,7 +251,7 @@ def simulate_cohorts(
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
-        elif mode_trade == 'comp':
+        elif mode_trade == "comp":
             f_st_standard = f_st * dt
             Delta_bar_parti_t = np.sum(f_st_standard * Delta_s_t)
             theta_t = sigma_Y - Delta_bar_parti_t
@@ -242,15 +265,10 @@ def simulate_cohorts(
             n_parti_t = np.sum(invest) / Nc
 
         else:
-            print('Warning! Mode trade not defined')
+            print("Warning! Mode trade not defined")
             exit()
 
-        r_t = (
-                rho
-                + mu_Y
-                + nu - tax
-                - sigma_Y * theta_t
-        )
+        r_t = rho + mu_Y + nu - tax - sigma_Y * theta_t
 
         mu_S_t = sigma_S * theta_t + r_t
 
@@ -286,48 +304,36 @@ def simulate_cohorts(
     )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def simulate_cohorts_partial_constraint(
-        Y: np.ndarray,
-        biasvec: np.ndarray,
-        dZ: np.ndarray,
-        Nt: int,
-        Nc: int,
-        tau: np.ndarray,
-        dt: float,
-        rho: float,
-        nu: float,
-        Vhat: float,
-        mu_Y: float,
-        sigma_Y: float,
-        sigma_S: float,
-        tax: float,
-        beta: float,
-        T_hat: float,
-        Npre: float,
-        Ninit: int,
-        mode_trade: str,
-        mode_learn: str,
-        cohort_size: np.ndarray,
-        Delta_s_t: np.ndarray,
-        eta_st_eta_ss: np.ndarray,
-        eta_bar: np.ndarray,
-        d_eta_st: np.ndarray,
-        invest_tracker_t: np.ndarray,
-        can_short_tracker_t: np.ndarray,
-        tau_info: np.ndarray,
-        good_time_simulate: np.ndarray,
+    Y: np.ndarray,
+    biasvec: np.ndarray,
+    dZ: np.ndarray,
+    Nt: int,
+    Nc: int,
+    tau: np.ndarray,
+    dt: float,
+    rho: float,
+    nu: float,
+    Vhat: float,
+    mu_Y: float,
+    sigma_Y: float,
+    sigma_S: float,
+    tax: float,
+    beta: float,
+    T_hat: float,
+    Npre: float,
+    Ninit: int,
+    mode_trade: str,
+    mode_learn: str,
+    cohort_size: np.ndarray,
+    Delta_s_t: np.ndarray,
+    eta_st_eta_ss: np.ndarray,
+    eta_bar: np.ndarray,
+    d_eta_st: np.ndarray,
+    invest_tracker_t: np.ndarray,
+    can_short_tracker_t: np.ndarray,
+    tau_info: np.ndarray,
+    good_time_simulate: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -447,16 +453,19 @@ def simulate_cohorts_partial_constraint(
 
         # new cohort born (age 0), get wealth transfer, observe, invest
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
-            (-0.5 * d_eta_st ** 2) * dt
-            + d_eta_st * dZ_t
+            (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t
         )  # equation (11)
 
-        eta_bar_parts = tax * np.exp(-tax * tau) * eta_bar * eta_st_eta_ss * dt  # equation (18)
+        eta_bar_parts = (
+            tax * np.exp(-tax * tau) * eta_bar * eta_st_eta_ss * dt
+        )  # equation (18)
         eta_bar_t = np.sum(eta_bar_parts) / (1 - tax * dt)  # equation (18)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[1:], 1)
         eta_bar = np.append(eta_bar[1:], eta_bar_t)
-        eta_bar = eta_bar / eta_bar_t  # rescale, does not change the relative magnitude of each cohort
+        eta_bar = (
+            eta_bar / eta_bar_t
+        )  # rescale, does not change the relative magnitude of each cohort
 
         f_st = eta_bar_parts / eta_bar_t / dt
         f_st = np.append(f_st[1:], tax)
@@ -479,46 +488,56 @@ def simulate_cohorts_partial_constraint(
             w_cohort_st = Y[i] / beta * f_st
             w_st = w_cohort_st / cohort_size * dt
         else:
-            dR_t = mu_S_t * dt + sigma_S * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+            dR_t = (
+                mu_S_t * dt + sigma_S * dZ_t
+            )  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
             w_t = Y[i] / beta
-            dw_st = ((r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+            dw_st = (
+                (r_t + nu - tax - beta) + pi_st * (mu_S_t - r_t)
+            ) * w_st * dt + w_st * pi_st * sigma_S * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
             w_st = w_st[1:] + dw_st[1:]
             w_st = np.append(w_st, w_t * tax / nu)
             w_cohort_st = w_st * cohort_size / dt
 
         # update beliefs
-        dDelta_s_t = (
-            post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2
-                     ) * (
+        dDelta_s_t = (post_var(sigma_Y, Vhat, tau_info) / sigma_Y**2) * (
             -Delta_s_t * dt + dZ_t
         )  # from eq(5)
-        if mode == 'back_renew':
+        if mode == "back_renew":
             tau_info = np.append(tau_info[1:], 0) + dt
 
         if i < Npre - 1:
-            init_bias = (np.sum(biasvec[i+1:]) + np.sum(dZ[:i+1])) / T_hat
+            init_bias = (np.sum(biasvec[i + 1 :]) + np.sum(dZ[: i + 1])) / T_hat
         else:
-            init_bias = np.sum(dZ[i+1 - Npre: i+1]) / T_hat
+            init_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / T_hat
 
         Delta_s_t = Delta_s_t[1:] + dDelta_s_t[1:]
         Delta_s_t = np.append(Delta_s_t, init_bias)
 
-        invest_tracker_t = np.append(invest_tracker_t[1:], 1)  # all cohorts that are still in the market, 1 by default
-        can_short_tracker_t = np.append(can_short_tracker_t[1:], 0)  # the cohorts that are allowed to short, 0 by default
+        invest_tracker_t = np.append(
+            invest_tracker_t[1:], 1
+        )  # all cohorts that are still in the market, 1 by default
+        can_short_tracker_t = np.append(
+            can_short_tracker_t[1:], 0
+        )  # the cohorts that are allowed to short, 0 by default
 
         if good_time_simulate[i] == 1:
 
-            if mode == 'back_collect':
+            if mode == "back_collect":
                 # agents who have left the market respond to the recent positive shocks
                 # they collect all the information they missed during the drop period
                 invest_tracker_t = np.ones(Nc)  # all can invest
 
-            if mode == 'back_renew':
+            if mode == "back_renew":
                 if i < Npre - 1:
-                    renew_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / (Npre * dt)
+                    renew_bias = (np.sum(biasvec[i + 1 :]) + np.sum(dZ[: i + 1])) / (
+                        Npre * dt
+                    )
                 else:
-                    renew_bias = np.sum(dZ[i + 1 - Npre: i + 1]) / (Npre * dt)
-                Delta_s_t = Delta_s_t * invest_tracker_t + renew_bias * (1 - invest_tracker_t)
+                    renew_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / (Npre * dt)
+                Delta_s_t = Delta_s_t * invest_tracker_t + renew_bias * (
+                    1 - invest_tracker_t
+                )
                 tau_info = invest_tracker_t * tau_info + (1 - invest_tracker_t) * dt
                 invest_tracker_t = np.ones(Nc)  # all can invest
 
@@ -530,30 +549,35 @@ def simulate_cohorts_partial_constraint(
         wealth_cutoff = find_the_rich(
             indiv_w_possible, cohort_size_possible, top=0.05
         )  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-        can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+        can_short = (
+            indiv_w_possible >= wealth_cutoff
+        )  # these cohorts can short in this period
         can_short_tracker_t = (
             can_short_tracker_t + can_short >= 1
         )  # once rich, always can short
 
         theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint, -50, 50, can_short_tracker_t, Delta_s_t_possible, f_st_possible, sigma_Y
+            solve_theta_partial_constraint,
+            -50,
+            50,
+            can_short_tracker_t,
+            Delta_s_t_possible,
+            f_st_possible,
+            sigma_Y,
         )
         want_to_short = (Delta_s_t + theta_t) < 0
-        constrained = invest_tracker_t * want_to_short * (
-            1 - can_short_tracker_t
+        constrained = (
+            invest_tracker_t * want_to_short * (1 - can_short_tracker_t)
         )  # in the market * want to short * can't short
         short_t = want_to_short * can_short_tracker_t
         long_t = (1 - want_to_short) * invest_tracker_t
-        invest_tracker_t = invest_tracker_t - constrained  # constrained people drop, update invest_tracker
+        invest_tracker_t = (
+            invest_tracker_t - constrained
+        )  # constrained people drop, update invest_tracker
         pi_st = (Delta_s_t + theta_t) / sigma_S * invest_tracker_t
         d_eta_st = Delta_s_t * invest_tracker_t - theta_t * (1 - invest_tracker_t)
 
-        r_t = (
-                rho
-                + mu_Y
-                + nu - tax
-                - sigma_Y * theta_t
-        )
+        r_t = rho + mu_Y + nu - tax - sigma_Y * theta_t
 
         mu_S_t = sigma_S * theta_t + r_t
 
@@ -570,7 +594,9 @@ def simulate_cohorts_partial_constraint(
         short[i, :] = short_t
         w_cohort[i, :] = w_cohort_st
         pi[i, :] = pi_st
-        Delta_bar_parti[i] = np.sum(Delta_s_t * invest_tracker_t * f_st) / np.sum(invest_tracker_t * f_st)
+        Delta_bar_parti[i] = np.sum(Delta_s_t * invest_tracker_t * f_st) / np.sum(
+            invest_tracker_t * f_st
+        )
         Delta_bar_long[i] = np.sum(Delta_s_t * long_t * f_st) / np.sum(long_t * f_st)
         total_c_short = np.sum(short_t * f_st)
         if total_c_short == 0:
@@ -618,10 +644,6 @@ def simulate_cohorts_partial_constraint(
         Delta_bar_long,
         Delta_bar_short,
     )
-
-
-
-
 
 
 #

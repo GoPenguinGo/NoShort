@@ -7,13 +7,13 @@ from src.param import *
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 # modes = ['drop', 'ric_free']
-mode = 'rich_free'
+mode = "rich_free"
 # mode = 'drop'
 # mode = 'comp'
 # mode = 'keep'
 # zoom_in = 'small'
 # zoom_in = 'large'
-zoom_in = 'overall'
+zoom_in = "overall"
 a = np.arange(1, 13, 1)
 b = np.arange(24, 241, 12)
 Npres = np.append(a, b)
@@ -66,8 +66,8 @@ wealthshare_age_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths, 4))
 dR_matrix = np.zeros((T_hat_dimension, nu_dimension, Mpaths))
 
 
-dZ_matrix = np.load('dZ_matrix.npy')
-dZ_build_matrix = np.load('dZ_build_matrix.npy')
+dZ_matrix = np.load("dZ_matrix.npy")
+dZ_build_matrix = np.load("dZ_build_matrix.npy")
 
 # The main loop builds up the economy with a large number of cohorts, and simulates the stationary economy forward
 for l in range(Mpaths):
@@ -76,7 +76,7 @@ for l in range(Mpaths):
 
     for k, T_hat in enumerate(T_hats):
         Npre = int(Npres[k])
-        Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+        Vhat = (sigma_Y**2) / T_hat  # prior variance
         print(T_hat, Npre, Vhat)
 
         for m, nu in enumerate(nus):
@@ -84,7 +84,9 @@ for l in range(Mpaths):
             beta = rho + nu - tax
 
             tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
-            cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+            cohort_size = (
+                nu * np.exp(-nu * (tau - dt)) * dt
+            )  # cohort size when a new cohort is just born
 
             # create age quartiles for analysis
             cummu_popu = np.cumsum(cohort_size)
@@ -93,7 +95,7 @@ for l in range(Mpaths):
             tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
             cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 
-            if mode == 'drop' or mode == 'keep' or mode == 'comp':
+            if mode == "drop" or mode == "keep" or mode == "comp":
                 (
                     r,
                     theta,
@@ -108,12 +110,30 @@ for l in range(Mpaths):
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre, Ninit, T_hat,
-                             dZ_build, dZ, tau,
-                             cohort_size)
+                ) = simulate(
+                    mode,
+                    Nc,
+                    Nt,
+                    dt,
+                    rho,
+                    nu,
+                    Vhat,
+                    mu_Y,
+                    sigma_Y,
+                    sigma_S,
+                    tax,
+                    beta,
+                    Npre,
+                    Ninit,
+                    T_hat,
+                    dZ_build,
+                    dZ,
+                    tau,
+                    cohort_size,
+                )
                 invest_tracker = pi > 0
 
-            elif mode == 'rich_free' or mode == 'back_collect' or mode == 'back_renew':
+            elif mode == "rich_free" or mode == "back_collect" or mode == "back_renew":
                 (
                     r,
                     theta,
@@ -141,10 +161,29 @@ for l in range(Mpaths):
                     Delta_bar_parti,
                     Delta_bar_long,
                     Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, Npre,
-                                                Ninit, T_hat, dZ_build, dZ, tau, cohort_size)
+                ) = simulate_partial_constraint(
+                    mode,
+                    Nc,
+                    Nt,
+                    dt,
+                    rho,
+                    nu,
+                    Vhat,
+                    mu_Y,
+                    sigma_Y,
+                    sigma_S,
+                    tax,
+                    beta,
+                    Npre,
+                    Ninit,
+                    T_hat,
+                    dZ_build,
+                    dZ,
+                    tau,
+                    cohort_size,
+                )
             else:
-                print('Error! Mode not defined')
+                print("Error! Mode not defined")
                 break
             dR_matrix[k, m, l] = np.mean(dR)
             r_matrix[k, m, l] = np.mean(r)
@@ -154,11 +193,13 @@ for l in range(Mpaths):
             f_parti_matrix[k, m, l] = np.mean(f_parti)
             parti_rate = invest_tracker * cohort_size
 
-            belief = (Delta * sigma_Y + mu_Y)
+            belief = Delta * sigma_Y + mu_Y
             belief_weights = f * dt
 
             for i in range(4):
-                popu_age_matrix[k, m, l, i] = np.mean(np.sum(parti_rate[:, cutoffs[i + 1]:], axis=1))
+                popu_age_matrix[k, m, l, i] = np.mean(
+                    np.sum(parti_rate[:, cutoffs[i + 1] :], axis=1)
+                )
 
                 # weights_zero = (np.sum(invest_tracker[:, cutoffs[i + 1]:cutoffs[i]],
                 #                        axis=1) == 0)  # no one from the age group is participating
@@ -174,11 +215,11 @@ for l in range(Mpaths):
                 #                    weights=belief_weights[:, cutoffs[i + 1]:cutoffs[i]], axis=1)
                 #     )
                 belief_age_matrix[k, m, l, i] = np.mean(
-                    belief[:, cutoffs[i + 1]:cutoffs[i]]
+                    belief[:, cutoffs[i + 1] : cutoffs[i]]
                 )
 
                 wealthshare_age_matrix[k, m, l, i] = np.mean(
-                    np.sum(f[:, cutoffs[i + 1]:cutoffs[i]] * dt, axis=1)
+                    np.sum(f[:, cutoffs[i + 1] : cutoffs[i]] * dt, axis=1)
                 )
 
             age_parti_matrix[k, m, l] = np.mean(age_parti)
@@ -189,24 +230,35 @@ for l in range(Mpaths):
 
 # graphs:
 x = Npres
-y0 = (np.ones(len(Npres)) * sigma_Y ** 2) / x
+y0 = (np.ones(len(Npres)) * sigma_Y**2) / x
 y1 = np.mean(r_matrix, axis=2)
 y2 = np.mean(theta_matrix, axis=2)
 y3 = np.mean(popu_age_matrix, axis=2)
 y4 = np.mean(age_parti_matrix, axis=2)
 y5 = np.mean(n_parti_matrix, axis=2)
 y6 = -y2 * sigma_Y + mu_Y
-y7 = np.nanmean(belief_age_matrix, axis=2)  # consumption-weighted beliefs for participants from each age group
+y7 = np.nanmean(
+    belief_age_matrix, axis=2
+)  # consumption-weighted beliefs for participants from each age group
 y8 = np.nanmean(wealthshare_age_matrix, axis=2)  # wealth share each age group
 y9 = np.mean(f_parti_matrix, axis=2)
 y10 = np.mean(Delta_bar_parti_matrix, axis=2)
 
 
-xlabels = ['V_hat', 'interest rate', 'market price of risk', 'participation rate', 'average age of participants',
-           'number of cohorts', 'cutoff belief to participate', 'average belief in age groups',
-           'wealth share in age groups', 'consumption share of participants', 'estimation error of participants']
+xlabels = [
+    "V_hat",
+    "interest rate",
+    "market price of risk",
+    "participation rate",
+    "average age of participants",
+    "number of cohorts",
+    "cutoff belief to participate",
+    "average belief in age groups",
+    "wealth share in age groups",
+    "consumption share of participants",
+    "estimation error of participants",
+]
 ys = [y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10]
-
 
 
 for i in range(len(ys)):
@@ -219,27 +271,78 @@ for i in range(len(ys)):
             y_nu = ys[i]
             y = y_nu[:, j]
         if i == 3:
-            ax.fill_between(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-            ax.fill_between(x, y[:, 1], y[:, 0], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-            ax.fill_between(x, y[:, 2], y[:, 1], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-            ax.fill_between(x, y[:, 3], y[:, 2], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+            ax.fill_between(
+                x,
+                y[:, 0],
+                color="steelblue",
+                linewidth=0.4,
+                label="20 < Age <= 35, youngest quartile",
+            )
+            ax.fill_between(
+                x,
+                y[:, 1],
+                y[:, 0],
+                color="darkseagreen",
+                linewidth=0.4,
+                label="35 < Age <= 55",
+            )
+            ax.fill_between(
+                x,
+                y[:, 2],
+                y[:, 1],
+                color="moccasin",
+                linewidth=0.4,
+                label="55 < Age <= 89",
+            )
+            ax.fill_between(
+                x,
+                y[:, 3],
+                y[:, 2],
+                color="pink",
+                linewidth=0.4,
+                label="Age > 89, oldest quartile",
+            )
             plt.legend()
         elif i == 7 or i == 8:
-            ax.plot(x, y[:, 0], color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-            ax.plot(x, y[:, 1], color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-            ax.plot(x, y[:, 2], color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-            ax.plot(x, y[:, 3], color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+            ax.plot(
+                x,
+                y[:, 0],
+                color="steelblue",
+                linewidth=0.4,
+                label="20 < Age <= 35, youngest quartile",
+            )
+            ax.plot(
+                x, y[:, 1], color="darkseagreen", linewidth=0.4, label="35 < Age <= 55"
+            )
+            ax.plot(x, y[:, 2], color="moccasin", linewidth=0.4, label="55 < Age <= 89")
+            ax.plot(
+                x,
+                y[:, 3],
+                color="pink",
+                linewidth=0.4,
+                label="Age > 89, oldest quartile",
+            )
             plt.legend()
         else:
             ax.plot(x, y)
-        ax.set_xlabel('initial window (months)')
+        ax.set_xlabel("initial window (months)")
         if i == 0 or i == 6:
             ax.set_ylabel(xlabels[i])
         else:
-            ax.set_ylabel('mean ' + xlabels[i])
+            ax.set_ylabel("mean " + xlabels[i])
 
-        plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '_' + zoom_in + str(nu) + '.png', dpi=200, format="png")
+        plt.savefig(
+            "initial window and "
+            + xlabels[i]
+            + "_"
+            + mode
+            + "_"
+            + zoom_in
+            + str(nu)
+            + ".png",
+            dpi=200,
+            format="png",
+        )
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500, format="png")
         plt.show()
         plt.close()
-

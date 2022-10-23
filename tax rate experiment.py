@@ -8,7 +8,7 @@ from src.param import *
 
 
 # modes = ['drop']
-modes = ['rich_free']
+modes = ["rich_free"]
 tax_rates = np.arange(0.005, 0.021, 0.002)
 tax_rate_dimension = len(tax_rates)
 
@@ -62,8 +62,10 @@ for mode in modes:
     for l in range(Mpaths):
         s = time.time()
         # same shocks for the different T_hats
-        dZ_build = dt ** 0.5 * np.random.randn(int(Nc - 1))  # dZt for the build function
-        dZ = dt ** 0.5 * np.random.randn(Nt)  # dZt for the simulate function
+        dZ_build = dt**0.5 * np.random.randn(
+            int(Nc - 1)
+        )  # dZt for the build function
+        dZ = dt**0.5 * np.random.randn(Nt)  # dZt for the simulate function
         dZ_matrix[l, :] = dZ
         Z = np.cumsum(dZ)
         Z_matrix[l, :] = Z
@@ -71,7 +73,7 @@ for mode in modes:
         for k, tax_rate in enumerate(tax_rates):
             omega = rho + nu - tax_rate
 
-            if mode == 'drop':
+            if mode == "drop":
                 (
                     mu_S,
                     mu_S_s,
@@ -89,8 +91,25 @@ for mode in modes:
                     w_cohort,
                     age_parti,
                     n_parti,
-                ) = simulate(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax_rate, omega, Npre, T_hat, dZ_build, dZ, tau,
-                             cohort_size)
+                ) = simulate(
+                    mode,
+                    Nc,
+                    Nt,
+                    dt,
+                    rho,
+                    nu,
+                    Vhat,
+                    mu_Y,
+                    sigma_Y,
+                    tax_rate,
+                    omega,
+                    Npre,
+                    T_hat,
+                    dZ_build,
+                    dZ,
+                    tau,
+                    cohort_size,
+                )
 
                 dR_matrix[k, l] = np.average(dR[1200:])
                 r_matrix[k, l] = np.average(r[1200:])
@@ -98,9 +117,15 @@ for mode in modes:
                 popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
                 invest = pi > 0
                 parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                popu_age1_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff1:], axis=1)
+                )
+                popu_age2_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff2:], axis=1)
+                )
+                popu_age3_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff3:], axis=1)
+                )
                 age_parti_matrix[k, l] = np.average(age_parti[1200:])
                 n_parti_matrix[k, l] = np.average(n_parti[1200:])
 
@@ -135,8 +160,25 @@ for mode in modes:
                     Delta_bar_parti,
                     Delta_bar_long,
                     Delta_bar_short,
-                ) = simulate_partial_constraint(mode, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, tax_rate, omega, Npre,
-                                                T_hat, dZ_build, dZ, tau, cohort_size)
+                ) = simulate_partial_constraint(
+                    mode,
+                    Nc,
+                    Nt,
+                    dt,
+                    rho,
+                    nu,
+                    Vhat,
+                    mu_Y,
+                    sigma_Y,
+                    tax_rate,
+                    omega,
+                    Npre,
+                    T_hat,
+                    dZ_build,
+                    dZ,
+                    tau,
+                    cohort_size,
+                )
 
                 dR_matrix[k, l] = np.average(dR[1200:])
                 r_matrix[k, l] = np.average(r[1200:])
@@ -144,14 +186,19 @@ for mode in modes:
                 popu_parti_matrix[k, l] = np.average(popu_parti[1200:])
                 invest = pi > 0
                 parti_rate = invest * cohort_size
-                popu_age1_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff1:], axis=1))
-                popu_age2_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff2:], axis=1))
-                popu_age3_matrix[k, l] = np.average(np.sum(parti_rate[1200:, tau_cutoff3:], axis=1))
+                popu_age1_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff1:], axis=1)
+                )
+                popu_age2_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff2:], axis=1)
+                )
+                popu_age3_matrix[k, l] = np.average(
+                    np.sum(parti_rate[1200:, tau_cutoff3:], axis=1)
+                )
                 age_parti_matrix[k, l] = np.average(age_parti[1200:])
                 n_parti_matrix[k, l] = np.average(n_parti[1200:])
 
             # covariance:
-
 
     # graphs:
     x = tax_rates
@@ -166,33 +213,47 @@ for mode in modes:
     y5 = np.average(n_parti_matrix, axis=1)
     y6 = -y2 * sigma_Y + mu_Y
 
-    xlabels = ['interest rate', 'market price of risk', 'participation rate', 'age of participants',
-               'number of cohorts', 'cutoff belief']
+    xlabels = [
+        "interest rate",
+        "market price of risk",
+        "participation rate",
+        "age of participants",
+        "number of cohorts",
+        "cutoff belief",
+    ]
     ys = [y1, y2, y3, y4, y5, y6]
 
     for i in range(len(ys)):
         fig, ax = plt.subplots()  # Create a figure containing a single axes.
         y = ys[i]
         if i == 2:
-            ax.fill_between(x, y31, color='steelblue', linewidth=0.4, label='20 < Age <= 35, youngest quartile')
-            ax.fill_between(x, y32, y31, color='darkseagreen', linewidth=0.4, label='35 < Age <= 55')
-            ax.fill_between(x, y33, y32, color='moccasin', linewidth=0.4, label='55 < Age <= 89')
-            ax.fill_between(x, y, y33, color='pink', linewidth=0.4, label='Age > 89, oldest quartile')
+            ax.fill_between(
+                x,
+                y31,
+                color="steelblue",
+                linewidth=0.4,
+                label="20 < Age <= 35, youngest quartile",
+            )
+            ax.fill_between(
+                x, y32, y31, color="darkseagreen", linewidth=0.4, label="35 < Age <= 55"
+            )
+            ax.fill_between(
+                x, y33, y32, color="moccasin", linewidth=0.4, label="55 < Age <= 89"
+            )
+            ax.fill_between(
+                x,
+                y,
+                y33,
+                color="pink",
+                linewidth=0.4,
+                label="Age > 89, oldest quartile",
+            )
         else:
             ax.plot(x, y)
-        ax.set_xlabel('tax rate')
+        ax.set_xlabel("tax rate")
         if i == 5:
             ax.set_ylabel(xlabels[i])
         else:
-            ax.set_ylabel('mean ' + xlabels[i])
-        plt.savefig('tax rate and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
+            ax.set_ylabel("mean " + xlabels[i])
+        plt.savefig("tax rate and " + xlabels[i] + "_" + mode + ".png", dpi=500)
         # plt.savefig('initial window and ' + xlabels[i] + '_' + mode + '.png', dpi=500)
-
-
-
-
-
-
-
-
-
