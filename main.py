@@ -12,11 +12,12 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Z_Y_cases, Z_SI_cases
-from src.stats import shocks, tau_calculator, good_times, weighted_variance, weighted_skew
+from src.stats import shocks, tau_calculator, good_times, Delta_st_compare
 from numba import jit
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tabulate
+
 
 
 # todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
@@ -38,6 +39,39 @@ n_phi_short = len(phi_indexes)
 phi_vector_short = phi_vector[phi_indexes]
 
 age_cutoff = cutoffs[2]
+
+
+
+###############################################
+###############################################
+n_paths = 100000
+Delta_init = 0
+age_vector = [5, 20, 50]
+n_age = len(age_vector)
+data_delta_compare = np.empty((n_age, n_phi, 3))
+for i, age in enumerate(age_vector):
+    for j, phi_try in enumerate(phi_vector):
+        t_s = time.time()
+        data_delta_compare[i, j] = Delta_st_compare(Delta_init, Vhat, age, dt, sigma_Y_sqr, phi_try, n_paths)
+        print(time.time() - t_s)
+legend_condition = ['unconditional', 'positive corr', 'negative corr']
+fig, axes = plt.subplots(nrows=1, ncols=3, sharey='all', figsize=(10, 5))
+# fig.suptitle('Good Z^Y, Bad Z^SI')
+for i, ax in enumerate(axes):
+    for j in range(3):
+        y = data_delta_compare[i, 1:, j]
+        ax.plot(phi_vector[1:], y, color=colors_short[j], linewidth=0.6, label=legend_condition[j])
+        if i == 0:
+            ax.legend()
+            ax.set_ylabel('P(better estimate with signal)')
+        ax.set_xlabel(r'$\phi$ values')
+        ax.set_title('age = ' + str(age_vector[i]))
+        ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout(h_pad=2)
+plt.savefig('Probability of better estimate with signal.png', dpi=500)
+plt.show()
+#plt.close()
+
 
 theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
 popu_parti_matrix = np.empty((N, n_scenarios, n_phi, Nt))
@@ -722,10 +756,11 @@ for i, ax in enumerate(axes):
     y2 = y2_case[scenario_index, red_case, yellow_case, phi_index]  # ((Nt, 4))
     y3 = y3_case[scenario_index, red_case, yellow_case, phi_index]  # ((Nt, 4))
     belief_cutoff_case = -theta_compare[scenario_index, red_case, yellow_case, phi_index]
-    ax.set_xlabel('Time in simulation, one random path')
+    if i == 3:
+        ax.set_xlabel('Time in simulation, one random path')
     ax.set_ylabel('Zt', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+    ax.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(x, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
     ax.tick_params(axis='y', labelcolor='black')
     if i == 0:
         ax.legend(loc='upper left')
@@ -766,7 +801,7 @@ for i, ax in enumerate(axes):
     #ax2.grid()
 # fig.suptitle('Zt and Market Price of Risk')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(red_case) + str(yellow_case) + 'Distribution of Delta parti nonparti.png', dpi=500)
+#plt.savefig(str(red_case) + str(yellow_case) + 'Distribution of Delta parti nonparti.png', dpi=500)
 plt.show()
 # plt.close()
 
