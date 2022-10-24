@@ -17,6 +17,7 @@ from numba import jit
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 # import tabulate as tabulate
+from scipy.interpolate import make_interp_spline
 
 
 # todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
@@ -276,44 +277,6 @@ labels = [scenario_labels, label_phi, label_phi]
 # plot general + zoom-in figures:
 # the general one:
 
-pi_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-Delta_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-log_cons_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-switch_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-parti_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-for o in range(n_scenarios):
-    for j, Z_Y_t in enumerate(Z_Y_cases):
-        # Z = np.cumsum(dZ_matrix[index_Z_Y])
-        # red_case = red_cases[j]
-        for k, index_Z_SI in enumerate(Z_SI_cases):
-            # Z_SI = np.cumsum(dZ_SI_matrix[index_Z_SI])
-            # yellow_case = yellow_cases[k]
-
-            for i in range(n_phi_short):
-                Delta = Delta_compare[o, j, k, i]  # with short-sale constraint, reentry mode
-                pi = pi_compare[o, j, k, i]
-                log_cons = cons_compare[o, j, k, i]
-                for m in range(nn):
-                    start = int((m + 1) * 100 * (1 / dt))
-                    starts[m] = start * dt
-                    for n in range(length):
-                        if n < start:
-                            Delta_time_series[o, j, k, i, m, n] = np.nan
-                            pi_time_series[o, j, k, i, m, n] = np.nan
-                            log_cons_time_series[o, j, k, i, m, n] = np.nan
-                        else:
-                            cohort_rank = length - (n - start) - 1
-                            Delta_time_series[o, j, k, i, m, n] = Delta[n, cohort_rank]
-                            pi_time_series[o, j, k, i, m, n] = pi[n, cohort_rank]
-                            log_cons_time_series[o, j, k, i, m, n] = log_cons[n, cohort_rank]
-                    parti = pi_time_series[o, j, k, i, m] > 0
-                    switch = abs(parti[1:] ^ parti[:-1])
-                    sw = np.append(switch, 0)
-                    parti = np.where(sw == 1, 0.5, parti)
-                    switch = np.insert(switch, 0, 0)
-                    parti = np.where(switch == 1, 0.5, parti)
-                    parti_time_series[o, j, k, i, m] = parti
-                    switch_time_series[o, j, k, i, m] = sw
 
 
 
@@ -1196,7 +1159,7 @@ plt.show()
 # ######################################
 # mean:
 # N, n_scenarios, n_phi, Nt
-var_list = [r_matrix, theta_matrix, delta_bar_matrix, Phi_parti_1_matrix, popu_parti_matrix, belief_variance_matrix]
+var_list = [r_matrix, theta_matrix, delta_bar_matrix, Phi_parti_1_matrix, popu_parti_matrix]
 var_name_list = [r'$r_t$', r'$\theta_t$',
                  r'$\bar{\Delta}_t$', r'$\frac{1}{\Phi_t}$',
                  'participation rate', r'$var(\Delta_{s,t})$']
@@ -1206,31 +1169,52 @@ var_name_list = [r'$r_t$', r'$\theta_t$',
 #                  'participation rate', 'belief variance', 'belief skewness']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 x = phi_vector
+# fig, axs = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
+# for j, ax in enumerate(axs.flat):
+#     y = var_list[j]
+#     y_mean_mat = np.mean(y, axis=3)
+#     y_mean = np.mean(y_mean_mat, axis=0)  # n_scenarios * n_phi
+#     ax.set_title(var_name_list[j])
+#     for k in range(n_scenarios):
+#         y_sce = y_mean[k]
+#         label_i = scenario_labels[k]
+#         ax.plot(phi_vector, y_sce, color=colors_short[k], label=label_i)
+#     if j == 0:
+#         ax.legend()
+#     if j == 0 or j == 2 or j == 4:
+#         ax.set_ylabel('mean level')
+#     if j == 4 or j == 5:
+#         ax.set_xlabel(r'$\phi$ values')
+# fig.tight_layout()
+# # plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
+# # fig.supxlabel('phi')
+# # fig.supylabel('variance')
+# plt.savefig('mean values.png', dpi=500, format="png")
+# plt.show()
+# #plt.close()
 
-fig, axs = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
-for j, ax in enumerate(axs.flat):
-    y = var_list[j]
-    y_mean_mat = np.mean(y, axis=3)
+for i, var in enumerate(var_list):
+    var_name = var_name_list[i]
+    fig, ax = plt.subplots(figsize=(5, 5))
+    y_mean_mat = np.mean(var, axis=3)
     y_mean = np.mean(y_mean_mat, axis=0)  # n_scenarios * n_phi
-    ax.set_title(var_name_list[j])
+    ax.set_title(var_name)
     for k in range(n_scenarios):
         y_sce = y_mean[k]
         label_i = scenario_labels[k]
-        ax.plot(phi_vector, y_sce, color=colors_short[k], label=label_i)
-    if j == 0:
-        ax.legend()
-    if j == 0 or j == 2 or j == 4:
-        ax.set_ylabel('mean level')
-    if j == 4 or j == 5:
-        ax.set_xlabel(r'$\phi$ values')
-fig.tight_layout()
-# plt.suptitle('Variance decomposition, market price of risk', fontsize=16)
-# fig.supxlabel('phi')
-# fig.supylabel('variance')
-plt.savefig('mean values.png', dpi=500, format="png")
-plt.show()
-#plt.close()
-
+        X_Y_Spline = make_interp_spline(phi_vector, y_sce)
+        # Returns evenly spaced numbers
+        # over a specified interval.
+        X_ = np.linspace(phi_vector.min(), phi_vector.max(), 100)
+        Y_ = X_Y_Spline(X_)
+        ax.plot(X_, Y_, color=colors_short[k], label=label_i)
+    ax.legend()
+    ax.set_ylabel('mean level')
+    ax.set_xlabel(r'$\phi$ values')
+    fig.tight_layout()
+    plt.savefig(str(i) +' smooth.png', dpi=500, format="png")
+    plt.show()
+    # plt.close()
 
 
 # decomposition of variance for theta:
