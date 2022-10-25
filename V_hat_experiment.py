@@ -101,14 +101,13 @@ Phi_parti_1_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 #popu_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 Delta_bar_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
 popu_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-belief_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+#belief_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 wealthshare_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 var_list = [r_Mat, theta_Mat, Phi_parti_Mat, Phi_parti_1_Mat,
-            Delta_bar_parti_Mat, popu_age_Mat,
-            belief_age_Mat, wealthshare_age_Mat]
+            Delta_bar_parti_Mat, popu_age_Mat, wealthshare_age_Mat]
 var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
                  'consumption-weighted estimation error of participants', 'participation rate in age groups',
-                 'average belief in age groups', 'wealth share in age groups']
+                 'wealth share in age groups']
 for i, var in enumerate(var_list):
     var_name = var_name_list[i]
     for j in range(N_scenarios):
@@ -124,33 +123,35 @@ for i, var in enumerate(var_list):
 ######################################
 # plot market price of risk, Phi, Delta_bar over Npre
 x = Npres/12
+x_start = 0
 # x = Npres[1:]
-var_name_list = [r'$\theta_t$', r'$\Phi_t$', r'$\bar{\Delta}_t$']
+var_name_list = [r'market price of risk $\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
 # var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
-var_list = [theta_Mat, Phi_parti_Mat, Delta_bar_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
-phi_index = [0, 1]
+Phi_parti_1_sigma_Mat = Phi_parti_1_Mat * sigma_Y
+var_list = [theta_Mat, Phi_parti_1_sigma_Mat, Delta_bar_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
 scenario_list = ['Complete', 'Keep', 'Drop']
-phi_list = ['phi=0.0', 'phi=0.4']
+phi_list = ['phi=0.0', 'phi=0.4', 'phi=0.8']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
+line_styles = ['dotted', 'solid', 'dashed']
 fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
 for i, axes_row in enumerate(axes):
     row_name = var_name_list[i]
-    var = var_list[i][:, phi_index]  # Shape((N_scenarios, 2, T_hat_dimension, 2))
+    var = var_list[i]  # Shape((N_scenarios, 3, T_hat_dimension, 2))
     for j, ax in enumerate(axes_row):
         y = var[:, :, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
         column_name = 'Mean' if j == 0 else 'Volatility'
-        for k in range(2):
-            line_style = 'dotted' if k == 0 else 'solid'
+        for k in range(3):
+            line_style = line_styles[k]
             for l in range(N_scenarios):
                 y_i = y[l, k]
                 if j == 0 and k == 1:
-                    ax.plot(x, y_i, linestyle=line_style, color=colors_short[l], label=scenario_list[l])
+                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=scenario_list[l])
                 elif j == 1 and l == 0:
-                    ax.plot(x, y_i, linestyle=line_style, color=colors_short[l], label=phi_list[k])
+                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=phi_list[k])
                 else:
-                    ax.plot(x, y_i, linestyle=line_style, color=colors_short[l])
+                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
         if j == 0:
-            ax.set_ylabel(row_name, rotation=0)
+            ax.set_ylabel(row_name, rotation=90)
         if i == 2:
             # ax.set_xlabel('initial window (months)')
             ax.set_xlabel('initial window (years)')
@@ -158,11 +159,48 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig('initial window and values mean vola years.png', dpi=500, format="png")
+plt.savefig('initial window and values mean vola years.png', dpi=500, format="png")
 # plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
 plt.show()
 # plt.close()
 
+######################################
+######## OVER INITIAL WINDOW #########
+############ GRAPH ONE ###############
+############ COVARIANCE ##############
+######################################
+theta_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+Phi_parti_1_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+Delta_bar_parti_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+var_list = [theta_var, Phi_parti_1_var, Delta_bar_parti_var]
+var_name_list = ['market price of risk', 'consumption share 1 of participants', 'consumption-weighted estimation error of participants']
+for i, var in enumerate(var_list):
+    var_name = var_name_list[i]
+    for j in range(N_scenarios):
+        var_name_j = var_name + str(j) +'.npy'
+        y = np.load(var_name_j)[:, :, :, :, 1]
+        var[j] = np.mean(y ** 2, axis=0)
+cov_Mat = theta_var - sigma_Y ** 2 * Phi_parti_1_var - Delta_bar_parti_var
+x_start = 1
+fig, ax = plt.subplots(figsize=(5, 5))
+for k in range(3):
+    line_style = line_styles[k]
+    for l in range(N_scenarios):
+        y_i = cov_Mat[l, k]
+        if k == 1:
+            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=scenario_list[l])
+        elif l == 0:
+            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+        else:
+            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+ax.set_ylabel(r'Covariance, -2cov($\sigma_Y\frac{1}{\Phi_t}, \bar{\Delta}_t$)', rotation=90)
+ax.set_xlabel('initial window (years)')
+ax.legend()
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+plt.savefig('initial window and covariance years.png', dpi=500, format="png")
+# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+plt.show()
+# plt.close()
 
 ######################################
 ######## OVER INITIAL WINDOW #########

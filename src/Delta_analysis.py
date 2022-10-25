@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, t, scenario_labels, colors_short, age_labels
+    Z_Y_cases, Z_SI_cases, scenario_labels, colors_short, age_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, dDelta_st_calculator, post_var
 from numba import jit
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ import statsmodels.api as sm
 # import tabulate as tabulate
 from scipy.interpolate import make_interp_spline
 
-
+t = np.arange(0, T_cohort, dt)
 n_scenarios = 3
 scenarios_short = scenarios[:n_scenarios]
 
@@ -333,19 +333,8 @@ for i in range(len(scenarios_two)):
             Delta_cutoff = np.zeros(5)
             cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
             Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
-            if i == 2:
-                if n == 1:
-                    Delta_cutoff[0] = np.max(Delta)
-                    Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
-                elif n == 2:
-                    Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
-                    Delta_cutoff[4] = np.min(Delta)
-                else:
-                    Delta_cutoff[0] = np.max(Delta)
-                    Delta_cutoff[4] = np.min(Delta)
-            else:
-                Delta_cutoff[0] = np.max(Delta)
-                Delta_cutoff[4] = np.min(Delta)
+            Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
+            Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
             y_cases[n][i, m] = Delta_cutoff
 
 left_t = 200
@@ -378,7 +367,8 @@ for i, ax_row in enumerate(axes):
             y21 = y2[:, 1]
             y22 = y2[:, 2]
             y23 = y2[:, 3]
-            y24 = y30 = belief_cutoff_case
+            y24 = np.maximum(belief_cutoff_case, y1[:, 4])
+            y30 = np.maximum(belief_cutoff_case, y3[:, 0])
             y31 = y3[:, 1]
             y32 = y3[:, 2]
             y33 = y3[:, 3]
@@ -399,6 +389,6 @@ for i, ax_row in enumerate(axes):
         else:
             ax.set_xlabel('Time in simulation, one random path')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig('Distribution of Delta.png', dpi=500)
+plt.savefig('Distribution of Delta window 5 years.png', dpi=500)
 plt.show()
 # plt.close()
