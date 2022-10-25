@@ -16,7 +16,7 @@ T_hat_dimension = len(T_hats)
 
 n_scenarios = 1
 a_sce = 2
-N = 200
+N = 2
 N_scenarios = 3
 
 # Generate matrix to store the results

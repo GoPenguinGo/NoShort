@@ -33,7 +33,7 @@ scenarios_short = scenarios[:n_scenarios]
 # n_scenarios = 1
 # scenarios_short = scenarios[1:2]
 
-phi_vector = np.arange(0,1,0.1)
+phi_vector = np.arange(0, 1, 0.1)
 n_phi = len(phi_vector)
 phi_indexes = [0, 4, 8]
 n_phi_short = len(phi_indexes)
