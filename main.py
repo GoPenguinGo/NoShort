@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases
+    Z_Y_cases, Z_SI_cases, t
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare
 from numba import jit
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ scenarios_short = scenarios[:n_scenarios]
 # n_scenarios = 1
 # scenarios_short = scenarios[1:2]
 
-phi_vector = np.arange(0,1,0.05)
+phi_vector = np.arange(0,1,0.1)
 n_phi = len(phi_vector)
 
 phi_indexes = [0, 4, 8]
@@ -46,33 +46,7 @@ age_cutoff = cutoffs[2]
 
 ###############################################
 ###############################################
-n_paths = 100000
-Delta_init = 0
-age_vector = [5, 20, 50]
-n_age = len(age_vector)
-data_delta_compare = np.empty((n_age, n_phi, 3))
-for i, age in enumerate(age_vector):
-    for j, phi_try in enumerate(phi_vector):
-        t_s = time.time()
-        data_delta_compare[i, j] = Delta_st_compare(Delta_init, Vhat, age, dt, sigma_Y_sqr, phi_try, n_paths)
-        print(time.time() - t_s)
-legend_condition = ['unconditional', 'positive corr', 'negative corr']
-fig, axes = plt.subplots(nrows=1, ncols=3, sharey='all', figsize=(10, 5))
-# fig.suptitle('Good Z^Y, Bad Z^SI')
-for i, ax in enumerate(axes):
-    for j in range(3):
-        y = data_delta_compare[i, 1:, j]
-        ax.plot(phi_vector[1:], y, color=colors_short[j], linewidth=0.6, label=legend_condition[j])
-        if i == 0:
-            ax.legend()
-            ax.set_ylabel('P(better estimate with signal)')
-        ax.set_xlabel(r'$\phi$ values')
-        ax.set_title('age = ' + str(age_vector[i]))
-        ax.tick_params(axis='y', labelcolor='black')
-fig.tight_layout(h_pad=2)
-plt.savefig('Probability of better estimate with signal.png', dpi=500)
-plt.show()
-#plt.close()
+
 
 
 theta_matrix = np.empty((N, n_scenarios, n_phi, Nt))
@@ -208,7 +182,6 @@ for g, scenario in enumerate(scenarios_short):
 red_cases = [r'Good $z^Y$ ', r'Bad $z^Y$ ']
 yellow_cases = [r'Good $z^{SI}$ ', r'Bad $z^{SI}$ ']
 nn = 3  # number of cohorts illustrated
-t = np.arange(0, T_cohort, dt)
 length = len(t)
 starts = np.zeros(nn)
 cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
@@ -880,7 +853,7 @@ for i in range(n_scenarios):
                     y_case[i, j, k, l, :, m, 0] = np.amin(Delta_age_group, axis=1)
                     y_case[i, j, k, l, :, m, 1] = np.amax(Delta_age_group, axis=1)
 
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+
 scenario_indexes = [1, 2, 0, 1]
 phi_indexes = [1, 1, 1, 2]
 cases = [1,1]

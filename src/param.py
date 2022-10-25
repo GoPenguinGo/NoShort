@@ -48,6 +48,7 @@ n_age_groups = 4
 Mpaths = 200
 
 # for graphs:
+t = np.arange(0, T_cohort, dt)
 Tkeep = 100
 Nkeep = int(Tkeep / dt)
 Tsample = int(T_cohort / 100)
@@ -68,6 +69,21 @@ Npres = Npres_a
 for i in Npre_list:
     Npres = np.append(Npres, i)
 
+
+# labels:
+red_cases = [r'Good $z^Y$ ', r'Bad $z^Y$ ']
+yellow_cases = [r'Good $z^{SI}$ ', r'Bad $z^{SI}$ ']
+nn = 3  # number of cohorts illustrated
+length = len(t)
+starts = np.zeros(nn)
+age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
+scenario_labels = ['Complete', 'Reentry', 'Disappointment']
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
+colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
+label_phi = []
+for i in range(n_phi):
+    label_phi.append(r'$\phi$ = ' + str(phi_vector[i]))
 
 
 # todo: can endogenize
