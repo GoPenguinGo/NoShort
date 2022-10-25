@@ -19,8 +19,6 @@ import statsmodels.api as sm
 # import tabulate as tabulate
 from scipy.interpolate import make_interp_spline
 
-
-
 # todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
 # todo: remove variables that are never used, to save space
 # todo: organize the code
@@ -35,11 +33,13 @@ scenarios_short = scenarios[:n_scenarios]
 
 phi_vector = np.arange(0, 1, 0.1)
 n_phi = len(phi_vector)
-phi_indexes = [0, 4, 8]
-n_phi_short = len(phi_indexes)
-phi_vector_short = phi_vector[phi_indexes]
+# phi_indexes = [0, 4, 8]
+# n_phi_short = len(phi_indexes)
+# phi_vector_short = phi_vector[phi_indexes]
 age_cutoff = cutoffs[2]
-tax_vector = [0.005, 0.01, 0.015]
+# tax_vector = [0.005]
+# tax_vector = [0.01]
+tax_vector = [0.015]
 n_tax = len(tax_vector)
 theta_matrix = np.empty((N, n_scenarios, n_tax, n_phi, 2))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
@@ -77,3 +77,10 @@ for j in range(N):
                 theta_matrix[j, k, l, m] = theta
                 delta_bar_matrix[j, k, l, m] = Delta_bar_parti
                 Phi_parti_1_matrix[j, k, l, m] = Phi_parti_1
+
+var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix]
+var_name_list = ['market price of risk', 'consumption share 1 of participants',
+                 'consumption-weighted estimation error of participants']
+type_list = ['mean', 'vola']
+for i, var in enumerate(var_list):
+    np.save(var_name_list[i] + str(tax_vector[0]), var)
