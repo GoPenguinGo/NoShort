@@ -181,23 +181,12 @@ for i in range(len(scenarios_two)):
             Delta_cutoff = np.zeros(5)
             cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
             Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
-            if i == 2:
-                if n == 1:
-                    Delta_cutoff[0] = np.max(Delta)
-                    Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
-                elif n == 2:
-                    Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
-                    Delta_cutoff[4] = np.min(Delta)
-                else:
-                    Delta_cutoff[0] = np.max(Delta)
-                    Delta_cutoff[4] = np.min(Delta)
-            else:
-                Delta_cutoff[0] = np.max(Delta)
-                Delta_cutoff[4] = np.min(Delta)
+            Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
+            Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
             y_cases[n][i, m] = Delta_cutoff
 
 left_t = 200
-right_t = 450
+right_t = 400
 Z = np.cumsum(Z_Y_cases[1])[int(left_t/dt):int(right_t/dt)]
 Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t/dt):int(right_t/dt)]
 x = t[int(left_t/dt):int(right_t/dt)]
@@ -212,7 +201,7 @@ for i, ax_row in enumerate(axes):
     y5 = y_max[scenario_index, int(left_t/dt):int(right_t/dt)]
     belief_cutoff_case = -theta_compare[scenario_index, int(left_t/dt):int(right_t/dt)]
     for j, ax in enumerate(ax_row):
-        ax.set_ylabel('Distribution of estimation error', color='black')
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$')
         if j == 0:
             if i == 0:
@@ -226,18 +215,21 @@ for i, ax_row in enumerate(axes):
             y21 = y2[:, 1]
             y22 = y2[:, 2]
             y23 = y2[:, 3]
-            y24 = y30 = belief_cutoff_case
+            y24 = np.maximum(belief_cutoff_case, y1[:, 4])
+            y30 = np.maximum(belief_cutoff_case, y3[:, 0])
             y31 = y3[:, 1]
             y32 = y3[:, 2]
             y33 = y3[:, 3]
             y34 = y3[:, 4]
             ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5)
+            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label='P')
             ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5)
-            ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
-            ax.plot(x, y32, color='green', linewidth=0.4, label='N')
+            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label='N')
+            # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
+            # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
         else:
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
             for k in range(n_age_groups):
                 y40 = y4[:, k]
                 y50 = y5[:, k]
@@ -338,7 +330,7 @@ for i in range(len(scenarios_two)):
             y_cases[n][i, m] = Delta_cutoff
 
 left_t = 200
-right_t = 450
+right_t = 400
 Z = np.cumsum(Z_Y_cases[1])[int(left_t/dt):int(right_t/dt)]
 Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t/dt):int(right_t/dt)]
 x = t[int(left_t/dt):int(right_t/dt)]
@@ -353,7 +345,7 @@ for i, ax_row in enumerate(axes):
     y5 = y_max[scenario_index, int(left_t/dt):int(right_t/dt)]
     belief_cutoff_case = -theta_compare[scenario_index, int(left_t/dt):int(right_t/dt)]
     for j, ax in enumerate(ax_row):
-        ax.set_ylabel('Distribution of estimation error', color='black')
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$')
         if j == 0:
             if i == 0:
@@ -374,12 +366,14 @@ for i, ax_row in enumerate(axes):
             y33 = y3[:, 3]
             y34 = y3[:, 4]
             ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5)
+            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label='P')
             ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5)
-            ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
-            ax.plot(x, y32, color='green', linewidth=0.4, label='N')
+            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label='N')
+            # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
+            # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
         else:
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
             for k in range(n_age_groups):
                 y40 = y4[:, k]
                 y50 = y5[:, k]
