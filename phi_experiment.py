@@ -78,9 +78,73 @@ for j in range(N):
                 delta_bar_matrix[j, k, l, m] = Delta_bar_parti
                 Phi_parti_1_matrix[j, k, l, m] = Phi_parti_1
 
-var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix]
+# var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix]
+# var_name_list = ['market price of risk', 'consumption share 1 of participants',
+#                  'consumption-weighted estimation error of participants']
+# type_list = ['mean', 'vola']
+# for i, var in enumerate(var_list):
+#     np.save(var_name_list[i] + str(tax_vector[0]), var)
+
+
+tax_vector = [0.005, 0.01, 0.015]
+n_tax = len(tax_vector)
+theta_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+Phi_parti_1_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+Delta_bar_parti_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+var_list = [theta_Mat, Phi_parti_1_Mat, Delta_bar_parti_Mat]
 var_name_list = ['market price of risk', 'consumption share 1 of participants',
                  'consumption-weighted estimation error of participants']
-type_list = ['mean', 'vola']
 for i, var in enumerate(var_list):
-    np.save(var_name_list[i] + str(tax_vector[0]), var)
+    var_name = var_name_list[i]
+    for j, tax_rate in enumerate(tax_vector):
+        var_name_j = var_name + str(tax_rate) +'.npy'
+        y = np.load(var_name_j)
+        var[:, j] = np.mean(np.mean(y, axis=0), axis=1)
+
+
+x = phi_vector
+x_start = 0
+var_name_list = [r'market price of risk $\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+# var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
+Phi_parti_1_sigma_Mat = Phi_parti_1_Mat * sigma_Y
+var_list = [theta_Mat, Phi_parti_1_sigma_Mat, Delta_bar_parti_Mat]  # Shape((n_scenarios, n_tax, n_phi, 2))
+scenario_list = ['Complete', 'Reentry', 'Disappointment']
+tau_list = [r'$\tau=0.005$', r'$\tau=0.010$', r'$\tau=0.015$']
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
+line_styles = ['dotted', 'solid', 'dashed']
+fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
+for i, axes_row in enumerate(axes):
+    row_name = var_name_list[i]
+    var = var_list[i]  # Shape((n_scenarios, n_tax, n_phi, 2))
+    for j, ax in enumerate(axes_row):
+        y = var[:, :, :, j]  # Shape((n_scenarios, n_tax, n_phi))
+        column_name = 'Mean' if j == 0 else 'Volatility'
+        for k in range(1,3):
+            line_style = line_styles[k]
+            for l in range(n_scenarios):
+                y_i = y[l, k]
+                if i == 0:
+                    if j == 0 and k == 1:
+                        ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+                                label=scenario_list[l])
+                    elif j == 1 and l == 0:
+                        ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+                                label=tau_list[k])
+                    else:
+                        ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+                else:
+                    if l != 0:
+                        ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+        if j == 0:
+            ax.set_ylabel(row_name, rotation=90)
+        if i == 2:
+            # ax.set_xlabel('initial window (months)')
+            ax.set_xlabel('initial window (years)')
+        if i == 0:
+            ax.legend()
+            ax.set_title(column_name)
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+plt.savefig('phi and values mean vola years.png', dpi=500, format="png")
+# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+plt.show()
+# plt.close()

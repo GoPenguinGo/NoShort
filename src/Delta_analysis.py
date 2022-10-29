@@ -112,10 +112,12 @@ for i, phi_try in enumerate(phi_vector):
 # ############## Delta #################
 # ###### Distribution of Delta #########
 # ######################################
+case_dzY = 1
+case_dzSI = 1
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]
-dZ = Z_Y_cases[1]  # bad
-dZ_SI = Z_SI_cases[1]  # bad
+dZ = Z_Y_cases[case_dzY]  # bad
+dZ_SI = Z_SI_cases[case_dzSI]  # bad
 phi_fix = phi_vector[4]
 Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
 invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
@@ -187,8 +189,8 @@ for i in range(len(scenarios_two)):
 
 left_t = 200
 right_t = 400
-Z = np.cumsum(Z_Y_cases[1])[int(left_t/dt):int(right_t/dt)]
-Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t/dt):int(right_t/dt)]
+Z = np.cumsum(dZ)[int(left_t/dt):int(right_t/dt)]
+Z_SI = np.cumsum(dZ_SI)[int(left_t/dt):int(right_t/dt)]
 x = t[int(left_t/dt):int(right_t/dt)]
 scenario_indexes = [0, 1]
 fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
@@ -239,9 +241,9 @@ for i, ax_row in enumerate(axes):
         else:
             ax.set_xlabel('Time in simulation, one random path')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('Distribution of Delta.png', dpi=500)
+plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=500)
 plt.show()
-# plt.close()
+plt.close()
 
 
 # ######################################
@@ -385,4 +387,79 @@ for i, ax_row in enumerate(axes):
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig('Distribution of Delta window 5 years.png', dpi=500)
 plt.show()
-# plt.close()
+plt.close()
+
+
+# ######################################
+# ######## Age of Participants #########
+# ######## and Asset Pricing  ##########
+# ######################################
+N_paths = 100
+phi_fix = phi_vector[4]
+scenario = scenarios[1]
+mode_trade = scenario[0]
+mode_learn = scenario[1]
+cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+tau_mat = np.tile(tau, (Nc, 1))
+cutoff_age_old = cutoffs[3]
+cutoff_age_young = cutoffs[1]
+theta_compare = np.empty((N_paths, Nt))
+Phi_compare = np.empty((N_paths, Nt))
+Delta_bar_compare = np.empty((N_paths, Nt))
+P_old_compare = np.empty((N_paths, Nt))
+P_young_compare = np.empty((N_paths, Nt))
+P_average_age_compare = np.empty((N_paths, Nt))
+belief_gap_compare = np.empty((N_paths, Nt))
+for i in range(N_paths):
+    dZ_build = np.random.randn(Nt) * np.sqrt(dt)
+    dZ = np.random.randn(Nt) * np.sqrt(dt)
+    dZ_SI_build = np.random.randn(Nt) * np.sqrt(dt)
+    dZ_SI = np.random.randn(Nt) * np.sqrt(dt)
+    (
+        r,
+        theta,
+        f,
+        Delta,
+        pi,
+        popu_parti,
+        Phi_parti,
+        Delta_bar_parti,
+        dR,
+        invest_tracker
+    ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                    phi_fix,
+                    Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    top=0.05,
+                    old_limit=100
+                    )
+    theta_compare[i] = theta
+    Phi_compare[i] = Phi_parti
+    Delta_bar_compare[i] = Delta_bar_parti
+    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / 0.25
+    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1) / 0.25
+    P_average_age_compare[i] = np.average(tau_mat, axis=1, weights=invest_tracker * cohort_size_mat)
+    belief_gap_compare[i] = np.sum(Delta[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) - \
+                            np.sum(Delta[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1)
+
+y_variables = [theta_compare, Phi_compare, Delta_bar_compare]
+x_variables = [P_old_compare, P_young_compare, P_average_age_compare, belief_gap_compare]
+y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
+x_varnames = ['Participation rate, old', 'Participation rate, young', 'Average age of participants', r'$\Delta_{s,t}$, old - young']
+for i, var_y in enumerate(y_variables):
+    for j, var_x in enumerate(x_variables):
+        # y = np.mean(var_y, axis=1)
+        # x = np.mean(var_x, axis=1)
+        # y = np.mean(var_y, axis=0)
+        # x = np.mean(var_x, axis=0)
+        y = var_y
+        x = var_x
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.scatter(x, y, s=0.1, alpha=0.5)
+        ax.set_xlabel(x_varnames[j])
+        ax.set_ylabel(y_varnames[i])
+        fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+        plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=500)
+        plt.show()
+        plt.close()
+
+
