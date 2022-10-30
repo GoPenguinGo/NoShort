@@ -71,19 +71,16 @@ for i in Npre_list:
 
 
 # labels:
-red_cases = [r'Good $z^Y$ ', r'Bad $z^Y$ ']
-yellow_cases = [r'Good $z^{SI}$ ', r'Bad $z^{SI}$ ']
-nn = 3  # number of cohorts illustrated
-length = len(t)
-starts = np.zeros(nn)
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+red_cases = [r'Positive local trend in $z^Y$, ', r'Negative local trend in $z^Y$, ']
+yellow_cases = [r'Positive local trend in $z^{SI}$ ', r'Negative local trend in $z^{SI}$ ']
 cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
+var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumption']
 scenario_labels = ['Complete', 'Reentry', 'Disappointment']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
-label_phi = []
-for i in range(n_phi):
-    label_phi.append(r'$\phi$ = ' + str(phi_vector[i]))
+PN_labels = ['Participant (P)', 'Nonparticipant (N)']
+age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+
 
 
 # todo: can endogenize

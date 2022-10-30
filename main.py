@@ -224,6 +224,7 @@ var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumpti
 scenario_labels = ['Complete', 'Reentry', 'Disappointment']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
+PN_labels = ['Participant (P)', 'Nonparticipant (N)']
 figure_labels = [r'$\pi_{s,t}$', '$\Delta_{s,t}$', 'log$c_{s,t}$']
 label_phi = []
 for i in range(n_phi_short):
@@ -366,8 +367,8 @@ for i in range(1, n_phi_short, 1):
                 ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted')
                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
             elif j == 1 and m == 0:
-                ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4, label='Participant (P)')
-                ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted', label='Nonparticipant (N)')
+                ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4, label=PN_labels[0])
+                ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted', label=PN_labels[1])
                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
             else:
                 ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4)
@@ -580,9 +581,9 @@ for j, ax in enumerate(axes.flat):
     for i in range(n_phi_short):
         y = y_sce[i]  # (Nc_cut)
         if j == 0:
-            ax.plot(x, y, color=colors_short[i], linewidth=0.8, label='Participants')
+            ax.plot(x, y, color=colors_short[i], linewidth=0.8, label=PN_labels[0])
             if i == 0:
-                ax.axhline(r_vector[1, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle= 'dashed', linewidth=0.8, label='Nonparticipants')
+                ax.axhline(r_vector[1, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle= 'dashed', linewidth=0.8, label=PN_labels[1])
                 ax.legend()
             else:
                 ax.axhline(r_vector[1, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle= 'dashed', linewidth=0.8)

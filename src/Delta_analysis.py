@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, scenario_labels, colors_short, age_labels
+    Z_Y_cases, Z_SI_cases, scenario_labels, colors_short, age_labels, PN_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, dDelta_st_calculator, post_var
 from numba import jit
 import matplotlib.pyplot as plt
@@ -224,14 +224,14 @@ for i, ax_row in enumerate(axes):
             y33 = y3[:, 3]
             y34 = y3[:, 4]
             ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label='P')
+            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label=PN_labels[0])
             ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label='N')
+            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label=PN_labels[1])
             # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
             # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
-            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
         else:
-            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
             for k in range(n_age_groups):
                 y40 = y4[:, k]
                 y50 = y5[:, k]
@@ -239,7 +239,7 @@ for i, ax_row in enumerate(axes):
         if i == 0:
             ax.legend(loc='upper right')
         else:
-            ax.set_xlabel('Time in simulation, one random path')
+            ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=500)
 plt.show()
@@ -368,14 +368,14 @@ for i, ax_row in enumerate(axes):
             y33 = y3[:, 3]
             y34 = y3[:, 4]
             ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label='P')
+            ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label=PN_labels[0])
             ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label='N')
+            ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label=PN_labels[1])
             # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
             # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
-            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
         else:
-            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label='Cutoff belief')
+            ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
             for k in range(n_age_groups):
                 y40 = y4[:, k]
                 y50 = y5[:, k]
@@ -383,7 +383,7 @@ for i, ax_row in enumerate(axes):
         if i == 0:
             ax.legend(loc='upper right')
         else:
-            ax.set_xlabel('Time in simulation, one random path')
+            ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig('Distribution of Delta window 5 years.png', dpi=500)
 plt.show()
@@ -461,5 +461,3 @@ for i, var_y in enumerate(y_variables):
         plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=500)
         plt.show()
         plt.close()
-
-
