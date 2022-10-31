@@ -16,7 +16,7 @@ T_hat_dimension = len(T_hats)
 
 n_scenarios = 1
 a_sce = 2
-N = 2
+N = 500
 N_scenarios = 3
 
 # Generate matrix to store the results
@@ -159,7 +159,7 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and values mean vola years.png', dpi=500, format="png")
+# plt.savefig('initial window and values mean vola years.png', dpi=500, format="png")
 # plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
 plt.show()
 # plt.close()
@@ -206,7 +206,7 @@ plt.show()
 ######## OVER INITIAL WINDOW #########
 ############ GRAPH TWO ###############
 ######################################
-# plot market price of risk, Phi, Delta_bar over Npre
+# plot participation rate and wealth share over Npre
 x = Npres/12
 # x = Npres[1:]
 var_name_list = ['Participation rates in age groups', 'Wealth shares in age groups']
@@ -263,7 +263,7 @@ for i, axes_row in enumerate(axes):
             ax.set_xlabel('initial window (years)')
             ax.tick_params(axis='x', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and values age groups.png', dpi=500, format="png")
+#plt.savefig('initial window and values age groups.png', dpi=500, format="png")
 plt.show()
-plt.close()
+#plt.close()
 

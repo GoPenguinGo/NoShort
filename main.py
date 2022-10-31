@@ -662,7 +662,8 @@ plt.show()
 # 4.2.3 participation rate (reentry + disappointment) * (phi = 0, 0.8)
 red_case = 1
 yellow_case = 1
-titles_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
+titles_subfig = [r'Aggregate wealth share of participants $\bar{\Delta}_t$', r'Wealth weighted average estimation error conditional on participation $\Phi_t$', 'Participation rate']
+yaxis_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
 phi_indexes = [0, 2]
 y1_case = delta_bar_compare[:, red_case, yellow_case]
 y2_case = Phi_compare[:, red_case, yellow_case]
@@ -685,15 +686,15 @@ fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 15))
 #             ax.set_xlabel('Time in simulation, one random path')
 #         if j==0:
 #             ax.legend(loc='upper left')
-axes[0,0].set_title('The shocks')
-axes[0,0].set_ylabel('Zt', color='black')
-axes[0,0].plot(x, Z, color='black', linewidth=0.5, linestyle = 'solid', label=r'$z^Y_t$')
-axes[0,0].plot(x, Z_SI, color='gray', linewidth=0.5, linestyle = 'solid', label=r'$z^{SI}_t$')
+axes[0,0].set_title('Shocks to output and signal')
+axes[0,0].set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+axes[0,0].plot(x, Z, color='red', linewidth=0.5, linestyle = 'solid', label=r'$z^Y_t$')
+axes[0,0].plot(x, Z_SI, color='gold', linewidth=0.5, linestyle = 'solid', label=r'$z^{SI}_t$')
 axes[0,0].tick_params(axis='y', labelcolor='black')
 axes[0,0].legend(loc='upper left')
 
 axes[0,1].set_title(titles_subfig[0])
-axes[0,1].set_ylabel(titles_subfig[0], color='black')
+axes[0,1].set_ylabel(yaxis_subfig[0], color='black')
 # ax1 = axes[0].twinx()
 for i in range(3):
     for j in range(2):
@@ -707,38 +708,36 @@ for i in range(3):
 axes[0,1].legend(loc='upper right')
 
 axes[1, 0].set_title(titles_subfig[1])
-axes[1, 0].set_ylabel(titles_subfig[1], color='black')
+axes[1, 0].set_ylabel(yaxis_subfig[1], color='black')
 # ax2 = axes[1].twinx()
 for i in range(1,3):
     for j in range(2):
         y2 = y2_case[i, phi_indexes[j], int(left_t/dt):int(right_t/dt)]
         line_style = 'dotted' if j==0 else 'solid'
-        label_i = scenario_labels[i]
-        if j == 1:
-            axes[1, 0].plot(x, y2, label = label_i, linewidth=0.5, color=colors_short[i], linestyle=line_style)
+        if i == 1 and j == 0:
+            axes[1, 0].plot(x, y2, label = r'$\phi=0.0$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
+        elif i == 1 and j == 1:
+            axes[1, 0].plot(x, y2, label = r'$\phi=0.8$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
         else:
             axes[1, 0].plot(x, y2, linewidth=0.5, color=colors_short[i], linestyle=line_style)
-y21 = y2_case[0, 0,  int(left_t/dt):int(right_t/dt)]
+y21 = y2_case[0, 0, int(left_t/dt):int(right_t/dt)]
 # axes[1, 0].plot(x, y21, label = scenario_labels[0], linewidth=0.5, color=colors_short[0], linestyle='solid')
-axes[1, 0].legend(loc='upper right')
-axes[1,0].set_xlabel('Time in simulation, one random path')
+axes[1,0].legend(loc='upper right')
+axes[1,0].set_xlabel('Time in simulation')
 
 axes[1,1].set_title(titles_subfig[2])
-axes[1,1].set_ylabel(titles_subfig[2], color='black')
+axes[1,1].set_ylabel(yaxis_subfig[2], color='black')
 # ax3 = axes[2].twinx()
 for i in range(1,3):
     for j in range(2):
         y3 = y3_case[i, phi_indexes[j], int(left_t/dt):int(right_t/dt)]
         line_style = 'dotted' if j==0 else 'solid'
         label_i = scenario_labels[i]
-        if j == 1:
-            axes[1,1].plot(x, y3, label=label_i, linewidth=0.5, color=colors_short[i], linestyle=line_style)
-        else:
-            axes[1,1].plot(x, y3, linewidth=0.5, color=colors_short[i], linestyle=line_style)
+        axes[1,1].plot(x, y3, linewidth=0.5, color=colors_short[i], linestyle=line_style)
 # y21 = y2_case[0, 0]
 # ax3.plot(t, y1, label = label_scenarios[0], color=colors_short[0], linestyle='dashed')
-axes[1,1].legend(loc='upper right')
-axes[1,1].set_xlabel('Time in simulation, one random path')
+#axes[1,1].legend(loc='upper right')
+axes[1,1].set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
 plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=500)
 plt.show()
@@ -965,8 +964,8 @@ Delta_bar_vec = delta_bar_compare[:, red_case, yellow_case, phi_index] # (n_scen
 y3_case = (Delta_vec - Delta_bar_vec) / sigma_Y
 y4_case = 1 / Phi_compare[:, red_case, yellow_case, phi_index]
 y_cases = [y1_case, y2_case, y3_case, y4_case]
-titles_subfig = ['Constraints', r'$\phi$ values', r'$\bar{\mu}_t$ element', r'$\Phi_t$ element']
-fig, axes = plt.subplots(nrows=2, ncols=2, sharey='all', figsize=(15, 15))
+titles_subfig = [r'Portfolios, across scenarios, $\phi=0.4$', r'Portfolios, reentry, across $\phi$ values', r'Belief component, across scenarios, $\phi=0.4$', r'Consumption component, across scenarios, $\phi=0.4$']
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
 for i, ax in enumerate(axes.flat):
     n_loop = n_phi_short if i == 0 else n_scenarios
     for j in range(n_loop):
@@ -975,9 +974,12 @@ for i, ax in enumerate(axes.flat):
         label_i = labels[j]
         ax.plot(x, y_case, label=label_i, color=colors_short[j], linewidth=0.4)
     ax.legend()
-    ax.set_ylim(-6, 7)
+    if i == 2:
+        ax.set_ylim(-6, 3)
+    else:
+        ax.set_ylim(-1, 7)
     if i == 0 or i == 2:
-        ax.set_ylabel('Investment in stock market')
+        ax.set_ylabel(r'Investment in stock market, $\pi_{s,t}/W_{s,t}$')
     if i == 2 or i == 3:
         ax.set_xlabel('Time in simulation')
     ax.set_title(titles_subfig[i])
@@ -993,7 +995,7 @@ plt.show()
 # consumption, different phi
 # consumption, different scenarios
 # build consumption data and time series over tau values
-tax_vector = [0.005, 0.01, 0.015]
+tax_vector = [0.008, 0.010, 0.012]
 n_tax = len(tax_vector)
 dZ = Z_Y_cases[1]
 dZ_SI = Z_SI_cases[1]
@@ -1030,7 +1032,7 @@ for g, scenario in enumerate(scenarios_short):
             f_compare_tau[g, k, l] = f
             pi_compare_tau[g, k, l] = pi
 
-
+length = len(t)
 pi_time_series_tau = np.zeros((n_scenarios, n_tax, n_phi_short, nn, length))
 cons_time_series_tau = np.zeros((n_scenarios, n_tax, n_phi_short, nn, length))
 f_time_series_tau = np.zeros((n_scenarios, n_tax, n_phi_short, nn, length))
@@ -1200,14 +1202,13 @@ for o in range(n_scenarios):
 # # plt.close()
 
 cohort_index = 2
-left_t = starts[cohort_index]
-right_t = left_t + 100
-length = right_t - left_t
-x = t[:int(length / dt)]
+left_t = int(starts[cohort_index]/dt)
+right_t = int(left_t + 100/dt)
 scenario_index = 1
 phi_index = 0
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
 titles_subfig = [r'Individual consumption share $c_{s,t}/Y_t$', r'Cohort consumption share $f_{s,t}$']
+yaxis_subfig = [r'$c_{s,t}/Y_t$', r'$f_{s,t}$']
 fig, axes = plt.subplots(ncols=2, figsize=(13, 5))
 for i, ax in enumerate(axes):
     ax.set_title(titles_subfig[i])
@@ -1215,30 +1216,30 @@ for i, ax in enumerate(axes):
     for k in range(n_tax):
         y = var[scenario_index, k, phi_index,
             cohort_index,
-            int(left_t / dt):int(right_t / dt)]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
+            left_t:right_t]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
         # condition = pi_time_series_tau[scenario_index, red_index, yellow_index, k, 2, phi_index, int(left_t/dt):int(right_t/dt)]
         switch = switch_time_series_tau[scenario_index, k, phi_index,
                  cohort_index,
-                 int(left_t / dt):int(right_t / dt)]
+                 left_t:right_t]
         y_switch = np.ma.masked_where(switch == 0, y)
         # y_N = np.ma.masked_where(condition >= 0.8, y)
         # y_P = np.ma.masked_where(condition <= 0.2, y)
-        label_i = r'$\tau$ = ' + str(tax_vector[k])
+        label_i = r'$\tau$ = ' + str('{0:.3f}'.format(tax_vector[k]))
         if k == 1:
-            ax.plot(x, y, color='black', linewidth=0.6, linestyle=line_styles[k], label=label_i)
+            ax.plot(t[left_t:right_t], y, color='black', linewidth=0.6, linestyle=line_styles[k], label=label_i)
         else:
-            ax.plot(x, y, color='black', linewidth=0.4, linestyle=line_styles[k], label=label_i)
+            ax.plot(t[left_t:right_t], y, color='black', linewidth=0.4, linestyle=line_styles[k], label=label_i)
         if scenario_index != 0:
             if k == 0:
-                ax.scatter(x, y_switch, color='red', s=10, marker='o', label='state switch')
+                ax.scatter(t[left_t:right_t], y_switch, color='red', s=10, marker='o', label='Switch')
             else:
-                ax.scatter(x, y_switch, color='red', s=10, marker='o')
+                ax.scatter(t[left_t:right_t], y_switch, color='red', s=10, marker='o')
     ax.tick_params(axis='both', labelcolor='black')
+    ax.set_ylabel(yaxis_subfig[i], color='black')
     # ax.set_xlim(left_t, right_t)
     if i == 0:
-        #ax.set_ylabel(r'$c_{s,t}/Y_t$, one single path', color='black')
         ax.legend()
-    ax.set_xlabel('Age, one random cohort')
+    ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
 plt.savefig('Consumption share tau.png', dpi=500)
 plt.show()

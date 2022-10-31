@@ -348,7 +348,7 @@ for i, ax_row in enumerate(axes):
     belief_cutoff_case = -theta_compare[scenario_index, int(left_t/dt):int(right_t/dt)]
     for j, ax in enumerate(ax_row):
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$')
+        ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$' + r', 5 years initial training window')
         if j == 0:
             if i == 0:
                 ax2 = ax.twinx()
