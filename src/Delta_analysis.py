@@ -63,7 +63,7 @@ for i, ax in enumerate(axes):
         ax.set_title('age = ' + str(age_vector[i]))
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Probability of better estimate with signal.png', dpi=500)
+plt.savefig('Probability of better estimate with signal.png', dpi=200)
 plt.show()
 #plt.close()
 
@@ -241,7 +241,7 @@ for i, ax_row in enumerate(axes):
         else:
             ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=500)
+plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=200)
 plt.show()
 plt.close()
 
@@ -385,7 +385,7 @@ for i, ax_row in enumerate(axes):
         else:
             ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('Distribution of Delta window 5 years.png', dpi=500)
+plt.savefig('Distribution of Delta window 5 years.png', dpi=100)
 plt.show()
 plt.close()
 
@@ -458,6 +458,6 @@ for i, var_y in enumerate(y_variables):
         ax.set_xlabel(x_varnames[j])
         ax.set_ylabel(y_varnames[i])
         fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=500)
+        plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
         plt.show()
         plt.close()
