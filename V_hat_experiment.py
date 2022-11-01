@@ -88,7 +88,7 @@ type_list = ['mean', 'vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 for i, var in enumerate(var_list):
-    np.save(var_name_list[i] + str(a_sce), var)
+    np.save(var_name_list[i] + str(a_sce), var[:200])
 
 
 
@@ -113,7 +113,7 @@ for i, var in enumerate(var_list):
     for j in range(N_scenarios):
         var_name_j = var_name + str(j) +'.npy'
         y = np.load(var_name_j)
-        var[j] = np.mean(y, axis=0)
+        var[j] = np.mean(y[:200], axis=0)
 
 
 # graphs:
@@ -140,7 +140,7 @@ for i, axes_row in enumerate(axes):
     for j, ax in enumerate(axes_row):
         y = var[:, :, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
         column_name = 'Mean' if j == 0 else 'Volatility'
-        for k in range(2):
+        for k in range(3):
             line_style = line_styles[k]
             for l in range(N_scenarios):
                 y_i = y[l, k]
@@ -159,7 +159,7 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig('initial window and values mean vola years.png', dpi=500, format="png")
+plt.savefig('initial window and values mean vola years.png', dpi=100, format="png")
 # plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
 plt.show()
 # plt.close()
@@ -231,12 +231,12 @@ for i, axes_row in enumerate(axes):
                     ax.plot(x, y_i, color=colors_short[k], label=age_labels[k])
                     ax.fill_between(x, y_i, low, facecolor="none", edgecolor=colors_short[k], hatch=hatches[k], linewidth=0)
                     y_cumu = low + y_i
-                elif i == 0:
-                    y_plot = y_i + y_cumu
-                    # ax.fill_between(x, y_i, y_1, color=colors_short[k], linewidth=0, label=age_labels[k])
-                    ax.plot(x, y_plot, color=colors_short[k], label=age_labels[k])
-                    ax.fill_between(x, y_plot, y_cumu, facecolor="none", edgecolor=colors_short[k], hatch=hatches[k], linewidth=0)
-                    y_cumu = y_plot
+                # elif i == 0:
+                #     y_plot = y_i + y_cumu
+                #     # ax.fill_between(x, y_i, y_1, color=colors_short[k], linewidth=0, label=age_labels[k])
+                #     ax.plot(x, y_plot, color=colors_short[k], label=age_labels[k])
+                #     ax.fill_between(x, y_plot, y_cumu, facecolor="none", edgecolor=colors_short[k], hatch=hatches[k], linewidth=0)
+                #     y_cumu = y_plot
                 else:
                     y_1 = var[:, k - 1]
                     # ax.fill_between(x, y_i, y_1, color=colors_short[k], linewidth=0, label=age_labels[k])

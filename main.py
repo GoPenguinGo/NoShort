@@ -382,7 +382,7 @@ for i in range(1, n_phi_short, 1):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.savefig(
                 'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
-                dpi=300)
+                dpi=100)
     plt.show()
     plt.close()
 
@@ -447,7 +447,7 @@ for i, ax_row in enumerate(axes):
         ax.set_title(titles_subfig[i][j])
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=500)
+plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=100)
 plt.show()
 plt.close()
 
@@ -597,7 +597,7 @@ for j, ax in enumerate(axes.flat):
         ax.set_ylabel('Volatility of log consumption', color='black')
     ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(N_1) + 'paths, ' + 'log consumption and age.png', dpi=300)
+plt.savefig(str(N_1) + 'paths, ' + 'log consumption and age.png', dpi=100)
 plt.show()
 #plt.close()
 
@@ -646,9 +646,9 @@ for j, ax in enumerate(axes):
     ax2.legend(loc='upper right')
     ax.set_title(y_title)
 fig.tight_layout(h_pad=2)
-plt.savefig('r and theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=500)
+plt.savefig('r and theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=100)
 plt.show()
-#plt.close()
+plt.close()
 
 
 
@@ -739,205 +739,9 @@ for i in range(1,3):
 #axes[1,1].legend(loc='upper right')
 axes[1,1].set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
-plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=500)
+plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
 plt.show()
 plt.close()
-
-# ######################################
-# ############ Figure 4.2' #############
-# ######################################
-# market view and distribution of beliefs
-# red_case = 1
-# yellow_case = 1
-x = t
-# left_t = 300
-# right_t = 400
-# Z = np.cumsum(Z_Y_cases[red_case])[int(left_t/dt):int(right_t/dt)]
-# Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t/dt):int(right_t/dt)]
-# x = t[int(left_t/dt):int(right_t/dt)]
-invest_tracker_mat = invest_tracker_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-Delta_mat = Delta_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-y1_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # overall
-y2_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # participants / long
-y3_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, 5))  # non-participants / short
-y_cases = [y1_case, y2_case, y3_case]
-for i in range(n_scenarios):
-    for j in range(2):
-        for k in range(2):
-            for l in range(n_phi_short):
-                for m in range(Nt):
-                    Delta = Delta_mat[i, j, k, l, m]  # ((Nt, Nc))
-                    parti_cohorts = invest_tracker_mat[i, j, k, l, m]
-                    if i == 0 or np.sum(parti_cohorts) == Nt:
-                        cohort_sizes = [cohort_size]
-                        Deltas = [Delta]
-                        n_var = 1
-                    else:
-                        Delta1 = parti_cohorts * Delta
-                        Delta2 = (1 - parti_cohorts) * Delta
-                        cohort_size1 = parti_cohorts * cohort_size
-                        cohort_size2 = (1 - parti_cohorts) * cohort_size
-                        cohort_sizes = [cohort_size, cohort_size1, cohort_size2]
-                        Deltas = [Delta, Delta1, Delta2]
-                        n_var = 3
-
-                    for n in range(n_var):
-                        Del = Deltas[n]
-                        cohort_siz = cohort_sizes[n]
-                        Delta_rank = Del.argsort()
-                        Delta_sorted = Del[Delta_rank[::-1]]
-                        cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
-                        popu_cumsum = np.cumsum(cohort_size_sorted)
-                        total_popu = popu_cumsum[-1]
-                        Delta_cutoff = np.zeros(5)
-                        cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
-                        Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
-                        if i == 2:
-                            if n == 1:
-                                Delta_cutoff[0] = np.max(Delta)
-                                Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
-                            elif n == 2:
-                                Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
-                                Delta_cutoff[4] = np.min(Delta)
-                            else:
-                                Delta_cutoff[0] = np.max(Delta)
-                                Delta_cutoff[4] = np.min(Delta)
-                        else:
-                            Delta_cutoff[0] = np.max(Delta)
-                            Delta_cutoff[4] = np.min(Delta)
-                        y_cases[n][i, j, k, l, m] = Delta_cutoff  # avoid using Delta_cutoff[4] for P, and Delta_cutoff[0] for N
-
-scenario_indexes = [1, 2, 0, 1]
-phi_indexes = [1, 1, 1, 2]
-cases = [1,1]
-fig, axes = plt.subplots(nrows=4, sharex='all', sharey='all', figsize=(15, 20))
-red_case = cases[0]
-yellow_case = cases[1]
-upper = np.max(y1_case[:, red_case, yellow_case])
-lower = np.min(y1_case[:, red_case, yellow_case])
-for i, ax in enumerate(axes):
-    Z = np.cumsum(Z_Y_cases[red_case])
-    Z_SI = np.cumsum(Z_SI_cases[yellow_case])
-    scenario_index = scenario_indexes[i]
-    phi_index = phi_indexes[i]
-    y1 = y1_case[scenario_index, red_case, yellow_case, phi_index]
-    y2 = y2_case[scenario_index, red_case, yellow_case, phi_index]  # ((Nt, 4))
-    y3 = y3_case[scenario_index, red_case, yellow_case, phi_index]  # ((Nt, 4))
-    belief_cutoff_case = -theta_compare[scenario_index, red_case, yellow_case, phi_index]
-    if i == 3:
-        ax.set_xlabel('Time in simulation, one random path')
-    ax.set_ylabel('Zt', color='black')
-    ax.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-    ax.plot(x, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-    ax.tick_params(axis='y', labelcolor='black')
-    if i == 0:
-        ax.legend(loc='upper left')
-    ax.set_title(scenario_labels[scenario_index] + ', ' + label_phi[phi_index])
-
-    ax2 = ax.twinx()
-    ax2.set_ylabel('Estimation error', color='black')
-
-    if scenario_index == 0:
-        y10 = y1[:, 0]
-        y11 = y1[:, 1]
-        y12 = y1[:, 2]
-        y13 = y1[:, 3]
-        y14 = y1[:, 4]
-        ax2.fill_between(x, y10, y14, color='blue', linewidth=0., alpha=0.3)
-        ax2.fill_between(x, y11, y13, color='blue', linewidth=0., alpha=0.5)
-        ax2.plot(x, y12, color='blue', linewidth=0.4, label='P')
-    else:
-        y20 = y2[:, 0]
-        y21 = y2[:, 1]
-        y22 = y2[:, 2]
-        y23 = y2[:, 3]
-        y24 = y30 = belief_cutoff_case
-        y31 = y3[:, 1]
-        y32 = y3[:, 2]
-        y33 = y3[:, 3]
-        y34 = y3[:, 4]
-        ax2.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-        ax2.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5)
-        ax2.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-        ax2.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5)
-        ax2.plot(x, y22, color='blue', linewidth=0.4, label='P')
-        ax2.plot(x, y32, color='green', linewidth=0.4, label='N')
-    # ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
-    ax2.tick_params(axis='y', labelcolor='black')
-    ax2.legend(loc='upper right')
-    ax2.set_ylim(lower, upper)
-    #ax2.grid()
-# fig.suptitle('Zt and Market Price of Risk')
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-#plt.savefig(str(red_case) + str(yellow_case) + 'Distribution of Delta parti nonparti.png', dpi=500)
-plt.show()
-# plt.close()
-
-
-
-# ######################################
-# ############ Figure 4.3' #############
-# ######################################
-# market view and distribution of beliefs in age groups
-invest_tracker_mat = invest_tracker_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-Delta_mat = Delta_compare  #  ((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-y_case = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, n_age_groups, 2))  # min, max for each age group
-for i in range(n_scenarios):
-    for j in range(2):
-        for k in range(2):
-            for l in range(n_phi_short):
-                Delta = Delta_mat[i, j, k, l]  # ((Nt, Nc))
-                parti_cohorts = invest_tracker_mat[i, j, k, l]
-                for m in range(n_age_groups):
-                    Delta_age_group = Delta[:, cutoffs[m+1]:cutoffs[m]]
-                    y_case[i, j, k, l, :, m, 0] = np.amin(Delta_age_group, axis=1)
-                    y_case[i, j, k, l, :, m, 1] = np.amax(Delta_age_group, axis=1)
-
-
-scenario_indexes = [1, 2, 0, 1]
-phi_indexes = [1, 1, 1, 2]
-cases = [1,1]
-fig, axes = plt.subplots(nrows=4, sharex='all', sharey='all', figsize=(15, 20))
-red_case = cases[0]
-yellow_case = cases[1]
-upper = np.max(y_case[:, red_case, yellow_case])
-lower = np.min(y_case[:, red_case, yellow_case])
-for i, ax in enumerate(axes):
-    Z = np.cumsum(Z_Y_cases[red_case])
-    Z_SI = np.cumsum(Z_SI_cases[yellow_case])
-    scenario_index = scenario_indexes[i]
-    phi_index = phi_indexes[i]
-    y = y_case[scenario_index, red_case, yellow_case, phi_index]
-    ycutoff = -theta_compare[scenario_index, red_case, yellow_case, phi_index]
-    ax.set_xlabel('Time in simulation, one random path')
-    ax.set_ylabel('Zt', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-    ax.tick_params(axis='y', labelcolor='black')
-    if i == 0:
-        ax.legend(loc='upper left')
-    ax.set_title(scenario_labels[scenario_index] + ', ' + label_phi[phi_index])
-    ax2 = ax.twinx()
-    ax2.set_ylabel('Estimation error', color='black')
-    for j in range(n_age_groups):
-        ymin = y[:, j, 0]
-        ymax = y[:, j, 1]
-        ax2.fill_between(t, ymax, ymin, color=colors_short[j], linewidth=0., alpha=0.4, label=age_labels[j])
-    if i == 0:
-        ax2.plot(t, ycutoff, color='blue', linewidth=0.5, label='cutoff')
-        ax2.legend(loc='upper right')
-    else:
-        ax2.plot(t, ycutoff, color='blue', linewidth=0.5)
-    # ax2.plot(t, yy, color=colors[i], linewidth=0.4, label=label_i)
-    ax2.tick_params(axis='y', labelcolor='black')
-    ax2.set_ylim(lower, upper)
-    #ax2.grid()
-# fig.suptitle('Zt and Market Price of Risk')
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(red_case) + str(yellow_case) + 'Distribution of Delta age groups.png', dpi=300)
-plt.show()
-# plt.close()
-
 
 
 # ######################################
@@ -985,9 +789,9 @@ for i, ax in enumerate(axes.flat):
     ax.set_title(titles_subfig[i])
     ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case)  + '.png', dpi=500)
+plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
 plt.show()
-#plt.close()
+plt.close()
 
 # ######################################
 # ############ Figure 4-4 ##############
@@ -1241,7 +1045,7 @@ for i, ax in enumerate(axes):
         ax.legend()
     ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
-plt.savefig('Consumption share tau.png', dpi=500)
+plt.savefig('Consumption share tau.png', dpi=100)
 plt.show()
 # plt.close()
 

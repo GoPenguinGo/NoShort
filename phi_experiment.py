@@ -99,7 +99,7 @@ for i, var in enumerate(var_list):
     for j, tax_rate in enumerate(tax_vector):
         var_name_j = var_name + str(tax_rate) +'.npy'
         y = np.load(var_name_j)
-        var[:, j] = np.mean(np.mean(y, axis=0), axis=1)
+        var[:, j] = np.mean(np.mean(y[:200], axis=0), axis=1)
 
 
 x = phi_vector
