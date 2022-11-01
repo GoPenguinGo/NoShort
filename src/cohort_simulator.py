@@ -51,6 +51,8 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
