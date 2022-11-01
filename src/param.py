@@ -98,12 +98,13 @@ old_limit = 100
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
-modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
-modes_learn = ['keep', 'drop']
+# modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
+modes_trade = ['complete', 'w_constraint', 'partial_constraint_old']
+modes_learn = ['reentry', 'disappointment']
 scenarios = []
 for mode_trade in modes_trade:
     if mode_trade == 'complete':
-        scenarios.append([mode_trade, 'keep'])
+        scenarios.append([mode_trade, 'reentry'])
     else:
         for mode_learn in modes_learn:
             scenarios.append([mode_trade, mode_learn])

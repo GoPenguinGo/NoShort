@@ -203,7 +203,7 @@ def simulate_cohorts_SI(
         invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 
         if mode_trade == 'w_constraint':
-            if mode_learn == 'drop':
+            if mode_learn == 'disappointment':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
@@ -219,7 +219,7 @@ def simulate_cohorts_SI(
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            elif mode_learn == 'keep':   # agents stay as type P even if constrained
+            elif mode_learn == 'reentry':   # agents stay as type P even if constrained
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
@@ -269,7 +269,7 @@ def simulate_cohorts_SI(
 
         # elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
         #     can_short_tracker = np.append(can_short_tracker[1:], 0)
-        #     if mode_learn == 'drop':
+        #     if mode_learn == 'disappointment':
         #         possible_cons_share = f_st * dt * invest_tracker
         #         possible_delta_st = Delta_s_t * invest_tracker
         #         indiv_w_possible = w_indiv_st * invest_tracker
@@ -293,7 +293,7 @@ def simulate_cohorts_SI(
         #         Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
         #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
         #
-        #     elif mode_learn == 'keep':
+        #     elif mode_learn == 'reentry':
         #         possible_cons_share = f_st * dt
         #         possible_delta_st = Delta_s_t
         #         indiv_w_possible = w_indiv_st
@@ -334,7 +334,7 @@ def simulate_cohorts_SI(
         elif mode_trade == 'partial_constraint_old':
             can_short_tracker = np.append(can_short_tracker[1:], 0)
 
-            if mode_learn == 'drop':
+            if mode_learn == 'disappointment':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 can_short_possible = (tau >= old_limit)
@@ -354,7 +354,7 @@ def simulate_cohorts_SI(
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            elif mode_learn == 'keep':
+            elif mode_learn == 'reentry':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 can_short_tracker = (tau >= old_limit)
@@ -637,7 +637,7 @@ def simulate_cohorts_mean_vola(
             invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 
         if mode_trade == 'w_constraint':
-            if mode_learn == 'drop':
+            if mode_learn == 'disappointment':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
@@ -653,7 +653,7 @@ def simulate_cohorts_mean_vola(
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            elif mode_learn == 'keep':   # agents stay as type P even if constrained
+            elif mode_learn == 'reentry':   # agents stay as type P even if constrained
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
@@ -703,7 +703,7 @@ def simulate_cohorts_mean_vola(
 
         # elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
         #     can_short_tracker = np.append(can_short_tracker[1:], 0)
-        #     if mode_learn == 'drop':
+        #     if mode_learn == 'disappointment':
         #         possible_cons_share = f_st * dt * invest_tracker
         #         possible_delta_st = Delta_s_t * invest_tracker
         #         indiv_w_possible = w_indiv_st * invest_tracker
@@ -727,7 +727,7 @@ def simulate_cohorts_mean_vola(
         #         Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
         #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
         #
-        #     elif mode_learn == 'keep':
+        #     elif mode_learn == 'reentry':
         #         possible_cons_share = f_st * dt
         #         possible_delta_st = Delta_s_t
         #         indiv_w_possible = w_indiv_st
@@ -768,7 +768,7 @@ def simulate_cohorts_mean_vola(
         elif mode_trade == 'partial_constraint_old':
             can_short_tracker = np.append(can_short_tracker[1:], 0)
 
-            if mode_learn == 'drop':
+            if mode_learn == 'disappointment':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 can_short_possible = (tau >= old_limit)
@@ -788,7 +788,7 @@ def simulate_cohorts_mean_vola(
                 Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            elif mode_learn == 'keep':
+            elif mode_learn == 'reentry':
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 can_short_tracker = (tau >= old_limit)
@@ -1043,7 +1043,7 @@ def simulate_cohorts_mean_vola(
 #             -Delta_s_t * dt + dZ_t
 #         )  # from eq(5)
 #
-#         if mode_learn == 'back_renew' and mode_trade == 'drop':
+#         if mode_learn == 'back_renew' and mode_trade == 'disappointment':
 #             tau_info = np.append(tau_info[1:], 0) + dt
 #
 #         if i < Npre-1:
@@ -1057,7 +1057,7 @@ def simulate_cohorts_mean_vola(
 #         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
 #         invest_tracker = np.append(invest_tracker[1:], 1)  # all cohorts that are still in the market, 1 by default
 #
-#         if mode_trade == 'drop':
+#         if mode_trade == 'disappointment':
 #             if good_time_simulate[i] == 1:
 #
 #                 if mode_learn == 'back_collect':
@@ -1093,7 +1093,7 @@ def simulate_cohorts_mean_vola(
 #             age_t = np.sum(cohort_size * tau * invest_tracker)
 #             n_parti_t = np.sum(invest_tracker) / Nc
 #
-#         elif mode_trade == 'keep':
+#         elif mode_trade == 'reentry':
 #             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
 #             f_st_standard = f_st * dt
 #             theta_t = bisection(
@@ -1658,7 +1658,7 @@ def simulate_cohorts_mean_vola(
 #
 #
 #         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
-#         if mode == 'drop':
+#         if mode == 'disappointment':
 #             invest_tracker = invest_tracker[1:]
 #             invest_tracker = np.append(invest_tracker, 1)
 #             possible_cons_share = f_st * dt * invest_tracker
@@ -1680,7 +1680,7 @@ def simulate_cohorts_mean_vola(
 #             age_t = np.sum(cohort_size * tau * invest_tracker)
 #             n_parti_t = np.sum(invest_tracker) / Nc
 #
-#         elif mode == 'keep':
+#         elif mode == 'reentry':
 #             lowest_bound = -np.max(Delta_s_t)  # absolute lower bound for theta
 #             f_st_standard = f_st * dt
 #             theta_t = bisection(

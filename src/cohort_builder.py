@@ -146,7 +146,7 @@ def build_cohorts_SI(
         elif mode_trade == 'w_constraint':
             invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P
 
-            if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+            if mode_learn == 'disappointment':  # agents switch from type P to type N once constrained, and stay as type N
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound
@@ -162,7 +162,7 @@ def build_cohorts_SI(
                 Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
-            elif mode_learn == 'keep':   # agents switch between type P and type N
+            elif mode_learn == 'reentry':   # agents switch between type P and type N
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
@@ -190,7 +190,7 @@ def build_cohorts_SI(
         #     can_short_tracker = np.append(can_short_tracker, 0)
         #     cohort_size_short = cohort_size[-i-1:]  # todo: think about cohort size in the building function
         #
-        #     if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+        #     if mode_learn == 'disappointment':  # agents switch from type P to type N once constrained, and stay as type N
         #         possible_cons_share = f_st * dt * invest_tracker
         #         possible_delta_st = Delta_s_t * invest_tracker
         #         indiv_w_possible = possible_cons_share / cohort_size_short
@@ -217,7 +217,7 @@ def build_cohorts_SI(
         #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
         #         # print(np.sum(can_short_tracker * cohort_size_short))
         #
-        #     elif mode_learn == 'keep':  # agents switch between type P and type N
+        #     elif mode_learn == 'reentry':  # agents switch between type P and type N
         #         possible_cons_share = f_st * dt
         #         possible_delta_st = Delta_s_t
         #         indiv_w_possible = possible_cons_share / cohort_size_short
@@ -256,7 +256,7 @@ def build_cohorts_SI(
             # cohort_size_short = cohort_size[-i-1:]
             tau_short_1 = tau[-i-1:]
 
-            if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+            if mode_learn == 'disappointment':  # agents switch from type P to type N once constrained, and stay as type N
                 # cohorts older than 100 years can short, if they are still type P by the time
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
@@ -280,7 +280,7 @@ def build_cohorts_SI(
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
                 # print(np.sum(can_short_tracker * cohort_size_short))
 
-            elif mode_learn == 'keep':  # agents switch between type P and type N
+            elif mode_learn == 'reentry':  # agents switch between type P and type N
                 possible_cons_share = f_st * dt
                 possible_delta_st = Delta_s_t
                 can_short_tracker = (tau_short_1 >= old_limit)
@@ -442,7 +442,7 @@ def build_cohorts_SI(
 #
 #         Vhat_vector = np.append(Vhat_vector, Vhat)  # iterate Vhat (Vhat is either the initial variance or the starting point after state switch)
 #
-#         if mode_learn == 'keep' or mode_trade == 'complete':  # where tau_info is the same with age
+#         if mode_learn == 'reentry' or mode_trade == 'complete':  # where tau_info is the same with age
 #             tau_info = tau[-i - 1:]
 #         else:  # where tau_info is the distance from state switch
 #             tau_info = np.append(tau_info, 0) + dt
@@ -473,7 +473,7 @@ def build_cohorts_SI(
 #             )
 #             a = Delta_s_t + theta_t
 #             invest = (a >= 0)
-#             if mode_learn == 'drop':  # agents switch from type P to type N once constrained
+#             if mode_learn == 'disappointment':  # agents switch from type P to type N once constrained
 #                 switch_P_to_N = invest_tracker * (1 - invest)
 #                 invest_tracker = invest * invest_tracker
 #                 d_eta_st = a * invest_tracker - theta_t
@@ -481,7 +481,7 @@ def build_cohorts_SI(
 #                 Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
 #                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 #
-#             # elif mode_learn == 'keep':   # agents stay as type P even if constrained
+#             # elif mode_learn == 'reentry':   # agents stay as type P even if constrained
 #             #     invest_tracker = np.append(invest_tracker[:-1], invest[-1])
 #             #     d_eta_st = a * invest_tracker - theta_t
 #
@@ -559,7 +559,7 @@ def build_cohorts_SI(
 #     d_eta_st = np.zeros(1)  # disagreement, eq(11)
 #     eta_bar = np.ones(1)
 #     eta_st_eta_ss = np.ones(1)
-#     invest_tracker = np.ones(Ninit) if mode_trade == 'drop' else np.ones(Nc)
+#     invest_tracker = np.ones(Ninit) if mode_trade == 'disappointment' else np.ones(Nc)
 #     tau_info = np.ones(1) * dt
 #
 #     for i in tqdm(range(1, Nc)):
@@ -592,7 +592,7 @@ def build_cohorts_SI(
 #                 -Delta_s_t * dt + dZ_build[i - 1]
 #         )  # from eq(5)
 #
-#         if mode_learn == 'back_renew' and mode_trade == 'drop':
+#         if mode_learn == 'back_renew' and mode_trade == 'disappointment':
 #             tau_info = np.append(tau_info, 0) + dt
 #         else:
 #             tau_info = tau[-i - 1:]
@@ -614,7 +614,7 @@ def build_cohorts_SI(
 #             )
 #         else:
 #             invest_tracker = np.append(invest_tracker, 1)  # all cohorts that are still in the market, new cohort by default can invest
-#             if mode_trade == 'drop':
+#             if mode_trade == 'disappointment':
 #                 if good_time_build[i - 1] == 1:
 #                     if mode_learn == 'back_collect':
 #                         # agents who have left the market respond to the recent positive shocks
@@ -638,7 +638,7 @@ def build_cohorts_SI(
 #                 invest_tracker = invest * invest_tracker
 #                 d_eta_st = a * invest_tracker - theta_t
 #
-#             if mode_trade == 'keep':
+#             if mode_trade == 'reentry':
 #                 lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
 #                 f_st_standard = f_st * dt
 #                 theta_t = bisection(
@@ -933,7 +933,7 @@ def build_cohorts_SI(
 #                 Delta_s_t  # relax the short-sale constraint in the beginning
 #             )
 #         else:
-#             if mode == 'drop':
+#             if mode == 'disappointment':
 #                 invest_tracker = np.append(invest_tracker, 1)
 #                 possible_cons_share = f_st * dt * invest_tracker
 #                 possible_delta_st = Delta_s_t * invest_tracker
@@ -948,7 +948,7 @@ def build_cohorts_SI(
 #
 #                 theta[i] = theta_t
 #
-#             if mode == 'keep':
+#             if mode == 'reentry':
 #                 lowest_bound = -np.max(Delta_s_t[np.nonzero(Delta_s_t)]) # absolute lower bound for theta
 #                 f_st_standard = f_st * dt
 #                 theta_t = bisection(
@@ -959,7 +959,7 @@ def build_cohorts_SI(
 #                 )  # update max(Delta_s_t, -theta)
 #             # print(theta_t)
 #
-#     if mode == 'keep':
+#     if mode == 'reentry':
 #         invest_tracker = (Delta_s_t >= -theta_t)
 #
 #     return (
