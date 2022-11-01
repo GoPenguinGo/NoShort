@@ -456,40 +456,40 @@ plt.close()
 # ######################################
 # ############ Figure 3.1 ##############
 # ######################################
-# N_1 = 1000
-# Delta_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
-# invest_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
-# dt_root = np.sqrt(dt)
-# for j in range(N_1):
-#     print(j)
-#     dZ = np.random.randn(Nt) * dt_root
-#     dZ_build = np.random.randn(Nc) * dt_root
-#     dZ_SI = np.random.randn(Nt) * dt_root
-#     dZ_SI_build = np.random.randn(Nc) * dt_root
-#     for k, scenario in enumerate(scenarios_short):
-#         mode_trade = scenario[0]
-#         mode_learn = scenario[1]
-#         for l, phi_try in enumerate(phi_vector_short):
-#             (
-#                 r,
-#                 theta,
-#                 f,
-#                 Delta,
-#                 pi,
-#                 popu_parti,
-#                 f_parti,
-#                 Delta_bar_parti,
-#                 dR,
-#                 invest_tracker,
-#             ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
-#                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-#                             top=0.05,
-#                             old_limit=100
-#                             )
-#             Delta_matrix[j, k, l] = np.average(np.abs(Delta), axis = 0)
-#             invest_matrix[j, k, l] = np.average(invest_tracker, axis = 0)
-# Delta_vector = np.flip(np.average(Delta_matrix, axis=0), axis=2)
-# invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=2)
+N_1 = 1000
+Delta_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
+invest_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc))
+dt_root = np.sqrt(dt)
+for j in range(N_1):
+    print(j)
+    dZ = np.random.randn(Nt) * dt_root
+    dZ_build = np.random.randn(Nc) * dt_root
+    dZ_SI = np.random.randn(Nt) * dt_root
+    dZ_SI_build = np.random.randn(Nc) * dt_root
+    for k, scenario in enumerate(scenarios_short):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        for l, phi_try in enumerate(phi_vector_short):
+            (
+                r,
+                theta,
+                f,
+                Delta,
+                pi,
+                popu_parti,
+                f_parti,
+                Delta_bar_parti,
+                dR,
+                invest_tracker,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
+                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                            top=0.05,
+                            old_limit=100
+                            )
+            Delta_matrix[j, k, l] = np.average(np.abs(Delta), axis = 0)
+            invest_matrix[j, k, l] = np.average(invest_tracker, axis = 0)
+Delta_vector = np.flip(np.average(Delta_matrix, axis=0), axis=2)
+invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=2)
 
 # Graph:
 t_cut = 150

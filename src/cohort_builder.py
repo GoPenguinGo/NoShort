@@ -23,8 +23,8 @@ def build_cohorts_SI(
     T_hat: float,
     mode_trade: str,
     mode_learn: str,
-    top: float,
-    old_limit: int,
+    top = 0.05,
+    old_limit = 100,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -73,8 +73,6 @@ def build_cohorts_SI(
     sigma_Y_sq = sigma_Y ** 2
     cohort_size = nu * np.exp(-nu * (tau - dt)) * dt
     theta_mat = np.empty(Nc)
-    top = 0.05
-    old_limit = 100
 
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Ninit)):
@@ -187,70 +185,70 @@ def build_cohorts_SI(
                 print('mode_learn not found')
                 break
 
-        elif mode_trade == 'partial_constraint_rich':
-            invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P, by default type == P as newborn
-            can_short_tracker = np.append(can_short_tracker, 0)
-            cohort_size_short = cohort_size[-i-1:]  # todo: think about cohort size in the building function
-
-            if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
-                possible_cons_share = f_st * dt * invest_tracker
-                possible_delta_st = Delta_s_t * invest_tracker
-                indiv_w_possible = possible_cons_share / cohort_size_short
-                cohort_size_possible = cohort_size_short * invest_tracker
-                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
-                                              top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-                can_short_tracker = (can_short_tracker + can_short >= 1)
-
-                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
-                theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-                    sigma_Y
-                )
-                a = Delta_s_t + theta_t
-                invest = 1 - (a < 0) * (can_short_tracker < 1)
-                switch_P_to_N = invest_tracker * (1 - invest)
-                invest_tracker = invest * invest_tracker
-                d_eta_st = a * invest_tracker - theta_t
-
-                # tau_info and V_hat has to change for the agents who switched to N
-                Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (
-                        1 - switch_P_to_N)  # reset initial variance
-                tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
-                # print(np.sum(can_short_tracker * cohort_size_short))
-
-            elif mode_learn == 'keep':  # agents switch between type P and type N
-                possible_cons_share = f_st * dt
-                possible_delta_st = Delta_s_t
-                indiv_w_possible = possible_cons_share / cohort_size_short
-                cohort_size_possible = cohort_size_short
-                wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible, top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-                can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-                can_short_tracker = (can_short_tracker + can_short >= 1)
-
-                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
-                theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-                    sigma_Y
-                )
-                a = Delta_s_t + theta_t
-                invest = 1 - (a < 0) * (can_short_tracker < 1)
-                switch_P_to_N = invest_tracker * (1 - invest)
-                switch_N_to_P = np.maximum(invest - invest_tracker, 0)
-                switch = switch_N_to_P + switch_P_to_N
-                invest_tracker = invest
-                d_eta_st = a * invest_tracker - theta_t
-
-                # tau_info and V_hat has to change for the agents who switched to N
-                Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + np.append(V_st_N,
-                                  Vhat) * switch_N_to_P + Vhat_vector * (
-                                  1 - switch)  # reset initial variance
-                tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
-                # print(np.sum(can_short_tracker * cohort_size_short))
-
-            else:
-                print('mode_learn not found')
-                break
+        # elif mode_trade == 'partial_constraint_rich':
+        #     invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P, by default type == P as newborn
+        #     can_short_tracker = np.append(can_short_tracker, 0)
+        #     cohort_size_short = cohort_size[-i-1:]  # todo: think about cohort size in the building function
+        #
+        #     if mode_learn == 'drop':  # agents switch from type P to type N once constrained, and stay as type N
+        #         possible_cons_share = f_st * dt * invest_tracker
+        #         possible_delta_st = Delta_s_t * invest_tracker
+        #         indiv_w_possible = possible_cons_share / cohort_size_short
+        #         cohort_size_possible = cohort_size_short * invest_tracker
+        #         wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
+        #                                       top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+        #         can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+        #         can_short_tracker = (can_short_tracker + can_short >= 1)
+        #
+        #         lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
+        #         theta_t = bisection_partial_constraint(
+        #             solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+        #             sigma_Y
+        #         )
+        #         a = Delta_s_t + theta_t
+        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
+        #         switch_P_to_N = invest_tracker * (1 - invest)
+        #         invest_tracker = invest * invest_tracker
+        #         d_eta_st = a * invest_tracker - theta_t
+        #
+        #         # tau_info and V_hat has to change for the agents who switched to N
+        #         Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + Vhat_vector * (
+        #                 1 - switch_P_to_N)  # reset initial variance
+        #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
+        #         # print(np.sum(can_short_tracker * cohort_size_short))
+        #
+        #     elif mode_learn == 'keep':  # agents switch between type P and type N
+        #         possible_cons_share = f_st * dt
+        #         possible_delta_st = Delta_s_t
+        #         indiv_w_possible = possible_cons_share / cohort_size_short
+        #         cohort_size_possible = cohort_size_short
+        #         wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible, top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
+        #         can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
+        #         can_short_tracker = (can_short_tracker + can_short >= 1)
+        #
+        #         lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
+        #         theta_t = bisection_partial_constraint(
+        #             solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+        #             sigma_Y
+        #         )
+        #         a = Delta_s_t + theta_t
+        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
+        #         switch_P_to_N = invest_tracker * (1 - invest)
+        #         switch_N_to_P = np.maximum(invest - invest_tracker, 0)
+        #         switch = switch_N_to_P + switch_P_to_N
+        #         invest_tracker = invest
+        #         d_eta_st = a * invest_tracker - theta_t
+        #
+        #         # tau_info and V_hat has to change for the agents who switched to N
+        #         Vhat_vector = np.append(V_st_P, Vhat) * switch_P_to_N + np.append(V_st_N,
+        #                           Vhat) * switch_N_to_P + Vhat_vector * (
+        #                           1 - switch)  # reset initial variance
+        #         tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
+        #         # print(np.sum(can_short_tracker * cohort_size_short))
+        #
+        #     else:
+        #         print('mode_learn not found')
+        #         break
 
         elif mode_trade == 'partial_constraint_old':
             invest_tracker = np.append(invest_tracker, 1)  # indicator of current type, =1 for a cohort if type == P, by default type == P as newborn
@@ -265,9 +263,9 @@ def build_cohorts_SI(
                 can_short_possible = (tau_short_1 >= old_limit)
                 can_short_tracker = can_short_possible * invest_tracker
 
-                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
+                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound
                 theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
                     sigma_Y
                 )
                 a = Delta_s_t + theta_t
@@ -289,7 +287,7 @@ def build_cohorts_SI(
 
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
                     sigma_Y
                 )
                 a = Delta_s_t + theta_t

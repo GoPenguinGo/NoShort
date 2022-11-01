@@ -461,3 +461,4 @@ for i, var_y in enumerate(y_variables):
         plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
         plt.show()
         plt.close()
+

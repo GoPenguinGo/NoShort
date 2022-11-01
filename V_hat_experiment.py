@@ -130,7 +130,7 @@ var_name_list = [r'market price of risk $\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}
 Phi_parti_1_sigma_Mat = Phi_parti_1_Mat * sigma_Y
 var_list = [theta_Mat, Phi_parti_1_sigma_Mat, Delta_bar_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
 scenario_list = ['Complete', 'Reentry', 'Disappointment']
-phi_list = ['phi=0.0', 'phi=0.4', 'phi=0.8']
+phi_list = [r'$\phi=0.0$', r'$\phi=0.4$', r'$\phi=0.8$']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 line_styles = ['dotted', 'solid', 'dashed']
 fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
@@ -212,7 +212,7 @@ x = Npres/12
 var_name_list = ['Participation rates in age groups', 'Wealth shares in age groups']
 var_list = [popu_age_Mat, wealthshare_age_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
 phi_index = 1
-scenario_list = ['Complete', 'Keep', 'Drop']
+scenario_list = ['Complete', 'Reentry', 'Disappointment']
 phi_list = ['phi=0.0', 'phi=0.4']
 colors_short = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
@@ -263,7 +263,7 @@ for i, axes_row in enumerate(axes):
             ax.set_xlabel('initial window (years)')
             ax.tick_params(axis='x', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-#plt.savefig('initial window and values age groups.png', dpi=500, format="png")
+plt.savefig('initial window and values age groups.png', dpi=100, format="png")
 plt.show()
 #plt.close()
 

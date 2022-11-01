@@ -29,8 +29,8 @@ def simulate_SI(
         dZ_SI: np.ndarray,
         tau: np.ndarray,
         cohort_size: np.ndarray,
-        top: float,
-        old_limit: int,
+        top=0.05,
+        old_limit=100,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
