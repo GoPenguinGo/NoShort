@@ -177,6 +177,8 @@ for g, scenario in enumerate(scenarios_short):
                 cons_compare[g, i, j, k] = f / cohort_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
+
+
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)

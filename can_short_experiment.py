@@ -83,13 +83,14 @@ for g, scenario in enumerate(scenarios_short):
                 r_compare[g, i, j, k] = r
                 theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
                 popu_parti_compare[g, i, j, k] = popu_parti
-                market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f)
+                # market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f)
                 delta_bar_compare[g, i, j, k] = Delta_bar_parti
                 Phi_compare[g, i, j, k] = Phi_parti
-                survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_size)
-                belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
+                # survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_size)
+                # belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
                 cons_compare[g, i, j, k] = f / cohort_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
+
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 nn = 3  # number of cohorts illustrated
 length = len(t)
@@ -119,7 +120,7 @@ for o in range(n_scenarios):
                             Delta_time_series[o, i, j, l, m, n] = Delta[n, cohort_rank]
                             pi_time_series[o, i, j, l, m, n] = pi[n, cohort_rank]
                             cons_time_series[o, i, j, l, m, n] = cons[n, cohort_rank]
-                    parti = pi_time_series[o, i, j, l, m] != 0
+                    parti = pi_time_series[o, i, j, l, m] > 0.00001 or pi_time_series[o, i, j, l, m] < -0.00001
                     switch = abs(parti[1:] ^ parti[:-1])
                     sw = np.append(switch, 0)
                     parti = np.where(sw == 1, 0.5, parti)

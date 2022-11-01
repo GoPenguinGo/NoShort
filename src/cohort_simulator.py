@@ -117,6 +117,8 @@ def simulate_cohorts_SI(
     Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
     parti = np.zeros((Nt))  # participation rate
+    popu_can_short_mat = np.zeros((Nt))
+    popu_short_mat = np.zeros((Nt))
 
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
@@ -384,8 +386,10 @@ def simulate_cohorts_SI(
             f_parti_t = np.sum(invest_fst)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
-            age_t = np.sum(cohort_size * tau * invest_tracker)
-            n_parti_t = np.sum(invest_tracker) / Nc
+            # age_t = np.sum(cohort_size * tau * invest_tracker)
+            # n_parti_t = np.sum(invest_tracker) / Nc
+            popu_can_short = np.sum(cohort_size * can_short_tracker)
+            popu_short = np.sum(cohort_size * can_short_tracker)
 
         else:
             print('mode_trade not found')
@@ -416,6 +420,8 @@ def simulate_cohorts_SI(
         # age[i] = age_t
         # n_parti[i] = n_parti_t
         invest_mat[i] = invest_tracker
+        popu_can_short_mat[i] = popu_can_short
+        popu_short_mat[i] = popu_short
 
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
@@ -435,6 +441,8 @@ def simulate_cohorts_SI(
         # age,
         # n_parti,
         invest_mat,
+        popu_short_mat,
+        popu_can_short_mat,
     )
 
 
