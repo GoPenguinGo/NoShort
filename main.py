@@ -11,7 +11,8 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, t
+    Z_Y_cases, Z_SI_cases, t, red_cases, yellow_cases, cohort_labels, \
+    scenario_labels, colors_short , colors_short2, PN_labels, age_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare
 from numba import jit
 import matplotlib.pyplot as plt
@@ -20,8 +21,6 @@ import statsmodels.api as sm
 from scipy.interpolate import make_interp_spline
 
 
-
-# todo: to fill with patterns: https://matplotlib.org/stable/gallery/shapes_and_collections/hatch_demo.html
 # todo: remove variables that are never used, to save space
 # todo: organize the code
 # different scenarios
@@ -216,16 +215,6 @@ for o in range(n_scenarios):
                     switch_time_series[o, i, j, l, m] = sw
 
 
-
-red_cases = [r'Positive local trend in $z^Y$, ', r'Negative local trend in $z^Y$, ']
-yellow_cases = [r'Positive local trend in $z^{SI}$ ', r'Negative local trend in $z^{SI}$ ']
-cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
-var_y_labels = ['Investment in stock market', 'Estimation error', 'Log consumption']
-scenario_labels = ['Complete', 'Reentry', 'Disappointment']
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
-colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
-PN_labels = ['Participant (P)', 'Nonparticipant (N)']
-figure_labels = [r'$\pi_{s,t}$', '$\Delta_{s,t}$', 'log$c_{s,t}$']
 label_phi = []
 for i in range(n_phi_short):
     label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))

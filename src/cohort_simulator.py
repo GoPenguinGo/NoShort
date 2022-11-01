@@ -378,6 +378,7 @@ def simulate_cohorts_SI(
                 print('mode_learn not found')
                 exit()
 
+            d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
             f_parti_t = np.sum(invest_fst)
