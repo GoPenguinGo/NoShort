@@ -33,7 +33,7 @@ phi_indexes = [0, 4, 8]
 n_phi_short = len(phi_indexes)
 phi_vector_short = phi_vector[phi_indexes]
 
-# Individual paths:
+# Individual paths as examples:
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
 theta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
@@ -278,6 +278,8 @@ plt.savefig('Can short, Shocks and pi, zoom in' + str(red_case) + str(yellow_cas
 plt.show()
 plt.close()
 
+
+# Across paths, equilibirum values
 # ######################################
 # ############ Figure 3 ################
 # ######################################
@@ -313,6 +315,9 @@ for j in range(N):
                     popu_age,
                     # belief_age,
                     wealthshare_age,
+                    popu_can_short_matrix,
+                    popu_short_matrix,
+                    Phi_short_matrix,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
                                           tax_try,
                                           beta_try,
