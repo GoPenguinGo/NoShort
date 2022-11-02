@@ -136,7 +136,9 @@ for g, scenario in enumerate(scenarios_two):
         Phi_parti,
         Delta_bar_parti,
         dR,
-        invest_tracker
+        invest_tracker,
+        popu_short,
+        popu_can_short,
     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
@@ -395,7 +397,7 @@ plt.close()
 # ######## and Asset Pricing  ##########
 # ######################################
 N_paths = 100
-phi_fix = phi_vector[4]
+phi_fix = 0
 scenario = scenarios[1]
 mode_trade = scenario[0]
 mode_learn = scenario[1]
@@ -411,6 +413,9 @@ P_old_compare = np.empty((N_paths, Nt))
 P_young_compare = np.empty((N_paths, Nt))
 P_average_age_compare = np.empty((N_paths, Nt))
 belief_gap_compare = np.empty((N_paths, Nt))
+theta_complete = np.empty((N_paths, Nt))
+Phi_complete = np.empty((N_paths, Nt))
+Delta_bar_complete = np.empty((N_paths, Nt))
 for i in range(N_paths):
     dZ_build = np.random.randn(Nt) * np.sqrt(dt)
     dZ = np.random.randn(Nt) * np.sqrt(dt)
@@ -444,6 +449,29 @@ for i in range(N_paths):
     belief_gap_compare[i] = np.sum(Delta[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) - \
                             np.sum(Delta[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1)
 
+    (
+        r_complete,
+        theta_complete_t,
+        f_complete,
+        Delta_complete,
+        pi_complete,
+        popu_parti_complete,
+        Phi_parti_complete_t,
+        Delta_bar_parti_complete_t,
+        dR_complete,
+        invest_tracker_complete,
+        popu_short_complete,
+        popu_can_short_complete,
+    ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                    phi_fix,
+                    Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    top=0.05,
+                    old_limit=100
+                    )
+    theta_complete[i] = theta_complete_t
+    Phi_complete[i] = Phi_parti_complete_t
+    Delta_bar_complete[i] = Delta_bar_parti_complete_t
+
 y_variables = [theta_compare, Phi_compare, Delta_bar_compare]
 x_variables = [P_old_compare, P_young_compare, P_average_age_compare, belief_gap_compare]
 y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
@@ -464,4 +492,39 @@ for i, var_y in enumerate(y_variables):
         plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
         plt.show()
         plt.close()
+
+max_gap = np.max(belief_gap_compare)
+min_gap = np.min(belief_gap_compare)
+n_bins = 50
+width_bins = (max_gap - min_gap) / n_bins
+# histogram:
+counts, bins = np.histogram(belief_gap_compare, bins=n_bins)
+total_counts = np.sum(counts)
+plt.hist(bins[:-1], bins, weights=counts/total_counts)
+plt.grid(True)
+plt.show()
+
+# y on x
+parti_gap = P_old_compare - P_young_compare
+y_variables = [theta_compare, Phi_compare, Delta_bar_compare, parti_gap]
+x = belief_gap_compare
+y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
+x_varname = r'$\Delta_{s,t}$, old - young'
+for i, var_y in enumerate(y_variables):
+    y = np.empty((n_bins))
+    for j in range(n_bins):
+        bin_left = min_gap + j * width_bins
+        bin_right = bin_left + width_bins
+        bin_1 = x <= bin_right
+        bin_2 = x >= bin_left
+        bin_where = np.where(bin_1 * bin_2 == 1)
+        y[j] = np.mean(var_y[bin_where])
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.plot(x, y)
+    ax.set_xlabel(x_varname)
+    ax.set_ylabel(y_varnames[i])
+    # fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+    plt.savefig('Intuition ' + str(i) + str(j) + '.png', dpi=200)
+    plt.show()
+    plt.close()
 
