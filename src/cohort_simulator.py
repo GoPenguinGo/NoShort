@@ -562,6 +562,9 @@ def simulate_cohorts_mean_vola(
     popu_age = np.zeros((Nt, n_age_groups))
     # belief_age = np.zeros((Nt, n_age_groups))
     wealthshare_age = np.zeros((Nt, n_age_groups))
+    popu_can_short = np.zeros((Nt))
+    popu_short = np.zeros((Nt))
+    Phi_short = np.zeros((Nt))
 
     if mode_trade == 'complete':
         invest_tracker = np.ones(Nc)
@@ -776,6 +779,7 @@ def simulate_cohorts_mean_vola(
         #     age_t = np.sum(cohort_size * tau * invest_tracker)
         #     n_parti_t = np.sum(invest_tracker) / Nc
         #
+
         elif mode_trade == 'partial_constraint_old':
             can_short_tracker = np.append(can_short_tracker[1:], 0)
 
@@ -785,7 +789,7 @@ def simulate_cohorts_mean_vola(
                 can_short_possible = (tau >= old_limit)
                 can_short_tracker = can_short_possible * invest_tracker
 
-                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
+                lowest_bound = lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
                 theta_t = bisection_partial_constraint(
                     solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
                     sigma_Y
@@ -823,13 +827,17 @@ def simulate_cohorts_mean_vola(
                 print('mode_learn not found')
                 exit()
 
+            d_eta_st = a * invest_tracker - theta_t
             invest_fst = invest_tracker * f_st * dt
             popu_parti_t = np.sum(cohort_size * invest_tracker)
             f_parti_t = np.sum(invest_fst)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
-            age_t = np.sum(cohort_size * tau * invest_tracker)
-            n_parti_t = np.sum(invest_tracker) / Nc
+            # age_t = np.sum(cohort_size * tau * invest_tracker)
+            # n_parti_t = np.sum(invest_tracker) / Nc
+            popu_can_short_t = np.sum(cohort_size * can_short_tracker)
+            popu_short_t = np.sum(cohort_size * can_short_tracker)
+            Phi_short_t = np.sum(f_st * dt)
 
         else:
             print('mode_trade not found')
@@ -853,6 +861,8 @@ def simulate_cohorts_mean_vola(
         # max[i, :] = d_eta_st
         Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
+        popu_can_short[i] = popu_can_short_t
+        popu_short[i] = popu_short_t
         # pi[i, :] = pi_st
         # parti[i] = popu_parti_t
         # w[i, :] = w_st
@@ -880,6 +890,8 @@ def simulate_cohorts_mean_vola(
     popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
     # belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
+    popu_can_short_matrix = [np.mean(popu_can_short), np.std(popu_can_short)]
+    popu_short_matrix = [np.mean(popu_short), np.std(popu_short)]
 
     return (
         r_matrix,
@@ -891,6 +903,8 @@ def simulate_cohorts_mean_vola(
         popu_age_matrix,
         #belief_age_matrix,
         wealthshare_age_matrix,
+        popu_can_short_matrix,
+        popu_short_matrix,
     )
 
 

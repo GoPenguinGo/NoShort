@@ -401,8 +401,9 @@ mode_trade = scenario[0]
 mode_learn = scenario[1]
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
 tau_mat = np.tile(tau, (Nc, 1))
-cutoff_age_old = cutoffs[3]
-cutoff_age_young = cutoffs[1]
+cummu_popu = np.cumsum(cohort_size)
+cutoff_age_old = np.searchsorted(cummu_popu, 0.90)
+cutoff_age_young = np.searchsorted(cummu_popu, 0.10)
 theta_compare = np.empty((N_paths, Nt))
 Phi_compare = np.empty((N_paths, Nt))
 Delta_bar_compare = np.empty((N_paths, Nt))
@@ -425,7 +426,9 @@ for i in range(N_paths):
         Phi_parti,
         Delta_bar_parti,
         dR,
-        invest_tracker
+        invest_tracker,
+        popu_short,
+        popu_can_short,
     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
@@ -435,8 +438,8 @@ for i in range(N_paths):
     theta_compare[i] = theta
     Phi_compare[i] = Phi_parti
     Delta_bar_compare[i] = Delta_bar_parti
-    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / 0.25
-    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1) / 0.25
+    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / 0.10
+    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1) / 0.10
     P_average_age_compare[i] = np.average(tau_mat, axis=1, weights=invest_tracker * cohort_size_mat)
     belief_gap_compare[i] = np.sum(Delta[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) - \
                             np.sum(Delta[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1)
