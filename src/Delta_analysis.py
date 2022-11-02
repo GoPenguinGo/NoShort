@@ -524,7 +524,7 @@ for i, var_y in enumerate(y_variables):
     ax.set_xlabel(x_varname)
     ax.set_ylabel(y_varnames[i])
     # fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-    plt.savefig('Intuition ' + str(i) + str(j) + '.png', dpi=200)
+    plt.savefig('Intuition ' + y_varnames[i] + '.png', dpi=200)
     plt.show()
     plt.close()
 

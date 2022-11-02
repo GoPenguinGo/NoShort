@@ -866,6 +866,7 @@ def simulate_cohorts_mean_vola(
         Delta_bar_parti[i] = Delta_bar_parti_t
         popu_can_short[i] = popu_can_short_t
         popu_short[i] = popu_short_t
+        Phi_short[i] = Phi_short_t
         # pi[i, :] = pi_st
         # parti[i] = popu_parti_t
         # w[i, :] = w_st
@@ -895,6 +896,7 @@ def simulate_cohorts_mean_vola(
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
     popu_can_short_matrix = [np.mean(popu_can_short), np.std(popu_can_short)]
     popu_short_matrix = [np.mean(popu_short), np.std(popu_short)]
+    Phi_short_matrix = [np.mean(Phi_short), np.std(Phi_short)]
 
     return (
         r_matrix,
@@ -908,6 +910,7 @@ def simulate_cohorts_mean_vola(
         wealthshare_age_matrix,
         popu_can_short_matrix,
         popu_short_matrix,
+        Phi_short_matrix,
     )
 
 
