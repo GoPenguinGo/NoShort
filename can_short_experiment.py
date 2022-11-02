@@ -286,12 +286,17 @@ plt.close()
 # over phi
 N = 200  # for smaller number of paths
 # tax_vector = [0.008]
-# tax_vector = [0.01]
-tax_vector = [0.012]
+tax_vector = [0.01]
+# tax_vector = [0.012]
 n_tax = len(tax_vector)
 theta_matrix = np.empty((N, n_scenarios, n_tax, n_phi, 2))
 delta_bar_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
 Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+popu_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
+wealthshare_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
+popu_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+popu_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+Phi_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
 # run the program for different values of phi, and store the results
 for j in range(N):
     print(j)
@@ -315,9 +320,9 @@ for j in range(N):
                     popu_age,
                     # belief_age,
                     wealthshare_age,
-                    popu_can_short_matrix,
-                    popu_short_matrix,
-                    Phi_short_matrix,
+                    popu_can_short,
+                    popu_short,
+                    Phi_short,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
                                           tax_try,
                                           beta_try,
@@ -328,8 +333,13 @@ for j in range(N):
                 theta_matrix[j, k, l, m] = theta
                 delta_bar_matrix[j, k, l, m] = Delta_bar_parti
                 Phi_parti_1_matrix[j, k, l, m] = Phi_parti_1
+                popu_age_matrix[j, k, l, m] = popu_age
+                wealthshare_age_matrix[j, k, l, m] = wealthshare_age
+                popu_can_short_matrix[j, k, l, m] = popu_can_short
+                popu_short_matrix[j, k, l, m] = popu_short
+                Phi_short_matrix[j, k, l, m] = Phi_short
 
-# var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix]
+# var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix, popu_age_matrix, wealthshare_age_matrix, popu_can_short_matrix, popu_short_matrix, Phi_short_matrix]
 # var_name_list = ['market price of risk', 'consumption share 1 of participants',
 #                  'consumption-weighted estimation error of participants']
 # type_list = ['mean', 'vola']

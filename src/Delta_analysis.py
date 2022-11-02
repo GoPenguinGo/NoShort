@@ -396,7 +396,7 @@ plt.close()
 # ######## Age of Participants #########
 # ######## and Asset Pricing  ##########
 # ######################################
-N_paths = 100
+N_paths = 1000
 phi_fix = 0
 scenario = scenarios[1]
 mode_trade = scenario[0]
@@ -495,36 +495,60 @@ for i, var_y in enumerate(y_variables):
 
 max_gap = np.max(belief_gap_compare)
 min_gap = np.min(belief_gap_compare)
-n_bins = 50
+n_bins = 20
 width_bins = (max_gap - min_gap) / n_bins
 # histogram:
 counts, bins = np.histogram(belief_gap_compare, bins=n_bins)
 total_counts = np.sum(counts)
 plt.hist(bins[:-1], bins, weights=counts/total_counts)
 plt.grid(True)
+plt.savefig('Histogram_belief_gap' + str(N_paths) + '.png', dpi=200)
 plt.show()
 
 # y on x
 parti_gap = P_old_compare - P_young_compare
 y_variables = [theta_compare, Phi_compare, Delta_bar_compare, parti_gap]
-x = belief_gap_compare
-y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
+y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
+x_var = belief_gap_compare
+x = np.linspace(min_gap, max_gap, n_bins)
+y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$',
+              r'Estimation error of participants $\bar{\Delta}$', 'Diff in participation rate']
 x_varname = r'$\Delta_{s,t}$, old - young'
 for i, var_y in enumerate(y_variables):
     y = np.empty((n_bins))
-    for j in range(n_bins):
-        bin_left = min_gap + j * width_bins
-        bin_right = bin_left + width_bins
-        bin_1 = x <= bin_right
-        bin_2 = x >= bin_left
-        bin_where = np.where(bin_1 * bin_2 == 1)
-        y[j] = np.mean(var_y[bin_where])
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.plot(x, y)
+    if i < 3:
+        y_complete_variable = y_complete_variables[i]
+        y_complete = np.empty((n_bins))
+        for j in range(n_bins):
+            bin_left = min_gap + j * width_bins
+            bin_right = bin_left + width_bins
+            bin_1 = x_var <= bin_right
+            bin_2 = x_var >= bin_left
+            bin_where = np.where(bin_1 * bin_2 == 1)
+            y[j] = np.mean(var_y[bin_where])
+            y_complete[j] = np.mean(y_complete_variable[bin_where])
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.plot(x, y, color=colors_short[0], label='Reentry')
+        ax.plot(x, y_complete, color=colors_short[1], label='Complete')
+        if i == 0:
+            ax.axhline(sigma_Y, 0.05, 0.95, linestyle='dotted')
+            ax.axvline(0, 0.05, 0.95, linestyle='dotted')
+    else:
+        for j in range(n_bins):
+            bin_left = min_gap + j * width_bins
+            bin_right = bin_left + width_bins
+            bin_1 = x_var <= bin_right
+            bin_2 = x_var >= bin_left
+            bin_where = np.where(bin_1 * bin_2 == 1)
+            y[j] = np.mean(var_y[bin_where])
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.plot(x, y, color=colors_short[0], label='Reentry')
+    ax.set_title(y_varnames[i])
     ax.set_xlabel(x_varname)
     ax.set_ylabel(y_varnames[i])
-    # fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-    plt.savefig('Intuition ' + y_varnames[i] + '.png', dpi=200)
+    ax.legend()
+    fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+    plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
     plt.show()
-    plt.close()
+    # plt.close()
 
