@@ -651,7 +651,7 @@ def simulate_cohorts_mean_vola(
             if mode_learn == 'disappointment':
                 possible_cons_share = f_st * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
                 )  # solve for theta
@@ -785,7 +785,7 @@ def simulate_cohorts_mean_vola(
                 can_short_possible = (tau >= old_limit)
                 can_short_tracker = can_short_possible * invest_tracker
 
-                lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
+                lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
                 theta_t = bisection_partial_constraint(
                     solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
                     sigma_Y
@@ -806,7 +806,7 @@ def simulate_cohorts_mean_vola(
 
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
+                    solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
                     sigma_Y
                 )
                 a = Delta_s_t + theta_t
