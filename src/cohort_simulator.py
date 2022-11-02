@@ -134,6 +134,9 @@ def simulate_cohorts_SI(
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
+    popu_can_short = 0
+    popu_short = 0
+
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
