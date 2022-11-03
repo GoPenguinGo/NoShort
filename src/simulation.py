@@ -29,6 +29,9 @@ def simulate_SI(
         dZ_SI: np.ndarray,
         tau: np.ndarray,
         cohort_size: np.ndarray,
+        need_f: str,
+        need_Delta: str,
+        need_pi: str,
         top=0.05,
         old_limit=100,
 ) -> Tuple[
@@ -147,6 +150,9 @@ def simulate_SI(
         can_short_tracker_build,
         tau_info_build,
         Vhat_vector,
+        need_f,
+        need_Delta,
+        need_pi,
         top,
         old_limit,
     )

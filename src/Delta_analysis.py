@@ -437,8 +437,11 @@ for i in range(N_paths):
     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    'False',
+                    'False',
+                    'False',
                     top=0.05,
-                    old_limit=100
+                    old_limit=100,
                     )
     theta_compare[i] = theta
     Phi_compare[i] = Phi_parti
@@ -465,8 +468,11 @@ for i in range(N_paths):
     ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    'False',
+                    'False',
+                    'False',
                     top=0.05,
-                    old_limit=100
+                    old_limit=100,
                     )
     theta_complete[i] = theta_complete_t
     Phi_complete[i] = Phi_parti_complete_t
