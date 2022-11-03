@@ -472,26 +472,26 @@ for i in range(N_paths):
     Phi_complete[i] = Phi_parti_complete_t
     Delta_bar_complete[i] = Delta_bar_parti_complete_t
 
-y_variables = [theta_compare, Phi_compare, Delta_bar_compare]
-x_variables = [P_old_compare, P_young_compare, P_average_age_compare, belief_gap_compare]
-y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
-x_varnames = ['Participation rate, old', 'Participation rate, young', 'Average age of participants', r'$\Delta_{s,t}$, old - young']
-for i, var_y in enumerate(y_variables):
-    for j, var_x in enumerate(x_variables):
-        # y = np.mean(var_y, axis=1)
-        # x = np.mean(var_x, axis=1)
-        # y = np.mean(var_y, axis=0)
-        # x = np.mean(var_x, axis=0)
-        y = var_y
-        x = var_x
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.scatter(x, y, s=0.1, alpha=0.5)
-        ax.set_xlabel(x_varnames[j])
-        ax.set_ylabel(y_varnames[i])
-        fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
-        plt.show()
-        plt.close()
+# y_variables = [theta_compare, Phi_compare, Delta_bar_compare]
+# x_variables = [P_old_compare, P_young_compare, P_average_age_compare, belief_gap_compare]
+# y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
+# x_varnames = ['Participation rate, old', 'Participation rate, young', 'Average age of participants', r'$\Delta_{s,t}$, old - young']
+# for i, var_y in enumerate(y_variables):
+#     for j, var_x in enumerate(x_variables):
+#         # y = np.mean(var_y, axis=1)
+#         # x = np.mean(var_x, axis=1)
+#         # y = np.mean(var_y, axis=0)
+#         # x = np.mean(var_x, axis=0)
+#         y = var_y
+#         x = var_x
+#         fig, ax = plt.subplots(figsize=(5, 5))
+#         ax.scatter(x, y, s=0.1, alpha=0.5)
+#         ax.set_xlabel(x_varnames[j])
+#         ax.set_ylabel(y_varnames[i])
+#         fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+#         plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
+#         plt.show()
+#         plt.close()
 
 max_gap = np.max(belief_gap_compare)
 min_gap = np.min(belief_gap_compare)
@@ -528,11 +528,18 @@ for i, var_y in enumerate(y_variables):
             y[j] = np.mean(var_y[bin_where])
             y_complete[j] = np.mean(y_complete_variable[bin_where])
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.plot(x, y, color=colors_short[0], label='Reentry')
-        ax.plot(x, y_complete, color=colors_short[1], label='Complete')
+        X_Y_Spline = make_interp_spline(x, y)
+        X_Y_comp_Spline = make_interp_spline(x, y_complete)
+        # Returns evenly spaced numbers
+        # over a specified interval.
+        X_ = np.linspace(x.min(), x.max(), 100)
+        Y_ = X_Y_Spline(X_)
+        Y_comp = X_Y_comp_Spline(X_)
+        ax.plot(X_, Y_, color=colors_short[0], label='Reentry', linewidth=0.6)
+        ax.plot(X_, Y_comp, color=colors_short[1], label='Complete', linewidth=0.6)
         if i == 0:
-            ax.axhline(sigma_Y, 0.05, 0.95, linestyle='dotted')
-            ax.axvline(0, 0.05, 0.95, linestyle='dotted')
+            ax.axhline(sigma_Y, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
+            ax.axvline(0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
     else:
         for j in range(n_bins):
             bin_left = min_gap + j * width_bins
@@ -542,7 +549,15 @@ for i, var_y in enumerate(y_variables):
             bin_where = np.where(bin_1 * bin_2 == 1)
             y[j] = np.mean(var_y[bin_where])
         fig, ax = plt.subplots(figsize=(5, 5))
-        ax.plot(x, y, color=colors_short[0], label='Reentry')
+        X_Y_Spline = make_interp_spline(x, y)
+        # Returns evenly spaced numbers
+        # over a specified interval.
+        X_ = np.linspace(x.min(), x.max(), 100)
+        Y_ = X_Y_Spline(X_)
+        ax.plot(X_, Y_, color=colors_short[0], label='Reentry', linewidth=0.6)
+        Y0 = X_Y_Spline(0)
+        ax.axhline(Y0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
+        ax.axvline(0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
     ax.set_title(y_varnames[i])
     ax.set_xlabel(x_varname)
     ax.set_ylabel(y_varnames[i])

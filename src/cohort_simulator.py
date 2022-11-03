@@ -38,6 +38,9 @@ def simulate_cohorts_SI(
         can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
+        need_f: str,
+        need_Delta: str,
+        need_pi: str,
         top=0.05,
         old_limit=100,
 ) -> Tuple[
@@ -414,20 +417,23 @@ def simulate_cohorts_SI(
         dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
-        f[i, :] = f_st
-        Delta[i, :] = Delta_s_t
-        # max[i, :] = d_eta_st
-        Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
-        pi[i, :] = pi_st
-        parti[i] = popu_parti_t
         # w[i, :] = w_st
         # age[i] = age_t
         # n_parti[i] = n_parti_t
-        invest_mat[i] = invest_tracker
-        popu_can_short_mat[i] = popu_can_short
-        popu_short_mat[i] = popu_short
-
+        if need_f == 'True':
+            f[i, :] = f_st
+        if need_Delta == 'True':
+            Delta[i, :] = Delta_s_t
+        if need_pi == 'True':
+            pi[i, :] = pi_st
+        if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            Phi_parti[i] = f_parti_t
+            parti[i] = popu_parti_t
+            invest_mat[i] = invest_tracker
+        if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            popu_can_short_mat[i] = popu_can_short
+            popu_short_mat[i] = popu_short
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
