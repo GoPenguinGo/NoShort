@@ -872,14 +872,13 @@ def simulate_cohorts_mean_vola(
         r[i] = r_t
         Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
-        popu_can_short[i] = popu_can_short_t
-        popu_short[i] = popu_short_t
-        Phi_short[i] = Phi_short_t
         if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             Phi_parti[i] = f_parti_t
         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             popu_can_short[i] = popu_can_short_t
             popu_short[i] = popu_short_t
+            Phi_can_short[i] = Phi_can_short_t
+            Phi_short[i] = Phi_short_t
         parti_rate = invest_tracker * cohort_size
         belief = (Delta_s_t * sigma_Y + mu_Y)
         for j in range(4):

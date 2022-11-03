@@ -296,6 +296,7 @@ popu_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
 wealthshare_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
 popu_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
 popu_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+Phi_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
 Phi_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
 # run the program for different values of phi, and store the results
 for j in range(N):
@@ -322,6 +323,7 @@ for j in range(N):
                     wealthshare_age,
                     popu_can_short,
                     popu_short,
+                    Phi_can_short,
                     Phi_short,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
                                           tax_try,
@@ -337,6 +339,7 @@ for j in range(N):
                 wealthshare_age_matrix[j, k, l, m] = wealthshare_age
                 popu_can_short_matrix[j, k, l, m] = popu_can_short
                 popu_short_matrix[j, k, l, m] = popu_short
+                Phi_can_short_matrix[j, k, l, m] = Phi_can_short
                 Phi_short_matrix[j, k, l, m] = Phi_short
 
 var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix,
