@@ -339,12 +339,14 @@ for j in range(N):
                 popu_short_matrix[j, k, l, m] = popu_short
                 Phi_short_matrix[j, k, l, m] = Phi_short
 
-# var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix, popu_age_matrix, wealthshare_age_matrix, popu_can_short_matrix, popu_short_matrix, Phi_short_matrix]
-# var_name_list = ['market price of risk', 'consumption share 1 of participants',
-#                  'consumption-weighted estimation error of participants']
-# type_list = ['mean', 'vola']
-# for i, var in enumerate(var_list):
-#     np.save(var_name_list[i] + str(tax_vector[0]), var)
+var_list = [theta_matrix, Phi_parti_1_matrix, delta_bar_matrix,
+            popu_age_matrix, wealthshare_age_matrix, popu_can_short_matrix, popu_short_matrix, Phi_short_matrix]
+var_name_list = ['market price of risk', 'consumption share 1 of participants',
+                 'consumption-weighted estimation error of participants', 'popu age', 'wealth age',
+                 'popu can short', 'popu short', 'cons share short']
+type_list = ['mean', 'vola']
+for i, var in enumerate(var_list):
+    np.save(var_name_list[i] + str(tax_vector[0]), var)
 
 
 tax_vector = [0.008, 0.01, 0.012]
@@ -352,9 +354,16 @@ n_tax = len(tax_vector)
 theta_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
 Phi_parti_1_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
 Delta_bar_parti_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
-var_list = [theta_Mat, Phi_parti_1_Mat, Delta_bar_parti_Mat]
+popu_age_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2, n_age_groups))
+wealthshare_age_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2, n_age_groups))
+popu_can_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+popu_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+Phi_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
+var_list = [theta_Mat, Phi_parti_1_Mat, Delta_bar_parti_Mat,
+            popu_age_Mat, wealthshare_age_Mat, popu_can_short_Mat, popu_short_Mat, Phi_short_Mat]
 var_name_list = ['market price of risk', 'consumption share 1 of participants',
-                 'consumption-weighted estimation error of participants']
+                 'consumption-weighted estimation error of participants', 'popu age', 'wealth age',
+                 'popu can short', 'popu short', 'cons share short']
 for i, var in enumerate(var_list):
     var_name = var_name_list[i]
     for j, tax_rate in enumerate(tax_vector):
@@ -369,7 +378,7 @@ var_name_list = [r'market price of risk $\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}
 # var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
 Phi_parti_1_sigma_Mat = Phi_parti_1_Mat * sigma_Y
 var_list = [theta_Mat, Phi_parti_1_sigma_Mat, Delta_bar_parti_Mat]  # Shape((n_scenarios, n_tax, n_phi, 2))
-scenario_list = ['Complete', 'Reentry', 'Disappointment']
+scenario_list = ['Partial Shorting, Reentry', 'Partial Shorting, Disappointment']
 tau_list = [r'$\tau=0.008$', r'$\tau=0.010$', r'$\tau=0.012$']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 line_styles = ['dotted', 'solid', 'dashed']
@@ -391,16 +400,15 @@ for i, axes_row in enumerate(axes):
                 Y_ = X_Y_Spline(X_)
                 if i == 0:
                     if j == 0 and k == 1:
-                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l],
+                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1],
                                 label=scenario_list[l])
                     elif j == 1 and l == 0:
-                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l],
+                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1],
                                 label=tau_list[k])
                     else:
-                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l])
+                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1])
                 else:
-                    if l != 0:
-                        ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l])
+                    ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1])
         if j == 0:
             ax.set_ylabel(row_name, rotation=90)
         if i == 2:
@@ -409,7 +417,7 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('phi and values mean vola.png', dpi=200, format="png")
+plt.savefig('Partial Shorting, phi and values mean vola.png', dpi=200, format="png")
 # plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
 plt.show()
 # plt.close()

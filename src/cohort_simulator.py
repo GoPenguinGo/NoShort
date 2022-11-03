@@ -5,7 +5,7 @@ from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_
 from tqdm import tqdm
 from numba import jit
 
-
+# todo: use matrix calculation in the functions, calculate multiple paths per run
 def simulate_cohorts_SI(
         Y: np.ndarray,
         biasvec: np.ndarray,
@@ -506,6 +506,7 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -577,10 +578,10 @@ def simulate_cohorts_mean_vola(
     popu_can_short = np.zeros((Nt))
     popu_short = np.zeros((Nt))
     Phi_short = np.zeros((Nt))
+    Phi_can_short = np.zeros((Nt))
 
     if mode_trade == 'complete':
         invest_tracker = np.ones(Nc)
-
 
     dR_t = 0
 
@@ -845,11 +846,13 @@ def simulate_cohorts_mean_vola(
             f_parti_t = np.sum(invest_fst)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
+            short = pi_st < 0
             # age_t = np.sum(cohort_size * tau * invest_tracker)
             # n_parti_t = np.sum(invest_tracker) / Nc
             popu_can_short_t = np.sum(cohort_size * can_short_tracker)
-            popu_short_t = np.sum(cohort_size * can_short_tracker)
-            Phi_short_t = np.sum(f_st * dt)
+            popu_short_t = np.sum(cohort_size * short)
+            Phi_can_short_t = np.sum(can_short_tracker * f_st * dt)
+            Phi_short_t = np.sum(short * f_st * dt)
 
         else:
             print('mode_trade not found')
@@ -865,47 +868,47 @@ def simulate_cohorts_mean_vola(
         mu_S_t = sigma_S * theta_t + r_t
 
         # store the results, only the aggregate values
-        #dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
-        # f[i, :] = f_st
-        # Delta[i, :] = Delta_s_t
-        # max[i, :] = d_eta_st
         Phi_parti[i] = f_parti_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         popu_can_short[i] = popu_can_short_t
         popu_short[i] = popu_short_t
         Phi_short[i] = Phi_short_t
-        # pi[i, :] = pi_st
-        # parti[i] = popu_parti_t
-        # w[i, :] = w_st
-        # age[i] = age_t
-        # n_parti[i] = n_parti_t
-        # invest_mat[i] = invest_tracker
+        if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            Phi_parti[i] = f_parti_t
+        if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            popu_can_short[i] = popu_can_short_t
+            popu_short[i] = popu_short_t
         parti_rate = invest_tracker * cohort_size
         belief = (Delta_s_t * sigma_Y + mu_Y)
         for j in range(4):
             if mode_trade != 'complete':
                 popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
-
-            # belief_age[i, j] = np.average(
-            #     belief[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]]
-            # )
-
             wealthshare_age[i, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
-    # popu_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(parti), np.std(parti)]
     Delta_bar_parti_matrix = [np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]
-    Phi_parti_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(Phi_parti), np.std(Phi_parti)]
-    Phi_parti_1_matrix = [1, 0] if mode_trade == 'complete' else [np.mean(1/Phi_parti), np.std(1/Phi_parti)]
-    popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)] if mode_trade == 'complete' else [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
-    # belief_age_matrix = [np.mean(belief_age, axis=0), np.std(belief_age, axis=0)]
     wealthshare_age_matrix = [np.mean(wealthshare_age, axis=0), np.std(wealthshare_age, axis=0)]
-    popu_can_short_matrix = [np.mean(popu_can_short), np.std(popu_can_short)]
-    popu_short_matrix = [np.mean(popu_short), np.std(popu_short)]
-    Phi_short_matrix = [np.mean(Phi_short), np.std(Phi_short)]
+    if mode_trade == 'complete':
+        Phi_parti_matrix = [1, 0]
+        Phi_parti_1_matrix = [1, 0]
+        popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)]
+    else:
+        Phi_parti_matrix = [np.mean(Phi_parti), np.std(Phi_parti)]
+        Phi_parti_1_matrix = [np.mean(1/Phi_parti), np.std(1/Phi_parti)]
+        popu_age_matrix = [np.mean(popu_age, axis=0), np.std(popu_age, axis=0)]
+    if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+        popu_can_short_matrix = [np.mean(popu_can_short), np.std(popu_can_short)]
+        popu_short_matrix = [np.mean(popu_short), np.std(popu_short)]
+        Phi_can_short_matrix = [np.mean(Phi_can_short), np.std(Phi_can_short)]
+        Phi_short_matrix = [np.mean(Phi_short), np.std(Phi_short)]
+    else:
+        popu_can_short_matrix = [0,0]
+        popu_short_matrix = [0,0]
+        Phi_can_short_matrix = [0,0]
+        Phi_short_matrix = [0,0]
 
     return (
         r_matrix,
@@ -919,6 +922,7 @@ def simulate_cohorts_mean_vola(
         wealthshare_age_matrix,
         popu_can_short_matrix,
         popu_short_matrix,
+        Phi_can_short_matrix,
         Phi_short_matrix,
     )
 

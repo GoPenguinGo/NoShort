@@ -396,7 +396,7 @@ plt.close()
 # ######## Age of Participants #########
 # ######## and Asset Pricing  ##########
 # ######################################
-N_paths = 1000
+N_paths = 3000
 phi_fix = 0
 scenario = scenarios[1]
 mode_trade = scenario[0]
