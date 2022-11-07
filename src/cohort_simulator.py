@@ -56,6 +56,8 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -113,13 +115,15 @@ def simulate_cohorts_SI(
     pi = np.zeros((Nt, Nc))  # portfolio choices
     # w = np.zeros((Nt, Nc))  # evolution of wealth for cohorts
     # short = np.zeros((Nt, Nc))
-    invest_mat = np.zeros((Nt, Nc))
+    invest_mat = np.ones((Nt, Nc))
 
-    # aggregate terms:
+    # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
     Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
+    Phi_can_short_mat = np.zeros((Nt))
+    Phi_short_mat = np.zeros((Nt))
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
     parti = np.ones((Nt))  # participation rate
     popu_can_short_mat = np.zeros((Nt))
@@ -398,6 +402,10 @@ def simulate_cohorts_SI(
             # n_parti_t = np.sum(invest_tracker) / Nc
             popu_can_short = np.sum(cohort_size * can_short_tracker)
             popu_short = np.sum(cohort_size * can_short_tracker)
+            Phi_can_short_t = np.sum(can_short_tracker * f_st * dt)
+            short = pi_st < 0
+            Phi_short_t = np.sum(short * f_st * dt)
+
 
         else:
             print('mode_trade not found')
@@ -434,6 +442,8 @@ def simulate_cohorts_SI(
         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             popu_can_short_mat[i] = popu_can_short
             popu_short_mat[i] = popu_short
+            Phi_can_short_mat[i] = Phi_can_short_t
+            Phi_short_mat[i] = Phi_short_t
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
@@ -452,8 +462,10 @@ def simulate_cohorts_SI(
         # age,
         # n_parti,
         invest_mat,
-        popu_short_mat,
         popu_can_short_mat,
+        popu_short_mat,
+        Phi_can_short_mat,
+        Phi_short_mat,
     )
 
 
