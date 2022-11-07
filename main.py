@@ -13,7 +13,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Z_Y_cases, Z_SI_cases, t, red_cases, yellow_cases, cohort_labels, \
     scenario_labels, colors_short , colors_short2, PN_labels, age_labels
-from src.stats import shocks, tau_calculator, good_times, Delta_st_compare
+from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
@@ -157,10 +157,15 @@ for g, scenario in enumerate(scenarios_short):
                     Phi_parti,
                     Delta_bar_parti,
                     dR,
-                    invest_tracker
+                    invest_tracker,
+                    popu_short,
+                    popu_can_short,
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                need_f='True',
+                                need_Delta='True',
+                                need_pi='True',
                                 top=0.05,
                                 old_limit=100
                                 )
@@ -539,6 +544,8 @@ Nc_cut = int(age_cut/dt)
 # drift_N_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
 drift_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
 diffusion_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
+drift_pi_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
+diffusion_pi_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
 r_matrix = np.empty((N_1, n_scenarios, n_phi_short))
 dt_root = np.sqrt(dt)
 for j in range(N_1):
@@ -562,8 +569,13 @@ for j in range(N_1):
                 Delta_bar_parti,
                 dR,
                 invest_tracker,
+                popu_short,
+                popu_can_short,
             ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta, phi_try,
                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                            need_f='False',
+                            need_Delta='True',
+                            need_pi='True',
                             top=0.05,
                             old_limit=100
                             )
@@ -576,7 +588,15 @@ for j in range(N_1):
             # drift_N_matrix[j, k, l] = np.average(drift_N, weights=(1-invest_tracker[:, Nc_cut]), axis=0)
             drift_P_matrix[j, k, l] = np.average(drift_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
             diffusion_P_matrix[j, k, l] = np.average(diffusion_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
-# drift_N_vector = np.flip(np.average(drift_N_matrix, axis=0), axis=2)
+
+            pi_mean = np.average(pi[:, -Nc_cut:], weights=invest_tracker[:, -Nc_cut:], axis=0)
+            pi_vola = np.sqrt(weighted_variance(pi[:, -Nc_cut:], invest_tracker[:, -Nc_cut:], ax=0))
+            drift_pi_matrix[j, k, l] = pi_mean
+            diffusion_pi_matrix[j, k, l] = pi_vola
+
+        # drift_N_vector = np.flip(np.average(drift_N_matrix, axis=0), axis=2)
+
+
 drift_P_vector = np.flip(np.average(drift_P_matrix, axis=0), axis=2)  # (n_scenarios, n_phi_short, Nc_cut)
 diffusion_P_vector = np.flip(np.average(diffusion_P_matrix, axis=0), axis=2)
 r_vector = np.average(r_matrix, axis=0)  # (n_scenarios, n_phi_short)
@@ -681,7 +701,7 @@ plt.close()
 # 4.2.3 participation rate (reentry + disappointment) * (phi = 0, 0.8)
 red_case = 1
 yellow_case = 1
-titles_subfig = [r'Aggregate wealth share of participants $\bar{\Delta}_t$', r'Wealth weighted average estimation error conditional on participation $\Phi_t$', 'Participation rate']
+titles_subfig = [r'Wealth weighted average estimation error conditional on participation $\bar{\Delta}_t$', r'Wealth share of participants $\Phi_t$', 'Participation rate']
 yaxis_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
 phi_indexes = [0, 2]
 y1_case = delta_bar_compare[:, red_case, yellow_case]
@@ -766,7 +786,7 @@ plt.close()
 # ######################################
 # ############ Figure 4-3 ##############
 # ######################################
-# portfolio + consumption in time series
+# portfolio in time series
 # bad & Bad, phi = 0.4
 # portfolio, different phi
 # portfolio, different scenarios
@@ -780,31 +800,64 @@ scenario_index = 1
 Z = np.cumsum(Z_Y_cases[red_case])[int(left_t/dt):int(right_t/dt)]
 Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t/dt):int(right_t/dt)]
 x = t[int(left_t/dt):int(right_t/dt)]
-y1_case = pi_time_series[:, red_case, yellow_case, phi_index, cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_scenarios, length)
-y2_case = pi_time_series[scenario_index, red_case, yellow_case, :, cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_phi_short, length)
-Delta_vec = Delta_time_series[:, red_case, yellow_case, phi_index, cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_scenarios, length)
-Delta_bar_vec = delta_bar_compare[:, red_case, yellow_case, phi_index] # (n_scenarios, 2, 2, n_phi_short, Nt) -> (n_scenarios, Nt)
-y3_case = (Delta_vec - Delta_bar_vec) / sigma_Y
-y4_case = 1 / Phi_compare[:, red_case, yellow_case, phi_index]
-y_cases = [y1_case, y2_case, y3_case, y4_case]
-titles_subfig = [r'Portfolios, across scenarios, $\phi=0.4$', r'Portfolios, reentry, across $\phi$ values', r'Belief component, across scenarios, $\phi=0.4$', r'Consumption component, across scenarios, $\phi=0.4$']
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
+y1_pi = pi_time_series[:, red_case, yellow_case, phi_index, cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_scenarios, length)
+y2_pi = pi_time_series[scenario_index, red_case, yellow_case, :, cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_phi_short, length)
+y1_belief = (Delta_time_series[:, red_case, yellow_case, phi_index, cohort_index] -
+             delta_bar_compare[:, red_case, yellow_case, phi_index])/ sigma_Y
+y2_belief = (Delta_time_series[scenario_index, red_case, yellow_case, :, cohort_index] -
+             delta_bar_compare[scenario_index, red_case, yellow_case, :])/ sigma_Y
+y1_wealth = 1 / Phi_compare[:, red_case, yellow_case, phi_index]
+y2_wealth = 1 / Phi_compare[scenario_index, red_case, yellow_case]
+y_cases = [y1_pi, y1_belief, y1_wealth,
+           y2_pi, y2_belief, y2_wealth]
+# y_cases = [y1_pi, y2_pi, y1_belief, y1_wealth]
+titles_subfig = [r'Portfolios, across scenarios, $\phi=0.4$', r'Belief component, across scenarios, $\phi=0.4$', r'Wealth component, across scenarios, $\phi=0.4$',
+                 r'Portfolios, reentry, across values of $\phi$', r'Belief component, reentry, across values of $\phi$', r'Wealth component, reentry, across values of $\phi$']
+fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
 for i, ax in enumerate(axes.flat):
-    n_loop = n_phi_short if i == 0 else n_scenarios
+    n_loop = n_phi_short if i >= 3 else n_scenarios
+    labels = label_phi if i >= 3 else scenario_labels
     for j in range(n_loop):
-        y_case = y_cases[i][j, int(left_t/dt):int(right_t/dt)]
-        labels = label_phi if i == 1 else scenario_labels
         label_i = labels[j]
-        ax.plot(x, y_case, label=label_i, color=colors_short[j], linewidth=0.4)
-    ax.legend()
-    if i == 2:
-        ax.set_ylim(-6, 3)
+        if i == 2 and j == 0:
+            length = int(right_t/dt) - int(left_t/dt)
+            y_case = np.ones(length)
+            ax.plot(x, y_case, label=label_i, color=colors_short[j], linewidth=0.4)
+        else:
+            y_case = y_cases[i][j, int(left_t/dt):int(right_t/dt)]
+            labels = label_phi if i > 2 else scenario_labels
+            ax.plot(x, y_case, label=label_i, color=colors_short[j], linewidth=0.4)
+    if i == 1 or i == 4:
+        if i == 1:
+            ax.set_ylim(-6, 3)
+        else:
+            ax.set_ylim(-7, 4)
+        ax.set_xlabel('Time in simulation')
+        ax.set_ylabel(r'Investment in stock market, Belief component')
     else:
         ax.set_ylim(-1, 7)
-    if i == 0 or i == 2:
+    if i == 0 or i == 3:
+        ax.legend(loc='upper left')
         ax.set_ylabel(r'Investment in stock market, $\pi_{s,t}/W_{s,t}$')
-    if i == 2 or i == 3:
-        ax.set_xlabel('Time in simulation')
+    if i == 2 or i == 5:
+        ax.set_ylabel(r'Investment in stock market, Wealth component')
+# fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
+# for i, ax in enumerate(axes.flat):
+#     n_loop = n_phi_short if i == 0 else n_scenarios
+#     for j in range(n_loop):
+#         y_case = y_cases[i][j, int(left_t/dt):int(right_t/dt)]
+#         labels = label_phi if i == 1 else scenario_labels
+#         label_i = labels[j]
+#         ax.plot(x, y_case, label=label_i, color=colors_short[j], linewidth=0.4)
+#     ax.legend()
+#     if i == 2:
+#         ax.set_ylim(-6, 3)
+#     else:
+#         ax.set_ylim(-1, 7)
+#     if i == 0 or i == 2:
+#         ax.set_ylabel(r'Investment in stock market, $\pi_{s,t}/W_{s,t}$')
+#     if i == 2 or i == 3:
+#         ax.set_xlabel('Time in simulation')
     ax.set_title(titles_subfig[i])
     ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)

@@ -21,11 +21,11 @@ import statsmodels.api as sm
 # import tabulate as tabulate
 from scipy.interpolate import make_interp_spline
 
-n_scenarios = 2
-scenarios_short = scenarios[3:3+n_scenarios]
+n_scenarios = 5
+scenarios_all = scenarios[:n_scenarios]
 
-# n_scenarios = 1
-# scenarios_short = scenarios[1:2]
+n_scenarios_short = 2
+scenarios_short = scenarios[3:3+n_scenarios_short]
 
 phi_vector = np.arange(0,1,0.1)
 n_phi = len(phi_vector)
@@ -46,8 +46,12 @@ Delta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 pi_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 cons_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
 invest_tracker_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
+popu_can_short_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
+popu_short_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
+Phi_can_short_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
+Phi_short_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
-for g, scenario in enumerate(scenarios_short):
+for g, scenario in enumerate(scenarios_all):
     mode_trade = scenario[0]
     mode_learn = scenario[1]
     for i in range(2):
@@ -66,11 +70,16 @@ for g, scenario in enumerate(scenarios_short):
                     Delta_bar_parti,
                     dR,
                     invest_tracker,
-                    popu_short,
                     popu_can_short,
+                    popu_short,
+                    Phi_can_short,
+                    Phi_short,
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                need_f='True',
+                                need_Delta='True',
+                                need_pi='True',
                                 top=0.05,
                                 old_limit=100
                                 )
@@ -85,6 +94,10 @@ for g, scenario in enumerate(scenarios_short):
                 Phi_compare[g, i, j, k] = Phi_parti
                 cons_compare[g, i, j, k] = f / cohort_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
+                popu_can_short_compare[g, i, j, k] = popu_can_short
+                popu_short_compare[g, i, j, k] = popu_short
+                Phi_can_short_compare[g, i, j, k] = Phi_can_short
+                Phi_short_compare[g, i, j, k] = Phi_short
 
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 nn = 3  # number of cohorts illustrated
@@ -163,7 +176,7 @@ theta = theta_compare[:, red_case, yellow_case]  # n_scenarios, 2, 2, n_phi_shor
 fig, axes = plt.subplots(nrows=2, ncols=3, sharey='all', figsize=(15, 10))
 # fig.suptitle('Good Z^Y, Bad Z^SI')
 for i, ax_row in enumerate(axes):
-    scenario_index = i
+    scenario_index = i + 3
     for j, ax in enumerate(ax_row):
         cohort_start = j + 1
         left = int(t_length * cohort_start)
@@ -229,7 +242,7 @@ switch_short_matrix = switch_short_time_series[:, red_case, yellow_case]
 fig, axes = plt.subplots(nrows=2, ncols=3, sharey='all', figsize=(15, 10))
 # fig.suptitle('Good Z^Y, Bad Z^SI')
 for i, ax_row in enumerate(axes):
-    scenario_index = i
+    scenario_index = i + 3
     for j, ax in enumerate(ax_row):
         cohort_start = j + 1
         left = int(t_length * cohort_start)
@@ -278,6 +291,115 @@ fig.tight_layout(h_pad=2)
 plt.savefig('Can short, Shocks and pi, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=100)
 plt.show()
 plt.close()
+
+
+# ######################################
+# ############ Figure 3 ################
+# ######################################
+# time-series of interest rate and market price of risk, bad z^Y, bad z&SI
+# 4.1.1 interest rate across different phi values, reentry
+# 4.1.2 interest rate across different scenarios, phi = 0
+# 4.1.3 market price of risk across different phi values, reentry
+red_case = 1
+yellow_case = 1
+theta_mat = theta_compare[:, red_case, yellow_case, 0]  # n_scenarios, Nt
+Z = np.cumsum(Z_Y_cases[red_case])
+Z_SI = np.cumsum(Z_SI_cases[yellow_case])
+y_title_list = [r'Market price of risk $\theta_t$, reentry, partial shorting', r'Market price of risk $\theta_t$, disappointment, partial shorting']
+fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', sharey='all', figsize=(15, 10))
+for j, ax in enumerate(axes):
+    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+    ax.tick_params(axis='y', labelcolor='black')
+    if j == 2:
+        ax.set_xlabel('Time in simulation')
+    ax_title = y_title_list[j]
+    ax2 = ax.twinx()
+    ax2.set_ylabel(r'$\theta_t$', color='black')
+    ax2.plot(t, theta_mat[0], label=scenario_labels[0], color=colors_short[0], linestyle='dotted', linewidth=0.5)
+    if j == 0:
+        ax.legend(loc='upper left')
+        ax2.plot(t, theta_mat[1], label=scenario_labels[1], color=colors_short[1], linestyle='dotted', linewidth=0.5)
+        ax2.plot(t, theta_mat[3], label=scenario_labels[3], color=colors_short[2], linewidth=0.5)
+    else:
+        ax2.plot(t, theta_mat[2], label=scenario_labels[2], color=colors_short[1], linestyle='dotted', linewidth=0.5)
+        ax2.plot(t, theta_mat[4], label=scenario_labels[4], color=colors_short[2], linewidth=0.5)
+    ax2.legend(loc='upper right')
+    ax2.set_ylim(-0.3,0.5)
+    ax.set_title(ax_title)
+fig.tight_layout(h_pad=2)
+plt.savefig('partial shorting theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=100)
+plt.show()
+plt.close()
+
+
+# ######################################
+# ############ Figure 4 ################
+# ######################################
+# time-series of Delta_bar, Phi, and participation rate, bad z^Y, bad z&SI
+# 4.2.1 Delta_bar (reentry + complete + disappointment) * (phi = 0, 0.8)
+# 4.2.2 Phi (reentry + disappointment) * (phi = 0, 0.8), also mark 1 for complete case
+# 4.2.3 participation rate (reentry + disappointment) * (phi = 0, 0.8)
+red_case = 1
+yellow_case = 1
+# titles_subfig = [r'Wealth weighted average estimation error conditional on participation $\bar{\Delta}_t$', r'Wealth share of participants $\Phi_t$', 'Participation rate']
+yaxis_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
+fig_title_list = [r'Reentry, partial shorting, $\phi=0.4$', r'Disappointment, partial shorting, $\phi=0.4$']
+left_t = 300
+right_t = 400
+y1_case = delta_bar_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y2_case = Phi_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y21_case = Phi_can_short_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y22_case = Phi_short_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y3_case = popu_parti_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y31_case = popu_can_short_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+y32_case = popu_short_compare[:, red_case, yellow_case, 1, int(left_t/dt):int(right_t/dt)]
+x = t[int(left_t/dt):int(right_t/dt)]
+fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
+for j, ax_row in enumerate(axes):
+    for k, ax in enumerate(ax_row):
+        ax.set_ylabel(yaxis_subfig[j], color='black')
+        if j == 0:
+            if k == 0:
+                y = [y1_case[0], y1_case[1], y1_case[3]]
+                labels = [scenario_labels[0], scenario_labels[1], scenario_labels[3]]
+            else:
+                y = [y1_case[0], y1_case[2], y1_case[4]]
+                labels = [scenario_labels[0], scenario_labels[2], scenario_labels[4]]
+            ax.set_title(fig_title_list[k])
+            line_styles = ['solid', 'solid', 'solid']
+            colors_use = colors_short
+        elif j == 1:
+            if k == 0:
+                y = [y2_case[1], y2_case[3], y21_case[3], y22_case[3]]
+                labels = [scenario_labels[1], scenario_labels[3], 'Wealth share, can short', 'Wealth share, short']
+            else:
+                y = [y2_case[2], y2_case[4], y21_case[4], y22_case[4]]
+                labels = [scenario_labels[2], scenario_labels[4], 'Wealth share, can short', 'Wealth share, short']
+            line_styles = ['solid', 'solid', 'dashed', 'dotted']
+            colors_use = [colors_short[1], colors_short[2], colors_short[2], colors_short[2]]
+        else:
+            if k == 0:
+                y = [y3_case[1], y3_case[3], y31_case[3], y32_case[3]]
+                labels = [scenario_labels[1], scenario_labels[3], 'Population, can short', 'Population, short']
+            else:
+                y = [y3_case[2], y3_case[4], y31_case[4], y32_case[4]]
+                labels = [scenario_labels[2], scenario_labels[4], 'Population, can short', 'Population, short']
+            line_styles = ['solid', 'solid', 'dashed', 'dotted']
+            colors_use = [colors_short[1], colors_short[2], colors_short[2], colors_short[2]]
+        for l, y_i in enumerate(y):
+            label_i = labels[l]
+            ax.plot(x, y_i, color=colors_use[l], linewidth=0.5, linestyle=line_styles[l], label=labels[l])
+        ax.tick_params(axis='y', labelcolor='black')
+        ax.legend(loc='upper left')
+        if j == 2:
+            ax.set_xlabel('Time in simulation')
+fig.tight_layout(h_pad=2)
+# plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
+plt.show()
+# plt.close()
+
 
 
 # Across paths, equilibirum values

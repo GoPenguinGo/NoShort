@@ -400,11 +400,11 @@ def simulate_cohorts_SI(
             pi_st = (d_eta_st + theta_t) / sigma_S
             # age_t = np.sum(cohort_size * tau * invest_tracker)
             # n_parti_t = np.sum(invest_tracker) / Nc
-            popu_can_short = np.sum(cohort_size * can_short_tracker)
-            popu_short = np.sum(cohort_size * can_short_tracker)
+            popu_can_short_t = np.sum(cohort_size * can_short_tracker)
             Phi_can_short_t = np.sum(can_short_tracker * f_st * dt)
             short = pi_st < 0
             Phi_short_t = np.sum(short * f_st * dt)
+            popu_short_t = np.sum(cohort_size * short)
 
 
         else:
@@ -440,8 +440,8 @@ def simulate_cohorts_SI(
             parti[i] = popu_parti_t
             invest_mat[i] = invest_tracker
         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            popu_can_short_mat[i] = popu_can_short
-            popu_short_mat[i] = popu_short
+            popu_can_short_mat[i] = popu_can_short_t
+            popu_short_mat[i] = popu_short_t
             Phi_can_short_mat[i] = Phi_can_short_t
             Phi_short_mat[i] = Phi_short_t
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
