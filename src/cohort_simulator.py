@@ -119,9 +119,9 @@ def simulate_cohorts_SI(
     dR = np.zeros(Nt)  # stores stock returns
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
-    Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
+    Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
-    parti = np.zeros((Nt))  # participation rate
+    parti = np.ones((Nt))  # participation rate
     popu_can_short_mat = np.zeros((Nt))
     popu_short_mat = np.zeros((Nt))
 

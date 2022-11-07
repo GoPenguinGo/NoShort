@@ -9,7 +9,7 @@ from src.cohort_builder import build_cohorts_SI
 from src.cohort_simulator import simulate_cohorts_SI
 from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
-    n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
+    n_age_groups, cutoffs, colors, modes_trade, modes_learn, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Z_Y_cases, Z_SI_cases, scenario_labels, colors_short, age_labels, PN_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, dDelta_st_calculator, post_var
@@ -27,13 +27,12 @@ scenarios_two = scenarios[1:3]
 # n_scenarios = 1
 # scenarios_short = scenarios[1:2]
 
-phi_vector = np.arange(0,1,0.1)
+phi_vector = np.arange(0, 1, 0.1)
 n_phi = len(phi_vector)
 
 phi_indexes = [0, 4, 8]
 n_phi_short = len(phi_indexes)
 phi_vector_short = phi_vector[phi_indexes]
-
 
 # ######################################
 # ############ The signal ##############
@@ -65,7 +64,7 @@ for i, ax in enumerate(axes):
 fig.tight_layout(h_pad=2)
 plt.savefig('Probability of better estimate with signal.png', dpi=200)
 plt.show()
-#plt.close()
+# plt.close()
 
 
 # ######################################
@@ -102,11 +101,11 @@ for i, phi_try in enumerate(phi_vector):
     factor_P_mat = np.transpose(np.tile(factor_P, (n_paths, 1)))
     Delta_P = sigma_Y_sqr * a_phi * factor_P_mat * Delta_init + Vhat_st_mat * a_phi * factor_P_mat * (
             z_Y[step_N, :] - phi_factor * z_SI[step_N, :])  # shape: (n_paths)
-    dDelta_st = Vhat_st_mat / sigma_Y ** 2 * (-1/a_phi * Delta_P * dt + dz_Y_mat - phi_try / np.sqrt(a_phi) * dz_SI_mat)
+    dDelta_st = Vhat_st_mat / sigma_Y ** 2 * (
+                -1 / a_phi * Delta_P * dt + dz_Y_mat - phi_try / np.sqrt(a_phi) * dz_SI_mat)
     for j in range(n_age):
-        corr_dDelta_dz_Y[i, j] = np.corrcoef(dDelta_st[j,:], dz_Y_mat[j, :])[0,1]
+        corr_dDelta_dz_Y[i, j] = np.corrcoef(dDelta_st[j, :], dz_Y_mat[j, :])[0, 1]
         corr_dDelta_dz_SI[i, j] = np.corrcoef(dDelta_st[j, :], dz_SI_mat[j, :])[0, 1]
-
 
 # ######################################
 # ############## Delta #################
@@ -142,6 +141,9 @@ for g, scenario in enumerate(scenarios_two):
     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    need_f = 'False',
+                    need_Delta = 'True',
+                    need_pi = 'False',
                     top=0.05,
                     old_limit=100
                     )
@@ -191,22 +193,22 @@ for i in range(len(scenarios_two)):
 
 left_t = 200
 right_t = 400
-Z = np.cumsum(dZ)[int(left_t/dt):int(right_t/dt)]
-Z_SI = np.cumsum(dZ_SI)[int(left_t/dt):int(right_t/dt)]
-x = t[int(left_t/dt):int(right_t/dt)]
+Z = np.cumsum(dZ)[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI)[int(left_t / dt):int(right_t / dt)]
+x = t[int(left_t / dt):int(right_t / dt)]
 scenario_indexes = [0, 1]
 fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
 for i, ax_row in enumerate(axes):
     scenario_index = scenario_indexes[i]
-    y1 = y_overall[scenario_index, int(left_t/dt):int(right_t/dt)]
-    y2 = y_P[scenario_index, int(left_t/dt):int(right_t/dt)]  # ((Nt, 5))
-    y3 = y_N[scenario_index, int(left_t/dt):int(right_t/dt)]  # ((Nt, 5))
-    y4 = y_min[scenario_index, int(left_t/dt):int(right_t/dt)]
-    y5 = y_max[scenario_index, int(left_t/dt):int(right_t/dt)]
-    belief_cutoff_case = -theta_compare[scenario_index, int(left_t/dt):int(right_t/dt)]
+    y1 = y_overall[scenario_index, int(left_t / dt):int(right_t / dt)]
+    y2 = y_P[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+    y3 = y_N[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+    y4 = y_min[scenario_index, int(left_t / dt):int(right_t / dt)]
+    y5 = y_max[scenario_index, int(left_t / dt):int(right_t / dt)]
+    belief_cutoff_case = -theta_compare[scenario_index, int(left_t / dt):int(right_t / dt)]
     for j, ax in enumerate(ax_row):
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$')
+        ax.set_title(scenario_labels[scenario_index + 1] + r', $\phi=0.4$')
         if j == 0:
             if i == 0:
                 ax2 = ax.twinx()
@@ -246,7 +248,6 @@ fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=200)
 plt.show()
 plt.close()
-
 
 # ######################################
 # ############## Delta #################
@@ -335,22 +336,22 @@ for i in range(len(scenarios_two)):
 
 left_t = 200
 right_t = 400
-Z = np.cumsum(Z_Y_cases[1])[int(left_t/dt):int(right_t/dt)]
-Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t/dt):int(right_t/dt)]
-x = t[int(left_t/dt):int(right_t/dt)]
+Z = np.cumsum(Z_Y_cases[1])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t / dt):int(right_t / dt)]
+x = t[int(left_t / dt):int(right_t / dt)]
 scenario_indexes = [0, 1]
 fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
 for i, ax_row in enumerate(axes):
     scenario_index = scenario_indexes[i]
-    y1 = y_overall[scenario_index, int(left_t/dt):int(right_t/dt)]
-    y2 = y_P[scenario_index, int(left_t/dt):int(right_t/dt)]  # ((Nt, 5))
-    y3 = y_N[scenario_index, int(left_t/dt):int(right_t/dt)]  # ((Nt, 5))
-    y4 = y_min[scenario_index, int(left_t/dt):int(right_t/dt)]
-    y5 = y_max[scenario_index, int(left_t/dt):int(right_t/dt)]
-    belief_cutoff_case = -theta_compare[scenario_index, int(left_t/dt):int(right_t/dt)]
+    y1 = y_overall[scenario_index, int(left_t / dt):int(right_t / dt)]
+    y2 = y_P[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+    y3 = y_N[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+    y4 = y_min[scenario_index, int(left_t / dt):int(right_t / dt)]
+    y5 = y_max[scenario_index, int(left_t / dt):int(right_t / dt)]
+    belief_cutoff_case = -theta_compare[scenario_index, int(left_t / dt):int(right_t / dt)]
     for j, ax in enumerate(ax_row):
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_title(scenario_labels[scenario_index+1] + r', $\phi=0.4$' + r', 5 years initial training window')
+        ax.set_title(scenario_labels[scenario_index + 1] + r', $\phi=0.4$' + r', 5 years initial training window')
         if j == 0:
             if i == 0:
                 ax2 = ax.twinx()
@@ -391,7 +392,6 @@ plt.savefig('Distribution of Delta window 5 years.png', dpi=100)
 plt.show()
 plt.close()
 
-
 # ######################################
 # ######## Age of Participants #########
 # ######## and Asset Pricing  ##########
@@ -404,8 +404,9 @@ mode_learn = scenario[1]
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
 tau_mat = np.tile(tau, (Nc, 1))
 cummu_popu = np.cumsum(cohort_size)
-cutoff_age_old = np.searchsorted(cummu_popu, 0.90)
-cutoff_age_young = np.searchsorted(cummu_popu, 0.10)
+popu = 0.1
+cutoff_age_old = np.searchsorted(cummu_popu, 1-popu)
+cutoff_age_young = np.searchsorted(cummu_popu, popu)
 theta_compare = np.empty((N_paths, Nt))
 Phi_compare = np.empty((N_paths, Nt))
 Delta_bar_compare = np.empty((N_paths, Nt))
@@ -437,17 +438,18 @@ for i in range(N_paths):
     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                    'False',
-                    'False',
-                    'False',
+                    need_f='False',
+                    need_Delta='True',
+                    need_pi='False',
                     top=0.05,
                     old_limit=100,
                     )
     theta_compare[i] = theta
     Phi_compare[i] = Phi_parti
     Delta_bar_compare[i] = Delta_bar_parti
-    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / 0.10
-    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1) / 0.10
+    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / popu
+    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:],
+                                axis=1) / popu
     P_average_age_compare[i] = np.average(tau_mat, axis=1, weights=invest_tracker * cohort_size_mat)
     belief_gap_compare[i] = np.sum(Delta[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) - \
                             np.sum(Delta[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:], axis=1)
@@ -468,9 +470,9 @@ for i in range(N_paths):
     ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                     phi_fix,
                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                    'False',
-                    'False',
-                    'False',
+                    need_f='False',
+                    need_Delta='False',
+                    need_pi='False',
                     top=0.05,
                     old_limit=100,
                     )
@@ -501,14 +503,14 @@ for i in range(N_paths):
 
 max_gap = np.max(belief_gap_compare)
 min_gap = np.min(belief_gap_compare)
-n_bins = 20
+n_bins = 40
 width_bins = (max_gap - min_gap) / n_bins
 # histogram:
 counts, bins = np.histogram(belief_gap_compare, bins=n_bins)
 total_counts = np.sum(counts)
-plt.hist(bins[:-1], bins, weights=counts/total_counts)
+plt.hist(bins[:-1], bins, weights=counts / total_counts)
 plt.grid(True)
-plt.savefig('Histogram_belief_gap' + str(N_paths) + '.png', dpi=200)
+# plt.savefig('Histogram_belief_gap' + str(N_paths) + '.png', dpi=200)
 plt.show()
 
 # y on x
@@ -569,7 +571,8 @@ for i, var_y in enumerate(y_variables):
     ax.set_ylabel(y_varnames[i])
     ax.legend()
     fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-    plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
+    # plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
     plt.show()
     # plt.close()
+
 
