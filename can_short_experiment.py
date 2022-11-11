@@ -157,7 +157,7 @@ for o in range(n_scenarios):
 # ######################################
 # ############# Figure 1 ###############
 # ######################################
-# the zoom-in ones
+# belief
 # bad & Bad, phi = 0.4
 # cohort 1; cohort 2; cohort 1, complete; cohort 1, disappointment
 year = 100
@@ -233,7 +233,8 @@ t_indexes = np.empty((2,2,2))
 red_case = 1
 yellow_case = 1
 scenario_indexs = [1, 2]
-titles_subfig = [(r'Old Reentry, Cohort 1', r'Old Reentry, Cohort 2', r'Old Reentry, Cohort 3'), (r'Old Disappointment, Cohort 1', r'Old Disappointment, Cohort 2', r'Old Disappointment, Cohort 3')]
+titles_subfig = [(r'Reentry, partial shorting, Cohort 1', r'Reentry, partial shorting, Cohort 2', r'Reentry, partial shorting, Cohort 3'),
+                 (r'Disappointment, partial shorting, Cohort 1', r'Disappointment, partial shorting, Cohort 2', r'Disappointment, partial shorting, Cohort 3')]
 y_interest = pi_time_series[:, red_case, yellow_case]  # n_scenarios, n_phi_short, nn, length
 condition_parti_matrix = parti_time_series[:, red_case, yellow_case]
 switch_parti_matrix = switch_parti_time_series[:, red_case, yellow_case]
@@ -329,7 +330,7 @@ for j, ax in enumerate(axes):
     ax2.set_ylim(-0.3,0.5)
     ax.set_title(ax_title)
 fig.tight_layout(h_pad=2)
-plt.savefig('partial shorting theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=100)
+plt.savefig('partial shorting theta,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
 plt.show()
 plt.close()
 
@@ -396,7 +397,7 @@ for j, ax_row in enumerate(axes):
         if j == 2:
             ax.set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
-# plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
+plt.savefig('partial shorting Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
 plt.show()
 # plt.close()
 
@@ -406,76 +407,76 @@ plt.show()
 # ######################################
 # ############ Figure 3 ################
 # ######################################
-# over phi
-N = 200  # for smaller number of paths
-# tax_vector = [0.008]
-# tax_vector = [0.01]
-tax_vector = [0.012]
-n_tax = len(tax_vector)
-theta_matrix = np.empty((N, n_scenarios, n_tax, n_phi, 2))
-delta_bar_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-Phi_parti_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-popu_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
-wealthshare_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
-popu_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-popu_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-Phi_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-Phi_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
-# run the program for different values of phi, and store the results
-for j in range(N):
-    print(j)
-    dZ = dZ_matrix[j]
-    dZ_build = dZ_build_matrix[j]
-    dZ_SI = dZ_SI_matrix[j]
-    dZ_SI_build = dZ_SI_build_matrix[j]
-    for k, scenario in enumerate(scenarios_short):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        for l, tax_try in enumerate(tax_vector):
-            beta_try = rho + nu - tax_try
-            for m, phi_try in enumerate(phi_vector):
-                (
-                    r,
-                    theta,
-                    # popu_parti,
-                    Delta_bar_parti,
-                    Phi_parti,
-                    Phi_parti_1,
-                    popu_age,
-                    # belief_age,
-                    wealthshare_age,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
-                                          tax_try,
-                                          beta_try,
-                                          phi_try,
-                                          Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                          top, old_limit, cutoffs, n_age_groups,
-                                          )
-                theta_matrix[j, k, l, m] = theta
-                delta_bar_matrix[j, k, l, m] = Delta_bar_parti
-                Phi_parti_matrix[j, k, l, m] = Phi_parti
-                Phi_parti_1_matrix[j, k, l, m] = Phi_parti_1
-                popu_age_matrix[j, k, l, m] = popu_age
-                wealthshare_age_matrix[j, k, l, m] = wealthshare_age
-                popu_can_short_matrix[j, k, l, m] = popu_can_short
-                popu_short_matrix[j, k, l, m] = popu_short
-                Phi_can_short_matrix[j, k, l, m] = Phi_can_short
-                Phi_short_matrix[j, k, l, m] = Phi_short
-
-var_list = [theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix, delta_bar_matrix,
-            popu_age_matrix, wealthshare_age_matrix,
-            popu_can_short_matrix, popu_short_matrix, Phi_can_short_matrix, Phi_short_matrix]
-var_name_list = ['market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
-                 'consumption-weighted estimation error of participants', 'popu age', 'wealth age',
-                 'popu can short', 'popu short', 'wealth share can short', 'wealth share short']
-type_list = ['mean', 'vola']
-for i, var in enumerate(var_list):
-    np.save('partial shorting' + var_name_list[i] + str(tax_vector[0]), var)
+# # over phi
+# N = 200  # for smaller number of paths
+# # tax_vector = [0.008]
+# # tax_vector = [0.01]
+# tax_vector = [0.012]
+# n_tax = len(tax_vector)
+# theta_matrix = np.empty((N, n_scenarios, n_tax, n_phi, 2))
+# delta_bar_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# Phi_parti_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# popu_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
+# wealthshare_age_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2, n_age_groups))
+# popu_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# popu_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# Phi_can_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# Phi_short_matrix = np.zeros((N, n_scenarios, n_tax, n_phi, 2))
+# # run the program for different values of phi, and store the results
+# for j in range(N):
+#     print(j)
+#     dZ = dZ_matrix[j]
+#     dZ_build = dZ_build_matrix[j]
+#     dZ_SI = dZ_SI_matrix[j]
+#     dZ_SI_build = dZ_SI_build_matrix[j]
+#     for k, scenario in enumerate(scenarios_short):
+#         mode_trade = scenario[0]
+#         mode_learn = scenario[1]
+#         for l, tax_try in enumerate(tax_vector):
+#             beta_try = rho + nu - tax_try
+#             for m, phi_try in enumerate(phi_vector):
+#                 (
+#                     r,
+#                     theta,
+#                     # popu_parti,
+#                     Delta_bar_parti,
+#                     Phi_parti,
+#                     Phi_parti_1,
+#                     popu_age,
+#                     # belief_age,
+#                     wealthshare_age,
+#                     popu_can_short,
+#                     popu_short,
+#                     Phi_can_short,
+#                     Phi_short,
+#                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+#                                           tax_try,
+#                                           beta_try,
+#                                           phi_try,
+#                                           Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                                           top, old_limit, cutoffs, n_age_groups,
+#                                           )
+#                 theta_matrix[j, k, l, m] = theta
+#                 delta_bar_matrix[j, k, l, m] = Delta_bar_parti
+#                 Phi_parti_matrix[j, k, l, m] = Phi_parti
+#                 Phi_parti_1_matrix[j, k, l, m] = Phi_parti_1
+#                 popu_age_matrix[j, k, l, m] = popu_age
+#                 wealthshare_age_matrix[j, k, l, m] = wealthshare_age
+#                 popu_can_short_matrix[j, k, l, m] = popu_can_short
+#                 popu_short_matrix[j, k, l, m] = popu_short
+#                 Phi_can_short_matrix[j, k, l, m] = Phi_can_short
+#                 Phi_short_matrix[j, k, l, m] = Phi_short
+#
+# var_list = [theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix, delta_bar_matrix,
+#             popu_age_matrix, wealthshare_age_matrix,
+#             popu_can_short_matrix, popu_short_matrix, Phi_can_short_matrix, Phi_short_matrix]
+# var_name_list = ['market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
+#                  'consumption-weighted estimation error of participants', 'popu age', 'wealth age',
+#                  'popu can short', 'popu short', 'wealth share can short', 'wealth share short']
+# type_list = ['mean', 'vola']
+# for i, var in enumerate(var_list):
+#     np.save('partial shorting' + var_name_list[i] + str(tax_vector[0]), var)
 
 
 tax_vector = [0.008, 0.01, 0.012]
@@ -491,7 +492,7 @@ popu_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
 Phi_can_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
 Phi_short_Mat = np.zeros((n_scenarios, n_tax, n_phi, 2))
 var_list = [theta_Mat, Phi_parti_Mat, Phi_parti_1_Mat, Delta_bar_parti_Mat,
-            popu_age_Mat, wealthshare_age_Mat, popu_can_short_Mat, popu_short_Mat, Phi_short_Mat]
+            popu_age_Mat, wealthshare_age_Mat, popu_can_short_Mat, popu_short_Mat, Phi_can_short_Mat, Phi_short_Mat]
 var_name_list = ['market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
                  'consumption-weighted estimation error of participants', 'popu age', 'wealth age',
                  'popu can short', 'popu short', 'wealth share can short', 'wealth share short']
@@ -550,62 +551,55 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('Partial Shorting, phi and values mean vola.png', dpi=200, format="png")
-plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+# plt.savefig('Partial Shorting, phi and values mean vola.png', dpi=200, format="png")
 plt.show()
-plt.close()
+# plt.close()
 
 # Phi & participation rate over phi
 x = phi_vector
 x_start = 0
 title_list = [r'Participate', r'Can short', r'Short']
 var_name_list = [r'Wealth shares', r'Population']
-popu_Mat = popu_age_Mat[:, :, :, :, 3]
+popu_Mat = popu_age_Mat[:, :, :, :, 3]   # Shape((n_scenarios, n_tax, n_phi, 2))
 var_list = [[Phi_parti_Mat, Phi_can_short_Mat, Phi_short_Mat],
-            [popu_age_Mat, popu_can_short_Mat, popu_short_Mat]]  # Shape((n_scenarios, n_tax, n_phi, 2))
+            [popu_Mat, popu_can_short_Mat, popu_short_Mat]]  # Shape((n_scenarios, n_tax, n_phi, 2))
 scenario_list = ['Partial Shorting, Reentry', 'Partial Shorting, Disappointment']
-tax_index = 1
-# tau_list = [r'$\tau=0.008$', r'$\tau=0.010$', r'$\tau=0.012$']
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
+tau_list = [r'$\tau=0.008$', r'$\tau=0.010$', r'$\tau=0.012$']
 line_styles = ['dotted', 'solid', 'dashed']
-fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 15))
+fig, axes = plt.subplots(nrows=2, ncols=3, sharex='all', sharey='col', figsize=(15, 10))
 for i, axes_row in enumerate(axes):
     row_name = var_name_list[i]
     var = var_list[i]  # Shape 3*((n_scenarios, n_tax, n_phi, 2))
     for j, ax in enumerate(axes_row):
-        column_name = scenario_list[j]
-        for k in range(3):
-            y = var[k][j, tax_index, :, 0]  # Shape((n_phi))
-            line_style = line_styles[k]
-            ax.plot(x, y, linestyle=line_style, color=colors_short[k], label=title_list[k])
-            # for l in range(n_scenarios):
-            #     y_i = y[l, k]
-            #     X_Y_Spline = make_interp_spline(x, y_i)
-            #     # Returns evenly spaced numbers
-            #     # over a specified interval.
-            #     X_ = np.linspace(np.min(x), np.max(x), 100)
-            #     Y_ = X_Y_Spline(X_)
-            #     if i == 0:
-            #         if j == 0 and k == 1:
-            #             ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1],
-            #                     label=scenario_list[l])
-            #         elif j == 1 and l == 0:
-            #             ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1],
-            #                     label=tau_list[k])
-            #         else:
-            #             ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1])
-            #     else:
-            #         ax.plot(X_[x_start:], Y_[x_start:], linestyle=line_style, color=colors_short[l+1])
+        column_name = title_list[j]
+        for k in range(2):
+            for l in range(3):
+                y = var[j][k, l, :, 0]  # Shape((n_phi))
+                line_style = line_styles[l]
+                X_Y_Spline = make_interp_spline(x, y)
+                # Returns evenly spaced numbers
+                # over a specified interval.
+                X_ = np.linspace(x.min(), x.max(), 100)
+                Y_ = X_Y_Spline(X_)
+                if i == 0:
+                    if j == 0 and l == 1:
+                        ax.plot(X_, Y_, linestyle=line_style, color=colors_short[k + 1], label=scenario_list[k])
+                    else:
+                        ax.plot(X_, Y_, linestyle=line_style, color=colors_short[k + 1])
+                else:
+                    if j == 0 and k == 0:
+                        ax.plot(X_, Y_, linestyle=line_style, color=colors_short[k + 1], label=tau_list[l])
+                    else:
+                        ax.plot(X_, Y_, linestyle=line_style, color=colors_short[k + 1])
         if j == 0:
-            ax.set_ylabel(row_name, rotation=90)
-        if i >= 2:
+            ax.set_ylabel(row_name)
+            ax.legend()
+        if i == 1:
             ax.set_xlabel(r'$\phi$')
         if i == 0:
-            ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig('Partial Shorting, phi and values mean vola.png', dpi=200, format="png")
-# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+plt.savefig('Partial Shorting, wealth share and population over phi.png', dpi=200, format="png")
 plt.show()
 # plt.close()
 
@@ -617,9 +611,10 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios_short = 1
-a_sce = 3
-# a_sce = 4
+# a_sce = 3
+a_sce = 4
 
+N = 200
 # Generate matrix to store the results
 r_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))  # for mean and std
 theta_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))
@@ -630,8 +625,11 @@ Delta_bar_parti_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dime
 popu_age_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2, n_age_groups))
 # belief_age_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2, n_age_groups))
 wealthshare_age_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2, n_age_groups))
+Phi_can_short_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))
+Phi_short_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))
+popu_can_short_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))
+popu_short_matrix = np.zeros((N, n_scenarios_short, n_phi_short, T_hat_dimension, 2))
 
-# write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
     print(l)
     dZ = dZ_matrix[l]
@@ -639,11 +637,11 @@ for l in range(N):
     dZ_SI = dZ_SI_matrix[l]
     dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
-    for m in range(n_scenarios):
+    for m in range(n_scenarios_short):
         scenario = scenarios[m+a_sce]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
-        for n, phi_try in enumerate(phi_vector):
+        for n, phi_try in enumerate(phi_vector_short):
             for o, T_hat_try in enumerate(T_hats):
                 Npre_try = int(Npres[o])
                 Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
@@ -669,7 +667,8 @@ for l in range(N):
                                           phi_try,
                                           Npre_try,
                                           Ninit,
-                                          T_hat_try, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                          T_hat_try,
+                                          dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
                                           top, old_limit, cutoffs, n_age_groups,
                                           )
                 r_matrix[l, m, n, o] = r
@@ -681,43 +680,60 @@ for l in range(N):
                 popu_age_matrix[l, m, n, o] = popu_age
                 # belief_age_matrix[l, m, n, o] = belief_age
                 wealthshare_age_matrix[l, m, n, o] = wealthshare_age
+                popu_can_short_matrix[l, m, n, o] = popu_can_short
+                popu_short_matrix[l, m, n, o] = popu_short
+                Phi_can_short_matrix[l, m, n, o] = Phi_can_short
+                Phi_short_matrix[l, m, n, o] = Phi_short
     print(time.time() - time_s)
 
 
 # save the data
 var_list = [r_matrix, theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix,
-            Delta_bar_parti_matrix, popu_age_matrix,
-            wealthshare_age_matrix]
+            Delta_bar_parti_matrix, popu_age_matrix, wealthshare_age_matrix,
+            popu_can_short_matrix, popu_short_matrix, Phi_can_short_matrix, Phi_short_matrix]
 var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
-                 'consumption-weighted estimation error of participants', 'participation rate in age groups',
-                 'wealth share in age groups']
+                 'consumption-weighted estimation error of participants', 'participation rate in age groups', 'wealth share in age groups',
+                 'popu can short', 'popu short', 'wealth share can short', 'wealth share short']
 type_list = ['mean', 'vola']
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+age_labels = ['n < Age <= n+15, youngest quartile', 'n+15 < Age <= n+35', 'n+35 < Age <= n+69', 'Age > n+69, oldest quartile']
 
 for i, var in enumerate(var_list):
-    np.save('partial shorting' + var_name_list[i] + str(a_sce), var[:200])
+    np.save(var_name_list[i] + str(a_sce), var[:200])
+    #np.save(var_name_list[i] + str(a_sce), var[:200])
 
 # read the data:
-r_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
-theta_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-Phi_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-Phi_parti_1_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-#popu_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-Delta_bar_parti_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2))
-popu_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-#belief_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-wealthshare_age_Mat = np.zeros((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+r_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))  # for mean and std
+theta_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+Phi_parti_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+Phi_parti_1_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+Delta_bar_parti_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+popu_age_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2, n_age_groups))
+wealthshare_age_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2, n_age_groups))
+popu_can_short_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+popu_short_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+Phi_can_short_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+Phi_short_Mat = np.zeros((n_scenarios, n_phi_short, T_hat_dimension, 2))
+
 var_list = [r_Mat, theta_Mat, Phi_parti_Mat, Phi_parti_1_Mat,
-            Delta_bar_parti_Mat, popu_age_Mat, wealthshare_age_Mat]
+            Delta_bar_parti_Mat, popu_age_Mat, wealthshare_age_Mat,
+            popu_can_short_Mat, popu_short_Mat, Phi_can_short_Mat, Phi_short_Mat]
 var_name_list = ['interest rate', 'market price of risk', 'consumption share of participants', 'consumption share 1 of participants',
-                 'consumption-weighted estimation error of participants', 'participation rate in age groups',
-                 'wealth share in age groups']
+                 'consumption-weighted estimation error of participants',
+                 'participation rate in age groups', 'wealth share in age groups',
+                 'popu can short', 'popu short', 'wealth share can short', 'wealth share short']
 for i, var in enumerate(var_list):
     var_name = var_name_list[i]
-    for j in range(N_scenarios):
-        var_name_j = 'partial shorting' + var_name + str(j) +'.npy'
-        y = np.load(var_name_j)
-        var[j] = np.mean(y[:200], axis=0)
+    for j in range(n_scenarios):
+        if i < 7:
+            var_name_j = var_name + str(j) +'.npy'
+            y = np.load(var_name_j)
+            var[j] = np.mean(y[:200], axis=0)
+        else:
+            if j >= 3:
+                var_name_j = var_name + str(j) + '.npy'
+                y = np.load(var_name_j)
+                var[j] = np.mean(y[:200], axis=0)
+
 
 
 # graphs:
@@ -733,7 +749,7 @@ var_name_list = [r'market price of risk $\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}
 # var_name_list = ['market price of risk', 'consumption share of participants', 'consumption-weighted estimation error of participants']
 Phi_parti_1_sigma_Mat = Phi_parti_1_Mat * sigma_Y
 var_list = [theta_Mat, Phi_parti_1_sigma_Mat, Delta_bar_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
-scenario_list = ['Complete', 'Reentry', 'Disappointment']
+scenario_list = scenario_labels[-2:]
 phi_list = [r'$\phi=0.0$', r'$\phi=0.4$', r'$\phi=0.8$']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 line_styles = ['dotted', 'solid', 'dashed']
@@ -743,68 +759,72 @@ for i, axes_row in enumerate(axes):
     var = var_list[i]  # Shape((N_scenarios, 3, T_hat_dimension, 2))
     for j, ax in enumerate(axes_row):
         y = var[:, :, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
-        column_name = 'Mean' if j == 0 else 'Volatility'
+        column_name = r'Mean, $\phi=0.4$' if j == 0 else r'Volatility, $\phi=0.4$'
         for k in range(3):
-            line_style = line_styles[k]
-            for l in range(N_scenarios):
-                y_i = y[l, k]
-                if j == 0 and k == 1:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=scenario_list[l])
-                elif j == 1 and l == 0:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=phi_list[k])
-                else:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+            colors_use = colors_short[k]
+            y_benchmark = y[k, 1]  # scenario = 0,1,2 and phi = 0.4
+            X_Y_Spline = make_interp_spline(x[x_start:], y_benchmark[x_start:])
+            X_ = np.linspace(x[x_start:].min(), x[x_start:].max(), 100)
+            Y_ = X_Y_Spline(X_)
+            ax.plot(X_, Y_, linestyle='dotted', color=colors_use, label=scenario_labels[k])
+            if k > 0:
+                sce_index = k + 2
+                y_i = y[sce_index, 1]
+                X_Y_Spline = make_interp_spline(x[x_start:], y_i[x_start:])
+                X_ = np.linspace(x[x_start:].min(), x[x_start:].max(), 100)
+                Y_ = X_Y_Spline(X_)
+                ax.plot(X_, Y_, linestyle='solid', color=colors_use,
+                        label=scenario_labels[sce_index])
         if j == 0:
             ax.set_ylabel(row_name, rotation=90)
-        if i == 2:
+        if i == 1:
             # ax.set_xlabel('initial window (months)')
-            ax.set_xlabel('initial window (years)')
-        if i == 0:
+            ax.set_xlabel('Initial window (years), n')
+        if i == 0 and j == 0:
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and values mean vola years.png', dpi=100, format="png")
-# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+plt.savefig('Partial shorting, initial window and values mean vola years.png', dpi=100, format="png")
 plt.show()
-# plt.close()
+plt.close()
 
-######################################
-######## OVER INITIAL WINDOW #########
-############ GRAPH ONE ###############
-############ COVARIANCE ##############
-######################################
-theta_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
-Phi_parti_1_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
-Delta_bar_parti_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
-var_list = [theta_var, Phi_parti_1_var, Delta_bar_parti_var]
-var_name_list = ['market price of risk', 'consumption share 1 of participants', 'consumption-weighted estimation error of participants']
-for i, var in enumerate(var_list):
-    var_name = var_name_list[i]
-    for j in range(N_scenarios):
-        var_name_j = var_name + str(j) +'.npy'
-        y = np.load(var_name_j)[:, :, :, :, 1]
-        var[j] = np.mean(y ** 2, axis=0)
-cov_Mat = theta_var - sigma_Y ** 2 * Phi_parti_1_var - Delta_bar_parti_var
-x_start = 1
-fig, ax = plt.subplots(figsize=(5, 5))
-for k in range(3):
-    line_style = line_styles[k]
-    for l in range(N_scenarios):
-        y_i = cov_Mat[l, k]
-        if k == 1:
-            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=scenario_list[l])
-        elif l == 0:
-            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
-        else:
-            ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
-ax.set_ylabel(r'Covariance, -2cov($\sigma_Y\frac{1}{\Phi_t}, \bar{\Delta}_t$)', rotation=90)
-ax.set_xlabel('initial window (years)')
-ax.legend()
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and covariance years.png', dpi=500, format="png")
-# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
-plt.show()
-# plt.close()
+# ######################################
+# ######## OVER INITIAL WINDOW #########
+# ############ GRAPH ONE ###############
+# ############ COVARIANCE ##############
+# ######################################
+# theta_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+# Phi_parti_1_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+# Delta_bar_parti_var = np.zeros((N_scenarios, n_phi, T_hat_dimension))
+# var_list = [theta_var, Phi_parti_1_var, Delta_bar_parti_var]
+# var_name_list = ['market price of risk', 'consumption share 1 of participants', 'consumption-weighted estimation error of participants']
+# for i, var in enumerate(var_list):
+#     var_name = var_name_list[i]
+#     for j in range(N_scenarios):
+#         var_name_j = var_name + str(j) +'.npy'
+#         y = np.load(var_name_j)[:, :, :, :, 1]
+#         var[j] = np.mean(y ** 2, axis=0)
+# cov_Mat = theta_var - sigma_Y ** 2 * Phi_parti_1_var - Delta_bar_parti_var
+# x_start = 1
+# fig, ax = plt.subplots(figsize=(5, 5))
+# for k in range(3):
+#     line_style = line_styles[k]
+#     for l in range(N_scenarios):
+#         y_i = cov_Mat[l, k]
+#         if k == 1:
+#             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=scenario_list[l])
+#         elif l == 0:
+#             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+#         else:
+#             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+# ax.set_ylabel(r'Covariance, -2cov($\sigma_Y\frac{1}{\Phi_t}, \bar{\Delta}_t$)', rotation=90)
+# ax.set_xlabel('initial window (years)')
+# ax.legend()
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig('initial window and covariance years.png', dpi=500, format="png")
+# # plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+# plt.show()
+# # plt.close()
 
 ######################################
 ######## OVER INITIAL WINDOW #########
@@ -816,17 +836,16 @@ x = Npres/12
 var_name_list = ['Participation rates in age groups', 'Wealth shares in age groups']
 var_list = [popu_age_Mat, wealthshare_age_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
 phi_index = 1
-scenario_list = ['Complete', 'Reentry', 'Disappointment']
-phi_list = ['phi=0.0', 'phi=0.4']
+scenario_list = scenario_labels[-2:]
 colors_short = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 hatches = ['/', 'o', '\\', '.']
 low = np.zeros((T_hat_dimension))
-fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', sharey='all', figsize=(15, 20))
+fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(10, 10))
 for i, axes_row in enumerate(axes):
     row_name = scenario_list[i]
     for j, ax in enumerate(axes_row):
-        var = var_list[j][i, phi_index, :, 0]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups)) -> Shape((T_hat_dimension, 4))
+        var = var_list[j][i+3, phi_index, :, 0]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2, n_age_groups)) -> Shape((T_hat_dimension, 4))
+        ax.set_ylim(0, 1)
         if j == 0:
             for k in range(n_age_groups):
                 y_i = var[:, k]
@@ -864,9 +883,54 @@ for i, axes_row in enumerate(axes):
             # ax.legend()
             ax.set_title(var_name_list[j])
         if i == 2:
-            ax.set_xlabel('initial window (years)')
+            ax.set_xlabel('Initial window (years), n')
             ax.tick_params(axis='x', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and values age groups.png', dpi=100, format="png")
+plt.savefig('Partial shorting, initial window and values age groups.png', dpi=100, format="png")
 plt.show()
-#plt.close()
+plt.close()
+
+
+######################################
+######## OVER INITIAL WINDOW #########
+############ GRAPH THREE #############
+######################################
+x = Npres/12
+# x = Npres[1:]
+var_name_list = ['Wealth share', 'Population']
+var_list = [[Phi_can_short_Mat, Phi_short_Mat], [popu_can_short_Mat, popu_short_Mat]]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
+phi_index = 1
+scenario_list = scenario_labels[-2:]
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
+line_styles = ['dotted', 'solid', 'dashed']
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
+for i, ax in enumerate(axes):
+    column_name = var_name_list[i]
+    for j in range(2):
+        var = var_list[i][j]
+        for k in range(2):
+            sce_index = k + 3
+            colors_use = colors_short[k + 1]
+            y_i = var[sce_index, phi_index, :, 0]
+            X_Y_Spline = make_interp_spline(x[x_start:], y_i[x_start:])
+            X_ = np.linspace(x[x_start:].min(), x[x_start:].max(), 100)
+            Y_ = X_Y_Spline(X_)
+            line_style = 'solid' if j == 1 else 'dotted'
+            if i == 0 and j == 1:
+                label_i = scenario_labels[sce_index]
+                ax.plot(X_, Y_, linestyle=line_style, color=colors_use,
+                        label=label_i)
+                ax.legend()
+            if i == 1 and k == 0:
+                label_i = 'Can short' if j == 0 else 'Shorting'
+                ax.plot(X_, Y_, linestyle=line_style, color=colors_use,
+                        label=label_i)
+                ax.legend()
+            ax.plot(X_, Y_, linestyle=line_style, color=colors_use)
+    ax.set_ylabel(column_name)
+    ax.set_title(column_name + r'$, \phi$=' + str(phi_vector_short[phi_index]))
+    ax.set_xlabel('Initial window (years), n')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Partial shorting, initial window and parti.png', dpi=100, format="png")
+plt.show()
+# plt.close()

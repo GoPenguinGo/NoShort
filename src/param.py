@@ -71,8 +71,8 @@ for i in Npre_list:
 
 
 # labels:
-red_cases = [r'Positive local trend in $z^Y$, ', r'Negative local trend in $z^Y$, ']
-yellow_cases = [r'Positive local trend in $z^{SI}$ ', r'Negative local trend in $z^{SI}$ ']
+red_labels = [r'Positive local trend in $z^Y$, ', r'Negative local trend in $z^Y$, ']
+yellow_labels = [r'Positive local trend in $z^{SI}$ ', r'Negative local trend in $z^{SI}$ ']
 cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
 scenario_labels = ['Complete', 'Reentry', 'Disappointment', 'Reentry, partial shorting', 'Disappointment, partial shorting']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
