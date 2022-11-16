@@ -404,34 +404,34 @@ plt.close()
 # ######## Age of Participants #########
 # ######## and Asset Pricing  ##########
 # ######################################
-N_paths = 2000
-phi_fix = 0
-scenario = scenarios[1]
-mode_trade = scenario[0]
-mode_learn = scenario[1]
-cohort_size_mat = np.tile(cohort_size, (Nc, 1))
-tau_mat = np.tile(tau, (Nc, 1))
-cummu_popu = np.cumsum(cohort_size)
-popu = 0.5
-cutoff_age_old = np.searchsorted(cummu_popu, 1 - popu)
-cutoff_age_young = np.searchsorted(cummu_popu, popu)
-theta_compare = np.empty((N_paths, Nt))
-Phi_compare = np.empty((N_paths, Nt))
-Delta_bar_compare = np.empty((N_paths, Nt))
-P_old_compare = np.empty((N_paths, Nt))
-P_young_compare = np.empty((N_paths, Nt))
-P_average_age_compare = np.empty((N_paths, Nt))
-belief_f_old_compare = np.empty((N_paths, Nt))
-belief_f_young_compare = np.empty((N_paths, Nt))
-belief_popu_old_compare = np.empty((N_paths, Nt))
-belief_popu_young_compare = np.empty((N_paths, Nt))
-Phi_old_compare = np.empty((N_paths, Nt))
-Phi_young_compare = np.empty((N_paths, Nt))
-Wealthshare_old_compare = np.empty((N_paths, Nt))
-Wealthshare_young_compare = np.empty((N_paths, Nt))
-# theta_complete = np.empty((N_paths, Nt))
-# Phi_complete = np.empty((N_paths, Nt))
-# Delta_bar_complete = np.empty((N_paths, Nt))
+# N_paths = 2000
+# phi_fix = 0
+# scenario = scenarios[1]
+# mode_trade = scenario[0]
+# mode_learn = scenario[1]
+# cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+# tau_mat = np.tile(tau, (Nc, 1))
+# cummu_popu = np.cumsum(cohort_size)
+# popu = 0.5
+# cutoff_age_old = np.searchsorted(cummu_popu, 1 - popu)
+# cutoff_age_young = np.searchsorted(cummu_popu, popu)
+# theta_compare = np.empty((N_paths, Nt))
+# Phi_compare = np.empty((N_paths, Nt))
+# Delta_bar_compare = np.empty((N_paths, Nt))
+# P_old_compare = np.empty((N_paths, Nt))
+# P_young_compare = np.empty((N_paths, Nt))
+# P_average_age_compare = np.empty((N_paths, Nt))
+# belief_f_old_compare = np.empty((N_paths, Nt))
+# belief_f_young_compare = np.empty((N_paths, Nt))
+# belief_popu_old_compare = np.empty((N_paths, Nt))
+# belief_popu_young_compare = np.empty((N_paths, Nt))
+# Phi_old_compare = np.empty((N_paths, Nt))
+# Phi_young_compare = np.empty((N_paths, Nt))
+# Wealthshare_old_compare = np.empty((N_paths, Nt))
+# Wealthshare_young_compare = np.empty((N_paths, Nt))
+# # theta_complete = np.empty((N_paths, Nt))
+# # Phi_complete = np.empty((N_paths, Nt))
+# # Delta_bar_complete = np.empty((N_paths, Nt))
 for i in range(N_paths):
     print(i)
     dZ_build = np.random.randn(Nt) * np.sqrt(dt)
@@ -622,13 +622,13 @@ Phi_gap = Phi_old_compare - Phi_young_compare
 wealth_gap = Wealthshare_old_compare - Wealthshare_young_compare
 y_variables = [theta_compare, Phi_compare, Delta_bar_compare, parti_gap]
 # y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
-x_mat = belief_f_gap_compare
+x_mat = belief_popu_gap_compare
 y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$',
               r'Estimation error of participants $\bar{\Delta}$', 'Participation rate, old - young']
 x_varname = r'$\Delta_{s,t}$, old - young'
 # condition_var = Wealthshare_young_compare
 # condition_label = r'Wealth share young, quartile '
-condition_var = Phi_young_compare
+condition_var = Wealthshare_young_compare
 condition_label = r'$\Phi$ young, quartile '
 # condition_var = Phi_gap
 # condition_label = r'$\Phi$ old-young, quartile '
@@ -676,97 +676,97 @@ for l, y_mat in enumerate(y_variables):
 
 
 
-# ######################################
-# ######## Age of Participants #########
-# ######## and Asset Pricing  ##########
-# ######################################
-## how long they stay in the stock market upon entry
-# & how long they stay out of the stock market upon exit
-scenario_index = 2  # reentry
-N_1 = 1000
-phi_5 = np.linspace(0, 0.8, 5)
-dt_root = np.sqrt(dt)
-age_cut = 120
-N_cut = int(age_cut / dt)
-s_cohorts = int(Nt - N_cut + 1)
-switch_exit = np.empty((N_1, 5, N_cut - 1))
-switch_entry = np.empty((N_1, 5, N_cut - 1))
-
-for j in range(N_1):
-    print(j)
-    dZ = np.random.randn(Nt) * dt_root
-    dZ_build = np.random.randn(Nc) * dt_root
-    dZ_SI = np.random.randn(Nt) * dt_root
-    dZ_SI_build = np.random.randn(Nc) * dt_root
-    for l, phi_try in enumerate(phi_5):
-        (
-            r_reentry,
-            theta_reentry,
-            f_reentry,
-            Delta_reentry,
-            pi_reentry,
-            popu_parti_reentry,
-            f_parti_reentry,
-            Delta_bar_parti_reentry,
-            dR_reentry,
-            invest_tracker_reentry,
-            popu_short_reentry,
-            popu_can_short_reentry,
-            Phi_can_short_reentry,
-            Phi_short_reentry,
-        ) = simulate_SI('w_constraint', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                        phi_try,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                        need_f='False',
-                        need_Delta='False',
-                        need_pi='False',
-                        top=0.05,
-                        old_limit=100
-                        )
-        parti_tracker = np.rot90(invest_tracker_reentry)
-        parti_time_series = np.zeros((s_cohorts, N_cut))
-        for m in range(s_cohorts):
-            parti_time_series[m] = np.diag(parti_tracker, k=-m)[:N_cut]
-        exit_time_series = ((parti_time_series[:, 1:] - parti_time_series[:, :-1]) == -1)
-        entry_time_series = ((parti_time_series[:, 1:] - parti_time_series[:, :-1]) == 1)
-        # exit_time_series = np.insert(exit_time_series, 0, (parti_time_series[:, 0] == 0), axis=1)
-        switch_exit[j, l] = np.mean(exit_time_series, axis=0)
-        switch_entry[j, l] = np.mean(entry_time_series, axis=0)
-
-np.save('switch_exit_data', switch_exit)
-np.save('switch_entry_data', switch_entry)
-
-switch_exit_age = np.average(switch_exit, axis=0)
-switch_entry_age = np.average(switch_entry, axis=0)
-
-switch_exit_year = np.empty((5, 20))
-switch_entry_year = np.empty((5, 20))
-for i in range(20):
-    for j in range(5):
-        switch_exit_year[j, i] = np.sum(switch_exit_age[j, int(i / dt):int((i + 5) / dt)])
-        switch_entry_year[j, i] = np.sum(switch_entry_age[j, int(i / dt):int((i + 5) / dt)])
-switch_year = switch_entry_year + switch_exit_year
-
-y_variables = [switch_year, switch_entry_year, switch_exit_year]
-length = 20
-x = np.linspace(0, 95, 20)
-y_varnames = [r'switch', r'entry', r'exit']
-x_varname = r'Age'
-for i, var_y in enumerate(y_variables):
-    fig, ax = plt.subplots(figsize=(5, 5))
-    for j in range(5):
-        y = var_y[j][:length]
-        X_Y_Spline = make_interp_spline(x, y)
-        # Returns evenly spaced numbers
-        # over a specified interval.
-        X_ = np.linspace(x.min(), x.max(), 100)
-        Y_ = X_Y_Spline(X_)
-        ax.plot(X_, Y_, color=colors[j], label=r'$\phi=$'+str(phi_5[j]), linewidth=0.6)
-    ax.set_title(y_varnames[i])
-    ax.set_xlabel(x_varname)
-    ax.set_ylabel(y_varnames[i])
-    ax.legend()
-    fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-    # plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
-    plt.show()
-    # plt.close()
+# # ######################################
+# # ######## Age of Participants #########
+# # ######## and Asset Pricing  ##########
+# # ######################################
+# ## how long they stay in the stock market upon entry
+# # & how long they stay out of the stock market upon exit
+# scenario_index = 2  # reentry
+# N_1 = 1000
+# phi_5 = np.linspace(0, 0.8, 5)
+# dt_root = np.sqrt(dt)
+# age_cut = 120
+# N_cut = int(age_cut / dt)
+# s_cohorts = int(Nt - N_cut + 1)
+# switch_exit = np.empty((N_1, 5, N_cut - 1))
+# switch_entry = np.empty((N_1, 5, N_cut - 1))
+#
+# for j in range(N_1):
+#     print(j)
+#     dZ = np.random.randn(Nt) * dt_root
+#     dZ_build = np.random.randn(Nc) * dt_root
+#     dZ_SI = np.random.randn(Nt) * dt_root
+#     dZ_SI_build = np.random.randn(Nc) * dt_root
+#     for l, phi_try in enumerate(phi_5):
+#         (
+#             r_reentry,
+#             theta_reentry,
+#             f_reentry,
+#             Delta_reentry,
+#             pi_reentry,
+#             popu_parti_reentry,
+#             f_parti_reentry,
+#             Delta_bar_parti_reentry,
+#             dR_reentry,
+#             invest_tracker_reentry,
+#             popu_short_reentry,
+#             popu_can_short_reentry,
+#             Phi_can_short_reentry,
+#             Phi_short_reentry,
+#         ) = simulate_SI('w_constraint', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+#                         phi_try,
+#                         Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                         need_f='False',
+#                         need_Delta='False',
+#                         need_pi='False',
+#                         top=0.05,
+#                         old_limit=100
+#                         )
+#         parti_tracker = np.rot90(invest_tracker_reentry)
+#         parti_time_series = np.zeros((s_cohorts, N_cut))
+#         for m in range(s_cohorts):
+#             parti_time_series[m] = np.diag(parti_tracker, k=-m)[:N_cut]
+#         exit_time_series = ((parti_time_series[:, 1:] - parti_time_series[:, :-1]) == -1)
+#         entry_time_series = ((parti_time_series[:, 1:] - parti_time_series[:, :-1]) == 1)
+#         # exit_time_series = np.insert(exit_time_series, 0, (parti_time_series[:, 0] == 0), axis=1)
+#         switch_exit[j, l] = np.mean(exit_time_series, axis=0)
+#         switch_entry[j, l] = np.mean(entry_time_series, axis=0)
+#
+# np.save('switch_exit_data', switch_exit)
+# np.save('switch_entry_data', switch_entry)
+#
+# switch_exit_age = np.average(switch_exit, axis=0)
+# switch_entry_age = np.average(switch_entry, axis=0)
+#
+# switch_exit_year = np.empty((5, 20))
+# switch_entry_year = np.empty((5, 20))
+# for i in range(20):
+#     for j in range(5):
+#         switch_exit_year[j, i] = np.sum(switch_exit_age[j, int(i / dt):int((i + 5) / dt)])
+#         switch_entry_year[j, i] = np.sum(switch_entry_age[j, int(i / dt):int((i + 5) / dt)])
+# switch_year = switch_entry_year + switch_exit_year
+#
+# y_variables = [switch_year, switch_entry_year, switch_exit_year]
+# length = 20
+# x = np.linspace(0, 95, 20)
+# y_varnames = [r'switch', r'entry', r'exit']
+# x_varname = r'Age'
+# for i, var_y in enumerate(y_variables):
+#     fig, ax = plt.subplots(figsize=(5, 5))
+#     for j in range(5):
+#         y = var_y[j][:length]
+#         X_Y_Spline = make_interp_spline(x, y)
+#         # Returns evenly spaced numbers
+#         # over a specified interval.
+#         X_ = np.linspace(x.min(), x.max(), 100)
+#         Y_ = X_Y_Spline(X_)
+#         ax.plot(X_, Y_, color=colors[j], label=r'$\phi=$'+str(phi_5[j]), linewidth=0.6)
+#     ax.set_title(y_varnames[i])
+#     ax.set_xlabel(x_varname)
+#     ax.set_ylabel(y_varnames[i])
+#     ax.legend()
+#     fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+#     # plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
+#     plt.show()
+#     # plt.close()
