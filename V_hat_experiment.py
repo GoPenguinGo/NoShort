@@ -5,7 +5,8 @@ from src.simulation import simulate_SI_mean_vola, simulate_SI
 from src.param import Npres, rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, Ninit, Nt, Nc, tau, cohort_size, n_age_groups, \
     cutoffs, phi_vector, n_phi, colors, modes_trade, modes_learn, scenarios, \
-    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, top, old_limit, Z_Y_cases, Z_SI_cases, T_cohort
+    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, top, old_limit, \
+    Z_Y_cases, Z_SI_cases, T_cohort, age_labels
 
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
@@ -133,6 +134,7 @@ scenario_list = ['Complete', 'Reentry', 'Disappointment']
 phi_list = [r'$\phi=0.0$', r'$\phi=0.4$', r'$\phi=0.8$']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
 line_styles = ['dotted', 'solid', 'dashed']
+x_label_vhat = r'Initial window (years), $n$'
 fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
 for i, axes_row in enumerate(axes):
     row_name = var_name_list[i]
@@ -154,7 +156,7 @@ for i, axes_row in enumerate(axes):
             ax.set_ylabel(row_name, rotation=90)
         if i == 2:
             # ax.set_xlabel('initial window (months)')
-            ax.set_xlabel('initial window (years)')
+            ax.set_xlabel(x_label_vhat )
         if i == 0:
             ax.legend()
             ax.set_title(column_name)
@@ -194,7 +196,7 @@ for k in range(3):
         else:
             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
 ax.set_ylabel(r'Covariance, -2cov($\sigma_Y\frac{1}{\Phi_t}, \bar{\Delta}_t$)', rotation=90)
-ax.set_xlabel('initial window (years)')
+ax.set_xlabel(x_label_vhat )
 ax.legend()
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig('initial window and covariance years.png', dpi=500, format="png")
@@ -215,7 +217,6 @@ phi_index = 1
 scenario_list = ['Complete', 'Reentry', 'Disappointment']
 phi_list = ['phi=0.0', 'phi=0.4']
 colors_short = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 hatches = ['/', 'o', '\\', '.']
 low = np.zeros((T_hat_dimension))
 fig, axes = plt.subplots(nrows=3, ncols=2, sharex='all', sharey='all', figsize=(15, 20))
@@ -260,10 +261,10 @@ for i, axes_row in enumerate(axes):
             # ax.legend()
             ax.set_title(var_name_list[j])
         if i == 2:
-            ax.set_xlabel('initial window (years)')
+            ax.set_xlabel(x_label_vhat)
             ax.tick_params(axis='x', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('initial window and values age groups.png', dpi=100, format="png")
 plt.show()
-#plt.close()
+plt.close()
 

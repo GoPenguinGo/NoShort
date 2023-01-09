@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, t, red_cases, yellow_cases, cohort_labels, \
+    Z_Y_cases, Z_SI_cases, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short, colors_short2, PN_labels, age_labels, \
     top, old_limit, Npres
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare
@@ -777,12 +777,13 @@ for i, axes_row in enumerate(axes):
                         label=scenario_labels[sce_index])
         if j == 0:
             ax.set_ylabel(row_name, rotation=90)
-        if i == 1:
+        if i == 2:
             # ax.set_xlabel('initial window (months)')
-            ax.set_xlabel('Initial window (years), n')
-        if i == 0 and j == 0:
-            ax.legend()
+            ax.set_xlabel(r'Initial window (years), $n$')
+        if i == 0:
             ax.set_title(column_name)
+            if j == 0:
+                ax.legend()
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig('Partial shorting, initial window and values mean vola years.png', dpi=100, format="png")
 plt.show()
@@ -882,8 +883,8 @@ for i, axes_row in enumerate(axes):
         if i == 0:
             # ax.legend()
             ax.set_title(var_name_list[j])
-        if i == 2:
-            ax.set_xlabel('Initial window (years), n')
+        if i == 1:
+            ax.set_xlabel(r'Initial window (years), $n$')
             ax.tick_params(axis='x', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('Partial shorting, initial window and values age groups.png', dpi=100, format="png")
@@ -929,7 +930,7 @@ for i, ax in enumerate(axes):
             ax.plot(X_, Y_, linestyle=line_style, color=colors_use)
     ax.set_ylabel(column_name)
     ax.set_title(column_name + r'$, \phi$=' + str(phi_vector_short[phi_index]))
-    ax.set_xlabel('Initial window (years), n')
+    ax.set_xlabel(r'Initial window (years), $n$')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig('Partial shorting, initial window and parti.png', dpi=100, format="png")
 plt.show()

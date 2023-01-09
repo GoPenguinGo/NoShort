@@ -336,8 +336,8 @@ for i in range(1, n_phi_short, 1):
     for j, ax in enumerate(axes):
         red_index = 0 if j == 0 or j == 1 else 1
         yellow_index = 0 if j == 0 or j == 2 else 1
-        red_case = red_cases[red_index]
-        yellow_case = yellow_cases[yellow_index]
+        red_case = red_labels[red_index]
+        yellow_case = yellow_labels[yellow_index]
         Z = np.cumsum(Z_Y_cases[red_index])
         Z_SI = np.cumsum(Z_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
         if j == 3:
@@ -382,7 +382,7 @@ for i in range(1, n_phi_short, 1):
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.savefig(
                 'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
-                dpi=100)
+                dpi=60)
     plt.show()
     plt.close()
 
@@ -447,7 +447,7 @@ for i, ax_row in enumerate(axes):
         ax.set_title(titles_subfig[i][j])
         ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=100)
+plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) +'.png', dpi=60)
 plt.show()
 plt.close()
 
@@ -853,7 +853,7 @@ for aa in range(2):
                     ax.set_ylabel('Average volatility of ' + var_name, color='black')
                 ax.tick_params(axis='y', labelcolor='black')
         fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        # plt.savefig(fig_title, dpi=100)
+        plt.savefig(fig_title, dpi=60)
         plt.show()
         # plt.close()
 
@@ -904,7 +904,7 @@ for j, ax in enumerate(axes):
     ax2.legend(loc='upper right')
     ax.set_title(y_title)
 fig.tight_layout(h_pad=2)
-plt.savefig('r and theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=100)
+plt.savefig('r and theta,' + str(red_case) + str(yellow_case)  +'.png', dpi=60)
 plt.show()
 plt.close()
 
@@ -943,7 +943,7 @@ for i, ax_row in enumerate(axes):
         ax.set_ylabel(r'Interest rate $r_t$')
         ax.set_title(y_title)
 fig.tight_layout(h_pad=2)
-plt.savefig('IA r and theta.png', dpi=100)
+plt.savefig('IA r and theta.png', dpi=60)
 plt.show()
 plt.close()
 
@@ -1034,7 +1034,7 @@ for i in range(1,3):
 #axes[1,1].legend(loc='upper right')
 axes[1,1].set_xlabel('Time in simulation')
 fig.tight_layout(h_pad=2)
-# plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
+plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case)  + '.png', dpi=60)
 plt.show()
 # plt.close()
 
@@ -1173,7 +1173,7 @@ for i, ax in enumerate(axes.flat):
     ax.set_title(titles_subfig[i])
     ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout(h_pad=2)
-plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case)  + '.png', dpi=100)
+plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case)  + '.png', dpi=60)
 plt.show()
 plt.close()
 
@@ -1336,9 +1336,9 @@ for case_dzY in cases:
         fig, axes = plt.subplots(ncols=2, figsize=(14, 5))
         for i, ax in enumerate(axes):
             if case_dzY == case_dzSI == scenario_index == 1:
-                ax.set_title(titles_subfig[i])
+                ax.set_title(titles_subfig[i] + ', ' + scenario_labels[scenario_index]+ ', ' + r'$\phi=0.0$')
             else:
-                ax.set_title(titles_subfig_IA[i] + ', '  + red_labels[case_dzY] + scenario_labels[scenario_index])
+                ax.set_title(titles_subfig_IA[i] + ', '  + red_labels[case_dzY] + scenario_labels[scenario_index]+ ', ' + r'$\phi=0.0$')
 
             var = cons_time_series_tau if i == 0 else f_time_series_tau
             for k in range(n_tax):
@@ -1423,7 +1423,41 @@ for j in range(N_1):
                             old_limit=100
                             )
             f_matrix[j, l, m] = np.average(f_reentry, axis=0)
+c_vector = np.flip(np.average(f_matrix * dt / cohort_size, axis=0), axis=2)
+f_vector = np.flip(np.average(f_matrix, axis=0), axis=2)
 
+age_cut = 100
+N_cut = int(age_cut / dt)
+titles_subfig = [r'Average individual consumption share $c_{s,t}/Y_t$', r'Average cohort consumption share $f_{s,t}$']
+yaxis_subfig = [r'$Average c_{s,t}/Y_t$', r'$Average f_{s,t}$']
+line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
+
+fig, axes = plt.subplots(ncols=2, figsize=(14, 5))
+for i, ax in enumerate(axes):
+    ax.set_title(titles_subfig[i]+ ', ' + r'$\phi=0.4$')
+    var = c_vector if i == 0 else f_vector
+    for k in range(n_tax):
+        y = var[1, k,
+            :N_cut]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
+        label_i = r'$\tau$ = ' + str('{0:.3f}'.format(tax_vector[k]))
+        if k == 1:
+            ax.plot(t[:N_cut], y, color=colors_short[1], linewidth=0.8, linestyle=line_styles[k], label='Reentry, '+label_i)
+            y_complete = var[0, k, :N_cut]
+            y_disappintment = var[2, k, :N_cut]
+            ax.plot(t[:N_cut], y_complete, color=colors_short[0], linewidth=0.6, linestyle=line_styles[k], label='Complete, '+label_i)
+            ax.plot(t[:N_cut], y_disappintment, color=colors_short[2], linewidth=0.6, linestyle=line_styles[k], label='Disappointment, '+label_i)
+        else:
+            ax.plot(t[:N_cut], y, color=colors_short[1], linewidth=0.8, linestyle=line_styles[k], label='Reentry, '+label_i)
+    ax.tick_params(axis='both', labelcolor='black')
+    ax.set_ylabel(yaxis_subfig[i], color='black')
+    # ax.set_xlim(left_t, right_t)
+    if i == 0:
+        ax.legend()
+    ax.set_xlabel('Age')
+fig.tight_layout(h_pad=2)
+plt.savefig('Average consumption share tau.png', dpi=100)
+plt.show()
+plt.close()
 
 # ######################################
 # ########### ACROSS PATHS #############
@@ -1439,7 +1473,7 @@ var_name_list = [r'$r_t$', r'$\theta_t$',
 # var_name_list = ['interest rate', 'market price of risk',
 #                  'consumption-weighted estimation error of participants', 'consumption share of participants',
 #                  'participation rate', 'belief variance', 'belief skewness']
-age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
+# age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 x = phi_vector
 # fig, axs = plt.subplots(nrows=3, ncols=2, sharex='all', figsize=(15, 20))
 # for j, ax in enumerate(axs.flat):
