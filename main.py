@@ -120,7 +120,7 @@ age_cutoff = cutoffs[2]
 # ######################################
 
 # ONE SPECIFIC PATH:
-# generate data for the graphs:
+print('Generating data for the graphs:')
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
 
@@ -327,6 +327,7 @@ labels = [scenario_labels, label_phi, label_phi]
 # ########### Figure 1 & 2 #############
 # ######################################
 # Delta (2 phi * 4 cases)
+print('Figure 1')
 upper = 60  # todo: endogenize these parameters
 lower = -60
 scenario_index = 1
@@ -457,20 +458,21 @@ plt.close()
 # ############ Figure 3.1 ##############
 # ######################################
 N_1 = 1000
-phi_5 = [0, 0.4, 0.8]
+phi_5 = [0, 0.2, 0.4, 0.6, 0.8]
+n_phi_5 = len(phi_5)
 # tax_vector = [0.005]
-# tax_vector = [0.01]
+tax_vector = [0.01]
 # tax_vector = [0.015]
-tax_vector = [0.005, 0.01, 0.015]
+# tax_vector = [0.005, 0.01, 0.015]
 n_tax = len(tax_vector)
-Delta_reentry_matrix = np.empty((N_1, 3, n_tax, Nc))
-f_reentry_matrix = np.empty((N_1, 3, n_tax, Nc))
-distance_reentry_matrix = np.empty((N_1, 3, n_tax, Nc))
-invest_matrix = np.empty((N_1, 3, n_tax, Nc))
+Delta_reentry_matrix = np.empty((N_1, n_phi_5, Nc))
+f_reentry_matrix = np.empty((N_1, n_phi_5, Nc))
+distance_reentry_matrix = np.empty((N_1, n_phi_5, Nc))
+invest_matrix = np.empty((N_1, n_phi_5, Nc))
 
-Delta_complete_matrix = np.empty((N_1, 3, n_tax, Nc))
-f_complete_matrix = np.empty((N_1, 3, n_tax, Nc))
-distance_complete_matrix = np.empty((N_1, 3, n_tax, Nc))
+Delta_complete_matrix = np.empty((N_1, n_phi_5, Nc))
+f_complete_matrix = np.empty((N_1, n_phi_5, Nc))
+distance_complete_matrix = np.empty((N_1, n_phi_5, Nc))
 dt_root = np.sqrt(dt)
 for j in range(N_1):
     print(j)
@@ -479,226 +481,420 @@ for j in range(N_1):
     dZ_SI = np.random.randn(Nt) * dt_root
     dZ_SI_build = np.random.randn(Nc) * dt_root
     for l, phi_try in enumerate(phi_5):
-        for m, tax_try in enumerate(tax_vector):
-            beta_try = rho + nu - tax_try
-            (
-                r_reentry,
-                theta_reentry,
-                f_reentry,
-                Delta_reentry,
-                pi_reentry,
-                popu_parti_reentry,
-                f_parti_reentry,
-                Delta_bar_parti_reentry,
-                dR_reentry,
-                invest_tracker_reentry,
-                popu_can_short_reentry,
-                popu_short_reentry,
-                Phi_can_short_reentry,
-                Phi_short_reentry,
-            ) = simulate_SI('w_constraint', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
-                            tax_try,
-                            beta_try,
-                            phi_try,
-                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                            need_f='True',
-                            need_Delta='True',
-                            need_pi='False',
-                            top=0.05,
-                            old_limit=100
-                            )
-            Delta_bar_parti_mat = np.transpose(np.tile(Delta_bar_parti_reentry, (Nc, 1)))
-            Delta_reentry_matrix[j, l, m] = np.average(np.abs(Delta_reentry), axis=0)
-            f_reentry_matrix[j, l, m] = np.average(f_reentry, axis=0)
-            distance_reentry_matrix[j, l, m] = np.average(np.abs(Delta_reentry - Delta_bar_parti_mat), axis=0)
-            invest_matrix[j, l, m] = np.average(invest_tracker_reentry, axis=0)
+        (
+            r_reentry,
+            theta_reentry,
+            f_reentry,
+            Delta_reentry,
+            pi_reentry,
+            popu_parti_reentry,
+            f_parti_reentry,
+            Delta_bar_parti_reentry,
+            dR_reentry,
+            invest_tracker_reentry,
+            popu_can_short_reentry,
+            popu_short_reentry,
+            Phi_can_short_reentry,
+            Phi_short_reentry,
+        ) = simulate_SI('w_constraint', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+                        tax,
+                        beta,
+                        phi_try,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                        need_f='True',
+                        need_Delta='True',
+                        need_pi='False',
+                        )
+        Delta_bar_parti_mat = np.transpose(np.tile(Delta_bar_parti_reentry, (Nc, 1)))
+        Delta_reentry_matrix[j, l] = np.average(np.abs(Delta_reentry), axis=0)
+        f_reentry_matrix[j, l] = np.average(f_reentry, axis=0)
+        distance_reentry_matrix[j, l] = np.average(np.abs(Delta_reentry - Delta_bar_parti_mat), axis=0)
+        invest_matrix[j, l] = np.average(invest_tracker_reentry, axis=0)
 
-            (
-                r_complete,
-                theta_complete,
-                f_complete,
-                Delta_complete,
-                pi_complete,
-                popu_complete,
-                f_parti_complete,
-                Delta_bar_complete,
-                dR_complete,
-                invest_tracker_complete,
-                popu_can_short_complete,
-                popu_short_complete,
-                Phi_can_short_complete,
-                Phi_short_complete,
-            ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
-                            tax_try,
-                            beta_try,
-                            phi_try,
-                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                            need_f='True',
-                            need_Delta='True',
-                            need_pi='False',
-                            top=0.05,
-                            old_limit=100
-                            )
-            Delta_bar_complte_mat = np.transpose(np.tile(Delta_bar_complete, (Nc, 1)))
-            distance_complete_matrix[j, l, m] = np.average(np.abs(Delta_complete - Delta_bar_complte_mat), axis=0)
-            Delta_complete_matrix[j, l, m] = np.average(np.abs(Delta_complete), axis=0)
-            f_complete_matrix[j, l, m] = np.average(np.abs(f_complete), axis=0)
+        (
+            r_complete,
+            theta_complete,
+            f_complete,
+            Delta_complete,
+            pi_complete,
+            popu_complete,
+            f_parti_complete,
+            Delta_bar_complete,
+            dR_complete,
+            invest_tracker_complete,
+            popu_can_short_complete,
+            popu_short_complete,
+            Phi_can_short_complete,
+            Phi_short_complete,
+        ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+                        tax,
+                        beta,
+                        phi_try,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                        need_f='True',
+                        need_Delta='True',
+                        need_pi='False',
+                        )
+        Delta_bar_complte_mat = np.transpose(np.tile(Delta_bar_complete, (Nc, 1)))
+        distance_complete_matrix[j, l] = np.average(np.abs(Delta_complete - Delta_bar_complte_mat), axis=0)
+        Delta_complete_matrix[j, l] = np.average(np.abs(Delta_complete), axis=0)
+        f_complete_matrix[j, l] = np.average(np.abs(f_complete), axis=0)
 
-# # save the data
-# var_list = [Delta_reentry_matrix, f_reentry_matrix, distance_reentry_matrix, invest_matrix,
-#             Delta_complete_matrix, f_complete_matrix, distance_complete_matrix]
+# # read the data:
+# Delta_reentry_vector = np.empty((3, n_tax, Nc))
+# f_reentry_vector = np.empty((3, n_tax, Nc))
+# distance_reentry_vector = np.empty((3, n_tax, Nc))
+# invest_vector = np.empty((3, n_tax, Nc))
+# Delta_complete_vector = np.empty((3, n_tax, Nc))
+# f_complete_vector = np.empty((3, n_tax, Nc))
+# distance_complete_vector = np.empty((3, n_tax, Nc))
+# var_list = [Delta_reentry_vector, f_reentry_vector, distance_reentry_vector, invest_vector,
+#             Delta_complete_vector, f_complete_vector, distance_complete_vector]
 # var_name_list = ['Delta_reentry_data', 'f_reentry_data', 'distance_reentry_data', 'invest_data',
 #             'Delta_complete_data', 'f_complete_data', 'distance_complete_data']
 # for i, var in enumerate(var_list):
-#     np.save(var_name_list[i] + 'taxrate' + str(tax_vector[0]), var[:N_1])
+#     var_name = var_name_list[i]
+#     for j, tax_try in enumerate(tax_vector):
+#         var_name_j = var_name  + 'taxrate' + str(tax_try) +'.npy'
+#         y = np.load(var_name_j)
+#         var[:, j] = np.flip(np.mean(np.mean(y, axis=0), axis=1), axis=1)
 
-# read the data:
-Delta_reentry_vector = np.empty((3, n_tax, Nc))
-f_reentry_vector = np.empty((3, n_tax, Nc))
-distance_reentry_vector = np.empty((3, n_tax, Nc))
-invest_vector = np.empty((3, n_tax, Nc))
-Delta_complete_vector = np.empty((3, n_tax, Nc))
-f_complete_vector = np.empty((3, n_tax, Nc))
-distance_complete_vector = np.empty((3, n_tax, Nc))
-var_list = [Delta_reentry_vector, f_reentry_vector, distance_reentry_vector, invest_vector,
-            Delta_complete_vector, f_complete_vector, distance_complete_vector]
-var_name_list = ['Delta_reentry_data', 'f_reentry_data', 'distance_reentry_data', 'invest_data',
-            'Delta_complete_data', 'f_complete_data', 'distance_complete_data']
-for i, var in enumerate(var_list):
-    var_name = var_name_list[i]
-    for j, tax_try in enumerate(tax_vector):
-        var_name_j = var_name  + 'taxrate' + str(tax_try) +'.npy'
-        y = np.load(var_name_j)
-        var[:, j] = np.flip(np.mean(np.mean(y, axis=0), axis=1), axis=1)
+Delta_reentry_vector = np.flip(np.average(Delta_reentry_matrix, axis=0), axis=1)
+f_reentry_vector = np.flip(np.average(f_reentry_matrix, axis=0), axis=1)
+invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=1)
+Delta_complete_vector = np.flip(np.average(Delta_complete_matrix, axis=0), axis=1)
+f_complete_vector = np.flip(np.average(f_complete_matrix, axis=0), axis=1)
 
-# Delta_reentry_vector = np.flip(np.average(Delta_reentry_matrix, axis=0), axis=2)
-# f_reentry_vector = np.flip(np.average(f_reentry_matrix, axis=0), axis=2)
-# invest_vector = np.flip(np.average(invest_matrix, axis=0), axis=2)
-# Delta_complete_vector = np.flip(np.average(Delta_complete_matrix, axis=0), axis=2)
-# f_complete_vector = np.flip(np.average(f_complete_matrix, axis=0), axis=2)
-
-# # Graph:
-# t_cut = 100
-# N_cut = int(t_cut/dt)
-# x = t[:N_cut]
-# data_point = np.arange(0, N_cut, 15)
-# y_cases = [Delta_complete_vector, invest_vector, Delta_reentry_vector]
-# fig_titles = ['Complete market', 'Reentry', 'Reentry']
-# y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability', r'Average $\mid\Delta_{s,t}\mid$']
-# fig, axes = plt.subplots(nrows=1, ncols=3, sharex='all', figsize=(15, 5))
-# for j, ax in enumerate(axes):
-#     ax.set_xlabel('Age')
-#     y_case = y_cases[j]
-#     ax.set_ylabel(y_titles[j])
-#     for i in range(5):
-#         y = y_case[i, :N_cut]
-#         label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_5[i]))
-#         ax.plot(x[data_point], y[data_point], color=colors[i], linewidth=0.5, label=label_i)
-#     if j == 0 or j == 2:
-#         ax.set_ylim(0.04, 0.18)
-#     if j == 0:
-#         ax.legend()
-#     ax.set_title(fig_titles[j], color='black')
-#     ax.tick_params(axis='y', labelcolor='black')
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# # plt.savefig(str(N_1) + 'paths, ' + str(t_cut) + 'age, ' +'Average estimation error and age.png', dpi=100)
-# plt.show()
-# #plt.close()
-
-
-# t_cut = 300
-# N_cut = int(t_cut/dt)
-# x = t[:N_cut]
-# data_point = np.arange(0, N_cut, 15)
-# y_cases = [invest_vector]
-# fig_titles = ['Reentry']
-# y_titles = ['Average participation probability']
-# fig, axes = plt.subplots(nrows=1, ncols=3, sharex='all', sharey='all', figsize=(15, 5))
-# for j, ax in enumerate(axes):
-#     ax.set_xlabel('Age')
-#     y_case = invest_vector[j]
-#     label_j = r'Average participation probability, reentry, $\phi$=' + str('{0:.2f}'.format(phi_5[j]))
-#     ax.set_title(label_j, color='black')
-#     for i in range(3):
-#         label_i = r'$\tau$=' + str('{0:.3f}'.format(tax_vector[i]))
-#         y = y_case[i, :N_cut]
-#         X_Y_Spline = make_interp_spline(x[data_point], y[data_point])
-#         X_ = np.linspace(x[data_point].min(), x[data_point].max(), 100)
-#         Y_ = X_Y_Spline(X_)
-#         ax.plot(X_, Y_, color=colors[i], linewidth=0.5, label=label_i)
-#     # if j == 0 or j == 2:
-#     #     ax.set_ylim(0.04, 0.18)
-#     if j == 0:
-#         ax.legend()
-#     ax.tick_params(axis='y', labelcolor='black')
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# # plt.savefig('Average participation prob over age, tau and phi.png', dpi=100)
-# plt.show()
-# #plt.close()
-
-
-t_cut = 500
+# Graph:
+t_cut = 100
 N_cut = int(t_cut/dt)
 x = t[:N_cut]
 data_point = np.arange(0, N_cut, 15)
-y_cases = [Delta_reentry_vector, f_reentry_vector, distance_reentry_vector * sigma_Y, invest_vector]
-y_complete_cases = [Delta_complete_vector, f_complete_vector, distance_complete_vector * sigma_Y, invest_vector]
-fig_titles = [r'Average estimation error $\Delta_{s,t}$', r'Average cohort wealth share $f_{s,t}$',
-            r'Average distance to market view $\mu_{s,t}-\bar{\mu}_t$', 'Average participation probability']
-y_titles = [r'Average $\Delta_{s,t}$', r'Average $f_{s,t}$',
-            r'Average $\mu_{s,t}-\bar{\mu}_t$', 'Average participation probability']
-fig, axes = plt.subplots(nrows=4, ncols=2, sharex='all', sharey='row', figsize=(10, 15))
-for i, ax_row in enumerate(axes):
-    var = y_cases[i]
-    label_fig = fig_titles[i]
-    var_complete = y_complete_cases[i]
-    for j, ax in enumerate(ax_row):
-        ax.set_xlabel('Age')
-        if j == 0:  # tax = 0.01, different phi
-            y_case = var[:, 1]
-            y_complete_case = var_complete[:, 1]
-            label_j = label_fig + r', $\tau$=' + str('{0:.3f}'.format(tax_vector[1]))
-            ax.set_ylabel(y_titles[i])
-        if j == 1:  # phi = 0.4, different tax
-            y_case = var[1]
-            y_complete_case = var_complete[1]
-            label_j = label_fig + r', $\phi$=' + str('{0:.1f}'.format(phi_5[1]))
-        ax.set_title(label_j, color='black')
-        for k in range(3):
-            if j == 0:
-                label_i = r'$\phi$=' + str('{0:.1f}'.format(phi_5[k]))
-            else:
-                label_i = r'$\tau$=' + str('{0:.3f}'.format(tax_vector[k]))
-            y = y_case[k, :N_cut]
-            y_complete = y_complete_case[k, :N_cut]
-            X_Y_Spline = make_interp_spline(x[data_point], y[data_point])
-            X_ = np.linspace(x[data_point].min(), x[data_point].max(), 100)
-            Y_ = X_Y_Spline(X_)
-            if i <= 2:
-                if i == 1 and j == 0 and k == 0:
-                    ax.plot(x, y_complete, color=colors_short[k], linewidth=0.6, linestyle='dashed', label='Complete market benchmark')
-                    ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label='Reentry')
-                    ax.legend()
-                else:
-                    ax.plot(x, y_complete, color=colors_short[k], linewidth=0.6, linestyle='dashed')
-                    ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label=label_i)
-            else:
-                ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label=label_i)
-            if i == 2:
-                x_minmax = np.argmin(y)
-                if x_minmax * dt < np.max(x):
-                    ax.axvline(x_minmax * dt, 0.05, 0.95, color=colors_short[k], linewidth=0.4, linestyle='dotted')
-            if i == 3:
-                x_minmax = np.argmax(y)
-                if x_minmax * dt < np.max(x):
-                    ax.axvline(x_minmax * dt, 0.05, 0.95, color=colors_short[k], linewidth=0.4, linestyle='dotted')
-        # if j == 0 or j == 2:
-        #     ax.set_ylim(0.04, 0.18)
-        if i == 0:
-            ax.legend()
-        ax.tick_params(axis='y', labelcolor='black')
+y_cases = [Delta_complete_vector, Delta_reentry_vector, invest_vector]
+fig_titles = ['Complete market', 'Reentry', 'Reentry']
+y_titles = [r'Average $\mid\Delta_{s,t}\mid$', r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
+fig, axes = plt.subplots(nrows=1, ncols=3, sharex='all', figsize=(15, 5))
+for j, ax in enumerate(axes):
+    ax.set_xlabel('Age')
+    y_case = y_cases[j]
+    ax.set_ylabel(y_titles[j])
+    for i in range(5):
+        y = y_case[i, :N_cut]
+        label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_5[i]))
+        ax.plot(x[data_point], y[data_point], color=colors[i], linewidth=0.5, label=label_i)
+    if j < 2:
+        ax.set_ylim(0.04, 0.18)
+    if j == 0:
+        ax.legend()
+    ax.set_title(fig_titles[j], color='black')
+    ax.tick_params(axis='y', labelcolor='black')
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig('Average participation prob over age, tau and phi.png', dpi=100)
+plt.savefig(str(N_1) + 'paths, ' + str(t_cut) + 'age, ' +'Average estimation error and age.png', dpi=100)
+plt.show()
+#plt.close()
+
+
+
+# t_cut = 500
+# N_cut = int(t_cut/dt)
+# x = t[:N_cut]
+# data_point = np.arange(0, N_cut, 15)
+# y_cases = [Delta_reentry_vector, f_reentry_vector, distance_reentry_vector * sigma_Y, invest_vector]
+# y_complete_cases = [Delta_complete_vector, f_complete_vector, distance_complete_vector * sigma_Y, invest_vector]
+# fig_titles = [r'Average estimation error $\Delta_{s,t}$', r'Average cohort wealth share $f_{s,t}$',
+#             r'Average distance to market view $\mu_{s,t}-\bar{\mu}_t$', 'Average participation probability']
+# y_titles = [r'Average $\Delta_{s,t}$', r'Average $f_{s,t}$',
+#             r'Average $\mu_{s,t}-\bar{\mu}_t$', 'Average participation probability']
+# fig, axes = plt.subplots(nrows=4, ncols=2, sharex='all', sharey='row', figsize=(10, 15))
+# for i, ax_row in enumerate(axes):
+#     var = y_cases[i]
+#     label_fig = fig_titles[i]
+#     var_complete = y_complete_cases[i]
+#     for j, ax in enumerate(ax_row):
+#         ax.set_xlabel('Age')
+#         if j == 0:  # tax = 0.01, different phi
+#             y_case = var[:, 1]
+#             y_complete_case = var_complete[:, 1]
+#             label_j = label_fig + r', $\tau$=' + str('{0:.3f}'.format(tax_vector[1]))
+#             ax.set_ylabel(y_titles[i])
+#         if j == 1:  # phi = 0.4, different tax
+#             y_case = var[1]
+#             y_complete_case = var_complete[1]
+#             label_j = label_fig + r', $\phi$=' + str('{0:.1f}'.format(phi_5[1]))
+#         ax.set_title(label_j, color='black')
+#         for k in range(3):
+#             if j == 0:
+#                 label_i = r'$\phi$=' + str('{0:.1f}'.format(phi_5[k]))
+#             else:
+#                 label_i = r'$\tau$=' + str('{0:.3f}'.format(tax_vector[k]))
+#             y = y_case[k, :N_cut]
+#             y_complete = y_complete_case[k, :N_cut]
+#             X_Y_Spline = make_interp_spline(x[data_point], y[data_point])
+#             X_ = np.linspace(x[data_point].min(), x[data_point].max(), 100)
+#             Y_ = X_Y_Spline(X_)
+#             if i <= 2:
+#                 if i == 1 and j == 0 and k == 0:
+#                     ax.plot(x, y_complete, color=colors_short[k], linewidth=0.6, linestyle='dashed', label='Complete market benchmark')
+#                     ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label='Reentry')
+#                     ax.legend()
+#                 else:
+#                     ax.plot(x, y_complete, color=colors_short[k], linewidth=0.6, linestyle='dashed')
+#                     ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label=label_i)
+#             else:
+#                 ax.plot(X_, Y_, color=colors_short[k], linewidth=0.8, label=label_i)
+#             if i == 2:
+#                 x_minmax = np.argmin(y)
+#                 if x_minmax * dt < np.max(x):
+#                     ax.axvline(x_minmax * dt, 0.05, 0.95, color=colors_short[k], linewidth=0.4, linestyle='dotted')
+#             if i == 3:
+#                 x_minmax = np.argmax(y)
+#                 if x_minmax * dt < np.max(x):
+#                     ax.axvline(x_minmax * dt, 0.05, 0.95, color=colors_short[k], linewidth=0.4, linestyle='dotted')
+#         # if j == 0 or j == 2:
+#         #     ax.set_ylim(0.04, 0.18)
+#         if i == 0:
+#             ax.legend()
+#         ax.tick_params(axis='y', labelcolor='black')
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# # plt.savefig('Average participation prob over age, tau and phi.png', dpi=100)
+# plt.show()
+# # plt.close()
+
+
+
+# ######################################
+# ############ Figure 3.1 ##############
+# ######################################
+N_1 = 200
+phi = 0
+tax = 0.01
+age_cutoff = 500
+cohort_cutoff = int(age_cutoff / dt)
+n_age_groups = 10
+n_cohort_per_group = int(cohort_cutoff / n_age_groups)
+cummu_popu = np.cumsum(cohort_size)
+age_buckets = np.searchsorted(cummu_popu, 1-np.arange(0, 1.1, (1/n_age_groups)))
+Delta_reentry_matrix = np.empty((N_1, Nt, n_age_groups))
+f_reentry_matrix = np.empty((N_1, Nt, n_age_groups))
+invest_matrix = np.empty((N_1, Nt, n_age_groups))
+dt_root = np.sqrt(dt)
+for j in range(N_1):
+    print(j)
+    dZ = np.random.randn(Nt) * dt_root
+    dZ_build = np.random.randn(Nc) * dt_root
+    dZ_SI = np.random.randn(Nt) * dt_root
+    dZ_SI_build = np.random.randn(Nc) * dt_root
+    (
+        r_reentry,
+        theta_reentry,
+        f_reentry,
+        Delta_reentry,
+        pi_reentry,
+        popu_parti_reentry,
+        f_parti_reentry,
+        Delta_bar_parti_reentry,
+        dR_reentry,
+        invest_tracker_reentry,
+        popu_can_short_reentry,
+        popu_short_reentry,
+        Phi_can_short_reentry,
+        Phi_short_reentry,
+    ) = simulate_SI('w_constraint', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+                    tax,
+                    beta,
+                    phi,
+                    Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    need_f='True',
+                    need_Delta='True',
+                    need_pi='False',
+                    top=0.05,
+                    old_limit=100
+                    )
+    # Delta_age_groups = np.reshape(Delta_reentry, (Nt, -1, n_cohort_per_group))
+    # f_reentry_age_groups = np.reshape(f_reentry, (Nt, -1, n_cohort_per_group))
+    # invest_age_groups = np.reshape(invest_tracker_reentry, (Nt, -1, n_cohort_per_group))
+    #
+    # Delta_reentry_matrix[j] = np.flip(
+    #     np.average(
+    #         Delta_age_groups,
+    #         axis=2,
+    #         weights=cohort_size[-n_cohort_per_group:]
+    #     )[:, -n_age_groups:],
+    #     axis=1)
+    # f_reentry_matrix[j] = np.flip(
+    #     np.sum(
+    #         f_reentry_age_groups,
+    #         axis=2
+    #     )[:, -n_age_groups:] * dt,
+    #     axis=1)
+    # invest_matrix[j] = np.flip(
+    #     np.average(
+    #         invest_age_groups,
+    #         axis=2,
+    #         weights=cohort_size[-n_cohort_per_group:]
+    #     )[:, -n_age_groups:],
+    #     axis=1)
+    for i in range(n_age_groups):
+        below = int(age_buckets[i+1])
+        above = int(age_buckets[i])
+        Delta_reentry_matrix[j, :, i] = np.average(Delta_reentry[:, below:above], axis=1, weights=cohort_size[below:above])
+        f_reentry_matrix[j, :, i] = np.sum(f_reentry[:, below:above], axis=1) * dt
+        invest_matrix[j, :, i] = np.average(invest_tracker_reentry[:, below:above], axis=1,
+                                                   weights=cohort_size[below:above])
+
+var_list = [Delta_reentry_matrix, f_reentry_matrix, invest_matrix]
+var_name_list = ['Delta_reentry_data', 'f_reentry_data', 'invest_data']
+
+# Graph:
+x = np.arange(1, 11, 1)
+y_case = invest_matrix
+# y_case = np.average(invest_matrix, axis=0)
+y_title = 'Average participation probability'
+conditions = [Delta_reentry_matrix, f_reentry_matrix]
+# conditions = [np.average(Delta_reentry_matrix, axis=0), np.average(f_reentry_matrix, axis=0)]
+condition_labels = [r'Estimation error $\Delta_{s,t}$ quartiles conditional on age',
+                    r'Wealth share $f_{s,t}$ quartiles conditional on age']
+n_tiles = 6
+tiles = np.arange(0, 101, int(100/n_tiles))
+label_tiles = 'Quartile '
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7))
+for j, ax in enumerate(axes):
+    # ax.set_xlabel('Age')
+    ax.set_xlabel('Age dixile')
+    condition = conditions[j]
+    ax.set_ylabel(y_title)
+    y_data = np.empty((n_tiles, n_age_groups, 3))
+    for i in range(n_age_groups):
+        # y_data_age_group = y_case[:, i]
+        # condition_data_age_group = condition[:, i]
+        y_data_age_group = y_case[:, :, i]
+        condition_data_age_group = condition[:, :, i]
+        condition_quartiles = np.percentile(condition_data_age_group, tiles)
+        for k in range(n_tiles):
+            below = condition_quartiles[k]
+            above = condition_quartiles[k+1]
+            a = condition_data_age_group >= below
+            b = condition_data_age_group <= above
+            data_where = np.where(a * b == 1)
+            y_data_where = y_data_age_group[data_where]
+            y_data[k, i, 0] = np.median(y_data_where)
+            y_data[k, i, 1] = np.percentile(y_data_where, 25)
+            y_data[k, i, 2] = np.percentile(y_data_where, 75)
+    for i in range(n_tiles):
+        if i == 0:
+            label_i = label_tiles + str(i+1) + ', smallest'
+        elif i == n_tiles - 1:
+            label_i = label_tiles + str(i + 1) + ', largest'
+        else:
+            label_i = label_tiles + str(i + 1)
+        ax.plot(x, y_data[i, :, 0], color=colors[i], linewidth=0.5, label=label_i)
+        ax.fill_between(x, y_data[i, :, 1], y_data[i, :, 2], color=colors[i], linewidth=0., alpha=0.3)
+        ax.legend()
+    ax.set_title(condition_labels[j], color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig(str(N_1) + 'paths, ' + str(t_cut) + 'age, ' +'Average estimation error and age.png', dpi=100)
+plt.show()
+#plt.close()
+
+n_tiles = 2   # above & below median for both belief and wealth
+tiles = np.arange(0, 101, int(100/n_tiles))
+
+fig, ax = plt.subplots(figsize=(15, 15))
+# ax.set_xlabel('Age')
+ax.set_xlabel('Age dixile')
+condition1 = conditions[0]
+label_tiles1 = r'$\Delta_{s,t}$'
+condition2 = conditions[1]
+label_tiles2 = r'$f_{s,t}$'
+ax.set_ylabel(y_title)
+y_data = np.empty((n_tiles, n_tiles, n_age_groups, 3))
+for i in range(n_age_groups):
+    # y_data_age_group = y_case[:, :, i]
+    # condition_data_age_group = condition[:, :, i]
+    # y_data_age_group = y_case[:, i]
+    # condition_data_age_group1 = condition1[:, i]
+    # condition_data_age_group2 = condition2[:, i]
+    y_data_age_group = y_case[:, :, i]
+    condition_data_age_group1 = condition1[:, :, i]
+    condition_data_age_group2 = condition2[:, :, i]
+    condition_median1 = np.median(condition_data_age_group1)
+    condition_median2 = np.median(condition_data_age_group2)
+    for k1 in range(n_tiles):
+        a = condition_data_age_group1 <= condition_median1 if k1 == 0 \
+            else condition_data_age_group1 >= condition_median1
+        for k2 in range(n_tiles):
+            b = condition_data_age_group2 <= condition_median2 if k1 == 0 \
+                else condition_data_age_group2 >= condition_median2
+            data_where = np.where(a * b == 1)
+        y_data_where = y_data_age_group[data_where]
+        y_data[k1, k2, i, 0] = np.median(y_data_where)
+        y_data[k1, k2, i, 1] = np.percentile(y_data_where, 25)
+        y_data[k1, k2, i, 2] = np.percentile(y_data_where, 75)
+ii = 0
+for k1 in range(n_tiles):
+    label_k1 = 'Below median '+label_tiles1 if k1 == 0 else 'Above median '+label_tiles1
+    for k2 in range(n_tiles):
+        label_k2 = 'Below median ' + label_tiles2 if k2 == 0 else 'Above median ' + label_tiles2
+        ax.plot(x, y_data[k1, k2, :, 0], color=colors[ii], linewidth=0.5, label=label_k1+label_k2)
+        ax.fill_between(x, y_data[k1, k2, :, 1], y_data[k1, k2, :, 2], color=colors[ii], linewidth=0., alpha=0.3)
+        ax.legend()
+        ii += 1
+ax.set_title('Two way sorts', color='black')
+ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig(str(N_1) + 'paths, ' + str(t_cut) + 'age, ' +'Average estimation error and age.png', dpi=100)
+plt.show()
+#plt.close()
+
+
+n_bins = 30
+age_group_indexes = [0, n_age_groups-1]  # 0-5 years old vs. 95-100 years old
+total_count = np.count_nonzero(Delta_reentry_matrix[:, :, 0])
+fig, axes = plt.subplots(ncols=4, figsize=(15, 4))
+for j, ax in enumerate(axes):
+    if j == 0 or j == 2:
+        age_index = age_group_indexes[0]
+    else:
+        age_index = age_group_indexes[1]
+    if j == 0 or j == 1:
+        condition = conditions[0][:, :, age_index]
+    else:
+        condition = conditions[1][:, :, age_index]
+
+    condition_var_density = np.empty(n_bins)
+    condition_quartiles = np.percentile(condition, tiles)
+    min_condition = np.min(condition)
+    max_condition = np.max(condition)
+    width_bins = (max_condition - min_condition) / n_bins
+    condition_var_x = np.linspace(min_condition + width_bins / 2, max_condition - width_bins / 2, n_bins)
+    for i in range(n_bins):
+        bin_left = min_condition + i * width_bins
+        bin_right = bin_left + width_bins
+        bin_1 = condition <= bin_right
+        bin_2 = condition >= bin_left
+        bin_where = np.where(bin_1 * bin_2 == 1)
+        condition_var_density[i] = np.shape(bin_where)[1] / total_count
+    X_Y_Spline = make_interp_spline(condition_var_x, condition_var_density)
+    X_ = np.linspace(min_condition, max_condition, 1000)
+    Y_ = X_Y_Spline(X_)
+    for i in range(n_tiles):
+        if i > 0:
+            ax.axvline(condition_quartiles[i], 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
+        left_x = min_condition if i == 0 else condition_quartiles[i]
+        right_x = max_condition if i == n_tiles - 1 else condition_quartiles[i + 1]
+        a = X_ >= left_x
+        b = right_x >= X_
+        bin_where = np.where(a * b == 1)
+        x = X_[bin_where]
+        y = Y_[bin_where]
+        ax.fill_between(x, 0, y, color=colors[i], linewidth=0., alpha=0.3)
+    # ax.legend()
+    # ax.set_xlim(0, 0.45) if tax > 0.01 else ax.set_xlim(0, max_condition)
+    # ax.set_xlabel(condition_label)
+    ax.set_ylabel('Density')
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig(str(tax)+'Intuition wealth distribution.png', dpi=200)
 plt.show()
 # plt.close()
 

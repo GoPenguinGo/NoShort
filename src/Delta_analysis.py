@@ -412,34 +412,31 @@ plt.close()
 # ######## Age of Participants #########
 # ######## and Asset Pricing  ##########
 # ######################################
-# N_paths = 2000
-# phi_fix = 0
-# scenario = scenarios[1]
-# mode_trade = scenario[0]
-# mode_learn = scenario[1]
-# cohort_size_mat = np.tile(cohort_size, (Nc, 1))
-# tau_mat = np.tile(tau, (Nc, 1))
-# cummu_popu = np.cumsum(cohort_size)
-# popu = 0.5
-# cutoff_age_old = np.searchsorted(cummu_popu, 1 - popu)
-# cutoff_age_young = np.searchsorted(cummu_popu, popu)
-# theta_compare = np.empty((N_paths, Nt))
-# Phi_compare = np.empty((N_paths, Nt))
-# Delta_bar_compare = np.empty((N_paths, Nt))
-# P_old_compare = np.empty((N_paths, Nt))
-# P_young_compare = np.empty((N_paths, Nt))
-# P_average_age_compare = np.empty((N_paths, Nt))
-# belief_f_old_compare = np.empty((N_paths, Nt))
-# belief_f_young_compare = np.empty((N_paths, Nt))
-# belief_popu_old_compare = np.empty((N_paths, Nt))
-# belief_popu_young_compare = np.empty((N_paths, Nt))
-# Phi_old_compare = np.empty((N_paths, Nt))
-# Phi_young_compare = np.empty((N_paths, Nt))
-# Wealthshare_old_compare = np.empty((N_paths, Nt))
-# Wealthshare_young_compare = np.empty((N_paths, Nt))
-# # theta_complete = np.empty((N_paths, Nt))
-# # Phi_complete = np.empty((N_paths, Nt))
-# # Delta_bar_complete = np.empty((N_paths, Nt))
+N_paths = 1000
+phi_fix = 0
+scenario = scenarios[1]
+mode_trade = scenario[0]
+mode_learn = scenario[1]
+cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+tau_mat = np.tile(tau, (Nc, 1))
+cummu_popu = np.cumsum(cohort_size)
+# popus = [0.1, 0.5]
+popus = [0.1]
+n_popu = len(popus)
+theta_compare = np.empty((N_paths, n_popu, Nt))
+Phi_compare = np.empty((N_paths, n_popu, Nt))
+Delta_bar_compare = np.empty((N_paths, n_popu, Nt))
+P_old_compare = np.empty((N_paths, n_popu, Nt))
+P_young_compare = np.empty((N_paths, n_popu, Nt))
+P_average_age_compare = np.empty((N_paths, n_popu, Nt))
+belief_f_old_compare = np.empty((N_paths, n_popu, Nt))
+belief_f_young_compare = np.empty((N_paths, n_popu, Nt))
+belief_popu_old_compare = np.empty((N_paths, n_popu, Nt))
+belief_popu_young_compare = np.empty((N_paths, n_popu, Nt))
+Phi_old_compare = np.empty((N_paths, n_popu, Nt))
+Phi_young_compare = np.empty((N_paths, n_popu, Nt))
+Wealthshare_old_compare = np.empty((N_paths, n_popu, Nt))
+Wealthshare_young_compare = np.empty((N_paths, n_popu, Nt))
 for i in range(N_paths):
     print(i)
     dZ_build = np.random.randn(Nt) * np.sqrt(dt)
@@ -467,221 +464,276 @@ for i in range(N_paths):
                     need_f='True',
                     need_Delta='True',
                     need_pi='False',
-                    top=0.05,
-                    old_limit=100,
                     )
     theta_compare[i] = theta
     Phi_compare[i] = f_parti
     Delta_bar_compare[i] = Delta_bar_parti
-    P_old_compare[i] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old], axis=1) / popu
-    P_young_compare[i] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:],
-                                axis=1) / popu
-    Phi_old_compare[i] = np.sum(f[:, :cutoff_age_old] * invest_tracker[:, :cutoff_age_old] * dt, axis=1)
-    Phi_young_compare[i] = np.sum(f[:, cutoff_age_young:] * invest_tracker[:, cutoff_age_young:] * dt, axis=1)
-    Wealthshare_old_compare[i] = np.sum(f[:, :cutoff_age_old] * dt, axis=1)
-    Wealthshare_young_compare[i] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
-    # P_average_age_compare[i] = np.average(tau_mat, axis=1, weights=invest_tracker * cohort_size_mat)
-    belief_f_old_compare[i] = np.average(Delta[:, :cutoff_age_old],
-                                       weights=f[:, :cutoff_age_old] * dt,
-                                       axis=1)
-    belief_f_young_compare[i] = np.average(Delta[:, cutoff_age_young:],
-                                       weights=f[:, cutoff_age_young:] * dt,
-                                       axis=1)
-    belief_popu_old_compare[i] = np.average(Delta[:, :cutoff_age_old],
-                                       weights=cohort_size_mat[:, :cutoff_age_old],
-                                       axis=1)
-    belief_popu_young_compare[i] = np.average(Delta[:, cutoff_age_young:],
-                                       weights=cohort_size_mat[:, cutoff_age_young:],
-                                       axis=1)
-    # (
-    #     r_complete,
-    #     theta_complete_t,
-    #     f_complete,
-    #     Delta_complete,
-    #     pi_complete,
-    #     popu_parti_complete,
-    #     Phi_parti_complete_t,
-    #     Delta_bar_parti_complete_t,
-    #     dR_complete,
-    #     invest_tracker_complete,
-    #     popu_short_complete,
-    #     popu_can_short_complete,
-    #     Phi_can_short_complete,
-    #     Phi_short_complete,
-    # ) = simulate_SI('complete', 'reentry', Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-    #                 phi_fix,
-    #                 Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-    #                 need_f='False',
-    #                 need_Delta='False',
-    #                 need_pi='False',
-    #                 top=0.05,
-    #                 old_limit=100,
-    #                 )
-    # theta_complete[i] = theta_complete_t
-    # Phi_complete[i] = Phi_parti_complete_t
-    # Delta_bar_complete[i] = Delta_bar_parti_complete_t
+    for j, popu in enumerate(popus):
+        # cutoff_age_old = np.searchsorted(cummu_popu, popu)
+        cutoff_age_old_top = np.searchsorted(cummu_popu, popu * 2)
+        cutoff_age_old_below = np.searchsorted(cummu_popu, popu)
+        cutoff_age_young = np.searchsorted(cummu_popu, 1 - popu)
+        total_popu_old = np.sum(cohort_size[cutoff_age_old_below:cutoff_age_old_top])
+        total_popu_young = np.sum(cohort_size[cutoff_age_young:])
+        P_old_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] *
+                                     cohort_size_mat[:, cutoff_age_old_below:cutoff_age_old_top],
+                                  axis=1) / total_popu_old
+        P_young_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_young:] *
+                                       cohort_size_mat[:, cutoff_age_young:],
+                                    axis=1) / total_popu_young
+        Phi_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] *
+                                       invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
+        Phi_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * invest_tracker[:, cutoff_age_young:] * dt, axis=1)
+        Wealthshare_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
+        Wealthshare_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
+        belief_f_old_compare[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+                                             weights=f[:, cutoff_age_old_below:cutoff_age_old_top] * dt,
+                                             axis=1)
+        belief_f_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+                                               weights=f[:, cutoff_age_young:] * dt,
+                                               axis=1)
+        belief_popu_old_compare[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+                                                weights=cohort_size_mat[:, cutoff_age_old_below:cutoff_age_old_top],
+                                                axis=1)
+        belief_popu_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+                                                  weights=cohort_size_mat[:, cutoff_age_young:],
+                                                  axis=1)
+        # total_popu_old = np.sum(cohort_size[:cutoff_age_old])
+        # total_popu_young = np.sum(cohort_size[cutoff_age_young:])
+        # P_old_compare[i, j] = np.sum(invest_tracker[:, :cutoff_age_old] * cohort_size_mat[:, :cutoff_age_old],
+        #                           axis=1) / popu
+        # P_young_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_young:] * cohort_size_mat[:, cutoff_age_young:],
+        #                             axis=1) / popu
+        # Phi_old_compare[i, j] = np.sum(f[:, :cutoff_age_old] * invest_tracker[:, :cutoff_age_old] * dt, axis=1)
+        # Phi_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * invest_tracker[:, cutoff_age_young:] * dt, axis=1)
+        # Wealthshare_old_compare[i, j] = np.sum(f[:, :cutoff_age_old] * dt, axis=1)
+        # Wealthshare_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
+        # belief_f_old_compare[i, j] = np.average(Delta[:, :cutoff_age_old],
+        #                                      weights=f[:, :cutoff_age_old] * dt,
+        #                                      axis=1)
+        # belief_f_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+        #                                        weights=f[:, cutoff_age_young:] * dt,
+        #                                        axis=1)
+        # belief_popu_old_compare[i, j] = np.average(Delta[:, :cutoff_age_old],
+        #                                         weights=cohort_size_mat[:, :cutoff_age_old],
+        #                                         axis=1)
+        # belief_popu_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+        #                                           weights=cohort_size_mat[:, cutoff_age_young:],
+        #                                           axis=1)
 
-# y_variables = [theta_compare, Phi_compare, Delta_bar_compare]
-# x_variables = [P_old_compare, P_young_compare, P_average_age_compare, belief_gap_compare]
-# y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$', r'Estimation error of participants $\bar{\Delta}$']
-# x_varnames = ['Participation rate, old', 'Participation rate, young', 'Average age of participants', r'$\Delta_{s,t}$, old - young']
-# for i, var_y in enumerate(y_variables):
-#     for j, var_x in enumerate(x_variables):
-#         # y = np.mean(var_y, axis=1)
-#         # x = np.mean(var_x, axis=1)
-#         # y = np.mean(var_y, axis=0)
-#         # x = np.mean(var_x, axis=0)
-#         y = var_y
-#         x = var_x
-#         fig, ax = plt.subplots(figsize=(5, 5))
-#         ax.scatter(x, y, s=0.1, alpha=0.5)
-#         ax.set_xlabel(x_varnames[j])
-#         ax.set_ylabel(y_varnames[i])
-#         fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-#         plt.savefig('Intuition ' + str(i) + str(j) +'.png', dpi=200)
-#         plt.show()
-#         plt.close()
 
-# max_gap = np.max(belief_gap_compare)
-# min_gap = np.min(belief_gap_compare)
-# n_bins = 40
-# width_bins = (max_gap - min_gap) / n_bins
-# # histogram:
-# counts, bins = np.histogram(belief_gap_compare, bins=n_bins)
-# total_counts = np.sum(counts)
-# plt.hist(bins[:-1], bins, weights=counts / total_counts)
-# plt.grid(True)
-# # plt.savefig('Histogram_belief_gap' + str(N_paths) + '.png', dpi=200)
-# plt.show()
-
-# y on x
-# parti_gap = P_old_compare - P_young_compare
-# Phi_gap = Phi_old_compare - Phi_young_compare
-# y_variables = [theta_compare, Phi_compare, Delta_bar_compare, parti_gap]
-# y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
-# x_var = belief_gap_compare
-# y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$',
-#               r'Estimation error of participants $\bar{\Delta}$', 'Diff in participation rate']
-# x_varname = r'$\Delta_{s,t}$, old - young'
-# x = np.linspace(min_gap, max_gap, n_bins)
-# y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$',
-#               r'Estimation error of participants $\bar{\Delta}$', 'Diff in participation rate']
-# x_varname = r'$\Delta_{s,t}$, old - young'
-# for i, var_y in enumerate(y_variables):
-#     y = np.empty((n_bins))
-#     if i < 3:
-#         y_complete_variable = y_complete_variables[i]
-#         y_complete = np.empty((n_bins))
-#         for j in range(n_bins):
-#             bin_left = min_gap + j * width_bins
-#             bin_right = bin_left + width_bins
-#             bin_1 = x_var <= bin_right
-#             bin_2 = x_var >= bin_left
-#             bin_where = np.where(bin_1 * bin_2 == 1)
-#             y[j] = np.mean(var_y[bin_where])
-#             y_complete[j] = np.mean(y_complete_variable[bin_where])
-#         fig, ax = plt.subplots(figsize=(5, 5))
-#         X_Y_Spline = make_interp_spline(x, y)
-#         X_Y_comp_Spline = make_interp_spline(x, y_complete)
-#         # Returns evenly spaced numbers
-#         # over a specified interval.
-#         X_ = np.linspace(x.min(), x.max(), 100)
-#         Y_ = X_Y_Spline(X_)
-#         Y_comp = X_Y_comp_Spline(X_)
-#         ax.plot(X_, Y_, color=colors_short[0], label='Reentry', linewidth=0.6)
-#         ax.plot(X_, Y_comp, color=colors_short[1], label='Complete', linewidth=0.6)
-#         if i == 0:
-#             ax.axhline(sigma_Y, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
-#             ax.axvline(0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
-#     else:
-#         for j in range(n_bins):
-#             bin_left = min_gap + j * width_bins
-#             bin_right = bin_left + width_bins
-#             bin_1 = x_var <= bin_right
-#             bin_2 = x_var >= bin_left
-#             bin_where = np.where(bin_1 * bin_2 == 1)
-#             y[j] = np.mean(var_y[bin_where])
-#         fig, ax = plt.subplots(figsize=(5, 5))
-#         X_Y_Spline = make_interp_spline(x, y)
-#         # Returns evenly spaced numbers
-#         # over a specified interval.
-#         X_ = np.linspace(x.min(), x.max(), 100)
-#         Y_ = X_Y_Spline(X_)
-#         ax.plot(X_, Y_, color=colors_short[0], label='Reentry', linewidth=0.6)
-#         Y0 = X_Y_Spline(0)
-#         ax.axhline(Y0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
-#         ax.axvline(0, 0.05, 0.95, linestyle='dotted', color='black', linewidth=0.4)
-#     ax.set_title(y_varnames[i])
-#     ax.set_xlabel(x_varname)
-#     ax.set_ylabel(y_varnames[i])
-#     ax.legend()
-#     fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-#     # plt.savefig('Intuition ' + str(i) + str(N_paths) + '.png', dpi=200)
-#     plt.show()
-#     # plt.close()
 
 # construct the condition:
-n_tiles = 5
-n_bins = 10
+n_tiles = 4
+n_bins = 30
+popu_index = 0
 belief_f_gap_compare = belief_f_old_compare - belief_f_young_compare
 belief_popu_gap_compare = belief_popu_old_compare - belief_popu_young_compare
+cutoff_belief = -theta_compare
+belief_f_distance_young = belief_f_young_compare - cutoff_belief
+belief_f_distance_old = belief_f_old_compare - cutoff_belief
+belief_popu_distance_young = belief_popu_young_compare - cutoff_belief
+belief_popu_distance_old = belief_popu_old_compare - cutoff_belief
 parti_gap = P_old_compare - P_young_compare
 Phi_gap = Phi_old_compare - Phi_young_compare
 wealth_gap = Wealthshare_old_compare - Wealthshare_young_compare
-y_variables = [theta_compare, Phi_compare, Delta_bar_compare, parti_gap]
+# y_variables = [parti_gap[:, popu_index, :], belief_f_distance_young[:, popu_index, :], belief_f_distance_old[:, popu_index, :]
 # y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
-x_mat = belief_popu_gap_compare
-y_varnames = [r'Market price of risk $\theta$', r'Consumption share of participants $\Phi$',
-              r'Estimation error of participants $\bar{\Delta}$', 'Participation rate, old - young']
-x_varname = r'$\Delta_{s,t}$, old - young'
-# condition_var = Wealthshare_young_compare
+# x_mat = belief_f_gap_compare[:, popu_index, :]
+# x_varname = r'Wealth weighted $\Delta_{s,t}$, old minus young'
+x_mat = belief_popu_gap_compare[:, popu_index, :]
+x_varname = r'Average estimation error $\Delta_{s,t}$, old minus young'
+# x_mat = wealth_gap[:, popu_index, :]
+# x_varname =  r'Wealth share old minus young'
+x_range = 0.25
+x_range_left = np.percentile(x_mat, 5)
+x_range_right = np.percentile(x_mat, 95)
+width_bins = (x_range_right - x_range_left) / n_bins
+a = x_range_left <= x_mat
+b = x_mat <= x_range_right
+where_within = np.where(a * b == 1)  # winsorize
+x_mat_within = x_mat[where_within]
+total_count = np.shape(where_within)[1]
+# y_varnames = ['Participation rate, old - young', 'Distance to cutoff belief, young', 'Distance to cutoff belief, old']
+# condition_var = Wealthshare_young_compare[:, popu_index, :]
 # condition_label = r'Wealth share young, quartile '
-condition_var = Wealthshare_young_compare
-condition_label = r'$\Phi$ young, quartile '
-# condition_var = Phi_gap
+# condition_var = Phi_gap[:, popu_index, :]
 # condition_label = r'$\Phi$ old-young, quartile '
-# condition_var = wealth_gap
-# condition_label = r'Wealth share old-young, quartile '
-condition = np.percentile(condition_var, np.arange(0, 101, (100/n_tiles)))
-y = np.empty((n_tiles, n_bins))
-for l, y_mat in enumerate(y_variables):
-    y_varname = y_varnames[l]
-    fig, ax = plt.subplots(figsize=(5, 5))
-    for i in range(n_tiles):
-        below = condition[i]
-        above = condition[i + 1]
-        a = below < condition_var
-        b = condition_var < above
-        data_where = np.where(a * b == 1)
-        x_var = x_mat[data_where]
-        y_var = y_mat[data_where]
-        min_gap = np.min(x_var)
-        max_gap = np.max(x_var)
-        width_bins = (max_gap - min_gap) / n_bins
-        for j in range(n_bins):
-            bin_left = min_gap + j * width_bins
-            bin_right = bin_left + width_bins
-            bin_1 = x_var <= bin_right
-            bin_2 = x_var >= bin_left
-            bin_where = np.where(bin_1 * bin_2 == 1)
-            y[i, j] = np.mean(y_var[bin_where])
-        x = np.linspace(min_gap + width_bins / 2, max_gap - width_bins / 2, n_bins)
-        y_i = y[i]
-        X_Y_Spline = make_interp_spline(x, y_i)
-        X_ = np.linspace(x.min(), x.max(), 100)
-        Y_ = X_Y_Spline(X_)
-        ax.plot(X_, Y_, linewidth=0.6, color=colors[i], label=condition_label + str(i))
-    ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray')
-    ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray')
-    ax.legend()
-    # ax.set_xlim(-0.2, 0.2)
-    ax.set_xlabel(x_varname)
-    ax.set_ylabel(y_varname)
-    fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-    # plt.savefig('Intuition dixiles.png', dpi=200)
-    plt.show()
-    # plt.close()
+condition_var = wealth_gap[:, popu_index, :]
+condition_label = r'Wealth share, old minus young'
+# condition_var = belief_f_gap_compare[:, popu_index, :]
+# condition_label = r'Wealth weighted $\Delta_{s,t}$, old - young, Quartile'
 
+condition_var_within = condition_var[where_within]
+condition = np.percentile(condition_var_within, np.arange(0, 101, (100/n_tiles)))
+# condition = (np.max(condition_var_within) - np.min(condition_var_within)) \
+#             * np.arange(0, 101, (100/n_tiles)) / 100 + np.min(condition_var_within)
+
+
+y = np.empty((n_tiles, n_bins, 3))
+x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
+X_ = np.linspace(x_range_left, x_range_right, 50)
+y_mat_within = parti_gap[:, popu_index, :][where_within]
+y_varname = 'Participation rate, old minus young'
+fig, ax = plt.subplots(figsize=(10, 8))
+for i in range(n_tiles):
+    below = condition[i]
+    above = condition[i + 1]
+    a = below < condition_var_within
+    b = condition_var_within < above
+    data_where = np.where(a * b == 1)
+    x_var = x_mat_within[data_where]
+    y_var = y_mat_within[data_where]
+    for n in range(n_bins):
+        bin_left = x_range_left + n * width_bins
+        bin_right = bin_left + width_bins
+        bin_1 = x_var <= bin_right
+        bin_2 = x_var >= bin_left
+        bin_where = np.where(bin_1 * bin_2 == 1)
+        y[i, n, 0] = np.median(y_var[bin_where])
+        y[i, n, 1] = np.percentile(y_var[bin_where], 25)
+        y[i, n, 2] = np.percentile(y_var[bin_where], 75)
+    Y_ = np.empty((3, 50))
+    for m in range(3):
+        y_i = y[i, :, m]
+        X_Y_Spline = make_interp_spline(x, y_i)
+        Y_[m] = X_Y_Spline(X_)
+    # ax.plot(x, y[i, :, 0], linewidth=0.6, color=colors[i], label=condition_label + str(i + 1))
+    # ax.fill_between(x, y[i, :, 1], y[i, :, 2], color=colors[i], linewidth=0., alpha=0.3)
+    ax.plot(X_, Y_[0], linewidth=0.6, color=colors[i], label=condition_label + ', Quartile ' + str(i + 1))
+    ax.fill_between(X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.3)
+ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+ax.legend(loc='upper left')
+ax.set_xlabel(x_varname)
+ax.set_ylabel(y_varname)
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+plt.savefig(str(tax)+'Intuition'+ x_varname[:4] + 'belief two sorts.png', dpi=200)
+# plt.savefig('85-115old'+str(tax)+'Intuition'+ x_varname[:4] + 'belief two sorts.png', dpi=200)
+plt.show()
+# plt.close()
+
+
+# distribution of wealth gap given the belief gap in [-x_range, x_range]:
+n_bins = 30
+fig, axes = plt.subplots(ncols=2, sharey = 'all', figsize=(10, 4))
+for j, ax in enumerate(axes):
+    if j == 0:
+        condition_var_density = np.empty(n_bins)
+        min_condition = np.min(condition_var_within)
+        max_condition = np.max(condition_var_within)
+        width_bins = (max_condition - min_condition) / n_bins
+        condition_var_x = np.linspace(min_condition + width_bins / 2, max_condition - width_bins / 2, n_bins)
+        for i in range(n_bins):
+            bin_left = min_condition + i * width_bins
+            bin_right = bin_left + width_bins
+            bin_1 = condition_var_within <= bin_right
+            bin_2 = condition_var_within >= bin_left
+            bin_where = np.where(bin_1 * bin_2 == 1)
+            condition_var_density[i] = np.shape(bin_where)[1] / total_count
+        X_Y_Spline = make_interp_spline(condition_var_x, condition_var_density)
+        X_ = np.linspace(min_condition, max_condition, 1000)
+        Y_ = X_Y_Spline(X_)
+        for i in range(n_tiles):
+            if i > 0:
+                ax.axvline(condition[i], 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
+            left_x = min_condition if i == 0 else condition[i]
+            right_x = max_condition if i == n_tiles - 1 else condition[i + 1]
+            a = X_ >= left_x
+            b = right_x >= X_
+            bin_where = np.where(a * b == 1)
+            x = X_[bin_where]
+            y = Y_[bin_where]
+            ax.fill_between(x, 0, y, color=colors[i], linewidth=0., alpha=0.3, label='Quartile ' + str(i + 1))
+        ax.legend(loc='upper left')
+        ax.set_xlim(0, 0.45) if tax > 0.01 else ax.set_xlim(0, max_condition)
+        ax.set_xlabel(condition_label)
+        ax.set_ylabel('Density')
+    else:
+        width_bins = (x_range_right - x_range_left) / n_bins
+        y = np.empty((n_tiles, n_bins))
+        x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
+        y_bottom = 0
+        for i in range(n_tiles):
+            below = condition[i]
+            above = condition[i + 1]
+            a = below < condition_var_within
+            b = condition_var_within < above
+            data_where = np.where(a * b == 1)
+            x_var = x_mat_within[data_where]
+            # min_gap = np.min(x_var)
+            # max_gap = np.max(x_var)
+            # width_bins = (max_gap - min_gap) / n_bins
+            for n in range(n_bins):
+                # bin_left = min_gap + n * width_bins
+                # bin_right = bin_left + width_bins
+                bin_left = x_range_left + n * width_bins
+                bin_right = bin_left + width_bins
+                bin_1 = x_var <= bin_right
+                bin_2 = x_var >= bin_left
+                bin_where = np.where(bin_1 * bin_2 == 1)
+                y[i, n] = np.shape(bin_where)[1] / total_count
+            X_ = np.linspace(x_range_left, x_range_right, 100)
+            X_Y_Spline = make_interp_spline(x, y[i])
+            Y_ = X_Y_Spline(X_)
+            y_top = y_bottom + Y_
+            ax.fill_between(X_, y_top, y_bottom, linewidth=0., color=colors[i],
+                            alpha=0.3)
+            y_bottom = y_top
+        # ax.legend(loc='upper right')
+        ax.axvline(0, 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
+        # ax.set_ylim(top = 0.08)
+        ax.set_xlabel(x_varname)
+        # ax.set_ylabel('Density')
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+plt.savefig(str(tax)+'Intuition wealth distribution.png', dpi=200)
+# plt.savefig('85-115old'+str(tax)+'Intuition wealth distribution.png', dpi=200)
+plt.show()
+# plt.close()
+
+# # distance to cutoff belief over wealth gap
+# n_bins = 50
+# # y_var = [belief_f_distance_young[:, popu_index, :], belief_f_distance_old[:, popu_index, :]]
+# y_var = [belief_popu_distance_young[:, popu_index, :], belief_popu_distance_old[:, popu_index, :]]
+# x_var = [Wealthshare_young_compare[:, popu_index, :], Wealthshare_old_compare[:, popu_index, :]]
+# # x_var = [wealth_gap[:, popu_index, :], -wealth_gap[:, popu_index, :]]
+# fig, axes = plt.subplots(ncols=2, sharey='all', figsize=(10, 4))
+# for j, ax in enumerate(axes):
+#     y_mat = y_var[j][where_within]
+#     x_mat = x_var[j][where_within]
+#     x_min = np.min(x_mat)
+#     x_max = np.max(x_mat)
+#     width_bins = (x_max - x_min) / n_bins
+#     y = np.empty((n_bins, 3))
+#     for i in range(n_bins):
+#         bin_left = x_min + i * width_bins
+#         bin_right = bin_left + width_bins
+#         bin_1 = x_mat <= bin_right
+#         bin_2 = x_mat >= bin_left
+#         bin_where = np.where(bin_1 * bin_2 == 1)
+#         y[i, 0] = np.median(y_mat[bin_where])
+#         y[i, 1] = np.percentile(y_mat[bin_where], 5)
+#         y[i, 2] = np.percentile(y_mat[bin_where], 95)
+#     x = np.linspace(x_min + width_bins / 2, x_max - width_bins / 2, n_bins)
+#     # X_ = np.linspace(x_min, x_max, 50)
+#     # Y_ = np.empty((3, 50))
+#     # for m in range(3):
+#     #     y_i = y[:, m]
+#     #     X_Y_Spline = make_interp_spline(x, y_i)
+#     #     Y_[m] = X_Y_Spline(X_)
+#     # ax.plot(X_, Y_[0], linewidth=0.6)
+#     # ax.fill_between(X_, Y_[1], Y_[2], linewidth=0., alpha=0.3)
+#     ax.plot(x, y[:, 0], linewidth=0.6)
+#     ax.fill_between(x, y[:, 1], y[:, 2], linewidth=0., alpha=0.3)
+#     # ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+#     ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+#     # ax.legend(loc='upper left')
+#     # ax.set_xlabel(x_varname)
+#     # ax.set_ylabel(y_varname)
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# # plt.savefig(str(tax)+'Intuition wealth belief two sorts.png', dpi=200)
+# plt.show()
+# # plt.close()
 
 
 # # ######################################
@@ -787,7 +839,7 @@ for l, y_mat in enumerate(y_variables):
 # ## dynamic, asymmetric impact of the young and the old on the cutoff belief between N and P
 # # sort on recent realized shocks, fix the parameters'
 N_paths = 2000
-t_gaps = [3, 6, 12]  # time span for accumulated shocks
+t_gaps = [3]  # time span for accumulated shocks
 N_t_gaps = len(t_gaps)
 scenario_index = 2  # reentry
 phi_fix = 0
@@ -871,63 +923,80 @@ for j in range(N_t_gaps):
     belief_popu_old_reshape = belief_popu_old[:, t_gap_vector[:-1]]
     belief_popu_young_reshape = belief_popu_young[:, t_gap_vector[:-1]]
     # construct the condition:
-    n_bins = 10
+    n_bins = 20
     n_tiles = 4
-    y_mat = parti_old_change
+    n_bins_left = int(n_bins/10)
+    n_bins_right = n_bins - n_bins_left
+    y_mat_all = [parti_old_change, parti_young_change]
     x_mat = Z_reshape
-    y_varname = 'Change in participation rate, old'  #, 'Change in participation rate, young']
-    x_varname = 'realized shocks, ' + str(t_gap) + ' months'
-    condition_vars = [wealthshare_old_reshape, wealthshare_young_reshape]
-    condition_labels = [r'Overall ', r'Wealth share young, quartile ', r'Wealth share old, quartile ']
-    for k in range(3):
-        if k == 0:
-            condition_var = condition_vars[0]
-            condition = [np.min(condition_var), np.max(condition_var)]
-            n_condition = 1
-        else:
-            condition_var = condition_vars[k - 1]
-            condition = np.percentile(condition_var, np.arange(0, 101, (100/n_tiles)))
-            n_condition = n_tiles
-        y = np.empty((n_condition, n_bins, 3))
+    y_varname = [r'Change in participation rate, oldest $10\%$',  r'Change in participation rate, youngest $10\%$']
+    x_varname = r'Realized shocks, $z^{SI}_{t+\frac{1}{4}}-z^{SI}_t$'
+    column_name = ['Overall', r'Conditional on wealth share quartiles at $t$']
+    # condition_vars = [wealthshare_old_reshape, wealthshare_young_reshape]
+    # condition_labels = [[r'Overall', r'Wealth share old, quartile '], [r'Overall', r'Wealth share young, quartile ']]
+    condition_vars = [wealthshare_young_reshape, wealthshare_young_reshape]
+    condition_labels = [[r'Overall', r'Wealth share young, quartile '], [r'Overall', r'Wealth share young, quartile ']]
+    fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
+    for k1, axes_row in enumerate(axes):
+        condition_var = condition_vars[k1]
+        y_mat = y_mat_all[k1]
+        for k2, ax in enumerate(axes_row):
+            if k2 == 0:
+                condition = [np.min(condition_var), np.max(condition_var)]
+                n_condition = 1
+            else:
+                condition = np.percentile(condition_var, np.arange(0, 101, (100 / n_tiles)))
+                n_condition = n_tiles
+            y = np.empty((n_condition, n_bins_right - n_bins_left, 3))
 
-        fig, ax = plt.subplots(figsize=(5, 5))
-        for i in range(n_condition):
-            below = condition[i]
-            above = condition[i + 1]
-            a = below < condition_var
-            b = condition_var < above
-            data_where = np.where(a * b == 1)
-            x_var = x_mat[data_where]
-            y_var = y_mat[data_where]
-            min_gap = np.min(x_var)
-            max_gap = np.max(x_var)
-            width_bins = (max_gap - min_gap) / n_bins
-            for l in range(n_bins):
-                bin_left = min_gap + l * width_bins
-                bin_right = bin_left + width_bins
-                bin_1 = x_var <= bin_right
-                bin_2 = x_var >= bin_left
-                bin_where = np.where(bin_1 * bin_2 == 1)
-                y[i, l, 0] = np.median(y_var[bin_where])
-                y[i, l, 1] = np.percentile(y_var[bin_where], 25)
-                y[i, l, 2] = np.percentile(y_var[bin_where], 75)
-            x = np.linspace(min_gap + width_bins / 2, max_gap - width_bins / 2, n_bins)
-            X_ = np.linspace(-1, 1, 20)
-            Y_ = np.empty((3, 20))
-            for m in range(3):
-                y_i = y[i, :, m]
-                X_Y_Spline = make_interp_spline(x, y_i)
-                Y_[m] = X_Y_Spline(X_)
-            label_condi = condition_labels[k] + str(i+1) if k > 0 else condition_labels[k]
-            ax.plot(X_, Y_[0], linewidth=0.8, color=colors[i], label=label_condi)
-            ax.fill_between(X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.2)
-        # ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray')
-        # ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray')
-        ax.legend()
-        # ax.set_xlim(-1, 1)
-        ax.set_xlabel(x_varname)
-        ax.set_ylabel(y_varname)
-        fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        # plt.savefig('Intuition dixiles.png', dpi=200)
-        plt.show()
-        # plt.close()
+            for i in range(n_condition):
+                below = condition[i]
+                above = condition[i + 1]
+                a = below < condition_var
+                b = condition_var < above
+                data_where = np.where(a * b == 1)
+                x_var = x_mat[data_where]
+                y_var = y_mat[data_where]
+                min_gap = np.min(x_var)
+                max_gap = np.max(x_var)
+                width_bins = (max_gap - min_gap) / n_bins
+                for l in range(n_bins_right - n_bins_left):
+                    bin_left = min_gap + (l + n_bins_left) * width_bins
+                    bin_right = bin_left + width_bins
+                    bin_1 = x_var <= bin_right
+                    bin_2 = x_var >= bin_left
+                    bin_where = np.where(bin_1 * bin_2 == 1)
+                    y[i, l, 0] = np.median(y_var[bin_where])
+                    y[i, l, 1] = np.percentile(y_var[bin_where], 25)
+                    y[i, l, 2] = np.percentile(y_var[bin_where], 75)
+                x = np.linspace(min_gap + n_bins_left * width_bins + width_bins / 2,
+                                max_gap - n_bins_left * width_bins - width_bins / 2, n_bins_right - n_bins_left)
+                X_ = np.linspace(-1, 1, 30)
+                Y_ = np.empty((3, 30))
+                for m in range(3):
+                    y_i = y[i, :, m]
+                    X_Y_Spline = make_interp_spline(x, y_i)
+                    Y_[m] = X_Y_Spline(X_)
+                label_condi = condition_labels[k1][k2] + str(i + 1) if k2 > 0 else condition_labels[k1][k2]
+                ax.plot(X_, Y_[0], linewidth=0.8, color=colors[i], label=label_condi)
+                if k2 == 0:
+                    ax.fill_between(
+                        X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.2,
+                        label=r'$25^{th}$ to $75^{th}$ percentile')
+                else:
+                    ax.fill_between(
+                        X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.2)
+            ax.axvline(0, 0.05, 0.95, linewidth=0.4,  linestyle='dashed', color='gray')
+            ax.axhline(0, 0.05, 0.95, linewidth=0.4, linestyle='dashed', color='gray')
+            ax.legend()
+            # ax.set_xlim(-1, 1)
+            ax.set_xlabel(x_varname)
+            ax.set_ylabel(y_varname[k1])
+            ax.set_title(column_name[k2])
+            fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+            # plt.savefig('Intuition quartiles ' + str(t_gap) + ' months.png', dpi=200)
+            plt.show()
+            # plt.close()
+
+
+
