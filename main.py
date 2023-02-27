@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn,\
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, t, red_labels, yellow_labels, cohort_labels, \
+    dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short , colors_short2, PN_labels, age_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
@@ -121,9 +121,6 @@ age_cutoff = cutoffs[2]
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
-dZ_build = dZ_build_matrix[0]
-dZ_SI_build = dZ_SI_build_matrix[0]  # fix the shocks at the buildup stage
-
 theta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
 popu_parti_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
 market_view_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
@@ -141,11 +138,11 @@ for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
     mode_learn = scenario[1]
     for i in range(2):
-        dZ = Z_Y_cases[i]
+        dZ = dZ_Y_cases[i]
         log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
         log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
         for j in range(2):
-            dZ_SI = Z_SI_cases[j]
+            dZ_SI = dZ_SI_cases[j]
             for k, phi in enumerate(phi_vector_short):
                 (
                     r,
@@ -164,7 +161,7 @@ for g, scenario in enumerate(scenarios_short):
                     Phi_short,
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
                                 phi,
-                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
                                 need_f='True',
                                 need_Delta='True',
                                 need_pi='True',

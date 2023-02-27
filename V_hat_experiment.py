@@ -16,75 +16,93 @@ T_hat_dimension = len(T_hats)
 # N = 30  # can choose a smaller number than Mpaths as the number of paths
 
 n_scenarios = 1
-a_sce = 2
+a_sce = 0
 N = 500
 N_scenarios = 3
 
+phi = 0.4
+
 # Generate matrix to store the results
-r_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
-theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-# popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-Delta_bar_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-# belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
-Delta_popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
-variance_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 4))
+r_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))  # for mean and std
+theta_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+Phi_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+# popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+Delta_bar_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+popu_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
+# belief_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
+wealthshare_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
+Delta_popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4))
+# r_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
+# theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# Phi_parti_1_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# # popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# Delta_bar_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+# # belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+# wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+# Delta_popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+# variance_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 4))
 
 # write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
     print(l)
-    dZ = dZ_matrix[l]
-    dZ_build = dZ_build_matrix[l]
-    dZ_SI = dZ_SI_matrix[l]
-    dZ_SI_build = dZ_SI_build_matrix[l]
+    dZ = -dZ_matrix[l]
+    dZ_build = -dZ_build_matrix[l]
+    dZ_SI = -dZ_SI_matrix[l]
+    dZ_SI_build = -dZ_SI_build_matrix[l]
+    # dZ = dZ_matrix[l]
+    # dZ_build = dZ_build_matrix[l]
+    # dZ_SI = dZ_SI_matrix[l]
+    # dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
     for m in range(n_scenarios):
         scenario = scenarios[m+a_sce]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
-        for n, phi_try in enumerate(phi_vector):
-            for o, T_hat_try in enumerate(T_hats):
-                Npre_try = int(Npres[o])
-                Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
-                (
-                    r,
-                    theta,
-                    # popu_parti,
-                    Delta_bar_parti,
-                    Phi_parti,
-                    Phi_parti_1,
-                    popu_age,
-                    # belief_age,
-                    wealthshare_age,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                    variances,
-                    Delta_popu_parti,
-                ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                          Vhat_try,
-                                          mu_Y, sigma_Y, sigma_S, tax, beta,
-                                          phi_try,
-                                          Npre_try,
-                                          Ninit,
-                                          T_hat_try,
-                                          dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size, top, old_limit, cutoffs, n_age_groups,
-                                          )
-                r_matrix[l, m, n, o] = r
-                theta_matrix[l, m, n, o] = theta
-                # popu_parti_matrix[l, m, n, o] = popu_parti
-                Delta_bar_parti_matrix[l, m, n, o] = Delta_bar_parti
-                Phi_parti_matrix[l, m, n, o] = Phi_parti
-                Phi_parti_1_matrix[l, m, n, o] = Phi_parti_1
-                popu_age_matrix[l, m, n, o] = popu_age
-                # belief_age_matrix[l, m, n, o] = belief_age
-                wealthshare_age_matrix[l, m, n, o] = wealthshare_age
-                Delta_popu_parti_matrix[l, m, n, o] = Delta_popu_parti
-                variance_matrix[l, m, n, o] = variances
+        for o, T_hat_try in enumerate(T_hats):
+            Npre_try = int(Npres[o])
+            Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
+            (
+                r,
+                theta,
+                # popu_parti,
+                Delta_bar_parti,
+                Phi_parti,
+                Phi_parti_1,
+                popu_age,
+                # belief_age,
+                wealthshare_age,
+                popu_can_short,
+                popu_short,
+                Phi_can_short,
+                Phi_short,
+                variances,
+                Delta_popu_parti,
+            ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                      Vhat_try,
+                                      mu_Y, sigma_Y, sigma_S, tax, beta,
+                                      phi,
+                                      Npre_try,
+                                      Ninit,
+                                      T_hat_try,
+                                      dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size, top, old_limit, cutoffs,
+                                      n_age_groups,
+                                      )
+            r_matrix[l, m, o] = r
+            theta_matrix[l, m, o] = theta
+            # popu_parti_matrix[l, m, o] = popu_parti
+            Delta_bar_parti_matrix[l, m, o] = Delta_bar_parti
+            Phi_parti_matrix[l, m, o] = Phi_parti
+            Phi_parti_1_matrix[l, m, o] = Phi_parti_1
+            popu_age_matrix[l, m, o] = popu_age
+            # belief_age_matrix[l, m, o] = belief_age
+            wealthshare_age_matrix[l, m, o] = wealthshare_age
+            Delta_popu_parti_matrix[l, m, o] = Delta_popu_parti
+            variance_matrix[l, m, o] = variances
+
     print(time.time() - time_s)
 
 

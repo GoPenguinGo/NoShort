@@ -83,14 +83,26 @@ age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <=
 
 
 # todo: can endogenize
+# dZ_mat = np.reshape(np.random.randn(1000 * 6000), (1000, -1)) * np.sqrt(dt)
+# dZ_SI_mat = np.reshape(np.random.randn(1000 * 6000), (1000, -1)) * np.sqrt(dt)
+# dZ_build_mat = np.reshape(np.random.randn(1000 * 5999), (1000, -1)) * np.sqrt(dt)
+# dZ_SI_build_mat = np.reshape(np.random.randn(1000 * 5999), (1000, -1)) * np.sqrt(dt)
+# np.save('dZ_matrix', dZ_mat)
+# np.save('dZ_SI_matrix', dZ_SI_mat)
+# np.save('dZ_build_matrix', dZ_build_mat)
+# np.save('dZ_SI_build_matrix', dZ_SI_build_mat)
+
+
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
 dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
 dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
 
 # the shocks in the time-series
-Z_Y_cases = np.load('Z_Y_cases.npy')
-Z_SI_cases = np.load('Z_SI_cases.npy')
+dZ_build_case = np.load('dZ_build_case.npy')
+dZ_SI_build_case = np.load('dZ_SI_build_case.npy')
+dZ_Y_cases = np.load('Z_Y_cases.npy')
+dZ_SI_cases = np.load('Z_SI_cases.npy')
 
 top = 0.05
 old_limit = 100
