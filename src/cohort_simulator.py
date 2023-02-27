@@ -607,7 +607,8 @@ def simulate_cohorts_mean_vola(
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
-    for i in tqdm(range(Nt)):
+    # for i in tqdm(range(Nt)):
+    for i in tqdm(range(keep_when)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
 
@@ -734,10 +735,13 @@ def simulate_cohorts_mean_vola(
                 # age_t = np.sum(cohort_size * tau * invest_tracker)
                 # n_parti_t = np.sum(invest_tracker) / Nc
                 Delta_popu_parti_t = np.sum(Delta_s_t * invest_tracker * cohort_size) / popu_parti_t
-                var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
-                var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
-                var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
-                var_Delta_indiv_parti_t = weighted_variance(np.nonzero(Delta_s_t * invest_tracker), np.nonzero(cohort_size * invest_tracker))
+                var_cons_cohort_parti_t = np.var(invest_fst[np.nonzero(invest_fst)])
+                indiv_fst = invest_fst / cohort_size
+                var_cons_indiv_parti_t = np.var(indiv_fst[np.nonzero(indiv_fst)])
+                Delta_parti = Delta_s_t * invest_tracker
+                cohort_size_parti = cohort_size * invest_tracker
+                var_Delta_cohort_parti_t = np.var(Delta_parti[np.nonzero(Delta_parti)])
+                var_Delta_indiv_parti_t = weighted_variance(Delta_parti[np.nonzero(Delta_parti)], cohort_size_parti[np.nonzero(invest_tracker)])
 
 
         elif mode_trade == 'complete':
@@ -881,10 +885,13 @@ def simulate_cohorts_mean_vola(
                 f_parti_t = np.sum(invest_fst)
                 Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
                 Delta_popu_parti_t = np.sum(Delta_s_t * invest_tracker * cohort_size) / popu_parti_t
-                var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
-                var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
-                var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
-                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), np.nonzero(cohort_size * invest_tracker))
+                var_cons_cohort_parti_t = np.var(invest_fst[np.nonzero(invest_fst)])
+                indiv_fst = invest_fst / cohort_size
+                var_cons_indiv_parti_t = np.var(indiv_fst[np.nonzero(indiv_fst)])
+                Delta_parti = Delta_s_t * invest_tracker
+                cohort_size_parti = cohort_size * invest_tracker
+                var_Delta_cohort_parti_t = np.var(Delta_parti[np.nonzero(Delta_parti)])
+                var_Delta_indiv_parti_t = weighted_variance(Delta_parti[np.nonzero(Delta_parti)], cohort_size_parti[np.nonzero(invest_tracker)])
 
                 short = pi_st < 0
                 # age_t = np.sum(cohort_size * tau * invest_tracker)
