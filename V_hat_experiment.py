@@ -57,6 +57,10 @@ for l in range(N):
                     popu_age,
                     # belief_age,
                     wealthshare_age,
+                    popu_can_short,
+                    popu_short,
+                    Phi_can_short,
+                    Phi_short,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
                                           Vhat_try,
                                           mu_Y, sigma_Y, sigma_S, tax, beta,
@@ -89,7 +93,7 @@ type_list = ['mean', 'vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 for i, var in enumerate(var_list):
-    np.save(var_name_list[i] + str(a_sce), var[:200])
+    np.save(var_name_list[i] + str(a_sce), var)
 
 
 

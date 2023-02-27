@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from src.stats import post_var, fadingmemo, dDelta_st_calculator
+from src.stats import post_var, fadingmemo, dDelta_st_calculator, weighted_variance
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 from numba import jit
@@ -519,6 +519,7 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -577,20 +578,22 @@ def simulate_cohorts_mean_vola(
     #invest_mat = np.zeros((Nt, Nc))
 
     # aggregate terms:
-    #dR = np.zeros(Nt)
-    r = np.zeros(Nt)  # interest rate
-    theta = np.zeros(Nt)  # market price of risk
-    Phi_parti = np.zeros((Nt))  # consumption share of the stock market participants
-    Phi_parti_1_matrix = np.zeros((Nt))
-    Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
-    # parti = np.zeros((Nt))  # participation rate
-    popu_age = np.zeros((Nt, n_age_groups))
-    # belief_age = np.zeros((Nt, n_age_groups))
-    wealthshare_age = np.zeros((Nt, n_age_groups))
-    popu_can_short = np.zeros((Nt))
-    popu_short = np.zeros((Nt))
-    Phi_short = np.zeros((Nt))
-    Phi_can_short = np.zeros((Nt))
+    keep_when = 200
+    #dR = np.zeros(Nt - keep_when)
+    r = np.zeros(Nt - keep_when)  # interest rate
+    theta = np.zeros(Nt - keep_when)  # market price of risk
+    Phi_parti = np.zeros((Nt - keep_when))  # consumption share of the stock market participants
+    Phi_parti_1_matrix = np.zeros((Nt - keep_when))
+    Delta_bar_parti = np.zeros((Nt - keep_when))  # consumption weighted estimation error of the stock market participants
+    # parti = np.zeros((Nt - keep_when))  # participation rate
+    popu_age = np.zeros((Nt - keep_when, n_age_groups))
+    # belief_age = np.zeros((Nt - keep_when, n_age_groups))
+    wealthshare_age = np.zeros((Nt - keep_when, n_age_groups))
+    popu_can_short = np.zeros((Nt - keep_when))
+    popu_short = np.zeros((Nt - keep_when))
+    Phi_short = np.zeros((Nt - keep_when))
+    Phi_can_short = np.zeros((Nt - keep_when))
+    var_save = np.zeros((Nt - keep_when, 5))
 
     if mode_trade == 'complete':
         invest_tracker = np.ones(Nc)
@@ -719,13 +722,21 @@ def simulate_cohorts_mean_vola(
                 exit()
 
             d_eta_st = a * invest_tracker - theta_t
-            invest_fst = invest_tracker * f_st * dt
-            popu_parti_t = np.sum(cohort_size * invest_tracker)
-            f_parti_t = np.sum(invest_fst)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
-            # age_t = np.sum(cohort_size * tau * invest_tracker)
-            # n_parti_t = np.sum(invest_tracker) / Nc
+            if i >= keep_when:
+                invest_fst = invest_tracker * f_st * dt
+                popu_parti_t = np.sum(cohort_size * invest_tracker)
+                f_parti_t = np.sum(invest_fst)
+                Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
+
+                # age_t = np.sum(cohort_size * tau * invest_tracker)
+                # n_parti_t = np.sum(invest_tracker) / Nc
+                Delta_popu_parti_t = np.sum(Delta_s_t * invest_tracker * cohort_size) / popu_parti_t
+                var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
+                var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
+                var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
+                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), cohort_size)
+
 
         elif mode_trade == 'complete':
             f_st_standard = f_st * dt
@@ -737,8 +748,15 @@ def simulate_cohorts_mean_vola(
 
             f_parti_t = 1
             pi_st = (d_eta_st + theta_t) / sigma_S
-            # age_t = np.sum(cohort_size * tau * invest)
-            # n_parti_t = np.sum(invest) / Nc
+            if i >= keep_when:
+                # age_t = np.sum(cohort_size * tau * invest)
+                # n_parti_t = np.sum(invest) / Nc
+                Delta_popu_parti_t = np.sum(Delta_s_t * cohort_size)
+                var_cons_cohort_parti_t = np.var(f_st_standard)
+                var_cons_indiv_parti_t = np.var(f_st_standard / cohort_size)
+                var_Delta_cohort_parti_t = np.var(Delta_s_t)
+                var_Delta_indiv_parti_t = weighted_variance(Delta_s_t, cohort_size)
+
 
         # elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
         #     can_short_tracker = np.append(can_short_tracker[1:], 0)
@@ -853,18 +871,27 @@ def simulate_cohorts_mean_vola(
                 exit()
 
             d_eta_st = a * invest_tracker - theta_t
-            invest_fst = invest_tracker * f_st * dt
-            popu_parti_t = np.sum(cohort_size * invest_tracker)
-            f_parti_t = np.sum(invest_fst)
-            Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
             pi_st = (d_eta_st + theta_t) / sigma_S
-            short = pi_st < 0
-            # age_t = np.sum(cohort_size * tau * invest_tracker)
-            # n_parti_t = np.sum(invest_tracker) / Nc
-            popu_can_short_t = np.sum(cohort_size * can_short_tracker)
-            popu_short_t = np.sum(cohort_size * short)
-            Phi_can_short_t = np.sum(can_short_tracker * f_st * dt)
-            Phi_short_t = np.sum(short * f_st * dt)
+
+            if i >= keep_when:
+                invest_fst = invest_tracker * f_st * dt
+                popu_parti_t = np.sum(cohort_size * invest_tracker)
+                f_parti_t = np.sum(invest_fst)
+                Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
+                Delta_popu_parti_t = np.sum(Delta_s_t * invest_tracker * cohort_size) / popu_parti_t
+                var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
+                var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
+                var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
+                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), cohort_size)
+
+                short = pi_st < 0
+                # age_t = np.sum(cohort_size * tau * invest_tracker)
+                # n_parti_t = np.sum(invest_tracker) / Nc
+                popu_can_short_t = np.sum(cohort_size * can_short_tracker)
+                popu_short_t = np.sum(cohort_size * short)
+                Phi_can_short_t = np.sum(can_short_tracker * f_st * dt)
+                Phi_short_t = np.sum(short * f_st * dt)
+
 
         else:
             print('mode_trade not found')
@@ -880,23 +907,29 @@ def simulate_cohorts_mean_vola(
         mu_S_t = sigma_S * theta_t + r_t
 
         # store the results, only the aggregate values
-        theta[i] = theta_t
-        r[i] = r_t
-        Phi_parti[i] = f_parti_t
-        Delta_bar_parti[i] = Delta_bar_parti_t
-        if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+        if i >= keep_when:  # only keeping the data after 200 years in the simulation
+            theta[i] = theta_t
+            r[i] = r_t
             Phi_parti[i] = f_parti_t
-        if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            popu_can_short[i] = popu_can_short_t
-            popu_short[i] = popu_short_t
-            Phi_can_short[i] = Phi_can_short_t
-            Phi_short[i] = Phi_short_t
-        parti_rate = invest_tracker * cohort_size
-        belief = (Delta_s_t * sigma_Y + mu_Y)
-        for j in range(4):
-            if mode_trade != 'complete':
-                popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
-            wealthshare_age[i, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
+            Delta_bar_parti[i] = Delta_bar_parti_t
+            if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+                Phi_parti[i] = f_parti_t
+            if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+                popu_can_short[i] = popu_can_short_t
+                popu_short[i] = popu_short_t
+                Phi_can_short[i] = Phi_can_short_t
+                Phi_short[i] = Phi_short_t
+            parti_rate = invest_tracker * cohort_size
+            belief = (Delta_s_t * sigma_Y + mu_Y)
+            for j in range(4):
+                if mode_trade != 'complete':
+                    popu_age[i, j] = np.sum(parti_rate[cutoffs[j + 1]:])
+                wealthshare_age[i, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
+            var_save[i] = [Delta_popu_parti_t, var_cons_cohort_parti_t, var_cons_indiv_parti_t,
+                           var_Delta_cohort_parti_t, var_Delta_indiv_parti_t]
+
+
+    var_save_matrix = np.mean(var_save, axis=0)
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
@@ -935,6 +968,7 @@ def simulate_cohorts_mean_vola(
         popu_short_matrix,
         Phi_can_short_matrix,
         Phi_short_matrix,
+        var_save_matrix,
     )
 
 
