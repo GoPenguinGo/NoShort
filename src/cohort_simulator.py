@@ -607,8 +607,8 @@ def simulate_cohorts_mean_vola(
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
-    # for i in tqdm(range(Nt)):
-    for i in tqdm(range(keep_when)):
+    for i in tqdm(range(Nt)):
+    # for i in tqdm(range(keep_when)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
 
