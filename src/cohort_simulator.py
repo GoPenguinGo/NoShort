@@ -594,7 +594,7 @@ def simulate_cohorts_mean_vola(
     popu_short = np.zeros((Nt - keep_when))
     Phi_short = np.zeros((Nt - keep_when))
     Phi_can_short = np.zeros((Nt - keep_when))
-    var_save = np.zeros((Nt - keep_when, 5))
+    var_save = np.zeros((Nt - keep_when, 4))
     Delta_popu_parti = np.zeros((Nt - keep_when))
 
     if mode_trade == 'complete':

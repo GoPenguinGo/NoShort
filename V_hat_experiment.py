@@ -30,6 +30,8 @@ Delta_bar_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 popu_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 # belief_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
 wealthshare_age_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2, n_age_groups))
+Delta_popu_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
+variance_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 4))
 
 # write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
@@ -62,6 +64,7 @@ for l in range(N):
                     Phi_can_short,
                     Phi_short,
                     variances,
+                    Delta_popu_parti,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
                                           Vhat_try,
                                           mu_Y, sigma_Y, sigma_S, tax, beta,
@@ -80,6 +83,8 @@ for l in range(N):
                 popu_age_matrix[l, m, n, o] = popu_age
                 # belief_age_matrix[l, m, n, o] = belief_age
                 wealthshare_age_matrix[l, m, n, o] = wealthshare_age
+                Delta_popu_parti_matrix[l, m, n, o] = Delta_popu_parti
+                variance_matrix[l, m, n, o] = variances
     print(time.time() - time_s)
 
 
