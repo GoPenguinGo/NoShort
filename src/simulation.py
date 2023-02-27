@@ -222,6 +222,7 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
@@ -252,10 +253,10 @@ def simulate_SI_mean_vola(
         eta_st_eta_ss,
         eta_bar,
         d_eta_st,
-        invest_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        tau_info,
         Vhat_vector,
-        can_short_tracker_build,
+        can_short_tracker,
     ) = build_cohorts_SI(
         dZ_build,
         dZ_SI_build,
@@ -293,6 +294,7 @@ def simulate_SI_mean_vola(
         Phi_can_short_matrix,
         Phi_short_matrix,
         variance_matrix,
+        Delta_popu_parti_matrix,
     ) = simulate_cohorts_mean_vola(
         Y,
         biasvec,
@@ -321,9 +323,9 @@ def simulate_SI_mean_vola(
         eta_st_eta_ss,
         eta_bar,
         d_eta_st,
-        invest_tracker_build,
-        can_short_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        can_short_tracker,
+        tau_info,
         Vhat_vector,
         top,
         old_limit,
@@ -346,6 +348,7 @@ def simulate_SI_mean_vola(
         Phi_can_short_matrix,
         Phi_short_matrix,
         variance_matrix,
+        Delta_popu_parti_matrix,
     )
 
 
