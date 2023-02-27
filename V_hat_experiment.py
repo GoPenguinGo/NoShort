@@ -61,6 +61,7 @@ for l in range(N):
                     popu_short,
                     Phi_can_short,
                     Phi_short,
+                    variances,
                 ) = simulate_SI_mean_vola(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
                                           Vhat_try,
                                           mu_Y, sigma_Y, sigma_S, tax, beta,
