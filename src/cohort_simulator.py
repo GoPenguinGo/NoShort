@@ -735,7 +735,7 @@ def simulate_cohorts_mean_vola(
                 var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
                 var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
                 var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
-                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), cohort_size)
+                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), np.nonzero(cohort_size * invest_tracker))
 
 
         elif mode_trade == 'complete':
@@ -882,7 +882,7 @@ def simulate_cohorts_mean_vola(
                 var_cons_cohort_parti_t = np.var(np.nonzero(invest_fst))
                 var_cons_indiv_parti_t = np.var(np.nonzero(invest_fst / cohort_size))
                 var_Delta_cohort_parti_t = np.var(np.nonzero(Delta_s_t * invest_tracker))
-                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), cohort_size)
+                var_Delta_indiv_parti_t = weighted_variance((np.nonzero(Delta_s_t * invest_tracker)), np.nonzero(cohort_size * invest_tracker))
 
                 short = pi_st < 0
                 # age_t = np.sum(cohort_size * tau * invest_tracker)
