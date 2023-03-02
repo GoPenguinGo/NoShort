@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Z_Y_cases, Z_SI_cases, scenario_labels, colors_short, age_labels, PN_labels
+    dZ_Y_cases, dZ_SI_cases, scenario_labels, colors_short, age_labels, PN_labels
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, dDelta_st_calculator, post_var
 from numba import jit
 import matplotlib.pyplot as plt
@@ -116,8 +116,8 @@ for case_dzY in cases:
     for case_dzSI in cases:
         dZ_build = dZ_build_matrix[0]
         dZ_SI_build = dZ_SI_build_matrix[0]
-        dZ = Z_Y_cases[case_dzY]  # bad
-        dZ_SI = Z_SI_cases[case_dzSI]  # bad
+        dZ = dZ_Y_cases[case_dzY]  # bad
+        dZ_SI = dZ_SI_cases[case_dzSI]  # bad
         phi_fix = phi_vector[4]
         Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
         invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
@@ -264,8 +264,8 @@ for case_dzY in cases:
 # ######################################
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]
-dZ = Z_Y_cases[1]  # bad
-dZ_SI = Z_SI_cases[1]  # bad
+dZ = dZ_Y_cases[1]  # bad
+dZ_SI = dZ_SI_cases[1]  # bad
 phi_fix = phi_vector[4]
 Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
 invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
@@ -352,8 +352,8 @@ for i in range(len(scenarios_two)):
 
 left_t = 200
 right_t = 400
-Z = np.cumsum(Z_Y_cases[1])[int(left_t / dt):int(right_t / dt)]
-Z_SI = np.cumsum(Z_SI_cases[1])[int(left_t / dt):int(right_t / dt)]
+Z = np.cumsum(dZ_Y_cases[1])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI_cases[1])[int(left_t / dt):int(right_t / dt)]
 x = t[int(left_t / dt):int(right_t / dt)]
 scenario_indexes = [0, 1]
 fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
@@ -998,5 +998,82 @@ for j in range(N_t_gaps):
             plt.show()
             # plt.close()
 
+
+
+######################################################################
+#### why is Delta_bar more volatile with the shorting constraint? ####
+######################################################################
+N_paths = 500
+phi_fix = 0
+cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+tau_mat = np.tile(tau, (Nc, 1))
+cummu_popu = np.cumsum(cohort_size)
+popus = [0.1, 0.5]
+# popus = [0.1]
+n_popu = len(popus)
+theta_compare = np.empty((N_paths, 2, n_popu, Nt))
+Phi_compare = np.empty((N_paths, 2, n_popu, Nt))
+Delta_bar_compare = np.empty((N_paths, 2, n_popu, Nt))
+belief_f_old_compare = np.empty((N_paths, 2, n_popu, Nt))
+belief_f_young_compare = np.empty((N_paths, 2, n_popu, Nt))
+belief_popu_old_compare = np.empty((N_paths, n_popu, Nt))
+belief_popu_young_compare = np.empty((N_paths, n_popu, Nt))
+Wealthshare_old_compare = np.empty((N_paths, 2, n_popu, Nt))
+Wealthshare_young_compare = np.empty((N_paths, 2, n_popu, Nt))
+for i in range(N_paths):
+    print(i)
+    dZ_build = np.random.randn(Nt) * np.sqrt(dt)
+    dZ = np.random.randn(Nt) * np.sqrt(dt)
+    dZ_SI_build = np.random.randn(Nt) * np.sqrt(dt)
+    dZ_SI = np.random.randn(Nt) * np.sqrt(dt)
+    for k in range(2):
+        scenario = scenarios[k]
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        (
+            r,
+            theta,
+            f,
+            Delta,
+            pi,
+            popu_parti,
+            f_parti,
+            Delta_bar_parti,
+            dR,
+            invest_tracker,
+            popu_can_short,
+            popu_short,
+            Phi_can_short,
+            Phi_short,
+        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                        phi_fix,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                        need_f='True',
+                        need_Delta='True',
+                        need_pi='False',
+                        )
+        theta_compare[i, k] = theta
+        Phi_compare[i, k] = f_parti
+        Delta_bar_compare[i, k] = Delta_bar_parti
+        for j, popu in enumerate(popus):
+            cutoff_age_old_top = np.searchsorted(cummu_popu, popu * 2)
+            cutoff_age_old_below = np.searchsorted(cummu_popu, popu)
+            cutoff_age_young = np.searchsorted(cummu_popu, 1 - popu)
+            Wealthshare_young_compare[i, k, j] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
+            Wealthshare_old_compare[i, k, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
+            belief_f_old_compare[i, k, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+                                                       weights=f[:, cutoff_age_old_below:cutoff_age_old_top] * dt,
+                                                       axis=1)
+            belief_f_young_compare[i, k, j] = np.average(Delta[:, cutoff_age_young:],
+                                                         weights=f[:, cutoff_age_young:] * dt,
+                                                         axis=1)
+            if k == 0:
+                belief_popu_old_compare[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+                                                              weights=cohort_size_mat[:,
+                                                                      cutoff_age_old_below:cutoff_age_old_top],
+                                                              axis=1)
+                belief_popu_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+                                                                weights=cohort_size_mat[:, cutoff_age_young:],
+                                                                axis=1)
 
 
