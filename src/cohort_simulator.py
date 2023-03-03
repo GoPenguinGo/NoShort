@@ -129,6 +129,8 @@ def simulate_cohorts_SI(
     popu_can_short_mat = np.zeros((Nt))
     popu_short_mat = np.zeros((Nt))
 
+    Delta_mat = np.zeros((Nt, Nc))
+
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
 

@@ -148,8 +148,7 @@ for i, var in enumerate(var_list):
         var_name_j_neg = var_name + str(j) + 'neg' + '.npy'
         y_pos = np.load(var_name_j_pos)
         y_neg = np.load(var_name_j_neg)
-        if j == 1:
-            var[j] = (np.mean(y_pos, axis=0) + np.mean(y_neg, axis=0)) / 2
+        var[j] = (np.mean(y_pos, axis=0) + np.mean(y_neg, axis=0)) / 2
 
 # graphs:
 ######################################
@@ -174,19 +173,27 @@ for i, axes_row in enumerate(axes):
     row_name = var_name_list[i]
     var = var_list[i]  # Shape((N_scenarios, 3, T_hat_dimension, 2))
     for j, ax in enumerate(axes_row):
-        y = var[:, :, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
+        y = var[:, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
         column_name = 'Mean' if j == 0 else 'Volatility'
-        for k in range(3):
-            line_style = line_styles[k]
-            for l in range(N_scenarios):
-                y_i = y[l, k]
-                if j == 0 and k == 1:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+        # for k in range(3):
+        #     line_style = line_styles[k]
+        #     for l in range(N_scenarios):
+        #         y_i = y[l, k]
+        #         if j == 0 and k == 1:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+        #                     label=scenario_list[l])
+        #         elif j == 1 and l == 0:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=phi_list[k])
+        #         else:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+        line_style = 'solid'
+        for l in range(N_scenarios):
+            y_i = y[l]
+            if j == 0:
+                ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
                             label=scenario_list[l])
-                elif j == 1 and l == 0:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=phi_list[k])
-                else:
-                    ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+            else:
+                ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
         if j == 0:
             ax.set_ylabel(row_name, rotation=90)
         if i == 2:
@@ -196,8 +203,7 @@ for i, axes_row in enumerate(axes):
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('initial window and values mean vola years.png', dpi=100, format="png")
-# plt.savefig('initial window and values mean vola.png', dpi=500, format="png")
+# plt.savefig('initial window and values mean vola years.png', dpi=100, format="png")
 plt.show()
 # plt.close()
 
@@ -307,3 +313,55 @@ plt.savefig('initial window and values age groups.png', dpi=100, format="png")
 plt.show()
 plt.close()
 
+######################################
+######## OVER INITIAL WINDOW #########
+############ GRAPH x ###############
+# plot Delta_bar and average Delta over Npre
+x = Npres / 12
+x_start = 0
+# x = Npres[1:]
+var_name_list = [r'$\bar{\Delta}_t$', r'Average $\Delta_{st}$']
+var_list = [Delta_bar_parti_Mat, Delta_popu_parti_Mat]  # Shape((N_scenarios, n_phi, T_hat_dimension, 2))
+scenario_list = ['Complete', 'Reentry', 'Disappointment']
+phi_list = [r'$\phi=0.4$']
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet']
+line_styles = ['dotted', 'solid', 'dashed']
+x_label_vhat = r'Initial window (years), $n$'
+fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='col', figsize=(15, 15))
+for i, axes_row in enumerate(axes):
+    row_name = var_name_list[i]
+    var = var_list[i]  # Shape((N_scenarios, T_hat_dimension, 2))
+    for j, ax in enumerate(axes_row):
+        y = var[:, :, j]  # Shape((N_scenarios, 2, T_hat_dimension))
+        column_name = 'Mean' if j == 0 else 'Volatility'
+        # for k in range(3):
+        #     line_style = line_styles[k]
+        #     for l in range(N_scenarios):
+        #         y_i = y[l, k]
+        #         if j == 0 and k == 1:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+        #                     label=scenario_list[l])
+        #         elif j == 1 and l == 0:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l], label=phi_list[k])
+        #         else:
+        #             ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+        line_style = 'solid'
+        for l in range(N_scenarios):
+            y_i = y[l]
+            if j == 0:
+                ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l],
+                            label=scenario_list[l])
+            else:
+                ax.plot(x[x_start:], y_i[x_start:], linestyle=line_style, color=colors_short[l])
+        if j == 0:
+            ax.set_ylabel(row_name, rotation=90)
+        if i == 2:
+            # ax.set_xlabel('initial window (months)')
+            ax.set_xlabel(x_label_vhat)
+        if i == 0:
+            ax.legend()
+            ax.set_title(column_name)
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig('initial window and values mean vola years.png', dpi=100, format="png")
+plt.show()
+# plt.close()

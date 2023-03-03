@@ -899,16 +899,22 @@ plt.show()
 # ######################################
 # #### Figure endogenous learning ######
 # ######################################
-N_1 = 500
+N_1 = 1000
 n_scenarios = 2  # complete vs. reentry
 keep_when = int(200 / dt)
+t_gap = int(2 / dt)  # 2-year non-overlapping rolling window
+N_gap = int((Nt - keep_when) / t_gap)
+t_rolling_pre = np.arange(keep_when - 1, Nt - 1, t_gap)  # pre
+t_rolling_post = t_rolling_pre + t_gap
 phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
-shocks_mat = np.empty((N_1, Nt - keep_when))
-shocks_SI_mat = np.empty((N_1, Nt - keep_when))
-update_belief_mat = np.empty((N_1, n_scenarios, n_phi, Nt - keep_when))
-update_belief_parti_mat = np.empty((N_1, n_phi, Nt - keep_when, 2))
-update_belief_age_mat = np.empty((N_1, n_scenarios, n_phi, Nt - keep_when, 4))
+shocks_mat = np.empty((N_1, N_gap))
+shocks_SI_mat = np.empty((N_1, N_gap))
+parti_rate_pre_mat = np.empty((N_1, n_phi, N_gap))
+parti_rate_post_mat = np.empty((N_1, n_phi, N_gap))
+update_belief_mat = np.empty((N_1, n_scenarios, n_phi, N_gap))
+# update_belief_parti_mat = np.empty((N_1, n_phi, N_gap, 2))
+# update_belief_age_mat = np.empty((N_1, n_scenarios, n_phi, N_gap, 4))
 cohort_size_mat = np.tile(cohort_size[1:], (Nt - 1, 1))
 cohort_size_short = cohort_size[1:]
 
@@ -919,125 +925,110 @@ for i in range(N_1):
     dZ_build = np.random.randn(Nc) * dt_root
     dZ_SI = np.random.randn(Nt) * dt_root
     dZ_SI_build = np.random.randn(Nc) * dt_root
-    shocks_mat[i] = dZ[keep_when:]
-    shocks_SI_mat[i] = dZ_SI[keep_when:]
+    shocks = np.cumsum(dZ)
+    shocks_mat[i] = shocks[t_rolling_post] - shocks[t_rolling_pre]
+    shocks_SI = np.cumsum(dZ_SI)
+    shocks_SI_mat[i] = shocks_SI[t_rolling_post] - shocks_SI[t_rolling_pre]
     for j in range(n_scenarios):
         scenario = scenarios[j]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for n, phi in enumerate(phi_vector):
-            if j + n > 0:
-                (
-                    r,
-                    theta,
-                    f,
-                    Delta,
-                    pi,
-                    popu_parti,
-                    f_parti,
-                    Delta_bar_parti,
-                    dR,
-                    invest_tracker,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                                phi,
-                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                need_f='False',
-                                need_Delta='True',
-                                need_pi='True',
-                                top=0.05,
-                                old_limit=100
-                                )
-                update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief incorporating the current shock t
-                update_belief_mat[i, j, n, :] = np.average(
-                    update_belief, weights=cohort_size_mat, axis=1
-                )[keep_when - 1:]  # everyone
+            (
+                r,
+                theta,
+                f,
+                Delta,
+                pi,
+                popu_parti,
+                f_parti,
+                Delta_bar_parti,
+                dR,
+                invest_tracker,
+                popu_can_short,
+                popu_short,
+                Phi_can_short,
+                Phi_short,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                            phi,
+                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                            need_f='False',
+                            need_Delta='True',
+                            need_pi='True',
+                            top=0.05,
+                            old_limit=100
+                            )
+            update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief incorporating the current shock t, t = 1:5999
+            update_belief_t = np.average(
+                update_belief, weights=cohort_size_mat, axis=1
+            ) # everyone
+            update_belief_cumsum = np.cumsum(update_belief_t)
+            update_belief_mat[i, j, n] = update_belief_cumsum[t_rolling_post - 1] - update_belief_cumsum[t_rolling_pre - 1]
 
-                if mode_trade == 'w_constraint':
-                    parti_state = pi[:-1, 1:] > 0
-                    weights_parti = cohort_size_mat * parti_state
-                    weights_nonparti = cohort_size_mat * (1 - parti_state)
-                    update_belief_parti_mat[i, n, :, 0] = np.average(
-                        update_belief, weights=weights_parti, axis=1
-                    )[keep_when - 1:]  # participants
-                    update_belief_parti_mat[i, n, :, 1] = np.ma.average(
-                        update_belief, weights=weights_nonparti, axis=1
-                    )[keep_when - 1:]  # participants
-
-                for m in range(n_age_groups):
-                    update_belief_age = update_belief[:, max(cutoffs[m + 1] - 1, 0):cutoffs[m] - 1]  # youngest to oldest
-                    weights_age = cohort_size_short[max(cutoffs[m + 1] - 1, 0):cutoffs[m] - 1]
-                    update_belief_age_mat[i, j, n, :, m] = np.average(
-                        update_belief_age, weights=weights_age, axis=1
-                    )[keep_when - 1:]
+            if mode_trade == 'w_constraint':
+                parti_rate_pre_mat[i, n] = popu_parti[t_rolling_pre]
+                parti_rate_post_mat[i, n] = popu_parti[t_rolling_post]
 
 # winsorize extreme shocks
-below_dz = np.percentile(shocks_mat, 10)
-below_data = shocks_mat >= below_dz
-above_dz = np.percentile(shocks_mat, 90)
-above_data = above_dz >= shocks_mat
-# data_where = below_data * above_data == 1
-data_where = np.where(below_data * above_data == 1)
-# shocks_winsor = shocks_mat[data_where]
+x_var = parti_rate_pre_mat
+y_var = update_belief_mat
+n_bins = 10
+y_percentiles = [50, 25, 75]
+data_figure_y = np.zeros((2, 2, 3, n_bins - 1, len(y_percentiles)))
+data_figure_x = np.zeros((2, 2, 3, n_bins - 1))
+  # reentry scenario
+condition_var1 = shocks_mat
+condition_var2 = shocks_SI_mat
 
-# prepare data for the figure:
-n_bins = 20
-bins = np.linspace(below_dz, above_dz, n_bins)
-quartiles = np.linspace(0, 100, 5)
-quartiles_dz_SI = np.percentile(shocks_SI_mat[data_where], quartiles)
-y_percentiles = [50, 5, 95]
-data_figure = np.zeros((2, 2, n_bins - 1, 4, len(y_percentiles)))
 for i1 in range(2):
+    data_where1 = condition_var1 >= np.percentile(condition_var1, 75) if i1 == 0 else condition_var1 < np.percentile(condition_var1, 25)
     for i2 in range(2):
-        if i1 == 0:  # shape = N1 * (Nt - keep_when)
-            data_focus = update_belief_mat[:, 0, 1] if i2 == 0 else update_belief_mat[:, 1, 1] # complete market, phi = 0.4
-        else:
-            data_focus = update_belief_parti_mat[:, 1, :, 0] if i2 == 0 else update_belief_parti_mat[:, 1, :, 1]  # # reentry, phi = 0.4, nonparticipants
-        for j in range(n_bins - 1):
-            bin_0 = bins[j]
-            bin_1 = bins[j + 1]
-            below_bin = bin_1 >= shocks_mat
-            above_bin = shocks_mat >= bin_0
-            bin_where = np.where(below_bin * above_bin == 1)
-            shocks_SI_bin = shocks_SI_mat[bin_where]
-            data_focus_z = data_focus[bin_where]
-            for k in range(4):
-                quartile_below = quartiles_dz_SI[k]
-                quartile_above = quartiles_dz_SI[k + 1]
-                below_bin = shocks_SI_bin <= quartile_above
-                above_bin = shocks_SI_bin >= quartile_below
-                bin_where = np.where(above_bin * below_bin == 1)
-                data_focus_bin = data_focus_z[bin_where]
-
-                data_figure[i1, i2, j, k] = np.percentile(data_focus_bin, y_percentiles)
+        data_where2 = condition_var2 >= np.percentile(condition_var2, 75) if i2 == 0 else condition_var2 < np.percentile(condition_var2, 25)
+        data_where = np.where(data_where1 * data_where2 == 1)
+        for k in range(n_phi):
+            data_focus = y_var[:, 1, k][data_where]
+            x_focus = x_var[:, k][data_where]
+            below_dz = np.percentile(x_focus, 0)
+            above_dz = np.percentile(x_focus, 100)
+            bins = np.linspace(below_dz, above_dz, n_bins)
+            bin_size = (above_dz - below_dz) / (n_bins - 1)
+            data_figure_x[i1, i2, k] = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
+            for j in range(n_bins - 1):
+                bin_0 = bins[j]
+                bin_1 = bins[j + 1]
+                below_bin = bin_1 >= x_focus
+                above_bin = x_focus >= bin_0
+                bin_where = np.where(below_bin * above_bin == 1)
+                data_focus_z = data_focus[bin_where]
+                data_figure_y[i1, i2, k, j] = np.percentile(data_focus_z, y_percentiles)
 
 
 # figure:
-bin_size = (above_dz - below_dz) / (n_bins - 1)
-x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
-labels = [r'$dz^{SI}_t$, ' + 'Lowest quartile', 'Second quartile', 'Third quatile', 'Highest quartile']
-sub_titles = [[r'Complete market, whole population, $\phi=0.4$',
-              r'Reentry, whole population, $\phi=0.4$'],
-              [r'Reentry, participants, $\phi=0.4$',
-              r'Reentry, non-participants, $\phi=0.4$']]
+label_np = ['Good ', 'Bad ']
+label_shock = [r'$dz^{Y}$, ', r'signal, $dz^{SI}$']
+labels = [r'$\phi = 0.0$', r'$\phi = 0.4$', r'$\phi = 0.8$']
+X_ = np.linspace(0.3, 0.8, 100)
 fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10, 10), sharey='all')
 for j, row in enumerate(axes):
     for k, ax in enumerate(row):
-        for l in range(4):
-            y = data_figure[j, k, :, l]
+        for l in range(3):
+            y = data_figure_y[j, k, l]
+            x = data_figure_x[j, k, l]
+            Y_mat = np.empty((3, 100))
+            for m in range(3):
+                X_Y_Spline = make_interp_spline(x, y[:, m])
+                Y_mat[m] = X_Y_Spline(X_)
             if j == k == 0:
-                ax.plot(x, y[:, 0], color=colors[l], linewidth=0.5, label=labels[l])
+                ax.plot(X_, Y_mat[0], color=colors[l], linewidth=0.8, label=labels[l])
             else:
-                ax.plot(x, y[:, 0], color=colors[l], linewidth=0.5)
-            ax.fill_between(x, y[:, 2], y[:, 1], color=colors[l], linewidth=0., alpha=0.3)
+                ax.plot(X_, Y_mat[0], color=colors[l], linewidth=0.8)
+            ax.fill_between(X_, Y_mat[1], Y_mat[2], color=colors[l], linewidth=0., alpha=0.3)
+            ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6)
             if j == k == 0:
-                ax.legend(loc='upper left')
-        ax.set_xlabel(r'Shock to output, $dz^Y_t$')
-        ax.set_ylabel(r'Changes in estimation error, $d\Delta_{s,t}$')
-        ax.set_title(sub_titles[j][k])
+                ax.legend()
+        ax.set_xlabel('Participation rate in the economy')
+        ax.set_ylabel(r'Changes in average estimation error, $\Delta$')
+        ax.set_title(label_np[j] + r'fundamental $dz^{Y}$, ' + label_np[k] + r'signal $dz^{SI}$')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 plt.savefig('Endogenous_learning.png', dpi=100)
 plt.show()
