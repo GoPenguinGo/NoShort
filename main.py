@@ -899,7 +899,7 @@ plt.show()
 # ######################################
 # #### Figure endogenous learning ######
 # ######################################
-N_1 = 1000
+N_1 = 2000
 n_scenarios = 2  # complete vs. reentry
 keep_when = int(200 / dt)
 t_gap = int(2 / dt)  # 2-year non-overlapping rolling window
@@ -969,14 +969,15 @@ for i in range(N_1):
                 parti_rate_pre_mat[i, n] = popu_parti[t_rolling_pre]
                 parti_rate_post_mat[i, n] = popu_parti[t_rolling_post]
 
-# winsorize extreme shocks
+
 x_var = parti_rate_pre_mat
 y_var = update_belief_mat
-n_bins = 10
+n_bins = 8
 y_percentiles = [50, 25, 75]
 data_figure_y = np.zeros((2, 2, 3, n_bins - 1, len(y_percentiles)))
 data_figure_x = np.zeros((2, 2, 3, n_bins - 1))
-  # reentry scenario
+data_figure_complete = np.zeros((2, 2, 3, 3, len(y_percentiles)))
+# reentry scenario
 condition_var1 = shocks_mat
 condition_var2 = shocks_SI_mat
 
@@ -993,6 +994,9 @@ for i1 in range(2):
             bins = np.linspace(below_dz, above_dz, n_bins)
             bin_size = (above_dz - below_dz) / (n_bins - 1)
             data_figure_x[i1, i2, k] = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
+            data_complete = y_var[:, 0, k][data_where]
+            data_figure_complete[i1, i2, k] = np.percentile(data_complete, y_percentiles)
+
             for j in range(n_bins - 1):
                 bin_0 = bins[j]
                 bin_1 = bins[j + 1]
@@ -1008,12 +1012,15 @@ label_np = ['Good ', 'Bad ']
 label_shock = [r'$dz^{Y}$, ', r'signal, $dz^{SI}$']
 labels = [r'$\phi = 0.0$', r'$\phi = 0.4$', r'$\phi = 0.8$']
 X_ = np.linspace(0.3, 0.8, 100)
+X_complete = np.linspace(0.98, 1., 3)
+X_gap = np.linspace(0.8, 0.98, 2)
 fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10, 10), sharey='all')
 for j, row in enumerate(axes):
     for k, ax in enumerate(row):
         for l in range(3):
             y = data_figure_y[j, k, l]
             x = data_figure_x[j, k, l]
+            y_complete = data_figure_complete[j, k, l]
             Y_mat = np.empty((3, 100))
             for m in range(3):
                 X_Y_Spline = make_interp_spline(x, y[:, m])
@@ -1022,7 +1029,10 @@ for j, row in enumerate(axes):
                 ax.plot(X_, Y_mat[0], color=colors[l], linewidth=0.8, label=labels[l])
             else:
                 ax.plot(X_, Y_mat[0], color=colors[l], linewidth=0.8)
+            ax.plot(X_complete, y_complete[:, 0], color=colors[l], linewidth=0.8)
+            ax.plot(X_gap, [Y_mat[0, -1], y_complete[0, 0]], color=colors[l], linewidth=0.8, linestyle ='dashed')
             ax.fill_between(X_, Y_mat[1], Y_mat[2], color=colors[l], linewidth=0., alpha=0.3)
+            ax.fill_between(X_complete, y_complete[:, 1], y_complete[:, 2], color=colors[l], linewidth=0., alpha=0.3)
             ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6)
             if j == k == 0:
                 ax.legend()
@@ -1030,7 +1040,7 @@ for j, row in enumerate(axes):
         ax.set_ylabel(r'Changes in average estimation error, $\Delta$')
         ax.set_title(label_np[j] + r'fundamental $dz^{Y}$, ' + label_np[k] + r'signal $dz^{SI}$')
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('Endogenous_learning.png', dpi=100)
+# plt.savefig('Endogenous_learning.png', dpi=100)
 plt.show()
 # plt.close()
 
