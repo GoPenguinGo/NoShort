@@ -899,7 +899,7 @@ plt.show()
 # ######################################
 # #### Figure endogenous learning ######
 # ######################################
-N_1 = 2000
+N_1 = 1000
 n_scenarios = 2  # complete vs. reentry
 keep_when = int(200 / dt)
 t_gap = int(2 / dt)  # 2-year non-overlapping rolling window
@@ -910,9 +910,9 @@ phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
 shocks_mat = np.empty((N_1, N_gap))
 shocks_SI_mat = np.empty((N_1, N_gap))
-parti_rate_pre_mat = np.empty((N_1, n_phi, N_gap))
-parti_rate_post_mat = np.empty((N_1, n_phi, N_gap))
-update_belief_mat = np.empty((N_1, n_scenarios, n_phi, N_gap))
+parti_rate_pre_mat = np.empty((N_1, 2, n_phi, N_gap))
+parti_rate_post_mat = np.empty((N_1, 2, n_phi, N_gap))
+update_belief_mat = np.empty((N_1, 2, n_scenarios, n_phi, N_gap))
 # update_belief_parti_mat = np.empty((N_1, n_phi, N_gap, 2))
 # update_belief_age_mat = np.empty((N_1, n_scenarios, n_phi, N_gap, 4))
 cohort_size_mat = np.tile(cohort_size[1:], (Nt - 1, 1))
@@ -921,65 +921,100 @@ cohort_size_short = cohort_size[1:]
 # run
 for i in range(N_1):
     print(i)
-    dZ = np.random.randn(Nt) * dt_root
-    dZ_build = np.random.randn(Nc) * dt_root
-    dZ_SI = np.random.randn(Nt) * dt_root
-    dZ_SI_build = np.random.randn(Nc) * dt_root
-    shocks = np.cumsum(dZ)
+    dZ_i = np.random.randn(Nt) * dt_root
+    dZ_build_i = np.random.randn(Nc) * dt_root
+    dZ_SI_i = np.random.randn(Nt) * dt_root
+    dZ_SI_build_i = np.random.randn(Nc) * dt_root
+    shocks = np.cumsum(dZ_i)
     shocks_mat[i] = shocks[t_rolling_post] - shocks[t_rolling_pre]
-    shocks_SI = np.cumsum(dZ_SI)
+    shocks_SI = np.cumsum(dZ_SI_i)
     shocks_SI_mat[i] = shocks_SI[t_rolling_post] - shocks_SI[t_rolling_pre]
-    for j in range(n_scenarios):
-        scenario = scenarios[j]
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        for n, phi in enumerate(phi_vector):
-            (
-                r,
-                theta,
-                f,
-                Delta,
-                pi,
-                popu_parti,
-                f_parti,
-                Delta_bar_parti,
-                dR,
-                invest_tracker,
-                popu_can_short,
-                popu_short,
-                Phi_can_short,
-                Phi_short,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                            phi,
-                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                            need_f='False',
-                            need_Delta='True',
-                            need_pi='True',
-                            top=0.05,
-                            old_limit=100
-                            )
-            update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief incorporating the current shock t, t = 1:5999
-            update_belief_t = np.average(
-                update_belief, weights=cohort_size_mat, axis=1
-            ) # everyone
-            update_belief_cumsum = np.cumsum(update_belief_t)
-            update_belief_mat[i, j, n] = update_belief_cumsum[t_rolling_post - 1] - update_belief_cumsum[t_rolling_pre - 1]
+    for k in range(2):
+        dZ = dZ_i if k == 0 else -dZ_i
+        dZ_build = dZ_build_i if k == 0 else -dZ_build_i
+        dZ_SI = dZ_SI_i if k == 0 else -dZ_SI_i
+        dZ_SI_build = dZ_SI_build_i if k == 0 else -dZ_SI_build_i
+        for j in range(n_scenarios):
+            scenario = scenarios[j]
+            mode_trade = scenario[0]
+            mode_learn = scenario[1]
+            for n, phi in enumerate(phi_vector):
+                (
+                    r,
+                    theta,
+                    f,
+                    Delta,
+                    pi,
+                    popu_parti,
+                    f_parti,
+                    Delta_bar_parti,
+                    dR,
+                    invest_tracker,
+                    popu_can_short,
+                    popu_short,
+                    Phi_can_short,
+                    Phi_short,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                                phi,
+                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                need_f='False',
+                                need_Delta='True',
+                                need_pi='False',
+                                top=0.05,
+                                old_limit=100
+                                )
+                update_belief = Delta[1:, :-1] - Delta[:-1,
+                                                 1:]  # change of belief incorporating the current shock t, t = 1:5999
+                update_belief_t = np.average(
+                    update_belief, weights=cohort_size_mat, axis=1
+                )  # everyone
+                update_belief_cumsum = np.cumsum(update_belief_t)
+                update_belief_mat[i, k, j, n] = update_belief_cumsum[t_rolling_post - 1] - update_belief_cumsum[
+                    t_rolling_pre - 1]
 
-            if mode_trade == 'w_constraint':
-                parti_rate_pre_mat[i, n] = popu_parti[t_rolling_pre]
-                parti_rate_post_mat[i, n] = popu_parti[t_rolling_post]
+                if mode_trade == 'w_constraint':
+                    parti_rate_pre_mat[i, k, n] = popu_parti[t_rolling_pre]
+                    parti_rate_post_mat[i, k, n] = popu_parti[t_rolling_post]
 
 
-x_var = parti_rate_pre_mat
-y_var = update_belief_mat
-n_bins = 8
+# np.save('parti_rate_pre_mat'+str(0), parti_rate_pre_mat)
+# np.save('update_belief_mat'+str(0), update_belief_mat)
+# np.save('shocks_mat'+str(0), shocks_mat)
+# np.save('shocks_SI_mat'+str(0), shocks_SI_mat)
+# parti_rate_pre = np.empty((N_1 * 6, n_phi, N_gap))
+# update_belief =  np.empty((N_1 * 6, 2, n_phi, N_gap))
+# shocks = np.empty((N_1 * 6, N_gap))
+# shocks_SI = np.empty((N_1 * 6, N_gap))
+# for i in range(3):
+#     a1 = np.load('parti_rate_pre_mat'+str(i) + '.npy')
+#     a2 = np.load('update_belief_mat'+str(i) + '.npy')
+#     a3 = np.load('shocks_mat'+str(i) + '.npy')
+#     a4 = np.load('shocks_SI_mat'+str(i) + '.npy')
+#     parti_rate_pre[2 * i * N_1:(2 * i + 1) * N_1] = a1[:, 0]
+#     parti_rate_pre[(2 * i + 1) * N_1:(2 * i + 2) * N_1] = a1[:, 1]
+#     update_belief[2 * i * N_1:(2 * i + 1) * N_1] = a2[:, 0]
+#     update_belief[(2 * i + 1) * N_1:(2 * i + 2) * N_1] = a2[:, 1]
+#     shocks[2 * i * N_1:(2 * i + 1) * N_1] = a3
+#     shocks[(2 * i + 1) * N_1:(2 * i + 2) * N_1] = -a3
+#     shocks_SI[2 * i * N_1:(2 * i + 1) * N_1] = a4
+#     shocks_SI[(2 * i + 1) * N_1:(2 * i + 2) * N_1] = -a4
+x_var = parti_rate_pre
+# y_var = update_belief
+y_var = np.empty((N_1 * 6, 2, n_phi, N_gap))
+for i in range(n_phi):
+    for j in range(2):
+        y_focus = update_belief[:, j, i]
+        y_var[:, j, i] = (y_focus - np.mean(y_focus)) / np.std(y_focus)
+
+
+n_bins = 5
 y_percentiles = [50, 25, 75]
 data_figure_y = np.zeros((2, 2, 3, n_bins - 1, len(y_percentiles)))
 data_figure_x = np.zeros((2, 2, 3, n_bins - 1))
 data_figure_complete = np.zeros((2, 2, 3, 3, len(y_percentiles)))
 # reentry scenario
-condition_var1 = shocks_mat
-condition_var2 = shocks_SI_mat
+condition_var1 = shocks
+condition_var2 = shocks_SI
 
 for i1 in range(2):
     data_where1 = condition_var1 >= np.percentile(condition_var1, 75) if i1 == 0 else condition_var1 < np.percentile(condition_var1, 25)
@@ -989,8 +1024,8 @@ for i1 in range(2):
         for k in range(n_phi):
             data_focus = y_var[:, 1, k][data_where]
             x_focus = x_var[:, k][data_where]
-            below_dz = np.percentile(x_focus, 0)
-            above_dz = np.percentile(x_focus, 100)
+            below_dz = np.percentile(x_focus, 10)
+            above_dz = np.percentile(x_focus, 90)
             bins = np.linspace(below_dz, above_dz, n_bins)
             bin_size = (above_dz - below_dz) / (n_bins - 1)
             data_figure_x[i1, i2, k] = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
@@ -1011,9 +1046,9 @@ for i1 in range(2):
 label_np = ['Good ', 'Bad ']
 label_shock = [r'$dz^{Y}$, ', r'signal, $dz^{SI}$']
 labels = [r'$\phi = 0.0$', r'$\phi = 0.4$', r'$\phi = 0.8$']
-X_ = np.linspace(0.3, 0.8, 100)
-X_complete = np.linspace(0.98, 1., 3)
-X_gap = np.linspace(0.8, 0.98, 2)
+X_ = np.linspace(x.min(), x.max(), 20)
+X_complete = np.linspace(0.99, 1.01, 3)
+X_gap = np.linspace(x.max(), 0.99, 2)
 fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10, 10), sharey='all')
 for j, row in enumerate(axes):
     for k, ax in enumerate(row):
@@ -1021,7 +1056,7 @@ for j, row in enumerate(axes):
             y = data_figure_y[j, k, l]
             x = data_figure_x[j, k, l]
             y_complete = data_figure_complete[j, k, l]
-            Y_mat = np.empty((3, 100))
+            Y_mat = np.empty((3, 20))
             for m in range(3):
                 X_Y_Spline = make_interp_spline(x, y[:, m])
                 Y_mat[m] = X_Y_Spline(X_)

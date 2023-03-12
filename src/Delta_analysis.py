@@ -1003,7 +1003,7 @@ for j in range(N_t_gaps):
 ######################################################################
 #### why is Delta_bar more volatile with the shorting constraint? ####
 ######################################################################
-N_paths = 1000
+N_paths = 5000
 phi_fix = 0
 # look at smaller Npre?
 Npres = [60, 240]
@@ -1108,11 +1108,12 @@ for i in range(N_paths):
 
 # winsorize extreme shocks
 Npre_index = 0
-average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index, :], axis=0), axis=1)
-# x_index = belief_popu_old_compare[:, Npre_index, popu_index] - belief_popu_young_compare[:, Npre_index, popu_index]
-# x_index = belief_popu_old_compare[:, Npre_index, popu_index]
-x_index = belief_popu_young_compare[:, Npre_index]
-x_label = 'Average estimation error, younger half'
+average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index], axis=0), axis=1)
+# x_index = belief_popu_young_compare[:, Npre_index]
+# x_index = belief_popu_old_compare[:, Npre_index]
+x_index = (belief_popu_old_compare[:, Npre_index] + belief_popu_young_compare[:, Npre_index]) / 2
+# x_label = 'Average estimation error, younger half'
+x_label = 'Average estimation error'
 below_dz = np.percentile(x_index, 10)
 below_data = x_index >= below_dz
 above_dz = np.percentile(x_index, 90)
@@ -1129,36 +1130,36 @@ quartile_var = Wealthshare_old_compare[:, :, Npre_index]
 y_percentiles = [50, 25, 75]
 phi_old = phi_old_compare / (phi_old_compare + phi_young_compare)
 phi_young = phi_young_compare / (phi_old_compare + phi_young_compare)
+belief_f_young = np.where(belief_f_young_compare == 0, np.nan, belief_f_young_compare)  # converting empty cells from 0 to nan
+belief_f_old = np.where(belief_f_old_compare == 0, np.nan, belief_f_old_compare)
 data_var = Delta_bar_compare[:, :, Npre_index]
-data_figure = np.zeros((2, n_bins - 1, 5, len(y_percentiles)))
-data_figure_variance = np.zeros((2, n_bins - 1, 5, 2))
-parti_figure = np.zeros((n_bins - 1, 2, 3))
-wealthshare_figure = np.zeros((n_bins - 1, 2, 3))
-phi_figure = np.zeros((2, 2, n_bins - 1, 3))
-belief_figure = np.zeros((2, 2, n_bins - 1, 3))
-
+data_figure = np.zeros((2, n_bins - 1, len(y_percentiles)))
+parti_figure = np.zeros((n_bins - 1, 2, len(y_percentiles)))
+wealthshare_figure = np.zeros((n_bins - 1, 2, len(y_percentiles)))
+phi_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
+belief_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
+belief_phi_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
 for i in range(2):
     data_focus = data_var[:, i]
-    quartile_var_focus = quartile_var[:, i]
-    # quartile_var_focus = quartile_var
-    quartiles = np.percentile(quartile_var_focus[data_where], np.linspace(0, 100, 5))
-    phi_var_old = Wealthshare_old_compare[:, i, Npre_index] if i == 0 else phi_old[:, Npre_index]
-    phi_var_young = Wealthshare_young_compare[:, i, Npre_index] if i == 0 else phi_young[:, Npre_index]
+    # quartile_var_focus = quartile_var[:, i]
+    # # quartile_var_focus = quartile_var
+    # quartiles = np.percentile(quartile_var_focus[data_where], np.linspace(0, 100, 5))
+    phi_var_old = phi_old
+    phi_var_young = phi_young[:, Npre_index]
     for j in range(n_bins - 1):
         bin_0 = bins[j]
         bin_1 = bins[j + 1]
         below_bin = bin_1 >= x_index
         above_bin = x_index >= bin_0
         bin_where = np.where(below_bin * above_bin == 1)
-        condition_bin = quartile_var_focus[bin_where]
+        # condition_bin = quartile_var_focus[bin_where]
         data_focus_z = data_focus[bin_where]
-        data_figure[i, j, 0] = np.percentile(data_focus_z, y_percentiles)
-        data_figure_variance[i, j, 0, 0] = np.mean(data_focus_z)
-        data_figure_variance[i, j, 0, 1] = np.sqrt(np.mean((data_focus_z - average_Delta_bar[i]) ** 2))
+        data_figure[i, j] = np.percentile(data_focus_z, y_percentiles)
         for l in range(2):
             parti_var = parti_old_compare[:, Npre_index] if l == 0 else parti_young_compare[:, Npre_index]
-            wealthshare_var = Wealthshare_old_compare[:, 1, Npre_index] if l == 0 else Wealthshare_young_compare[:, 1, Npre_index]
-            phi_var = phi_var_old if l == 0 else phi_var_young
+            # wealthshare_var = Wealthshare_old_compare[:, 1, Npre_index] if l == 0 else Wealthshare_young_compare[:, 1, Npre_index]
+            phi_var = phi_old[:, i, Npre_index] if l == 0 else phi_young[:, i, Npre_index]
+            belief_var_nan = belief_f_old[:, i, Npre_index] if l == 0 else belief_f_young[:, i, Npre_index]
             belief_var = belief_f_old_compare[:, i, Npre_index] if l == 0 else belief_f_young_compare[:, i, Npre_index]
             # parti_figure[j, l, 0] = np.mean(parti_var[bin_where])
             # parti_figure[j, l, 1] = np.std(parti_var[bin_where])
@@ -1167,25 +1168,27 @@ for i in range(2):
             # phi_figure[i, l, j, 0] = np.mean(phi_var[bin_where])
             # phi_figure[i, l, j, 1] = np.std(phi_var[bin_where])
             parti_figure[j, l] = np.percentile(parti_var[bin_where], y_percentiles)
-            wealthshare_figure[j, l] = np.percentile(wealthshare_var[bin_where], y_percentiles)
+            # wealthshare_figure[j, l] = np.percentile(wealthshare_var[bin_where], y_percentiles)
             phi_figure[i, l, j] = np.percentile(phi_var[bin_where], y_percentiles)
-            belief_figure[i, l, j] = np.percentile(belief_var[bin_where], y_percentiles)
+            belief_figure[i, l, j] = np.nanpercentile(belief_var_nan[bin_where], y_percentiles)
+            belief_phi = phi_var * belief_var
+            belief_phi_figure[i, l, j] = np.percentile(belief_phi[bin_where], y_percentiles)
 
-        # quartiles = np.percentile(condition_bin, np.linspace(0, 100, 5))
-        for k in range(1, 5):
-            quartile_below = quartiles[k - 1]
-            quartile_above = quartiles[k]
-            below_bin = condition_bin <= quartile_above
-            above_bin = condition_bin >= quartile_below
-            bin_focus = np.where(above_bin * below_bin == 1)
-            data_focus_bin = data_focus_z[bin_focus]
-
-            # data_figure[i1, i2, j, k, 0] = np.mean(data_focus_bin)
-            # data_figure[i1, i2, j, k, 1] = np.percentile(data_focus_bin, 5)
-            # data_figure[i1, i2, j, k, 2] = np.percentile(data_focus_bin, 95)
-            data_figure[i, j, k] = np.percentile(data_focus_bin, y_percentiles)
-            data_figure_variance[i, j, k, 0] = np.mean(data_focus_bin)
-            data_figure_variance[i, j, k, 1] = np.sqrt(np.mean((data_focus_bin - average_Delta_bar[i]) ** 2))
+        # # quartiles = np.percentile(condition_bin, np.linspace(0, 100, 5))
+        # for k in range(1, 5):
+        #     quartile_below = quartiles[k - 1]
+        #     quartile_above = quartiles[k]
+        #     below_bin = condition_bin <= quartile_above
+        #     above_bin = condition_bin >= quartile_below
+        #     bin_focus = np.where(above_bin * below_bin == 1)
+        #     data_focus_bin = data_focus_z[bin_focus]
+        #
+        #     # data_figure[i1, i2, j, k, 0] = np.mean(data_focus_bin)
+        #     # data_figure[i1, i2, j, k, 1] = np.percentile(data_focus_bin, 5)
+        #     # data_figure[i1, i2, j, k, 2] = np.percentile(data_focus_bin, 95)
+        #     data_figure[i, j, k] = np.percentile(data_focus_bin, y_percentiles)
+        #     data_figure_variance[i, j, k, 0] = np.mean(data_focus_bin)
+        #     data_figure_variance[i, j, k, 1] = np.sqrt(np.mean((data_focus_bin - average_Delta_bar[i]) ** 2))
 
 # figure:
 # bin_size = (above_dz - below_dz) / (n_bins - 1)
@@ -1286,52 +1289,66 @@ for i in range(2):
 
 bin_size = (above_dz - below_dz) / (n_bins - 1)
 x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
-labels = ['Complete market', 'Reentry']
+labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
+          [r'$\Phi_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$', r'$\Phi_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$'],
+          [r'$\Phi_t^{old}\bar{\Delta}_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$', r'$\Phi_t^{young}\bar{\Delta}_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$']]
 # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
-sub_titles = ['Comparison', 'Complete market', 'Reentry']
-
-fig, axes = plt.subplots(ncols=2, figsize=(10, 5), sharex='all')
-for j, ax in enumerate(axes):
-    if j == 0:
-        # y_focus = data_figure[:, :, 0]
-        y_focus = data_figure_variance[:, :, 0]
+sub_titles = ['Complete market', 'Reentry']
+y_labels = ['Estimation error of the participants',
+             'Wealth share of the participants',
+            r'Contribution to $\bar{\Delta}_t$']
+# X_ = np.linspace(-0.2, 0.2, 100)
+X_ = np.linspace(below_dz, above_dz, 100)
+fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(10, 15), sharex='all', sharey='row')
+for j, rows in enumerate(axes):
+    for i, ax in enumerate(rows):
+        if j == 0:
+            y_focus = belief_figure[i]
+        elif j == 1:
+            y_focus = phi_figure[i]
+        else:
+            y_focus = belief_phi_figure[i]
         for k in range(2):
-            y_i = y_focus[k]
-            X_Y_Spline = make_interp_spline(x, y_i[:, 0])
-            X_Y_Spline_std_below = make_interp_spline(x, y_i[:, 0] - 1.65 * y_i[:, 1])
-            X_Y_Spline_std_above = make_interp_spline(x, y_i[:, 0] + 1.65 * y_i[:, 1])
-            X_ = np.linspace(x.min(), x.max(), 100)
-            Y_ = X_Y_Spline(X_)
-            Y_below = X_Y_Spline_std_below(X_)
-            Y_above = X_Y_Spline_std_above(X_)
-            label_j = 'Complete market' if k == 0 else 'Reentry'
-            x_mean = [X_[np.searchsorted(Y_, average_Delta_bar[k])]]
-            ax.plot(X_, Y_, color=colors_short[k], linewidth=1, label=label_j)
-            ax.fill_between(X_, Y_below, Y_above, color=colors_short[k], linewidth=0., alpha=0.3)
-            ax.axhline(average_Delta_bar[k], 0.05, 0.95, color=colors_short[k], linewidth=1, linestyle='dashed', label='Unconditional mean, ' + label_j)
-            # ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
-            ax.scatter(x_mean, [average_Delta_bar[k]], marker='o', color=colors_short[k])
+            if j == 2:
+                y_i = y_focus[k]
+                Y_ = np.empty((3, 100))
+                for l in range(3):
+                    X_Y_Spline = make_interp_spline(x, y_i[:, l])
+                    Y_[l] = X_Y_Spline(X_)
+                ax.plot(X_, Y_[0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[2], Y_[1], color=colors_short[k], linewidth=0., alpha=0.4)
+                if k == 1:
+                    y_i = data_figure[i]  # n_bin-1 * 3
+                    Y_ = np.empty((3, 100))
+                    for l in range(3):
+                        X_Y_Spline = make_interp_spline(x, y_i[:, l])
+                        Y_[l] = X_Y_Spline(X_)
+                    ax.plot(X_, Y_[0], color='gray', linewidth=1,
+                            label=r'$\bar{\Delta}_t$')
+                    ax.fill_between(X_, Y_[2], Y_[1], color='gray', linewidth=0., alpha=0.2)
+                    ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8, linestyle='dashed',
+                           label=r'Unconditional mean $\bar{\Delta}_t$')
+                    x_mean = [X_[np.searchsorted(Y_[0], average_Delta_bar[i])]]
+                    ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
+            else:
+                y_i = y_focus[k]
+                Y_ = np.empty((3, 100))
+                for l in range(3):
+                    X_Y_Spline = make_interp_spline(x, y_i[:, l])
+                    Y_[l] = X_Y_Spline(X_)
+                ax.plot(X_, Y_[0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[2], Y_[1], color=colors_short[k], linewidth=0., alpha=0.4)
+            ax.set_ylabel(y_labels[j])
+        if i == 0:
             ax.legend(loc='upper left')
-            ax.set_ylabel(r'Estimation error of participants, $\bar{\Delta_t}$')
-
-    else:
-        y_focus = phi_figure[:, 1]
-        for k in range(2):
-            y_i = y_focus[k]  # n_bin-1 * 2
-            Y_ = np.empty((3, 100))
-            X_ = np.linspace(x.min(), x.max(), 100)
-            for l in range(3):
-                X_Y_Spline = make_interp_spline(x, y_i[:, l])
-                Y_[l] = X_Y_Spline(X_)
-            ax.plot(X_, Y_[0], color=colors[k], linewidth=0.8, label=labels[k])
-            ax.fill_between(X_, Y_[2], Y_[1], color=colors[k], linewidth=0., alpha=0.2)
-            ax.legend(loc='upper left')
-        ax.set_ylabel(r'Wealth share of participants, younger half')
-    ax.set_xlabel(x_label)
-
-    # ax.set_xlim(-0.25, 0.25)
-    # ax.set_title(sub_titles[j][k])
+        if j == 0:
+            ax.set_title(sub_titles[i])
+        if j == 2:
+            ax.set_xlabel(x_label)
+        else:
+            ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
+        # ax.set_xlim(-0.25, 0.25)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig(x_label[:10] + 'DeltaVola.png', dpi=100)
+plt.savefig(str(Npres[Npre_index]) + 'DeltaVola.png', dpi=100)
 plt.show()
 # plt.close()
