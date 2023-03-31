@@ -7,17 +7,22 @@ from src.param import Npres, rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, ta
     cutoffs, phi_vector, n_phi, colors, modes_trade, modes_learn, scenarios, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, top, old_limit, \
     dZ_Y_cases, dZ_SI_cases, T_cohort, age_labels
+import tabulate as tab
 
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 
+# T_hats = dt * Npres
+# T_hat_dimension = len(T_hats)
+# # N = 30  # can choose a smaller number than Mpaths as the number of paths
+
+Npres = np.array([60, 240])
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
-# N = 30  # can choose a smaller number than Mpaths as the number of paths
-
-n_scenarios = 1
-a_sce = 1
-N = 500
+# n_scenarios = 1
+n_scenarios = 3
+# a_sce = 1
+N = 1000
 N_scenarios = 3
 
 phi = 0.4
@@ -49,17 +54,18 @@ variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4))
 # write a lighter version of the simulation function that returns only the desired values (mean and std, instead of whole raw data)
 for l in range(N):
     print(l)
-    dZ = -dZ_matrix[l]
-    dZ_build = -dZ_build_matrix[l]
-    dZ_SI = -dZ_SI_matrix[l]
-    dZ_SI_build = -dZ_SI_build_matrix[l]
-    # dZ = dZ_matrix[l]
-    # dZ_build = dZ_build_matrix[l]
-    # dZ_SI = dZ_SI_matrix[l]
-    # dZ_SI_build = dZ_SI_build_matrix[l]
+    # dZ = -dZ_matrix[l]
+    # dZ_build = -dZ_build_matrix[l]
+    # dZ_SI = -dZ_SI_matrix[l]
+    # dZ_SI_build = -dZ_SI_build_matrix[l]
+    dZ = dZ_matrix[l]
+    dZ_build = dZ_build_matrix[l]
+    dZ_SI = dZ_SI_matrix[l]
+    dZ_SI_build = dZ_SI_build_matrix[l]
     time_s = time.time()
     for m in range(n_scenarios):
-        scenario = scenarios[m + a_sce]
+        # scenario = scenarios[m + a_sce]
+        scenario = scenarios[m]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for o, T_hat_try in enumerate(T_hats):
@@ -102,8 +108,21 @@ for l in range(N):
             wealthshare_age_matrix[l, m, o] = wealthshare_age
             Delta_popu_parti_matrix[l, m, o] = Delta_popu_parti
             variance_matrix[l, m, o] = variances
-
     print(time.time() - time_s)
+
+# table:
+table_output = np.zeros((6, 6))
+var_list = [theta_matrix, Phi_parti_1_matrix * sigma_Y, Delta_bar_parti_matrix]
+header = np.tile(['Mean', 'Volatility'], 3)
+show_index = np.tile(['5-year', '20-year'], 3)
+for j, var in enumerate(var_list):
+    var_average = np.average(var, axis=0)  # shape (n_scenarios, T_hat_dimension)
+    for i in range(n_scenarios):
+        for k in range(2):
+            row_index = j * 2 + k
+            col_index = i * 2
+            table_output[row_index, col_index:col_index + 2] = var_average[i, k]
+print(tab.tabulate(table_output, headers=header, floatfmt=".3f", tablefmt='latex'))
 
 # save the data
 var_list = [r_matrix, theta_matrix, Phi_parti_matrix, Phi_parti_1_matrix,

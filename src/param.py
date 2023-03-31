@@ -24,6 +24,7 @@ beta = rho + nu - tax  # marginal propensity to consume
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
+dt_root = np.sqrt(dt)
 T_hat = 20  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
@@ -80,6 +81,9 @@ colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
 # age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <= 69', 'Age > 69, oldest quartile']
+label_phi = []
+for i in range(n_phi_short):
+    label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
 
 
 # todo: can endogenize

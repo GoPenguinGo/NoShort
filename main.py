@@ -1083,16 +1083,29 @@ plt.show()
 # ######################################
 # ############ Figure 3.2 ##############
 # ######################################
-N_1 = 1000
-age_cut = 150
-Nc_cut = int(age_cut/dt)
-# drift_N_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
-drift_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
-diffusion_P_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
-drift_pi_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
-diffusion_pi_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nc_cut))
-r_matrix = np.empty((N_1, n_scenarios, n_phi_short))
-dt_root = np.sqrt(dt)
+n_scenarios = 2
+age_cut = 100
+Nc_cut = int(age_cut / dt)
+data_keep = np.arange(0, Nc, 600)
+Nt_short = len(data_keep)
+scenarios_short = scenarios[1 : 1+n_scenarios]
+phi_try = 0
+N_1 = 2000
+cutoff_age = cutoffs[2]  # 50% population in each age group for participation rate
+popu_cummu = np.cumsum(cohort_size)
+popus = np.array([0.1, 0.5])
+popus_1 = 1 - popus
+cutoff_young = np.searchsorted(popu_cummu, popus_1)
+cutoff_old = np.searchsorted(popu_cummu, popus)
+# drift_P_matrix = np.empty((N_1, n_scenarios, Nt_short, Nc_cut), dtype=np.float32)
+# drift_N_matrix = np.empty((N_1, n_scenarios, Nt_short, Nc_cut), dtype=np.float32)
+diffusion_P_matrix = np.empty((N_1, n_scenarios, Nt_short, Nc_cut), dtype=np.float32)
+drift_matrix = np.empty((N_1, n_scenarios, Nt_short, Nc_cut), dtype=np.float32)
+# r_matrix = np.empty((N_1, n_scenarios, n_phi_short, Nt, Nc_cut), dtype=np.float32)
+parti_matrix = np.empty((N_1, n_scenarios, Nt_short, Nc_cut), dtype=np.int)
+parti_old_matrix = np.empty((N_1, n_scenarios, n_phi_short, 2, Nt), dtype=np.float32)
+parti_young_matrix = np.empty((N_1, n_scenarios, n_phi_short, 2, Nt), dtype=np.float32)
+# dt_root = np.sqrt(dt)
 for j in range(N_1):
     print(j)
     dZ = np.random.randn(Nt) * dt_root
@@ -1122,118 +1135,185 @@ for j in range(N_1):
                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
                             need_f='False',
                             need_Delta='True',
-                            need_pi='True',
-                            top=0.05,
-                            old_limit=100
+                            need_pi='False',
                             )
-            r_matrix[j, k, l] = np.average(r)
             theta_mat = np.transpose(np.tile(theta, (Nc_cut, 1)))
             r_mat = np.transpose(np.tile(r, (Nc_cut, 1)))
-            # drift_N = -rho + r_mat
+            drift_N = -rho + r_mat
             drift_P = -rho + r_mat + 0.5 * theta_mat**2 - 0.5 * Delta[:, -Nc_cut:]**2
             diffusion_P = np.abs(theta_mat + Delta[:, -Nc_cut:])
-            # drift_N_matrix[j, k, l] = np.average(drift_N, weights=(1-invest_tracker[:, Nc_cut]), axis=0)
-            weights_condition = np.sum(invest_tracker[:, -Nc_cut:], axis=0)
-            empty = np.where(weights_condition==0)
-            if np.sum(empty) != 0:
-                m = np.max(empty)
-                cons_mean = np.empty(Nc_cut)
-                cons_mean[:m+1] = np.nan
-                cons_mean[m+1:] = np.average(drift_P[:, -Nc_cut+m+1:], weights=invest_tracker[:, -Nc_cut+m+1:], axis=0)
-                cons_vola = np.empty(Nc_cut)
-                cons_vola[:m+1] = np.nan
-                cons_vola[m+1:] = np.average(diffusion_P[:, -Nc_cut+m+1:], weights=invest_tracker[:, -Nc_cut+m+1:], axis=0)
-                pi_mean = np.empty(Nc_cut)
-                pi_mean[:m+1] = np.nan
-                pi_mean[m+1:] = np.average(pi[:, -Nc_cut+m+1:], weights=invest_tracker[:, -Nc_cut+m+1:], axis=0)
-                pi_vola = np.empty(Nc_cut)
-                pi_vola[:m+1] = np.nan
-                pi_vola[m+1:] = np.sqrt(weighted_variance(pi[:, -Nc_cut+m+1:], invest_tracker[:, -Nc_cut+m+1:], ax=0))
-            else:
-                cons_mean = np.average(drift_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
-                cons_vola = np.average(diffusion_P, weights=invest_tracker[:, -Nc_cut:], axis=0)
-                pi_mean = np.average(pi[:, -Nc_cut:], weights=invest_tracker[:, -Nc_cut:], axis=0)
-                pi_vola = np.sqrt(weighted_variance(pi[:, -Nc_cut:], invest_tracker[:, -Nc_cut:], ax=0))
-            drift_P_matrix[j, k, l] = cons_mean
-            diffusion_P_matrix[j, k, l] = cons_vola
-            drift_pi_matrix[j, k, l] = pi_mean
-            diffusion_pi_matrix[j, k, l] = pi_vola
-drift_P_vector = np.flip(np.nanmean(np.append(drift_P_matrix, np.load('drift_P_data.npy'), axis=0), axis=0), axis=2) # (n_scenarios, n_phi_short, Nc_cut)
-diffusion_P_vector = np.flip(np.nanmean(np.append(diffusion_P_matrix, np.load('diffusion_P_data.npy'), axis=0), axis=0), axis=2)
-drift_pi_vector = np.flip(np.nanmean(np.append(drift_pi_matrix, np.load('drift_pi_data.npy'), axis=0), axis=0), axis=2)
-diffusion_pi_vector = np.flip(np.nanmean(np.append(diffusion_pi_matrix, np.load('diffusion_pi_data.npy'), axis=0), axis=0), axis=2)
-r_vector = np.mean(np.append(r_matrix, np.load('drift_N_data.npy'), axis=0), axis=0)
-# drift_P_vector = np.flip(np.nanmean(drift_P_matrix, axis=0), axis=2)  # (n_scenarios, n_phi_short, Nc_cut)
-# diffusion_P_vector = np.flip(np.nanmean(diffusion_P_matrix, axis=0), axis=2)
-# drift_pi_vector = np.flip(np.nanmean(drift_pi_matrix, axis=0), axis=2)  # (n_scenarios, n_phi_short, Nc_cut)
-# diffusion_pi_vector = np.flip(np.nanmean(diffusion_pi_matrix, axis=0), axis=2)
-# r_vector = np.nanmean(r_matrix, axis=0)  # (n_scenarios, n_phi_short)
-# np.save('drift_P_data', drift_P_matrix)
-# np.save('diffusion_P_data', diffusion_P_matrix)
-# np.save('drift_pi_data', drift_pi_matrix)
-# np.save('diffusion_pi_data', diffusion_pi_matrix)
-# np.save('drift_N_data', r_matrix)
+            r_matrix[j, k, l] = r
+            drift_c = drift_P * invest_tracker + drift_N * ( 1 - invest_tracker)
+            drift_matrix[j, k, l] = drift_c[data_keep]
+            # drift_P_matrix[j, k, l] = drift_P[data_keep]
+            diffusion_P_matrix[j, k, l] = diffusion_P[data_keep]
+            # drift_N_matrix[j, k, l] = drift_N[data_keep]
+            # parti_matrix[j, k, l] = invest_tracker[data_keep, -Nc_cut:]
+            for i in range(2):
+                parti_rate_young = np.average(invest_tracker[:, cutoff_young[i]:], axis=1)
+                parti_rate_old = np.average(invest_tracker[:, :cutoff_old[i]], axis=1)
+                parti_old_matrix[j, k, l, i] = parti_rate_old[data_keep]
+                parti_young_matrix[j, k, l, i] = parti_rate_young[data_keep]
+
+phi_short_focus = 0
+total_popu = np.sum(cohort_size[-Nc_cut:])
+popu_cummu = np.cumsum(cohort_size[-Nc_cut:])
+cutoff_young = np.searchsorted(popu_cummu, total_popu-0.1)
+cutoff_old = np.searchsorted(popu_cummu, 0.1)
+parti_rate_old = np.average(parti_matrix[:, :, :, :, :cutoff_old], axis=4)
+parti_rate_young = np.average(parti_matrix[:, :, :, :, cutoff_young:], axis=4)
+parti_gap_mat = parti_rate_young - parti_rate_old
+condition = parti_gap_mat
+interval = 120
+bins = np.arange(0, Nc_cut + 1, interval, dtype=int)
+n_bins = len(bins)
+x = (bins[:n_bins - 1] + interval / 2) * dt
+data_keep = np.arange(0, Nc, 600)
+quartiles = np.arange(0, 100 + 1, 25)
+results_data = np.zeros((n_scenarios-1, 4, n_bins - 1, 5))
+for i in range(2):
+    j = 1
+    parti_mat = np.flip(parti_matrix[:, i + 1, j, data_keep], axis = 2)
+    r_rho_mat = drift_N_matrix[:, i + 1, j, data_keep]
+    drift_c_mat = drift_P_matrix[:, i + 1, j, data_keep] * parti_matrix[:, i + 1, j, data_keep] + \
+                  drift_N_matrix[:, i + 1, j, data_keep] * (1 - parti_matrix[:, i + 1, j, data_keep])
+    drift_c_mat = np.flip(drift_c_mat, axis=2)  # (N_1, Nt, Nc_cut)
+    diffusion_P_mat = np.flip(diffusion_P_matrix[:, i + 1, j, data_keep], axis=2)
+    condition_mat = condition[:, i + 1, j, data_keep]
+    quartiles_condition = np.percentile(condition_mat, quartiles)
+    for k in range(4):
+        condition_below = quartiles_condition[k]
+        condition_above = quartiles_condition[k + 1]
+        a = condition_mat >= condition_below
+        b = condition_mat <= condition_above
+        a_b = a * b
+        a_b = np.tile(np.reshape(a_b, (N_1, len(data_keep), 1)), (1, 1, Nc_cut))
+        masked = np.ma.masked_equal(a_b, 0)
+        # condition_where = np.where(a * b == 1)
+        r_rho_focus = r_rho_mat * masked
+        drift_c_focus = drift_c_mat * masked
+        diffusion_c_focus = diffusion_P_mat * masked
+        parti_focus = parti_mat * masked
+        for l in range(n_bins - 1):
+            age_below = bins[l]
+            age_above = bins[l + 1]
+            results_data[i, k, l, 0] = np.nanmean(drift_c_focus[:, :, age_below:age_above])
+            results_data[i, k, l, 1] = np.nanstd(drift_c_focus[:, :, age_below:age_above])
+            results_data[i, k, l, 2] = np.nanmean(diffusion_c_focus[:, :, age_below:age_above])
+            results_data[i, k, l, 3] = np.nanmean(r_rho_focus[:, :, age_below:age_above])
+            results_data[i, k, l, 4] = np.nanmean(parti_focus[:, :, age_below:age_above])
 
 # Graph:
-scenario_mat = [scenario_labels[1:3], scenario_labels[3:5]]
-y_cases_mat = [[drift_P_vector, diffusion_P_vector], [drift_pi_vector, diffusion_pi_vector]]
-fig_titles_mat = [['log consumption and age.png', 'pi and age.png'],
-                  ['log consumption and age partial shorting.png', 'pi and age partial shorting.png']]
-var_names = [r'log$\left(c_{s,t}\right)$', r'$\pi_{s,t}/W_{s,t}$']
-for aa in range(2):
-    scenario_vec = scenario_mat[aa]
-    age_cut = 100 if aa == 0 else 120
-    Nc_cut = int(age_cut / dt)
-    x = t[:Nc_cut]
-    count = np.arange(0, Nc_cut, 12, dtype=int)
-    for bb in range(2):
-        y_cases = y_cases_mat[bb]
-        var_name = var_names[bb]
-        fig_title = fig_titles_mat[aa][bb]
-        fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='col', figsize=(10, 8))
-        for j, ax_row in enumerate(axes):
-            for k, ax in enumerate(ax_row):
-                ax.set_xlabel('Age')
-                ax.set_title(scenario_vec[j])
-                y_case = y_cases[k]
-                sce_index = j + 1 if aa == 0 else j + 3
-                y_sce = y_case[sce_index]
-                for i in range(n_phi_short):
-                    y = y_sce[i, :Nc_cut]  # (Nc_cut)
-                    X_Y_Spline = make_interp_spline(x[count], y[count])
-                    X_ = np.linspace(x.min(), x.max(), 100)
-                    Y_ = X_Y_Spline(X_)
-                    if aa == 1:
-                        ax.axvline(100, 0.02, 0.98, color='gray', linestyle='dotted',
-                                   linewidth=0.8)
-                    if k == 0:
-                        if i == 0:
-                            if bb == 0:
-                                ax.axhline(r_vector[sce_index, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle='dashed',
-                                       linewidth=0.8, label='Nonparticipants')
-                                ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8, label='Participants')
-                                if j == 0:
-                                    ax.legend(loc='upper right')
-                            else:
-                                ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8)
-                        else:
-                            ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8)
-                            if bb == 0:
-                                ax.axhline(r_vector[sce_index, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle='dashed',
-                                       linewidth=0.8)
-                    if k == 1:
-                        ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8, label=label_phi[i])
-                        if j == 0:
-                            ax.legend(loc='upper right')
-                if k == 0:
-                    ax.set_ylabel('Average drift of ' + var_name, color='black')
+label_phi = []
+for i in range(n_phi_short):
+    label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
+fig_title = 'log consumption and age.png'
+var_name = r'log$\left(c_{s,t}\right)$'
+quartile_labels = ['1st quartile', '2nd quartile', '3rd quartile', '4th quartile']
+X_ = np.linspace(0, 100, 200)
+for i in range(2):
+    scenario = scenarios[i + 1]
+    results_focus = results_data[i]
+    fig, axes = plt.subplots(ncols=2, sharex='all', sharey='col', figsize=(10, 5))
+    for k, ax in enumerate(axes):
+        ax.set_xlabel('Age')
+        ax.set_title(scenario[1])
+        if k == 0:
+            for j in range(4):
+                m = j
+                drift_focus = results_focus[m, :, 0]
+                X_Y_Spline = make_interp_spline(x, drift_focus)
+                Y_ = X_Y_Spline(X_)
+                # std_drift_focus = results_focus[m, :, 1]
+                r_rho_focus = results_focus[m, :, 3]
+                ax.plot(X_, Y_, color=colors[j], linewidth=0.8, label=quartile_labels[j])
+                # ax.fill_between(x, drift_focus - std_drift_focus, drift_focus + std_drift_focus,
+                #                 color=colors[j], linewidth=0., alpha=0.5)
+                if j == 0:
+                    ax.axhline(r_rho_focus[0], 0.05, 0.95, color=colors[j], linestyle='dashed', label=r'Average $r_t$')
                 else:
-                    ax.set_ylabel('Average volatility of ' + var_name, color='black')
-                ax.tick_params(axis='y', labelcolor='black')
-        fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        plt.savefig(fig_title, dpi=60)
-        plt.show()
-        # plt.close()
+                    ax.axhline(r_rho_focus[0], 0.05, 0.95, color=colors[j], linestyle='dashed')
+            ax.set_ylabel('Average drift of ' + var_name, color='black')
+        else:
+            for j in range(4):
+                m = j
+                diffusion_focus = results_focus[m, :, 2]
+                X_Y_Spline = make_interp_spline(x, diffusion_focus)
+                Y_ = X_Y_Spline(X_)
+                parti_focus = results_focus[m, :, 4]
+                ax.plot(X_, Y_, color=colors[j], linewidth=0.8, label=quartile_labels[j])
+                # for n in range(n_bins - 2):
+                #     ax.fill_between([x[n], x[n+1]], [diffusion_focus[n]-0.01, diffusion_focus[n]+0.01],
+                #                     color=colors[j], linewidth=0.8, alpha=parti_focus[n])
+            ax.set_ylabel('Average volatility of ' + var_name, color='black')
+    ax.legend()
+    ax.tick_params(axis='y', labelcolor='black')
+    fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+    # plt.savefig(fig_title, dpi=60)
+    plt.show()
+
+
+
+# scenario_mat = [scenario_labels[1:3], scenario_labels[3:5]]
+# y_cases_mat = [[drift_P_vector, diffusion_P_vector], [drift_pi_vector, diffusion_pi_vector]]
+# fig_titles_mat = [['log consumption and age.png', 'pi and age.png'],
+#                   ['log consumption and age partial shorting.png', 'pi and age partial shorting.png']]
+# var_names = [r'log$\left(c_{s,t}\right)$', r'$\pi_{s,t}/W_{s,t}$']
+# for aa in range(2):
+#     scenario_vec = scenario_mat[aa]
+#     age_cut = 100 if aa == 0 else 120
+#     Nc_cut = int(age_cut / dt)
+#     x = t[:Nc_cut]
+#     count = np.arange(0, Nc_cut, 12, dtype=int)
+#     for bb in range(2):
+#         y_cases = y_cases_mat[bb]
+#         var_name = var_names[bb]
+#         fig_title = fig_titles_mat[aa][bb]
+#         fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='col', figsize=(10, 8))
+#         for j, ax_row in enumerate(axes):
+#             for k, ax in enumerate(ax_row):
+#                 ax.set_xlabel('Age')
+#                 ax.set_title(scenario_vec[j])
+#                 y_case = y_cases[k]
+#                 sce_index = j + 1 if aa == 0 else j + 3
+#                 y_sce = y_case[sce_index]
+#                 for i in range(n_phi_short):
+#                     y = y_sce[i, :Nc_cut]  # (Nc_cut)
+#                     X_Y_Spline = make_interp_spline(x[count], y[count])
+#                     X_ = np.linspace(x.min(), x.max(), 100)
+#                     Y_ = X_Y_Spline(X_)
+#                     if aa == 1:
+#                         ax.axvline(100, 0.02, 0.98, color='gray', linestyle='dotted',
+#                                    linewidth=0.8)
+#                     if k == 0:
+#                         if i == 0:
+#                             if bb == 0:
+#                                 ax.axhline(r_vector[sce_index, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle='dashed',
+#                                        linewidth=0.8, label='Nonparticipants')
+#                                 ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8, label='Participants')
+#                                 if j == 0:
+#                                     ax.legend(loc='upper right')
+#                             else:
+#                                 ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8)
+#                         else:
+#                             ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8)
+#                             if bb == 0:
+#                                 ax.axhline(r_vector[sce_index, i] - rho, 0.05, 0.95, color=colors_short[i], linestyle='dashed',
+#                                        linewidth=0.8)
+#                     if k == 1:
+#                         ax.plot(X_, Y_, color=colors_short[i], linewidth=0.8, label=label_phi[i])
+#                         if j == 0:
+#                             ax.legend(loc='upper right')
+#                 if k == 0:
+#                     ax.set_ylabel('Average drift of ' + var_name, color='black')
+#                 else:
+#                     ax.set_ylabel('Average volatility of ' + var_name, color='black')
+#                 ax.tick_params(axis='y', labelcolor='black')
+#         fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+#         plt.savefig(fig_title, dpi=60)
+#         plt.show()
+#         # plt.close()
+
 
 
 
