@@ -46,7 +46,7 @@ tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 n_age_groups = 4
 
-Mpaths = 200
+Mpaths = 10000
 
 # for graphs:
 t = np.arange(0, T_cohort, dt)
@@ -58,6 +58,13 @@ stepcorr = int(Tsample / dt)
 
 phi_vector = [0, 0.4, 0.8]
 n_phi = len(phi_vector)
+
+phi_5 = [0, 0.2, 0.4, 0.6, 0.8]
+n_phi_5 = len(phi_5)
+
+tax_vector = [0.008, 0.01, 0.012]
+n_tax = len(tax_vector)
+
 
 # for V_hat_experiment:
 Npres_a = np.arange(1, 6, 1)
@@ -113,6 +120,7 @@ old_limit = 100
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
+
 # modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
 modes_trade = ['complete', 'w_constraint', 'partial_constraint_old']
 modes_learn = ['reentry', 'disappointment']

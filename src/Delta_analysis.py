@@ -112,149 +112,160 @@ for i, phi_try in enumerate(phi_vector):
 # ###### Distribution of Delta #########
 # ######################################
 cases = [0, 1]
+cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+Npres_try = [60, 240]
+phi_fix = phi_vector[4]
 for case_dzY in cases:
     for case_dzSI in cases:
-        dZ_build = dZ_build_matrix[0]
-        dZ_SI_build = dZ_SI_build_matrix[0]
-        dZ = dZ_Y_cases[case_dzY]  # bad
-        dZ_SI = dZ_SI_cases[case_dzSI]  # bad
-        phi_fix = phi_vector[4]
-        Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
-        invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
-        theta_compare = np.empty((len(scenarios_two), Nt))
-        cohort_size_mat = np.tile(cohort_size, (Nc, 1))
-        for g, scenario in enumerate(scenarios_two):
-            mode_trade = scenario[0]
-            mode_learn = scenario[1]
-            (
-                r,
-                theta,
-                f,
-                Delta,
-                pi,
-                popu_parti,
-                f_parti,
-                Delta_bar_parti,
-                dR,
-                invest_tracker,
-                popu_can_short,
-                popu_short,
-                Phi_can_short,
-                Phi_short,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                            phi_fix,
-                            Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                            need_f='False',
-                            need_Delta='True',
-                            need_pi='False',
-                            top=0.05,
-                            old_limit=100
-                            )
-            theta_compare[g] = theta
-            Delta_compare[g] = Delta
-            invest_tracker_compare[g] = invest_tracker
-        y_overall = np.empty((len(scenarios_two), Nt, 5))  # overall
-        y_P = np.empty((len(scenarios_two), Nt, 5))  # participants / long
-        y_N = np.empty((len(scenarios_two), Nt, 5))  # non-participants / short
-        y_min = np.empty((len(scenarios_two), Nt, n_age_groups))
-        y_max = np.empty((len(scenarios_two), Nt, n_age_groups))
-        y_cases = [y_overall, y_P, y_N]
-        for i in range(len(scenarios_two)):
-            for n in range(n_age_groups):
-                Delta_age_group = Delta_compare[i, :, cutoffs[n + 1]:cutoffs[n]]
-                y_min[i, :, n] = np.amin(Delta_age_group, axis=1)
-                y_max[i, :, n] = np.amax(Delta_age_group, axis=1)
-            for m in range(Nt):
-                Delta = Delta_compare[i, m]  # ((Nt, Nc))
-                parti_cohorts = invest_tracker_compare[i, m]
-                if np.sum(parti_cohorts) == Nt:
-                    cohort_sizes = [cohort_size]
-                    Deltas = [Delta]
-                    n_var = 1
-                else:
-                    Delta1 = parti_cohorts * Delta
-                    Delta2 = (1 - parti_cohorts) * Delta
-                    cohort_size1 = parti_cohorts * cohort_size
-                    cohort_size2 = (1 - parti_cohorts) * cohort_size
-                    cohort_sizes = [cohort_size, cohort_size1, cohort_size2]
-                    Deltas = [Delta, Delta1, Delta2]
-                    n_var = 3
-                for n in range(n_var):
-                    Del = Deltas[n]
-                    cohort_siz = cohort_sizes[n]
-                    Delta_rank = Del.argsort()
-                    Delta_sorted = Del[Delta_rank[::-1]]
-                    cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
-                    popu_cumsum = np.cumsum(cohort_size_sorted)
-                    total_popu = popu_cumsum[-1]
-                    Delta_cutoff = np.zeros(5)
-                    cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
-                    Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
-                    Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
-                    Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
-                    y_cases[n][i, m] = Delta_cutoff
+        dZ = dZ_Y_cases[case_dzY]
+        dZ_SI = dZ_SI_cases[case_dzSI]
+        for j, Npre_try in enumerate(Npres_try):
+            T_hat_try = dt * Npre_short
+            Vhat_try = (sigma_Y ** 2) / T_hat_short
+            Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
+            invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
+            theta_compare = np.empty((len(scenarios_two), Nt))
+            for g, scenario in enumerate(scenarios_two):
+                mode_trade = scenario[0]
+                mode_learn = scenario[1]
+                (
+                    r,
+                    theta,
+                    f,
+                    Delta,
+                    pi,
+                    popu_parti,
+                    f_parti,
+                    Delta_bar_parti,
+                    dR,
+                    invest_tracker,
+                    popu_can_short,
+                    popu_short,
+                    Phi_can_short,
+                    Phi_short,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                Vhat_try,
+                                mu_Y, sigma_Y, sigma_S, tax, beta,
+                                phi_fix,
+                                Npre_try, Ninit,
+                                T_hat_try,
+                                dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
+                                need_f='False',
+                                need_Delta='True',
+                                need_pi='False',
+                                top=0.05,
+                                old_limit=100
+                                )
+                theta_compare[g] = theta
+                Delta_compare[g] = Delta
+                invest_tracker_compare[g] = invest_tracker
+            y_overall = np.empty((len(scenarios_two), Nt, 5))  # overall
+            y_P = np.empty((len(scenarios_two), Nt, 5))  # participants / long
+            y_N = np.empty((len(scenarios_two), Nt, 5))  # non-participants / short
+            y_min = np.empty((len(scenarios_two), Nt, n_age_groups))
+            y_max = np.empty((len(scenarios_two), Nt, n_age_groups))
+            y_cases = [y_overall, y_P, y_N]
+            for i in range(len(scenarios_two)):
+                for n in range(n_age_groups):
+                    Delta_age_group = Delta_compare[i, :, cutoffs[n + 1]:cutoffs[n]]
+                    y_min[i, :, n] = np.amin(Delta_age_group, axis=1)
+                    y_max[i, :, n] = np.amax(Delta_age_group, axis=1)
+                for m in range(Nt):
+                    Delta = Delta_compare[i, m]  # ((Nt, Nc))
+                    parti_cohorts = invest_tracker_compare[i, m]
+                    if np.sum(parti_cohorts) == Nt:
+                        cohort_sizes = [cohort_size]
+                        Deltas = [Delta]
+                        n_var = 1
+                    else:
+                        Delta1 = parti_cohorts * Delta
+                        Delta2 = (1 - parti_cohorts) * Delta
+                        cohort_size1 = parti_cohorts * cohort_size
+                        cohort_size2 = (1 - parti_cohorts) * cohort_size
+                        cohort_sizes = [cohort_size, cohort_size1, cohort_size2]
+                        Deltas = [Delta, Delta1, Delta2]
+                        n_var = 3
+                    for n in range(n_var):
+                        Del = Deltas[n]
+                        cohort_siz = cohort_sizes[n]
+                        Delta_rank = Del.argsort()
+                        Delta_sorted = Del[Delta_rank[::-1]]
+                        cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
+                        popu_cumsum = np.cumsum(cohort_size_sorted)
+                        total_popu = popu_cumsum[-1]
+                        Delta_cutoff = np.zeros(5)
+                        cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
+                        Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
+                        Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
+                        Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
+                        y_cases[n][i, m] = Delta_cutoff
 
-        left_t = 200
-        right_t = 400
-        Z = np.cumsum(dZ)[int(left_t / dt):int(right_t / dt)]
-        Z_SI = np.cumsum(dZ_SI)[int(left_t / dt):int(right_t / dt)]
-        x = t[int(left_t / dt):int(right_t / dt)]
-        scenario_indexes = [0, 1]
-        fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
-        for i, ax_row in enumerate(axes):
-            scenario_index = scenario_indexes[i]
-            y1 = y_overall[scenario_index, int(left_t / dt):int(right_t / dt)]
-            y2 = y_P[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
-            y3 = y_N[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
-            y4 = y_min[scenario_index, int(left_t / dt):int(right_t / dt)]
-            y5 = y_max[scenario_index, int(left_t / dt):int(right_t / dt)]
-            belief_cutoff_case = -theta_compare[scenario_index, int(left_t / dt):int(right_t / dt)]
-            for j, ax in enumerate(ax_row):
-                ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-                ax.set_title(scenario_labels[scenario_index + 1] + r', $\phi=0.4$')
-                if j == 0:
+            left_t = 200
+            right_t = 400
+            Z = np.cumsum(dZ)[int(left_t / dt):int(right_t / dt)]
+            Z_SI = np.cumsum(dZ_SI)[int(left_t / dt):int(right_t / dt)]
+            x = t[int(left_t / dt):int(right_t / dt)]
+            scenario_indexes = [0, 1]
+            fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
+            for i, ax_row in enumerate(axes):
+                scenario_index = scenario_indexes[i]
+                y1 = y_overall[scenario_index, int(left_t / dt):int(right_t / dt)]
+                y2 = y_P[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+                y3 = y_N[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
+                y4 = y_min[scenario_index, int(left_t / dt):int(right_t / dt)]
+                y5 = y_max[scenario_index, int(left_t / dt):int(right_t / dt)]
+                belief_cutoff_case = -theta_compare[scenario_index, int(left_t / dt):int(right_t / dt)]
+                for j, ax in enumerate(ax_row):
+                    ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+                    ax.set_title(scenario_labels[scenario_index + 1] + r', $\phi=0.4$')
+                    if j == 0:
+                        if i == 0:
+                            ax2 = ax.twinx()
+                            ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+                            ax2.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+                            ax2.plot(x, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+                            ax2.tick_params(axis='y', labelcolor='black')
+                            ax2.legend(loc='upper left')
+                        y20 = y2[:, 0]
+                        y21 = y2[:, 1]
+                        y22 = y2[:, 2]
+                        y23 = y2[:, 3]
+                        y24 = np.maximum(belief_cutoff_case, y1[:, 4])
+                        y30 = np.maximum(belief_cutoff_case, y3[:, 0])
+                        y31 = y3[:, 1]
+                        y32 = y3[:, 2]
+                        y33 = y3[:, 3]
+                        y34 = y3[:, 4]
+                        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
+                        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label=PN_labels[0])
+                        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
+                        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label=PN_labels[1])
+                        # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
+                        # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
+                        ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
+                    else:
+                        ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
+                        for k in range(n_age_groups):
+                            y40 = y4[:, k]
+                            y50 = y5[:, k]
+                            ax.fill_between(x, y40, y50, color=colors_short[k], linewidth=0., alpha=0.4,
+                                            label=age_labels[k])
                     if i == 0:
-                        ax2 = ax.twinx()
-                        ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-                        ax2.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-                        ax2.plot(x, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-                        ax2.tick_params(axis='y', labelcolor='black')
-                        ax2.legend(loc='upper left')
-                    y20 = y2[:, 0]
-                    y21 = y2[:, 1]
-                    y22 = y2[:, 2]
-                    y23 = y2[:, 3]
-                    y24 = np.maximum(belief_cutoff_case, y1[:, 4])
-                    y30 = np.maximum(belief_cutoff_case, y3[:, 0])
-                    y31 = y3[:, 1]
-                    y32 = y3[:, 2]
-                    y33 = y3[:, 3]
-                    y34 = y3[:, 4]
-                    ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-                    ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label=PN_labels[0])
-                    ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-                    ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label=PN_labels[1])
-                    # ax.plot(x, y22, color='blue', linewidth=0.4, label='P')
-                    # ax.plot(x, y32, color='green', linewidth=0.4, label='N')
-                    ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
+                        ax.legend(loc='upper right')
+                    else:
+                        ax.set_xlabel('Time in simulation')
+            fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+            if case_dzY == case_dzSI == 1:
+                if j == 0:
+                    plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
                 else:
-                    ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
-                    for k in range(n_age_groups):
-                        y40 = y4[:, k]
-                        y50 = y5[:, k]
-                        ax.fill_between(x, y40, y50, color=colors_short[k], linewidth=0., alpha=0.4,
-                                        label=age_labels[k])
-                if i == 0:
-                    ax.legend(loc='upper right')
-                else:
-                    ax.set_xlabel('Time in simulation')
-        fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-        if case_dzY == case_dzSI == 1:
-            plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
-        else:
-            plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
-        plt.show()
-        plt.close()
+                    plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta, short window.png', dpi=60)
+            else:
+                if j == 0:
+                    plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
+            # plt.show()
+            # plt.close()
+
 
 
 # ######################################
@@ -262,8 +273,6 @@ for case_dzY in cases:
 # ###### Distribution of Delta #########
 # ######## with small window ###########
 # ######################################
-dZ_build = dZ_build_matrix[0]
-dZ_SI_build = dZ_SI_build_matrix[0]
 dZ = dZ_Y_cases[1]  # bad
 dZ_SI = dZ_SI_cases[1]  # bad
 phi_fix = phi_vector[4]
@@ -299,7 +308,7 @@ for g, scenario in enumerate(scenarios_two):
                     Npre_short,
                     Ninit,
                     T_hat_short,
-                    dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                    dZ_build_case, dZ, dZ_SI_build_case dZ_SI, tau, cohort_size,
                     need_f='False',
                     need_Delta='True',
                     need_pi='False',
