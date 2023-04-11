@@ -1118,10 +1118,7 @@ for i in range(N_paths):
 # winsorize extreme shocks
 Npre_index = 0
 average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index], axis=0), axis=1)
-# x_index = belief_popu_young_compare[:, Npre_index]
-# x_index = belief_popu_old_compare[:, Npre_index]
 x_index = (belief_popu_old_compare[:, Npre_index] + belief_popu_young_compare[:, Npre_index]) / 2
-# x_label = 'Average estimation error, younger half'
 x_label = 'Average estimation error'
 below_dz = np.percentile(x_index, 10)
 below_data = x_index >= below_dz
@@ -1198,104 +1195,6 @@ for i in range(2):
         #     data_figure[i, j, k] = np.percentile(data_focus_bin, y_percentiles)
         #     data_figure_variance[i, j, k, 0] = np.mean(data_focus_bin)
         #     data_figure_variance[i, j, k, 1] = np.sqrt(np.mean((data_focus_bin - average_Delta_bar[i]) ** 2))
-
-# figure:
-# bin_size = (above_dz - below_dz) / (n_bins - 1)
-# x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
-# labels = [r'Wealth share old, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
-# # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
-# sub_titles = ['Comparison', 'Complete market', 'Reentry']
-#
-# fig, axes = plt.subplots(ncols=3, figsize=(15, 5), sharey='all', sharex='all')
-# for j, ax in enumerate(axes):
-#     if j == 0:
-#         # y_focus = data_figure[:, :, 0]
-#         y_focus = data_figure_variance[:, :, 0]
-#         for k in range(2):
-#             # y_i = y_focus[k]
-#             # X_Y_Spline = make_interp_spline(x, y_i[:, 0])
-#             # X_ = np.linspace(x.min(), x.max(), 100)
-#             # Y_ = X_Y_Spline(X_)
-#             # label_j = 'Complete market' if k == 0 else 'Reentry'
-#             # x_mean = [X_[np.searchsorted(Y_, average_Delta_bar[k])]]
-#             # ax.plot(X_, Y_, color=colors_short[k], linewidth=1, label=label_j)
-#             # # ax.fill_between(x, y_i[:, 2], y_i[:, 1], color=colors_short[k], linewidth=0., alpha=0.3)
-#             # ax.axhline(average_Delta_bar[k], 0.05, 0.95, color=colors_short[k], linewidth=1, linestyle='dashed', label='Unconditional mean, ' + label_j)
-#             # # ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
-#             # ax.scatter(x_mean, [average_Delta_bar[k]], marker='o', color=colors_short[k])
-#             # ax.legend(loc='upper left')
-#
-#             y_i = y_focus[k]
-#             X_Y_Spline = make_interp_spline(x, y_i[:, 0])
-#             X_Y_Spline_std_below = make_interp_spline(x, y_i[:, 0] - 1.65 * y_i[:, 1])
-#             X_Y_Spline_std_above = make_interp_spline(x, y_i[:, 0] + 1.65 * y_i[:, 1])
-#             X_ = np.linspace(x.min(), x.max(), 100)
-#             Y_ = X_Y_Spline(X_)
-#             Y_below = X_Y_Spline_std_below(X_)
-#             Y_above = X_Y_Spline_std_above(X_)
-#             label_j = 'Complete market' if k == 0 else 'Reentry'
-#             x_mean = [X_[np.searchsorted(Y_, average_Delta_bar[k])]]
-#             ax.plot(X_, Y_, color=colors_short[k], linewidth=1, label=label_j)
-#             ax.fill_between(X_, Y_below, Y_above, color=colors_short[k], linewidth=0., alpha=0.3)
-#             ax.axhline(average_Delta_bar[k], 0.05, 0.95, color=colors_short[k], linewidth=1, linestyle='dashed', label='Unconditional mean, ' + label_j)
-#             # ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
-#             ax.scatter(x_mean, [average_Delta_bar[k]], marker='o', color=colors_short[k])
-#             ax.legend(loc='upper left')
-#
-#     else:
-#         # if j == 1:
-#         #     y_focus = data_figure[0, :, 1:]
-#         # else:
-#         #     y_focus = data_figure[1, :, 1:]
-#         # for k in range(4):
-#         #     y_i = y_focus[:, k]
-#         # for k in range(4):
-#         #     y_i = y_focus[:, k]
-#         #     Y_ = np.empty((3, 100))
-#         #     X_ = np.linspace(x.min(), x.max(), 100)
-#         #     for l in range(3):
-#         #         X_Y_Spline = make_interp_spline(x, y_i[:, l])
-#         #         Y_[l] = X_Y_Spline(X_)
-#         #     if j == 1:
-#         #         ax.plot(X_, Y_[0], color=colors[k], linewidth=0.8, label=labels[k])
-#         #     else:
-#         #         ax.plot(X_, Y_[0], color=colors[k], linewidth=0.8)
-#         #     ax.fill_between(X_, Y_[2], Y_[1], color=colors[k], linewidth=0., alpha=0.2)
-#         #     if j == 1:
-#         #         ax.legend(loc='upper left')
-#         if j == 1:
-#             y_focus = data_figure_variance[0, :, 1:]
-#         else:
-#             y_focus = data_figure_variance[1, :, 1:]
-#         for k in range(4):
-#             y_i = y_focus[:, k]
-#             Y_ = np.empty((3, 100))
-#             X_ = np.linspace(x.min(), x.max(), 100)
-#             for l in range(3):
-#                 if l == 0:
-#                     X_Y_Spline = make_interp_spline(x, y_i[:, l])
-#                 elif l == 1:
-#                     X_Y_Spline = make_interp_spline(x, y_i[:, 0] - 1.65 * y_i[:, 1])
-#                 else:
-#                     X_Y_Spline = make_interp_spline(x, y_i[:, 0] + 1.65 * y_i[:, 1])
-#                 Y_[l] = X_Y_Spline(X_)
-#             if j == 1:
-#                 ax.plot(X_, Y_[0], color=colors[k], linewidth=0.8, label=labels[k])
-#             else:
-#                 ax.plot(X_, Y_[0], color=colors[k], linewidth=0.8)
-#             ax.fill_between(X_, Y_[2], Y_[1], color=colors[k], linewidth=0., alpha=0.2)
-#             if j == 1:
-#                 ax.legend(loc='upper left')
-#     ax.set_xlabel(x_label)
-#     ax.set_ylabel(r'Estimation error of participants, $\bar{\Delta_t}$')
-#     # ax.set_xlim(-0.25, 0.25)
-#     # ax.set_title(sub_titles[j][k])
-# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# # plt.savefig(x_label[:10] + 'DeltaVola.png', dpi=100)
-# plt.show()
-# # plt.close()
-
-
 bin_size = (above_dz - below_dz) / (n_bins - 1)
 x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
 labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
