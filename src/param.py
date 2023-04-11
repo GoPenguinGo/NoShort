@@ -92,18 +92,18 @@ age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <=
 # for i in range(n_phi_short):
 #     label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
 
-dZ_mat = np.random.randn(int(Mpath / 2 * Nt))
-dZ_mat = np.reshape(np.append(dZ_mat, -dZ_mat), (-1, Nt)) * dt_root
-dZ_SI_mat = np.random.randn(int(Mpath / 2 * Nt))
-dZ_SI_mat = np.reshape(np.append(dZ_SI_mat, -dZ_mat), (-1, Nt)) * dt_root
-dZ_build_mat = np.random.randn(int(Mpath / 2 * Nt))
-dZ_build_mat = np.reshape(np.append(dZ_build_mat, -dZ_mat), (-1, Nt)) * dt_root
-dZ_SI_build_mat = np.random.randn(int(Mpath / 2 * Nt))
-dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat, -dZ_mat), (-1, Nt)) * dt_root
-np.save('dZ_matrix', dZ_mat)
-np.save('dZ_SI_matrix', dZ_SI_mat)
-np.save('dZ_build_matrix', dZ_build_mat)
-np.save('dZ_SI_build_matrix', dZ_SI_build_mat)
+# dZ_mat = np.random.randn(int(Mpath / 2 * Nt))
+# dZ_mat = np.reshape(np.append(dZ_mat, -dZ_mat), (-1, Nt)) * dt_root
+# dZ_SI_mat = np.random.randn(int(Mpath / 2 * Nt))
+# dZ_SI_mat = np.reshape(np.append(dZ_SI_mat, -dZ_mat), (-1, Nt)) * dt_root
+# dZ_build_mat = np.random.randn(int(Mpath / 2 * Nt))
+# dZ_build_mat = np.reshape(np.append(dZ_build_mat, -dZ_mat), (-1, Nt)) * dt_root
+# dZ_SI_build_mat = np.random.randn(int(Mpath / 2 * Nt))
+# dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat, -dZ_mat), (-1, Nt)) * dt_root
+# np.save('dZ_matrix', dZ_mat)
+# np.save('dZ_SI_matrix', dZ_SI_mat)
+# np.save('dZ_build_matrix', dZ_build_mat)
+# np.save('dZ_SI_build_matrix', dZ_SI_build_mat)
 
 dZ_matrix = np.load('dZ_matrix.npy')
 dZ_build_matrix = np.load('dZ_build_matrix.npy')
