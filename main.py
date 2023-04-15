@@ -12,7 +12,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, colors_short2, PN_labels, age_labels
+    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
@@ -21,8 +21,8 @@ import statsmodels.api as sm
 from scipy.interpolate import make_interp_spline
 import pandas as pd
 
-n_scenarios = 5
-scenarios_short = scenarios[:n_scenarios]
+n_scenarios_short = 3
+scenarios_short = scenarios[:n_scenarios_short]
 
 phi_vector = np.arange(0, 1, 0.1)
 n_phi = len(phi_vector)
@@ -31,12 +31,20 @@ phi_indexes = [0, 4, 8]
 n_phi_short = len(phi_indexes)
 phi_vector_short = phi_vector[phi_indexes]
 
+phi_indexes_5 = [0, 2, 4, 6, 8]
+n_phi_5 = 5
+phi_5 = phi_vector[phi_indexes_5]
+
 label_phi = []
 for i in range(n_phi_short):
     label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
 labels = [scenario_labels, label_phi, label_phi]
 
 age_cutoff = cutoffs[2]
+
+scenarios_two = scenarios[1:3]
+Npre_short = np.array([60, 240])
+T_hat_short = dt * Npre_short
 
 # ######################################
 # ########## ONE RANDOM PATH ############
@@ -45,18 +53,18 @@ age_cutoff = cutoffs[2]
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
-theta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
-popu_parti_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
-market_view_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
-survey_view_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt))
-r_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt))
-belief_dispersion_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt))
-delta_bar_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt))
-Phi_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt))
-Delta_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-pi_compare = np.empty((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-cons_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
-invest_tracker_compare = np.zeros((n_scenarios, 2, 2, n_phi_short, Nt, Nc))
+theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
+popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
+market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
+survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
+r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
+belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
+delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
+Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
+Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
+pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
+cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
+invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
 for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
@@ -112,12 +120,12 @@ for g, scenario in enumerate(scenarios_short):
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)
-Delta_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-pi_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-cons_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-switch_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-parti_time_series = np.zeros((n_scenarios, 2, 2, n_phi_short, nn, length))
-for o in range(n_scenarios):
+Delta_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+pi_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+cons_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+switch_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+parti_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+for o in range(n_scenarios_short):
     for i in range(2):
         for j in range(2):
             for l in range(n_phi_short):
@@ -162,8 +170,8 @@ for i in range(1, n_phi_short, 1):
         yellow_index = 0 if j == 0 or j == 2 else 1
         red_case = red_labels[red_index]
         yellow_case = yellow_labels[yellow_index]
-        Z = np.cumsum(Z_Y_cases[red_index])
-        Z_SI = np.cumsum(Z_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
+        Z = np.cumsum(dZ_Y_cases[red_index])
+        Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
         if j == 3:
             ax.set_xlabel('Time in simulation')
         ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
@@ -295,9 +303,9 @@ y1 = r_mat[:, 0]  # n_scenarios, Nt
 y2 = r_mat[1]  # n_phi_short, Nt
 y3 = theta_mat[1]  # n_phi_short, Nt
 y_list = [y1, y2, y3]
-Z = np.cumsum(Z_Y_cases[red_case])
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])
-n_lines = [n_scenarios, n_phi_short, n_phi_short]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+n_lines = [n_scenarios_short, n_phi_short, n_phi_short]
 y_title_list = [r'Interest rate $r_t$, $\phi=0$', r'Interest rate $r_t$, Reentry',
                 r'Market price of risk $\theta_t$, Reentry']
 labels = [scenario_labels, label_phi, label_phi]
@@ -344,8 +352,8 @@ for i, ax_row in enumerate(axes):
         y_mat = r_mat[:, phi_index] if j == 0 else r_mat[scenario_index]  # n_scenarios, Nt
         labels = scenario_labels if j == 0 else label_phi
         y_title = y_title_list[j]
-        Z = np.cumsum(Z_Y_cases[red_case])
-        Z_SI = np.cumsum(Z_SI_cases[yellow_case])
+        Z = np.cumsum(dZ_Y_cases[red_case])
+        Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
         ax2 = ax.twinx()
         ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
         ax2.plot(t, Z, color='red', linewidth=0.4, label=r'$z^Y_t$')
@@ -384,8 +392,8 @@ y2_case = Phi_compare[:, red_case, yellow_case]
 y3_case = popu_parti_compare[:, red_case, yellow_case]
 left_t = 300
 right_t = 400
-Z = np.cumsum(Z_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
+Z = np.cumsum(dZ_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
 x = t[int(left_t / dt):int(right_t / dt)]
 
 fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 15))
@@ -458,8 +466,8 @@ fig, axes = plt.subplots(nrows=3, ncols=3, sharex='all', sharey='col', figsize=(
 for i, ax_row in enumerate(axes):
     red_case = red_cases[i]
     yellow_case = yellow_cases[i]
-    Z = np.cumsum(Z_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
-    Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
+    Z = np.cumsum(dZ_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
+    Z_SI = np.cumsum(dZ_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
     for j, ax in enumerate(ax_row):
         title_subfig = titles_subfig[j]
         var = var_list[j][:, red_case, yellow_case]  # n_sce * n_phi * nt
@@ -506,8 +514,8 @@ red_case = 1
 yellow_case = 1
 phi_index = 1
 scenario_index = 1
-Z = np.cumsum(Z_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
+Z = np.cumsum(dZ_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
 x = t[int(left_t / dt):int(right_t / dt)]
 y1_pi = pi_time_series[:, red_case, yellow_case, phi_index,
         cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_scenarios, length)
@@ -527,7 +535,7 @@ titles_subfig = [r'Portfolios, across scenarios, $\phi=0.4$', r'Belief component
                  r'Wealth component, reentry, across values of $\phi$']
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
 for i, ax in enumerate(axes.flat):
-    n_loop = n_phi_short if i >= 3 else n_scenarios
+    n_loop = n_phi_short if i >= 3 else n_scenarios_short
     labels = label_phi if i >= 3 else scenario_labels
     for j in range(n_loop):
         label_i = labels[j]
@@ -621,8 +629,8 @@ plt.savefig('IA Shocks and Portfolio.png', dpi=100)
 print('Figure 9')
 tax_vector = [0.008, 0.010, 0.012]
 n_tax = len(tax_vector)
-dZ = Z_Y_cases[1]
-dZ_SI = Z_SI_cases[1]
+dZ = dZ_Y_cases[1]
+dZ_SI = dZ_SI_cases[1]
 n_scenarios = 1
 n_phi_short = 1
 cohort_index = 2
@@ -640,8 +648,8 @@ for case_dzY in cases:
     for case_dzSI in cases:
         dZ_build = dZ_build_matrix[0]
         dZ_SI_build = dZ_SI_build_matrix[0]
-        dZ = Z_Y_cases[case_dzY]  # bad
-        dZ_SI = Z_SI_cases[case_dzSI]  # bad
+        dZ = dZ_Y_cases[case_dzY]  # bad
+        dZ_SI = dZ_SI_cases[case_dzSI]  # bad
         cons_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
         f_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
         pi_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
@@ -929,8 +937,6 @@ for case_dzY in cases:
 print('Data generation for Figure 3, 9.2 and 10')
 # varying tau only when phi == 0.0
 # storing drift, diffusion, average view when phi == 0.0 and tau == 0.01
-n_scenarios_short = 3
-scenarios_short = scenarios[n_scenarios_short]
 age_cut = 150
 Nc_cut = int(age_cut / dt)
 data_keep = np.arange(0, Nc, 60)
@@ -999,58 +1005,59 @@ for i in range(Mpath):
                                     need_pi='False',
                                     )
                     f_matrix_tax[i, j, k] = np.average(f, axis=0)[-Nc_cut:]
-                    if tax_try == 0.01:
-                        Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]  # across time
-                        invest_matrix[i, j, l] = np.average(invest_tracker_reentry, axis=0)[-Nc_cut:]
-
-                        theta_mat = np.transpose(np.tile(theta, (Nc_cut, 1)))
-                        r_mat = np.transpose(np.tile(r, (Nc_cut, 1)))
-                        drift_N = -rho + r_mat
-                        Delta_short = Delta[:, -Nc_cut:]
-                        drift_P = -rho + r_mat + 0.5 * theta_mat ** 2 - 0.5 * Delta_short ** 2
-                        diffusion_P = np.abs(theta_mat + Delta_short)
-                        r_matrix[i, j] = r[data_keep]
-                        invest_tracker_short = invest_tracker[:, -Nc_cut:]
-                        drift_c = drift_P * invest_tracker_short + drift_N * (1 - invest_tracker_short)
-                        drift_matrix[i, j] = drift_c[data_keep]
-                        drift_P_matrix[i, j] = (drift_P * invest_tracker_short)[data_keep]
-                        diffusion_P_matrix[i, j] = np.abs((diffusion_P * invest_tracker_short))[data_keep]
-                        market_view = np.average(Delta_short, weights=cohort_size_short, axis=1)  # across cohorts
-                        average_belief_matrix[i, j] = market_view[data_keep]
-                        for ii in range(2):
-                            parti_rate_young = np.average(invest_tracker[:, cutoff_young[ii]:], axis=1)
-                            parti_rate_old = np.average(invest_tracker[:, :cutoff_old[ii]], axis=1)
-                            parti_old_matrix[i, j, ii] = parti_rate_old[data_keep]
-                            parti_young_matrix[i, j, ii] = parti_rate_young[data_keep]
+                    # if tax_try == 0.01:
+                    #     Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]  # across time
+                    #     invest_matrix[i, j, l] = np.average(invest_tracker, axis=0)[-Nc_cut:]
+                    #
+                    #     theta_mat = np.transpose(np.tile(theta, (Nc_cut, 1)))
+                    #     r_mat = np.transpose(np.tile(r, (Nc_cut, 1)))
+                    #     drift_N = -rho + r_mat
+                    #     Delta_short = Delta[:, -Nc_cut:]
+                    #     drift_P = -rho + r_mat + 0.5 * theta_mat ** 2 - 0.5 * Delta_short ** 2
+                    #     diffusion_P = np.abs(theta_mat + Delta_short)
+                    #     r_matrix[i, j] = r[data_keep]
+                    #     invest_tracker_short = invest_tracker[:, -Nc_cut:]
+                    #     drift_c = drift_P * invest_tracker_short + drift_N * (1 - invest_tracker_short)
+                    #     drift_matrix[i, j] = drift_c[data_keep]
+                    #     drift_P_matrix[i, j] = (drift_P * invest_tracker_short)[data_keep]
+                    #     diffusion_P_matrix[i, j] = np.abs((diffusion_P * invest_tracker_short))[data_keep]
+                    #     market_view = np.average(Delta_short, weights=cohort_size_short, axis=1)  # across cohorts
+                    #     average_belief_matrix[i, j] = market_view[data_keep]
+                    #     for ii in range(2):
+                    #         parti_rate_young = np.average(invest_tracker[:, cutoff_young[ii]:], axis=1)
+                    #         parti_rate_old = np.average(invest_tracker[:, :cutoff_old[ii]], axis=1)
+                    #         parti_old_matrix[i, j, ii] = parti_rate_old[data_keep]
+                    #         parti_young_matrix[i, j, ii] = parti_rate_young[data_keep]
 
             else:
-                (
-                    r,
-                    theta,
-                    f,
-                    Delta,
-                    pi,
-                    popu_parti,
-                    f_parti,
-                    Delta_bar_parti,
-                    dR,
-                    invest_tracker,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI(scenario_trade, scenario_learn,
-                                Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
-                                tax,
-                                beta,
-                                phi_try,
-                                Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                need_f='True',
-                                need_Delta='True',
-                                need_pi='False',
-                                )
-                Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]
-                invest_matrix[i, j, l] = np.average(invest_tracker, axis=0)[-Nc_cut:]
+                pass
+                # (
+                #     r,
+                #     theta,
+                #     f,
+                #     Delta,
+                #     pi,
+                #     popu_parti,
+                #     f_parti,
+                #     Delta_bar_parti,
+                #     dR,
+                #     invest_tracker,
+                #     popu_can_short,
+                #     popu_short,
+                #     Phi_can_short,
+                #     Phi_short,
+                # ) = simulate_SI(scenario_trade, scenario_learn,
+                #                 Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+                #                 tax,
+                #                 beta,
+                #                 phi_try,
+                #                 Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                #                 need_f='True',
+                #                 need_Delta='True',
+                #                 need_pi='False',
+                #                 )
+                # Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]
+                # invest_matrix[i, j, l] = np.average(invest_tracker, axis=0)[-Nc_cut:]
 
 # Figure 3
 t_cut = 100
@@ -1090,7 +1097,7 @@ yaxis_subfig = [r'$Average c_{s,t}/Y_t$', r'$Average f_{s,t}$']
 line_styles = [(0, (5, 10)), 'solid', (0, (1, 1))]
 fig, axes = plt.subplots(ncols=2, figsize=(14, 5))
 for i, ax in enumerate(axes):
-    ax.set_title(titles_subfig[i] + ', ' + r'$\phi=0.4$')
+    ax.set_title(titles_subfig[i] + ', ' + r'$\phi=0.0$')
     var = c_vector if i == 0 else f_vector
     for k in range(n_tax):
         y = var[1, k, :N_cut]  # n_scenarios, 2, 2, n_tax, n_phi_short, nn, length
@@ -1146,7 +1153,7 @@ for k in range(4):
     b = condition_mat <= condition_above
     a_b = a * b
     r_focus = r_mat * np.ma.masked_equal(a_b, 0)
-    a_b_mat = np.tile(np.reshape(a_b, (N_1, len(data_keep), 1)), (1, 1, Nc_cut))
+    a_b_mat = np.tile(np.reshape(a_b, (Mpath, len(data_keep), 1)), (1, 1, Nc_cut))
     masked = np.ma.masked_equal(a_b_mat, 0)
     # condition_where = np.where(a * b == 1)
     drift_c_focus = drift_c_mat * masked
@@ -1566,10 +1573,10 @@ for i in range(4000):
 # for each phi value:
     # bins of participation rate on the x axis
     # covariance between dZ^Y or dZ^SI and the change in belief conditional on bin
-x_var = parti_rate_pre_mat[:keep_until]
-y_var = update_belief_mat[:keep_until]
-condition_var1 = shocks_mat[:keep_until]
-condition_var2 = shocks_SI_mat[:keep_until]
+x_var = parti_rate_pre_mat
+y_var = update_belief_mat
+condition_var1 = shocks_mat
+condition_var2 = shocks_SI_mat
 n_bins = 10
 data_figure_mean = np.zeros((n_phi_short, n_bins - 1))
 data_figure_std = np.zeros((n_phi_short, n_bins - 1))
@@ -1615,7 +1622,7 @@ for i, ax in enumerate(axes):
     for l in range(n_phi_short):
         y = data_figure_cov[i, l]
         x = data_figure_x[l]
-        y_complete = data_figure_complete[i, l]
+        y_complete = data_figure_complete_std[i, l]
         X_Y_Spline = make_interp_spline(x, y)
         Y_ = X_Y_Spline(X_)
         if i == 0:
@@ -2389,242 +2396,242 @@ for k, scenario in enumerate(scenarios):
 ############ GRAPH  NINE ##############
 #######################################
 
-# describe the predictive power of participation rate
-
-
-start_t = 0
-x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-m = len(x_variables)
-# np.cumsum(dR_matrix[i])
-coeff_matrix1 = np.zeros((Mpaths, m, 3))
-pvalue_matrix1 = np.zeros((Mpaths, m, 3))
-tstats_matrix1 = np.zeros((Mpaths, m, 3))
-rsqrd_matrix1 = np.zeros((Mpaths, m, 2))
-
-for i in range(Mpaths):
-    path_y = erp_S_matrix[i]
-    path_x2 = survey_view_parti_matrix[i]
-    path_x2 = path_x2 / np.std(path_x2)
-    for j, var in enumerate(x_variables):
-        path_x = var[i]
-        y_raw = path_y[start_t:]  # equity risk premium at time t
-
-        # univariate regressions
-        x1_raw = path_x[start_t:]  # participation rate at time t
-        x1_raw = x1_raw / np.std(x1_raw)
-        x1_lag = x1_raw.reshape(-1, 1)
-        x1_lag2 = sm.add_constant(x1_lag)
-        y_predict = y_raw.reshape(-1, 1)
-
-        model = sm.OLS(y_predict, x1_lag2)
-        est = model.fit()
-        coeff_matrix1[i, j, 0] = est.params[1]
-        pvalue_matrix1[i, j, 0] = est.pvalues[1]
-        tstats_matrix1[i, j, 0] = est.tvalues[1]
-        rsqrd_matrix1[i, j, 0] = est.rsquared
-
-        # bivariate regressions
-        x2_lag = path_x2[start_t:]
-
-        x_lag = np.append(x1_lag, x2_lag)
-        x_lag = np.transpose(x_lag.reshape(2, -1))
-        x_lag = sm.add_constant(x_lag)
-
-        y_predict = y_raw.reshape(-1, 1)
-
-        model = sm.OLS(y_predict, x_lag)
-        est = model.fit()
-        coeff_matrix1[i, j, 1] = est.params[1]
-        coeff_matrix1[i, j, 2] = est.params[2]
-        pvalue_matrix1[i, j, 1] = est.pvalues[1]
-        pvalue_matrix1[i, j, 2] = est.pvalues[2]
-        tstats_matrix1[i, j, 1] = est.tvalues[1]
-        tstats_matrix1[i, j, 2] = est.tvalues[2]
-        rsqrd_matrix1[i, j, 1] = est.rsquared
-
-reg_coeffs1 = np.average(coeff_matrix1, axis=0)
-reg_pvalues1 = np.average(pvalue_matrix1, axis=0)
-reg_tstats1 = np.average(tstats_matrix1, axis=0)
-reg_rsqrd1 = np.average(rsqrd_matrix1, axis=0)
-reg_data = np.empty((5, 8))
-header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age', '(8)']
-index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-for i in range(4):
-    reg_data[0, i * 2] = reg_coeffs1[i, 0]
-    reg_data[1, i * 2] = reg_tstats1[i, 0]
-    reg_data[2, i * 2] = np.nan
-    reg_data[3, i * 2] = np.nan
-    reg_data[4, i * 2] = reg_rsqrd1[i, 0]
-
-    reg_data[0, i * 2 + 1] = reg_coeffs1[i, 1]
-    reg_data[1, i * 2 + 1] = reg_tstats1[i, 1]
-    reg_data[2, i * 2 + 1] = reg_coeffs1[i, 2]
-    reg_data[3, i * 2 + 1] = reg_tstats1[i, 2]
-    reg_data[4, i * 2 + 1] = reg_rsqrd1[i, 1]
-
-print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-####
-horizons = [1, 3, 6, 12, 36, 60, 120]
-x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # describe the predictive power of participation rate
+#
+#
+# start_t = 0
 # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-m = len(x_variables)
-n = len(horizons)
-# np.cumsum(dR_matrix[i])
-coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
-pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
-tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
-rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
-
-for i in range(Mpaths):
-    path_y = np.cumsum(dR_matrix[i])
-    path_r = np.cumsum(r_matrix[i])
-    path_x2 = survey_view_parti_matrix[i]
-    path_x2 = path_x2 / np.std(path_x2)
-    for j, horizon in enumerate(horizons):
-        y_raw = (path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) / (horizon * dt)
-        # dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
-        y_predict = y_raw.reshape(-1, 1)
-        for k, var in enumerate(x_variables):
-            path_x = var[i]
-            # univariate regressions
-            x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
-            x1_raw = x1_raw / np.std(x1_raw)
-            x1_lag = x1_raw.reshape(-1, 1)
-            x1_lag2 = sm.add_constant(x1_lag)
-
-            model = sm.OLS(y_predict, x1_lag2)
-            est = model.fit()
-            coeff_matrix2[i, j, k, 0] = est.params[1]
-            pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
-            tstats_matrix2[i, j, k, 0] = est.tvalues[1]
-            rsqrd_matrix2[i, j, k, 0] = est.rsquared
-
-            # bivariate regressions
-            x2_lag = path_x2[start_t: -1 - horizon]  # average perceived risk premia at time t
-
-            x_lag = np.append(x1_lag, x2_lag)
-            x_lag = np.transpose(x_lag.reshape(2, -1))
-            x_lag = sm.add_constant(x_lag)
-
-            y_predict = y_raw.reshape(-1, 1)
-
-            model = sm.OLS(y_predict, x_lag)
-            est = model.fit()
-            coeff_matrix2[i, j, k, 1] = est.params[1]
-            coeff_matrix2[i, j, k, 2] = est.params[2]
-            pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
-            pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
-            tstats_matrix2[i, j, k, 1] = est.tvalues[1]
-            tstats_matrix2[i, j, k, 2] = est.tvalues[2]
-            rsqrd_matrix2[i, j, k, 1] = est.rsquared
-
-reg_coeffs2 = np.average(coeff_matrix2, axis=0)
-reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
-reg_tstats2 = np.average(tstats_matrix2, axis=0)
-reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
-
-for j in range(n):
-    horizon = horizons[j]
-    reg_data = np.empty((5, 8))
-    header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
-              '(8)']
-    index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-    for i in range(4):
-        reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
-        reg_data[1, i * 2] = reg_tstats2[j, i, 0]
-        reg_data[2, i * 2] = np.nan
-        reg_data[3, i * 2] = np.nan
-        reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
-
-        reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
-        reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
-        reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
-        reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
-        reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
-
-    print(str(horizon) + '-month')
-    print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-####
-horizons = [1, 3, 6, 12, 36, 60, 120]
-x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# m = len(x_variables)
+# # np.cumsum(dR_matrix[i])
+# coeff_matrix1 = np.zeros((Mpaths, m, 3))
+# pvalue_matrix1 = np.zeros((Mpaths, m, 3))
+# tstats_matrix1 = np.zeros((Mpaths, m, 3))
+# rsqrd_matrix1 = np.zeros((Mpaths, m, 2))
+#
+# for i in range(Mpaths):
+#     path_y = erp_S_matrix[i]
+#     path_x2 = survey_view_parti_matrix[i]
+#     path_x2 = path_x2 / np.std(path_x2)
+#     for j, var in enumerate(x_variables):
+#         path_x = var[i]
+#         y_raw = path_y[start_t:]  # equity risk premium at time t
+#
+#         # univariate regressions
+#         x1_raw = path_x[start_t:]  # participation rate at time t
+#         x1_raw = x1_raw / np.std(x1_raw)
+#         x1_lag = x1_raw.reshape(-1, 1)
+#         x1_lag2 = sm.add_constant(x1_lag)
+#         y_predict = y_raw.reshape(-1, 1)
+#
+#         model = sm.OLS(y_predict, x1_lag2)
+#         est = model.fit()
+#         coeff_matrix1[i, j, 0] = est.params[1]
+#         pvalue_matrix1[i, j, 0] = est.pvalues[1]
+#         tstats_matrix1[i, j, 0] = est.tvalues[1]
+#         rsqrd_matrix1[i, j, 0] = est.rsquared
+#
+#         # bivariate regressions
+#         x2_lag = path_x2[start_t:]
+#
+#         x_lag = np.append(x1_lag, x2_lag)
+#         x_lag = np.transpose(x_lag.reshape(2, -1))
+#         x_lag = sm.add_constant(x_lag)
+#
+#         y_predict = y_raw.reshape(-1, 1)
+#
+#         model = sm.OLS(y_predict, x_lag)
+#         est = model.fit()
+#         coeff_matrix1[i, j, 1] = est.params[1]
+#         coeff_matrix1[i, j, 2] = est.params[2]
+#         pvalue_matrix1[i, j, 1] = est.pvalues[1]
+#         pvalue_matrix1[i, j, 2] = est.pvalues[2]
+#         tstats_matrix1[i, j, 1] = est.tvalues[1]
+#         tstats_matrix1[i, j, 2] = est.tvalues[2]
+#         rsqrd_matrix1[i, j, 1] = est.rsquared
+#
+# reg_coeffs1 = np.average(coeff_matrix1, axis=0)
+# reg_pvalues1 = np.average(pvalue_matrix1, axis=0)
+# reg_tstats1 = np.average(tstats_matrix1, axis=0)
+# reg_rsqrd1 = np.average(rsqrd_matrix1, axis=0)
+# reg_data = np.empty((5, 8))
+# header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age', '(8)']
+# index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+# for i in range(4):
+#     reg_data[0, i * 2] = reg_coeffs1[i, 0]
+#     reg_data[1, i * 2] = reg_tstats1[i, 0]
+#     reg_data[2, i * 2] = np.nan
+#     reg_data[3, i * 2] = np.nan
+#     reg_data[4, i * 2] = reg_rsqrd1[i, 0]
+#
+#     reg_data[0, i * 2 + 1] = reg_coeffs1[i, 1]
+#     reg_data[1, i * 2 + 1] = reg_tstats1[i, 1]
+#     reg_data[2, i * 2 + 1] = reg_coeffs1[i, 2]
+#     reg_data[3, i * 2 + 1] = reg_tstats1[i, 2]
+#     reg_data[4, i * 2 + 1] = reg_rsqrd1[i, 1]
+#
+# print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+# ####
+# horizons = [1, 3, 6, 12, 36, 60, 120]
 # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-m = len(x_variables)
-n = len(horizons)
-# np.cumsum(dR_matrix[i])
-coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
-pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
-tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
-rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
-
-for i in range(Mpaths):
-    path_y = np.cumsum(dR_matrix[i])
-    path_r = np.cumsum(r_matrix[i])
-    path_x2 = survey_view_parti_matrix[i]
-    path_x2 = path_x2 / np.std(path_x2)
-    for j, horizon in enumerate(horizons):
-        # y_raw = path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]  #dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
-        y_raw = ((path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) \
-                 - (path_r[start_t + horizon: -1] - path_r[start_t: -horizon - 1])) / (horizon * dt)
-        y_predict = y_raw.reshape(-1, 1)
-        for k, var in enumerate(x_variables):
-            path_x = var[i]
-            # univariate regressions
-            x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
-            x1_raw = x1_raw / np.std(x1_raw)
-            x1_lag = x1_raw.reshape(-1, 1)
-            x1_lag2 = sm.add_constant(x1_lag)
-
-            model = sm.OLS(y_predict, x1_lag2)
-            est = model.fit()
-            coeff_matrix2[i, j, k, 0] = est.params[1]
-            pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
-            tstats_matrix2[i, j, k, 0] = est.tvalues[1]
-            rsqrd_matrix2[i, j, k, 0] = est.rsquared
-
-            # bivariate regressions
-            x2_lag = path_x2[start_t: -horizon - 1]
-
-            x_lag = np.append(x1_lag, x2_lag)
-            x_lag = np.transpose(x_lag.reshape(2, -1))
-            x_lag = sm.add_constant(x_lag)
-
-            y_predict = y_raw.reshape(-1, 1)
-
-            model = sm.OLS(y_predict, x_lag)
-            est = model.fit()
-            coeff_matrix2[i, j, k, 1] = est.params[1]
-            coeff_matrix2[i, j, k, 2] = est.params[2]
-            pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
-            pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
-            tstats_matrix2[i, j, k, 1] = est.tvalues[1]
-            tstats_matrix2[i, j, k, 2] = est.tvalues[2]
-            rsqrd_matrix2[i, j, k, 1] = est.rsquared
-
-reg_coeffs2 = np.average(coeff_matrix2, axis=0)
-reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
-reg_tstats2 = np.average(tstats_matrix2, axis=0)
-reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
-
-for j in range(n):
-    horizon = horizons[j]
-    reg_data = np.empty((5, 8))
-    header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
-              '(8)']
-    index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-    for i in range(4):
-        reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
-        reg_data[1, i * 2] = reg_tstats2[j, i, 0]
-        reg_data[2, i * 2] = np.nan
-        reg_data[3, i * 2] = np.nan
-        reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
-
-        reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
-        reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
-        reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
-        reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
-        reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
-
-    print(str(horizon) + '-month')
-    print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# m = len(x_variables)
+# n = len(horizons)
+# # np.cumsum(dR_matrix[i])
+# coeff_matrix2 = np.zeros((Mpath, n, m, 3))
+# pvalue_matrix2 = np.zeros((Mpath, n, m, 3))
+# tstats_matrix2 = np.zeros((Mpath, n, m, 3))
+# rsqrd_matrix2 = np.zeros((Mpath, n, m, 2))
+#
+# for i in range(Mpath):
+#     path_y = np.cumsum(dR_matrix[i])
+#     path_r = np.cumsum(r_matrix[i])
+#     path_x2 = survey_view_parti_matrix[i]
+#     path_x2 = path_x2 / np.std(path_x2)
+#     for j, horizon in enumerate(horizons):
+#         y_raw = (path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) / (horizon * dt)
+#         # dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
+#         y_predict = y_raw.reshape(-1, 1)
+#         for k, var in enumerate(x_variables):
+#             path_x = var[i]
+#             # univariate regressions
+#             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
+#             x1_raw = x1_raw / np.std(x1_raw)
+#             x1_lag = x1_raw.reshape(-1, 1)
+#             x1_lag2 = sm.add_constant(x1_lag)
+#
+#             model = sm.OLS(y_predict, x1_lag2)
+#             est = model.fit()
+#             coeff_matrix2[i, j, k, 0] = est.params[1]
+#             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
+#             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
+#             rsqrd_matrix2[i, j, k, 0] = est.rsquared
+#
+#             # bivariate regressions
+#             x2_lag = path_x2[start_t: -1 - horizon]  # average perceived risk premia at time t
+#
+#             x_lag = np.append(x1_lag, x2_lag)
+#             x_lag = np.transpose(x_lag.reshape(2, -1))
+#             x_lag = sm.add_constant(x_lag)
+#
+#             y_predict = y_raw.reshape(-1, 1)
+#
+#             model = sm.OLS(y_predict, x_lag)
+#             est = model.fit()
+#             coeff_matrix2[i, j, k, 1] = est.params[1]
+#             coeff_matrix2[i, j, k, 2] = est.params[2]
+#             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
+#             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
+#             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
+#             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
+#             rsqrd_matrix2[i, j, k, 1] = est.rsquared
+#
+# reg_coeffs2 = np.average(coeff_matrix2, axis=0)
+# reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
+# reg_tstats2 = np.average(tstats_matrix2, axis=0)
+# reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+#
+# for j in range(n):
+#     horizon = horizons[j]
+#     reg_data = np.empty((5, 8))
+#     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
+#               '(8)']
+#     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+#     for i in range(4):
+#         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
+#         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
+#         reg_data[2, i * 2] = np.nan
+#         reg_data[3, i * 2] = np.nan
+#         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
+#
+#         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
+#         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
+#         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
+#         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
+#         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+#
+#     print(str(horizon) + '-month')
+#     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+# ####
+# horizons = [1, 3, 6, 12, 36, 60, 120]
+# x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# m = len(x_variables)
+# n = len(horizons)
+# # np.cumsum(dR_matrix[i])
+# coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
+# pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
+# tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
+# rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
+#
+# for i in range(Mpaths):
+#     path_y = np.cumsum(dR_matrix[i])
+#     path_r = np.cumsum(r_matrix[i])
+#     path_x2 = survey_view_parti_matrix[i]
+#     path_x2 = path_x2 / np.std(path_x2)
+#     for j, horizon in enumerate(horizons):
+#         # y_raw = path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]  #dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
+#         y_raw = ((path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) \
+#                  - (path_r[start_t + horizon: -1] - path_r[start_t: -horizon - 1])) / (horizon * dt)
+#         y_predict = y_raw.reshape(-1, 1)
+#         for k, var in enumerate(x_variables):
+#             path_x = var[i]
+#             # univariate regressions
+#             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
+#             x1_raw = x1_raw / np.std(x1_raw)
+#             x1_lag = x1_raw.reshape(-1, 1)
+#             x1_lag2 = sm.add_constant(x1_lag)
+#
+#             model = sm.OLS(y_predict, x1_lag2)
+#             est = model.fit()
+#             coeff_matrix2[i, j, k, 0] = est.params[1]
+#             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
+#             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
+#             rsqrd_matrix2[i, j, k, 0] = est.rsquared
+#
+#             # bivariate regressions
+#             x2_lag = path_x2[start_t: -horizon - 1]
+#
+#             x_lag = np.append(x1_lag, x2_lag)
+#             x_lag = np.transpose(x_lag.reshape(2, -1))
+#             x_lag = sm.add_constant(x_lag)
+#
+#             y_predict = y_raw.reshape(-1, 1)
+#
+#             model = sm.OLS(y_predict, x_lag)
+#             est = model.fit()
+#             coeff_matrix2[i, j, k, 1] = est.params[1]
+#             coeff_matrix2[i, j, k, 2] = est.params[2]
+#             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
+#             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
+#             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
+#             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
+#             rsqrd_matrix2[i, j, k, 1] = est.rsquared
+#
+# reg_coeffs2 = np.average(coeff_matrix2, axis=0)
+# reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
+# reg_tstats2 = np.average(tstats_matrix2, axis=0)
+# reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+#
+# for j in range(n):
+#     horizon = horizons[j]
+#     reg_data = np.empty((5, 8))
+#     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
+#               '(8)']
+#     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+#     for i in range(4):
+#         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
+#         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
+#         reg_data[2, i * 2] = np.nan
+#         reg_data[3, i * 2] = np.nan
+#         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
+#
+#         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
+#         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
+#         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
+#         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
+#         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+#
+#     print(str(horizon) + '-month')
+#     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))

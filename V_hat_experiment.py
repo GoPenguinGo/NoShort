@@ -12,33 +12,28 @@ import tabulate as tab
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 
-# T_hats = dt * Npres
-# T_hat_dimension = len(T_hats)
-# # N = 30  # can choose a smaller number than Mpaths as the number of paths
-
-Npres = np.array([60, 240])
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
+
 # n_scenarios = 1
-n_scenarios = 3
-# a_sce = 1
-N = 1000
-N_scenarios = 3
+n_scenarios = 1
+a_sce = 0
+N = 5000
 
 phi = 0.4
 
 # Generate matrix to store the results
-r_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))  # for mean and std
-theta_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Phi_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Phi_parti_1_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+r_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)  # for mean and std
+theta_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+Phi_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
 # popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Delta_bar_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-popu_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
+Delta_bar_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+popu_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups), dtype=np.float32)
 # belief_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
-wealthshare_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
-Delta_popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4))
+wealthshare_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups), dtype=np.float32)
+Delta_popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4), dtype=np.float32)
 # r_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
 # theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 # Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
@@ -58,14 +53,14 @@ for l in range(N):
     # dZ_build = -dZ_build_matrix[l]
     # dZ_SI = -dZ_SI_matrix[l]
     # dZ_SI_build = -dZ_SI_build_matrix[l]
-    dZ = dZ_matrix[l]
-    dZ_build = dZ_build_matrix[l]
-    dZ_SI = dZ_SI_matrix[l]
-    dZ_SI_build = dZ_SI_build_matrix[l]
+    dZ = dZ_matrix[int(l * 2)]
+    dZ_build = dZ_build_matrix[int(l * 2)]
+    dZ_SI = dZ_SI_matrix[int(l * 2)]
+    dZ_SI_build = dZ_SI_build_matrix[int(l * 2)]
     time_s = time.time()
     for m in range(n_scenarios):
-        # scenario = scenarios[m + a_sce]
-        scenario = scenarios[m]
+        scenario = scenarios[m + a_sce]
+        # scenario = scenarios[m]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for o, T_hat_try in enumerate(T_hats):
