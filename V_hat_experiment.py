@@ -107,6 +107,7 @@ for l in range(N):
 
 # table:
 table_output = np.zeros((6, 6))
+Npre_index = np.array([np.searchsorted(60, Npres), np.searchsorted(240, Npres)])
 var_list = [theta_matrix, Phi_parti_1_matrix * sigma_Y, Delta_bar_parti_matrix]
 header = np.tile(['Mean', 'Volatility'], 3)
 show_index = np.tile(['5-year', '20-year'], 3)
