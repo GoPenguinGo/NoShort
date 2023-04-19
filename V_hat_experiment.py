@@ -18,7 +18,7 @@ T_hat_dimension = len(T_hats)
 # n_scenarios = 1
 n_scenarios = 1
 a_sce = 0
-N = 5000
+N = 1000
 
 phi = 0.4
 
@@ -53,10 +53,10 @@ for l in range(N):
     # dZ_build = -dZ_build_matrix[l]
     # dZ_SI = -dZ_SI_matrix[l]
     # dZ_SI_build = -dZ_SI_build_matrix[l]
-    dZ = dZ_matrix[int(l * 2)]
-    dZ_build = dZ_build_matrix[int(l * 2)]
-    dZ_SI = dZ_SI_matrix[int(l * 2)]
-    dZ_SI_build = dZ_SI_build_matrix[int(l * 2)]
+    dZ = dZ_matrix[int(l * 10)]
+    dZ_build = dZ_build_matrix[int(l * 10)]
+    dZ_SI = dZ_SI_matrix[int(l * 10)]
+    dZ_SI_build = dZ_SI_build_matrix[int(l * 10)]
     time_s = time.time()
     for m in range(n_scenarios):
         scenario = scenarios[m + a_sce]
@@ -133,8 +133,7 @@ type_list = ['mean', 'vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 for i, var in enumerate(var_list):
-    # np.save(var_name_list[i] + str(a_sce) + 'neg', var)
-    np.save(var_name_list[i] + str(a_sce) + 'pos', var)
+    np.save(var_name_list[i][:l] + str(a_sce), var)
 
 # read the data:
 r_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))  # for mean and std
