@@ -43,8 +43,8 @@ cummu_popu = np.cumsum(cohort_size)
 tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
 tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
 tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-cutoffs = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
-n_age_groups = 4
+cutoffs_age = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
+n_age_cutoffs = 4
 
 Mpath = 10000
 
@@ -116,8 +116,8 @@ dZ_SI_build_case = np.load('dZ_SI_build_case.npy')
 dZ_Y_cases = np.load('Z_Y_cases.npy')
 dZ_SI_cases = np.load('Z_SI_cases.npy')
 
-top = 0.05
-old_limit = 100
+top_wealth = 0.05
+old_age_limit = 100
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]

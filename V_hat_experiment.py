@@ -136,6 +136,7 @@ for i, var in enumerate(var_list):
     np.save(var_name_list[i][:l] + str(a_sce), var)
 
 # read the data:
+N_scenarios = 3
 r_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))  # for mean and std
 theta_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))
 Phi_parti_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))
@@ -158,11 +159,9 @@ var_name_list = ['interest rate', 'market price of risk', 'consumption share of 
 for i, var in enumerate(var_list):
     var_name = var_name_list[i]
     for j in range(N_scenarios):
-        var_name_j_pos = var_name + str(j) + 'pos' + '.npy'
-        var_name_j_neg = var_name + str(j) + 'neg' + '.npy'
-        y_pos = np.load(var_name_j_pos)
-        y_neg = np.load(var_name_j_neg)
-        var[j] = (np.mean(y_pos, axis=0) + np.mean(y_neg, axis=0)) / 2
+        var_name_j = var_name + str(j) + '.npy'
+        y = np.load(var_name_j)
+        var[j] = np.mean(y, axis=0)
 
 # graphs:
 ######################################
@@ -213,7 +212,7 @@ for i, axes_row in enumerate(axes):
         if i == 2:
             # ax.set_xlabel('initial window (months)')
             ax.set_xlabel(x_label_vhat)
-        if i == 0:
+        if i == 0 and j == 0:
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped

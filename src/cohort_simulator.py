@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List, Any
 from src.stats import post_var, fadingmemo, dDelta_st_calculator, weighted_variance
 from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
@@ -41,8 +41,8 @@ def simulate_cohorts_SI(
         need_f: str,
         need_Delta: str,
         need_pi: str,
-        top=0.05,
-        old_limit=100,
+        top: float,
+        old_limit: float,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -506,24 +506,11 @@ def simulate_cohorts_mean_vola(
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
         top: float,
-        old_limit: int,
+        old_limit: float,
         cutoffs: np.ndarray,
         n_age_groups: int,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+) -> tuple[list[Any], list[Any], list[Any], list[int] | list[Any], list[int] | list[Any], list[
+    tuple[float, float, float, float] | tuple[int, int, int, int]] | list[Any], list[Any], list[Any], Any, Any]:
     """"" Simulate the economy forward
 
     Args:
@@ -592,11 +579,12 @@ def simulate_cohorts_mean_vola(
     popu_age = np.zeros((Nt - keep_when, n_age_groups))
     # belief_age = np.zeros((Nt - keep_when, n_age_groups))
     wealthshare_age = np.zeros((Nt - keep_when, n_age_groups))
+    cov_save = np.zeros((Nt - keep_when, 3))
     popu_can_short = np.zeros((Nt - keep_when))
     popu_short = np.zeros((Nt - keep_when))
     Phi_short = np.zeros((Nt - keep_when))
     Phi_can_short = np.zeros((Nt - keep_when))
-    var_save = np.zeros((Nt - keep_when, 4))
+    # var_save = np.zeros((Nt - keep_when, 4))
     Delta_popu_parti = np.zeros((Nt - keep_when))
 
     if mode_trade == 'complete':
@@ -932,17 +920,15 @@ def simulate_cohorts_mean_vola(
                 popu_short[ii] = popu_short_t
                 Phi_can_short[ii] = Phi_can_short_t
                 Phi_short[ii] = Phi_short_t
-            parti_rate = invest_tracker * cohort_size
-            belief = (Delta_s_t * sigma_Y + mu_Y)
+            # parti_rate = invest_tracker * cohort_size
+            # belief = (Delta_s_t * sigma_Y + mu_Y)
             for j in range(4):
                 if mode_trade != 'complete':
-                    popu_age[ii, j] = np.sum(parti_rate[cutoffs[j + 1]:])
+                    popu_age[ii, j] = np.average(invest_tracker[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]])
                 wealthshare_age[ii, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
-            var_save[ii] = [var_cons_cohort_parti_t, var_cons_indiv_parti_t,
-                           var_Delta_cohort_parti_t, var_Delta_indiv_parti_t]
-
-
-    var_save_matrix = np.mean(var_save, axis=0)
+            # var_save[ii] = [var_cons_cohort_parti_t, var_cons_indiv_parti_t,
+            #                var_Delta_cohort_parti_t, var_Delta_indiv_parti_t]
+    # var_save_matrix = np.mean(var_save, axis=0)
 
     r_matrix = [np.mean(r), np.std(r)]
     theta_matrix = [np.mean(theta), np.std(theta)]
@@ -952,7 +938,7 @@ def simulate_cohorts_mean_vola(
     if mode_trade == 'complete':
         Phi_parti_matrix = [1, 0]
         Phi_parti_1_matrix = [1, 0]
-        popu_age_matrix = [(0.25, 0.5, 0.75, 1), (0, 0, 0, 0)]
+        popu_age_matrix = [(0.25, 0.25, 0.25, 0.25), (0, 0, 0, 0)]
     else:
         Phi_parti_matrix = [np.mean(Phi_parti), np.std(Phi_parti)]
         Phi_parti_1_matrix = [np.mean(1/Phi_parti), np.std(1/Phi_parti)]
@@ -967,23 +953,26 @@ def simulate_cohorts_mean_vola(
         popu_short_matrix = [0,0]
         Phi_can_short_matrix = [0,0]
         Phi_short_matrix = [0,0]
+    cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
+    cov_theta_z_SI = np.corrcoef(dZ_SI[keep_when:], theta)[0, 1]
+    cov_parti_wealth_share = np.corrcoef(np.sum(popu_age, axis=1) / 4, Phi_parti)[0, 1]
+    cov_save_matrix = np.array([cov_theta_z_Y, cov_theta_z_SI, cov_parti_wealth_share])
+    short_save_matrix = np.array([popu_can_short_matrix,
+        popu_short_matrix,
+        Phi_can_short_matrix,
+        Phi_short_matrix])
 
     return (
         r_matrix,
         theta_matrix,
-        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
         Phi_parti_1_matrix,
         popu_age_matrix,
-        #belief_age_matrix,
         wealthshare_age_matrix,
-        popu_can_short_matrix,
-        popu_short_matrix,
-        Phi_can_short_matrix,
-        Phi_short_matrix,
-        var_save_matrix,
         Delta_popu_parti_matrix,
+        short_save_matrix,
+        cov_save_matrix,
     )
 
 
