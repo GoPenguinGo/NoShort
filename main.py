@@ -12,7 +12,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
     n_age_groups, cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, colors_short2, PN_labels, age_labels
+    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ import statsmodels.api as sm
 from scipy.interpolate import make_interp_spline
 import pandas as pd
 
-n_scenarios = 5
+n_scenarios = 3
 scenarios_short = scenarios[:n_scenarios]
 
 phi_vector = np.arange(0, 1, 0.1)
@@ -162,15 +162,15 @@ for i in range(1, n_phi_short, 1):
         yellow_index = 0 if j == 0 or j == 2 else 1
         red_case = red_labels[red_index]
         yellow_case = yellow_labels[yellow_index]
-        Z = np.cumsum(Z_Y_cases[red_index])
-        Z_SI = np.cumsum(Z_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
-        if j == 3:
-            ax.set_xlabel('Time in simulation')
+        Z = np.cumsum(dZ_Y_cases[red_index])
+        Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
+        ax.set_xlabel('Time in simulation')
         ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
         ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
         ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
         ax.set_ylim([lower, upper])
         ax.tick_params(axis='y', labelcolor='black')
+        ax.tick_params(axis='x', labelcolor='black')
         if j == 0:
             ax.legend()
         ax.set_title(red_case + yellow_case)
@@ -205,13 +205,87 @@ for i in range(1, n_phi_short, 1):
         ax2.tick_params(axis='y', labelcolor='black')
         if j <= 1:
             ax2.legend()
+        # Save the subfigs for slides, etc.
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+        fig.savefig(' Shocks and Delta time series subfig'+str(i)+str(j+1) +'.png', bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.savefig(
         'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
         dpi=60)
-    plt.show()
-    plt.close()
+    # plt.show()
+    # plt.close()
+
+
+# ######################################
+# ############### Figure ###############
+# ########## participation rate ########
+# ############ in age groups ###########
+# ######################################
+# Delta (2 phi * 4 cases)
+cases = [0, 1]
+cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+Npres_try = [60, 240]
+phi_fix = phi_vector[8]
+scenarios_two = scenarios[1:3]
+for case_dzY in cases:
+    for case_dzSI in cases:
+        dZ = dZ_Y_cases[case_dzY]
+        dZ_SI = dZ_SI_cases[case_dzSI]
+        parti_rate_age_group = np.zeros((2, n_age_groups, Nt))
+        for n, scenario in enumerate(scenarios_two):
+            invest_tracker_compare_case = invest_tracker_compare[n+1, case_dzY, case_dzSI, 2]  # phi=0.8, shape=Nt*Nc
+            for m in range(n_age_groups):
+                parti_rate_age_group[n, m] = np.average(invest_tracker_compare_case[:, cutoffs[m+1]:cutoffs[m]], axis=1) / 4
+        parti_rate_age_group_sum = np.cumsum(parti_rate_age_group, axis=1)
+        left_t = 300
+        right_t = 400
+        Z = np.cumsum(dZ)[int(left_t / dt):int(right_t / dt)]
+        Z_SI = np.cumsum(dZ_SI)[int(left_t / dt):int(right_t / dt)]
+        x = t[int(left_t / dt):int(right_t / dt)]
+        fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(15, 7))
+        for i, ax in enumerate(axes):
+            ax.set_title(scenario_labels[i + 1] + r', $\phi=0.8$')
+            ax.set_ylim(0, 1)
+            ax.set_xlabel('Time in simulation')
+            ax2 = ax.twinx()
+            ax2.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+            ax2.plot(x, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+            if i == 0:
+                ax.set_ylabel(r'Participation rate in age groups', color='black')
+                ax2.get_yaxis().set_visible(False)
+            else:
+                ax.get_yaxis().set_visible(False)
+                ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+                # ax2.tick_params(axis='y', labelcolor='black')
+                ax2.legend(loc='upper right')
+            for k in range(n_age_groups):
+                bottom_y = np.zeros(len(x)) if k == 0 else parti_rate_age_group_sum[i, k - 1, int(left_t / dt):int(right_t / dt)]
+                top_y = parti_rate_age_group_sum[i, k, int(left_t / dt):int(right_t / dt)]
+                if i == 0:
+                    data_show = np.arange(0, len(x), 10).astype(int)
+                    ax.fill_between(x[data_show], bottom_y[data_show], top_y[data_show], color=colors_short[k], linewidth=0., alpha=0.4,
+                                label=age_labels[k])
+                else:
+                    ax.fill_between(x, bottom_y, top_y, color=colors_short[k], linewidth=0., alpha=0.4,
+                                label=age_labels[k])
+            if i == 0:
+                ax.legend(loc='upper right')
+            if case_dzY == case_dzSI == 1:
+                extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+                fig.savefig('Participation ts, subfig ' + str(i + 1) + str(j + 1) + '.png',
+                            bbox_inches=extent.expanded(1.25, 1.3),
+                            dpi=200)
+        ax.set_xlabel('Time in simulation')
+        fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
+        if case_dzY == case_dzSI == 1:
+            plt.savefig(str(case_dzY) + str(case_dzSI) + 'Participation ts.png', dpi=60)
+            plt.savefig(str(case_dzY) + str(case_dzSI) + 'Participation ts HD.png', dpi=200)
+        else:
+            plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Participation ts.png', dpi=60)
+        plt.show()
+        # plt.close()
 
 # ######################################
 # ############# Figure 2 ###############
@@ -268,14 +342,15 @@ for i, ax_row in enumerate(axes):
             ax.scatter(x, y_switch, color='red', s=10, marker='o', label='switch')
         if i == j == 0:
             ax.legend()
-        if j == 0:
-            ax.set_ylabel(r'Estimation error $\Delta_{s,t}$')
-        if i == 1:
-            ax.set_xlabel('Time in simulation')
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$')
+        ax.set_xlabel('Time in simulation')
         ax.set_title(titles_subfig[i][j])
-        ax.tick_params(axis='y', labelcolor='black')
-fig.tight_layout(h_pad=2)
+        ax.tick_params(axis='both', labelcolor='black')
+        # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # fig.savefig('Shocks and Delta, zoom in, subfig '+str(i)+str(j) +'.png', bbox_inches=extent.expanded(1.2, 1.2), dpi=200)
+        fig.tight_layout(h_pad=3)
 plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+plt.savefig('Shocks and Delta, zoom in' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
 
@@ -295,9 +370,9 @@ y1 = r_mat[:, 0]  # n_scenarios, Nt
 y2 = r_mat[1]  # n_phi_short, Nt
 y3 = theta_mat[1]  # n_phi_short, Nt
 y_list = [y1, y2, y3]
-Z = np.cumsum(Z_Y_cases[red_case])
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])
-n_lines = [n_scenarios, n_phi_short, n_phi_short]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+n_lines = [n_scenarios_short, n_phi_short, n_phi_short]
 y_title_list = [r'Interest rate $r_t$, $\phi=0$', r'Interest rate $r_t$, Reentry',
                 r'Market price of risk $\theta_t$, Reentry']
 labels = [scenario_labels, label_phi, label_phi]
@@ -306,9 +381,8 @@ for j, ax in enumerate(axes):
     ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
     ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
     ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-    ax.tick_params(axis='y', labelcolor='black')
-    if j == 2:
-        ax.set_xlabel('Time in simulation')
+    ax.tick_params(axis='both', labelcolor='black')
+    ax.set_xlabel('Time in simulation')
 
     y_vec = y_list[j]  # n_phi_short, Nt
     y_title = y_title_list[j]
@@ -324,8 +398,11 @@ for j, ax in enumerate(axes):
         ax.legend(loc='upper left')
     ax2.legend(loc='upper right')
     ax.set_title(y_title)
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig('r and theta, subfig '+str(j+1) +'.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
 fig.tight_layout(h_pad=2)
 plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
 
@@ -384,59 +461,47 @@ y2_case = Phi_compare[:, red_case, yellow_case]
 y3_case = popu_parti_compare[:, red_case, yellow_case]
 left_t = 300
 right_t = 400
-Z = np.cumsum(Z_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
+Z = np.cumsum(dZ_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
 x = t[int(left_t / dt):int(right_t / dt)]
 
-fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', figsize=(15, 15))
-axes[0, 0].set_title('Shocks to output and signal')
-axes[0, 0].set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-axes[0, 0].plot(x, Z, color='red', linewidth=0.5, linestyle='solid', label=r'$z^Y_t$')
-axes[0, 0].plot(x, Z_SI, color='gold', linewidth=0.5, linestyle='solid', label=r'$z^{SI}_t$')
-axes[0, 0].tick_params(axis='y', labelcolor='black')
-axes[0, 0].legend(loc='upper left')
-
-axes[0, 1].set_title(titles_subfig[0])
-axes[0, 1].set_ylabel(yaxis_subfig[0], color='black')
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7))
+axes[0].set_title(titles_subfig[0])
+axes[0].set_ylabel(yaxis_subfig[0], color='black')
 for i in range(3):
     for j in range(2):
         y1 = y1_case[i, phi_indexes[j], int(left_t / dt):int(right_t / dt)]
         line_style = 'dotted' if j == 0 else 'solid'
         label_i = scenario_labels[i]
         if j == 1:
-            axes[0, 1].plot(x, y1, label=label_i, linewidth=0.5, color=colors_short[i], linestyle=line_style)
+            axes[0].plot(x, y1, label=label_i, linewidth=0.5, color=colors_short[i], linestyle=line_style)
         else:
-            axes[0, 1].plot(x, y1, linewidth=0.5, color=colors_short[i], linestyle=line_style)
-axes[0, 1].legend(loc='upper right')
+            axes[0].plot(x, y1, linewidth=0.5, color=colors_short[i], linestyle=line_style)
+axes[0].legend(loc='upper right')
+axes[0].set_xlabel('Time in simulation')
+extent = axes[0].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.savefig('Shocks to output and signal, subfig ' + str(1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
 
-axes[1, 0].set_title(titles_subfig[1])
-axes[1, 0].set_ylabel(yaxis_subfig[1], color='black')
+axes[1].set_title(titles_subfig[1])
+axes[1].set_ylabel(yaxis_subfig[1], color='black')
 for i in range(1, 3):
     for j in range(2):
         y2 = y2_case[i, phi_indexes[j], int(left_t / dt):int(right_t / dt)]
         line_style = 'dotted' if j == 0 else 'solid'
         if i == 1 and j == 0:
-            axes[1, 0].plot(x, y2, label=r'$\phi=0.0$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
+            axes[1].plot(x, y2, label=r'$\phi=0.0$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
         elif i == 1 and j == 1:
-            axes[1, 0].plot(x, y2, label=r'$\phi=0.8$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
+            axes[1].plot(x, y2, label=r'$\phi=0.8$', linewidth=0.5, color=colors_short[i], linestyle=line_style)
         else:
-            axes[1, 0].plot(x, y2, linewidth=0.5, color=colors_short[i], linestyle=line_style)
+            axes[1].plot(x, y2, linewidth=0.5, color=colors_short[i], linestyle=line_style)
 y21 = y2_case[0, 0, int(left_t / dt):int(right_t / dt)]
-axes[1, 0].legend(loc='upper right')
-axes[1, 0].set_xlabel('Time in simulation')
-
-axes[1, 1].set_title(titles_subfig[2])
-axes[1, 1].set_ylabel(yaxis_subfig[2], color='black')
-# ax3 = axes[2].twinx()
-for i in range(1, 3):
-    for j in range(2):
-        y3 = y3_case[i, phi_indexes[j], int(left_t / dt):int(right_t / dt)]
-        line_style = 'dotted' if j == 0 else 'solid'
-        label_i = scenario_labels[i]
-        axes[1, 1].plot(x, y3, linewidth=0.5, color=colors_short[i], linestyle=line_style)
-axes[1, 1].set_xlabel('Time in simulation')
+axes[1].legend(loc='upper right')
+axes[1].set_xlabel('Time in simulation')
+extent = axes[1].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.savefig('Shocks to output and signal, subfig ' + str(2) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
 fig.tight_layout(h_pad=2)
 plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+plt.savefig('Delta bar, Phi and parti rate,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 # plt.show()
 # plt.close()
 
@@ -506,8 +571,8 @@ red_case = 1
 yellow_case = 1
 phi_index = 1
 scenario_index = 1
-Z = np.cumsum(Z_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
-Z_SI = np.cumsum(Z_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
+Z = np.cumsum(dZ_Y_cases[red_case])[int(left_t / dt):int(right_t / dt)]
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])[int(left_t / dt):int(right_t / dt)]
 x = t[int(left_t / dt):int(right_t / dt)]
 y1_pi = pi_time_series[:, red_case, yellow_case, phi_index,
         cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_scenarios, length)
@@ -555,8 +620,12 @@ for i, ax in enumerate(axes.flat):
         ax.set_ylabel(r'Investment in stock market, Wealth component')
     ax.set_title(titles_subfig[i])
     ax.tick_params(axis='y', labelcolor='black')
-fig.tight_layout(h_pad=2)
+    fig.tight_layout(h_pad=3, w_pad=3)
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig('Shocks and Portfolio, subfig ' + str(i+1) + str(j+1) + '.png', bbox_inches=extent.expanded(1.25, 1.3),
+                dpi=200)
 plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+plt.savefig('Shocks and Portfolio,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 # plt.show()
 # plt.close()
 
@@ -621,8 +690,8 @@ plt.savefig('IA Shocks and Portfolio.png', dpi=100)
 print('Figure 9')
 tax_vector = [0.008, 0.010, 0.012]
 n_tax = len(tax_vector)
-dZ = Z_Y_cases[1]
-dZ_SI = Z_SI_cases[1]
+dZ = dZ_Y_cases[1]
+dZ_SI = dZ_SI_cases[1]
 n_scenarios = 1
 n_phi_short = 1
 cohort_index = 2
@@ -640,8 +709,8 @@ for case_dzY in cases:
     for case_dzSI in cases:
         dZ_build = dZ_build_matrix[0]
         dZ_SI_build = dZ_SI_build_matrix[0]
-        dZ = Z_Y_cases[case_dzY]  # bad
-        dZ_SI = Z_SI_cases[case_dzSI]  # bad
+        dZ = dZ_Y_cases[case_dzY]  # bad
+        dZ_SI = dZ_SI_cases[case_dzSI]  # bad
         cons_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
         f_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
         pi_compare_tau = np.zeros((n_scenarios, n_tax, n_phi_short, Nt, Nc))
@@ -752,9 +821,16 @@ for case_dzY in cases:
             if i == 0:
                 ax.legend()
             ax.set_xlabel('Time in simulation')
-        fig.tight_layout(h_pad=2)
+            fig.tight_layout(h_pad=2, w_pad=2)
+            if case_dzY == case_dzSI == scenario_index == 1:
+                extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+                fig.savefig('Consumption share tau, subfig ' + str(i + 1) + '.png',
+                            bbox_inches=extent.expanded(1.25, 1.3),
+                            dpi=200)
+
         if case_dzY == case_dzSI == scenario_index == 1:
             plt.savefig('Consumption share tau.png', dpi=100)
+            plt.savefig('Consumption share tau HD.png', dpi=200)
         else:
             plt.savefig('IA Consumption share tau' + str(case_dzY) + str(case_dzSI) + str(scenario_index) + '.png',
                         dpi=100)
@@ -770,13 +846,14 @@ cases = [0, 1]
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
 Npres_try = [60, 240]
 phi_fix = phi_vector[4]
+scenarios_two = scenarios[1:3]
 for case_dzY in cases:
     for case_dzSI in cases:
         dZ = dZ_Y_cases[case_dzY]
         dZ_SI = dZ_SI_cases[case_dzSI]
         for j, Npre_try in enumerate(Npres_try):
-            T_hat_try = dt * Npre_short
-            Vhat_try = (sigma_Y ** 2) / T_hat_short
+            T_hat_try = dt * Npre_try
+            Vhat_try = (sigma_Y ** 2) / T_hat_try
             Delta_compare = np.empty((len(scenarios_two), Nt, Nc))
             invest_tracker_compare = np.empty((len(scenarios_two), Nt, Nc))
             theta_compare = np.empty((len(scenarios_two), Nt))
@@ -909,12 +986,18 @@ for case_dzY in cases:
                         ax.legend(loc='upper right')
                     else:
                         ax.set_xlabel('Time in simulation')
-            fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+                    fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
+                    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+                    fig.savefig('Distribution of Delta, subfig ' + str(i + 1) + str(j + 1) + '.png',
+                                bbox_inches=extent.expanded(1.25, 1.3),
+                                dpi=200)
             if case_dzY == case_dzSI == 1:
                 if j == 0:
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
+                    plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta HD.png', dpi=200)
                 else:
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta, short window.png', dpi=60)
+                    plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta, short window HD.png', dpi=200)
             else:
                 if j == 0:
                     plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
@@ -929,16 +1012,21 @@ for case_dzY in cases:
 print('Data generation for Figure 3, 9.2 and 10')
 # varying tau only when phi == 0.0
 # storing drift, diffusion, average view when phi == 0.0 and tau == 0.01
-n_scenarios_short = 3
-scenarios_short = scenarios[n_scenarios_short]
+# n_scenarios_short = 3
+
 age_cut = 150
 Nc_cut = int(age_cut / dt)
 data_keep = np.arange(0, Nc, 60)
 Nt_short = len(data_keep)
 
+n_scenarios_short = 3
+scenarios_short = scenarios[:n_scenarios_short]
+phi_5_vec = np.array([0, 0.2, 0.4, 0.6, 0.8])
+n_phi_5 = len(phi_5_vec)
+tax_try = np.copy(tax)
+beta_try = rho + nu - tax_try
 Delta_matrix = np.empty((Mpath, n_scenarios_short, n_phi_5, Nc_cut), dtype=np.float32)
-distance_matrix = np.empty((Mpath, n_scenarios_short, n_phi_5, Nc_cut), dtype=np.float32)
-invest_matrix = np.empty((Mpath, n_scenarios_short, n_phi_5, Nc_cut), dtype=np.int)
+invest_matrix = np.empty((Mpath, n_scenarios_short, n_phi_5, Nc_cut), dtype=int)
 
 popu_cummu = np.cumsum(cohort_size)
 popus = np.array([0.1, 0.5])
@@ -1051,6 +1139,47 @@ for i in range(Mpath):
                                 )
                 Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]
                 invest_matrix[i, j, l] = np.average(invest_tracker, axis=0)[-Nc_cut:]
+
+# for i in range(Mpath):
+#     if np.mod(i, 50) == 0:
+#         print(i)
+#     ii = i + 9000
+#     dZ = dZ_matrix[ii]
+#     dZ_build = dZ_build_matrix[ii]
+#     dZ_SI = dZ_SI_matrix[ii]
+#     dZ_SI_build = dZ_SI_build_matrix[ii]
+#     for j, scenario in enumerate(scenarios_short):
+#         scenario_trade = scenario[0]
+#         scenario_learn = scenario[1]
+#         for l, phi_try in enumerate(phi_5_vec):
+#             (
+#                 r,
+#                 theta,
+#                 f,
+#                 Delta,
+#                 pi,
+#                 popu_parti,
+#                 f_parti,
+#                 Delta_bar_parti,
+#                 dR,
+#                 invest_tracker,
+#                 popu_can_short,
+#                 popu_short,
+#                 Phi_can_short,
+#                 Phi_short,
+#             ) = simulate_SI(scenario_trade, scenario_learn,
+#                             Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S,
+#                             tax,
+#                             beta,
+#                             phi_try,
+#                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                             need_f='True',
+#                             need_Delta='True',
+#                             need_pi='False',
+#                             )
+#             Delta_matrix[i, j, l] = np.average(np.abs(Delta), axis=0)[-Nc_cut:]
+#             invest_matrix[i, j, l] = np.average(invest_tracker, axis=0)[-Nc_cut:]
+
 
 # Figure 3
 t_cut = 100
@@ -1305,6 +1434,7 @@ shocks_SI = np.cumsum(dZ_SI_matrix, axis=1)
 shocks_SI_mat = shocks_SI[:, t_rolling_post] - shocks_SI[:, t_rolling_pre]
 parti_rate_pre_mat = np.empty((Mpath, n_phi_short, n_gap), dtype=np.float32)
 update_belief_mat = np.empty((Mpath, n_scenarios_short, n_phi_short, n_gap), dtype=np.float32)
+vola_belief_mat = np.empty((Mpath, n_scenarios_short, n_phi_short, n_gap), dtype=np.float32)
 cohort_size_short = cohort_size[1:]
 cohort_size_short_mat = np.tile(cohort_size_short, (Nt - 1, 1))
 cohort_size_mat = np.tile(cohort_size, (Nt, 1))
@@ -1314,32 +1444,31 @@ cutoff_age_old_below_fig11 = np.searchsorted(cummu_popu, popu_fig11)
 cutoff_age_young_fig11 = np.searchsorted(cummu_popu, 1 - popu_fig11)
 tax_short = [0.01, 0.015]
 n_tax_short = len(tax_short)
-P_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-P_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_old_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_young_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-Wealthshare_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-Wealthshare_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# P_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# P_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# belief_popu_old_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# belief_popu_young_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# belief_popu_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# Wealthshare_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
+# Wealthshare_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
 Npres_short = [60, 240]
 n_Npres_short = len(Npres_short)
 popu_fig15 = 0.5
-cutoff_age_old_below_fig15 = np.searchsorted(cummu_popu, popu_fig15)
-cutoff_age_young_fig15 = np.searchsorted(cummu_popu, 1 - popu_fig15)
-belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
-Phi_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Delta_bar_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
-Phi_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Phi_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_f_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
-belief_f_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
+# cutoff_age_old_below_fig15 = np.searchsorted(cummu_popu, popu_fig15)
+# cutoff_age_young_fig15 = np.searchsorted(cummu_popu, 1 - popu_fig15)
+# belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
+# Phi_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# Delta_bar_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
+# Phi_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# Phi_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# belief_f_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
+# belief_f_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
 
 # run
-for i in range(4000):
+for i in range(2500):
 # for i in range(Mpath):
-    if np.mod(i, 50) == 0:
-        print(i)
+    print(i)
     dZ = dZ_matrix[i]
     dZ_build = dZ_build_matrix[i]
     dZ_SI = dZ_SI_matrix[i]
@@ -1382,7 +1511,7 @@ for i in range(4000):
                                             beta,
                                             phi_try,
                                             Npre_try, Ninit,
-                                            T_hat,
+                                            T_hat_try,
                                             dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
                                             need_f='True',
                                             need_Delta='True',
@@ -1450,13 +1579,14 @@ for i in range(4000):
                                 #                                         * f[:, cutoff_age_young_fig15:] * dt,
                                 #                                         axis=1)
                             # else:
-                                # save results for fig 4
-                            update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief
-                            update_belief_t = np.average(update_belief, weights=cohort_size_short, axis=1)  # everyone
-                            update_belief_cumsum = np.cumsum(update_belief_t)
-                            update_belief_mat[i, j, n] = update_belief_cumsum[t_rolling_post - 1] - \
-                                                             update_belief_cumsum[
-                                                                 t_rolling_pre - 1]
+                            # save results for fig 4
+                            # update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief
+                            # update_belief_t = np.average(update_belief, weights=cohort_size_short, axis=1)  # everyone
+                            average_belief_t = np.average(Delta, weights=cohort_size, axis=1)  # everyone
+                            vola_belief_update = np.reshape(average_belief_t[1:t_rolling_post[-1] + 1], (t_gap, -1), order='F')
+                            update_belief_mat[i, j, n] = average_belief_t[t_rolling_post] - \
+                                                         average_belief_t[t_rolling_pre]
+                            vola_belief_mat[i, j, n] = np.std(vola_belief_update, axis=0)
                             if mode_trade == 'w_constraint':
                                 parti_rate_pre_mat[i, n] = popu_parti[t_rolling_pre]
 
@@ -1553,12 +1683,13 @@ for i in range(4000):
                                             need_pi='False',
                                             )
                             # save results for fig 4
-                            update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief
-                            update_belief_t = np.average(update_belief, weights=cohort_size_short, axis=1)  # everyone
-                            update_belief_cumsum = np.cumsum(update_belief_t)
-                            update_belief_mat[i, j, n] = update_belief_cumsum[t_rolling_post - 1] - \
-                                                         update_belief_cumsum[
-                                                             t_rolling_pre - 1]
+                            # update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief
+                            # update_belief_t = np.average(update_belief, weights=cohort_size_short, axis=1)  # everyone
+                            average_belief_t = np.average(Delta, weights=cohort_size, axis=1)  # everyone
+                            vola_belief_update = np.reshape(average_belief_t[1:t_rolling_post[-1] + 1], (t_gap, -1))
+                            update_belief_mat[i, j, n] = average_belief_t[t_rolling_post] - \
+                                                         average_belief_t[t_rolling_pre]
+                            vola_belief_mat[i, j, n] = np.std(vola_belief_update, axis=0)
                             if mode_trade == 'w_constraint':
                                 parti_rate_pre_mat[i, n] = popu_parti[t_rolling_pre]
 
@@ -1566,11 +1697,27 @@ for i in range(4000):
 # for each phi value:
     # bins of participation rate on the x axis
     # covariance between dZ^Y or dZ^SI and the change in belief conditional on bin
-x_var = parti_rate_pre_mat[:keep_until]
-y_var = update_belief_mat[:keep_until]
-condition_var1 = shocks_mat[:keep_until]
-condition_var2 = shocks_SI_mat[:keep_until]
-n_bins = 10
+keep_until = 1200
+AA = 0
+keep_from = AA * 2500
+x_var = parti_rate_pre_mat[keep_from:keep_from + keep_until]
+y_update = update_belief_mat[keep_from:keep_from + keep_until]
+y_vola = vola_belief_mat[keep_from:keep_from + keep_until]
+condition_var1 = shocks_mat[keep_from:keep_from + keep_until]
+condition_var2 = shocks_SI_mat[keep_from:keep_from + keep_until]
+var_name_list = ['parti_rate_matrix', 'update_belief_matrix', 'vola_belief_matrix', 'shocks_matrix', 'shocks_SI_matrix']
+var_list = [x_var, y_update, y_vola, condition_var1, condition_var2]
+for i, var in enumerate(var_list):
+    np.save(var_name_list[i] + str(AA), var)
+for i, var in enumerate(var_list):
+    var1 = np.copy(var)
+    for j in range(1, 4):
+        var_AA = np.load(var_name_list[i] + str(j) +'.npy')
+        var_1 = np.append(var1, var_AA, axis=0)
+    var_list[i] = var_1
+
+
+n_bins = 15
 data_figure_mean = np.zeros((n_phi_short, n_bins - 1))
 data_figure_std = np.zeros((n_phi_short, n_bins - 1))
 data_figure_cov = np.zeros((2, n_phi_short, n_bins - 1))
@@ -1579,32 +1726,35 @@ data_figure_complete_cov = np.zeros((2, n_phi_short))
 data_figure_complete_std = np.zeros((n_phi_short))
 # reentry scenario
 for k in range(n_phi_short):
-    data_focus = y_var[:, 1, k]  # for the reentry scenario
-    x_focus = x_var[:, k]
+    x_focus = (var_list[0])[:, k]
+    y_update_focus = (var_list[1])[:, 1, k]  # for the reentry scenario
+    y_vola_focus = (var_list[2])[:, 1, k]  # for the reentry scenario
     below_dz = np.percentile(x_focus, 10)
     above_dz = np.percentile(x_focus, 90)
     bins = np.linspace(below_dz, above_dz, n_bins)
     bin_size = (above_dz - below_dz) / (n_bins - 1)
     data_figure_x[k] = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
-    data_complete = y_var[:, 0, k]
-    data_figure_complete_std[k] = np.std(np.abs(data_complete))
-    data_figure_complete_cov[0, k] = np.corrcoef(np.reshape(data_complete, (1, -1))
-                                          , np.reshape(condition_var1, (1, -1)))[0, 1]
-    data_figure_complete_cov[1, k] = np.corrcoef(np.reshape(data_complete, (1, -1))
-                                          , np.reshape(condition_var2, (1, -1)))[0, 1]
+    data_update_complete = (var_list[1])[:, 0, k]
+    data_vola_complete = (var_list[2])[:, 0, k]
+    data_figure_complete_std[k] = np.average(data_vola_complete)
+    data_figure_complete_cov[0, k] = np.corrcoef(np.reshape(data_update_complete, (1, -1))
+                                          , np.reshape(var_list[3], (1, -1)))[0, 1]
+    data_figure_complete_cov[1, k] = np.corrcoef(np.reshape(data_update_complete, (1, -1))
+                                          , np.reshape(var_list[4], (1, -1)))[0, 1]
     for j in range(n_bins - 1):
         bin_0 = bins[j]
         bin_1 = bins[j + 1]
         below_bin = bin_1 >= x_focus
         above_bin = x_focus >= bin_0
         bin_where = np.where(below_bin * above_bin == 1)
-        data_focus_z = data_focus[bin_where]
-        condition_var1_focus = condition_var1[bin_where]
-        condition_var2_focus = condition_var2[bin_where]
-        data_figure_mean[k, j] = np.mean(np.abs(data_focus_z))
-        data_figure_cov[0, k, j] = np.corrcoef(data_focus_z, condition_var1_focus)[0, 1]
-        data_figure_cov[1, k, j] = np.corrcoef(data_focus_z, condition_var2_focus)[0, 1]
-        data_figure_std[k, j] = np.std(np.abs(data_focus_z))
+        y_update_bin = y_update_focus[bin_where]
+        y_vola_bin = y_vola_focus[bin_where]
+        condition_var1_focus = var_list[3][bin_where]
+        condition_var2_focus = var_list[4][bin_where]
+        data_figure_mean[k, j] = np.mean(np.abs(y_update_bin))
+        data_figure_cov[0, k, j] = np.corrcoef(y_update_bin, condition_var1_focus)[0, 1]
+        data_figure_cov[1, k, j] = np.corrcoef(y_update_bin, condition_var2_focus)[0, 1]
+        data_figure_std[k, j] = np.average(y_vola_bin)
 
 label_shock = [r'Shocks to the output, $dz^{Y}$', r'Shocks to the signal, $dz^{SI}$']
 labels = [r'$\phi = 0.0$', r'$\phi = 0.4$', r'$\phi = 0.8$']
