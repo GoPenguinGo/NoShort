@@ -12,33 +12,28 @@ import tabulate as tab
 # todo: the connection between belief and wealth?
 #  Learning from repeated negative economic shocks: lead to both worse wealth condition and pessimism
 
-# T_hats = dt * Npres
-# T_hat_dimension = len(T_hats)
-# # N = 30  # can choose a smaller number than Mpaths as the number of paths
-
-Npres = np.array([60, 240])
 T_hats = dt * Npres
 T_hat_dimension = len(T_hats)
+
 # n_scenarios = 1
-n_scenarios = 3
-# a_sce = 1
+n_scenarios = 1
+a_sce = 0
 N = 1000
-N_scenarios = 3
 
 phi = 0.4
 
 # Generate matrix to store the results
-r_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))  # for mean and std
-theta_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Phi_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Phi_parti_1_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
+r_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)  # for mean and std
+theta_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+Phi_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+Phi_parti_1_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
 # popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-Delta_bar_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-popu_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
+Delta_bar_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+popu_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups), dtype=np.float32)
 # belief_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
-wealthshare_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups))
-Delta_popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2))
-variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4))
+wealthshare_age_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2, n_age_groups), dtype=np.float32)
+Delta_popu_parti_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 2), dtype=np.float32)
+variance_matrix = np.zeros((N, n_scenarios, T_hat_dimension, 4), dtype=np.float32)
 # r_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))  # for mean and std
 # theta_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
 # Phi_parti_matrix = np.zeros((N, n_scenarios, n_phi, T_hat_dimension, 2))
@@ -58,14 +53,14 @@ for l in range(N):
     # dZ_build = -dZ_build_matrix[l]
     # dZ_SI = -dZ_SI_matrix[l]
     # dZ_SI_build = -dZ_SI_build_matrix[l]
-    dZ = dZ_matrix[l]
-    dZ_build = dZ_build_matrix[l]
-    dZ_SI = dZ_SI_matrix[l]
-    dZ_SI_build = dZ_SI_build_matrix[l]
+    dZ = dZ_matrix[int(l * 10)]
+    dZ_build = dZ_build_matrix[int(l * 10)]
+    dZ_SI = dZ_SI_matrix[int(l * 10)]
+    dZ_SI_build = dZ_SI_build_matrix[int(l * 10)]
     time_s = time.time()
     for m in range(n_scenarios):
-        # scenario = scenarios[m + a_sce]
-        scenario = scenarios[m]
+        scenario = scenarios[m + a_sce]
+        # scenario = scenarios[m]
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for o, T_hat_try in enumerate(T_hats):
@@ -112,6 +107,7 @@ for l in range(N):
 
 # table:
 table_output = np.zeros((6, 6))
+Npre_index = np.array([np.searchsorted(60, Npres), np.searchsorted(240, Npres)])
 var_list = [theta_matrix, Phi_parti_1_matrix * sigma_Y, Delta_bar_parti_matrix]
 header = np.tile(['Mean', 'Volatility'], 3)
 show_index = np.tile(['5-year', '20-year'], 3)
@@ -137,10 +133,10 @@ type_list = ['mean', 'vola']
 age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
 
 for i, var in enumerate(var_list):
-    # np.save(var_name_list[i] + str(a_sce) + 'neg', var)
-    np.save(var_name_list[i] + str(a_sce) + 'pos', var)
+    np.save(var_name_list[i][:l] + str(a_sce), var)
 
 # read the data:
+N_scenarios = 3
 r_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))  # for mean and std
 theta_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))
 Phi_parti_Mat = np.zeros((N_scenarios, T_hat_dimension, 2))
@@ -163,11 +159,9 @@ var_name_list = ['interest rate', 'market price of risk', 'consumption share of 
 for i, var in enumerate(var_list):
     var_name = var_name_list[i]
     for j in range(N_scenarios):
-        var_name_j_pos = var_name + str(j) + 'pos' + '.npy'
-        var_name_j_neg = var_name + str(j) + 'neg' + '.npy'
-        y_pos = np.load(var_name_j_pos)
-        y_neg = np.load(var_name_j_neg)
-        var[j] = (np.mean(y_pos, axis=0) + np.mean(y_neg, axis=0)) / 2
+        var_name_j = var_name + str(j) + '.npy'
+        y = np.load(var_name_j)
+        var[j] = np.mean(y, axis=0)
 
 # graphs:
 ######################################
@@ -218,7 +212,7 @@ for i, axes_row in enumerate(axes):
         if i == 2:
             # ax.set_xlabel('initial window (months)')
             ax.set_xlabel(x_label_vhat)
-        if i == 0:
+        if i == 0 and j == 0:
             ax.legend()
             ax.set_title(column_name)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped

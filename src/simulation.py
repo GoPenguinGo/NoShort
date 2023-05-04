@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List, Any
 from src.cohort_builder import build_cohorts_SI
 from src.cohort_simulator import simulate_cohorts_SI, simulate_cohorts_mean_vola
 from src.stats import shocks
+from src.param import top_wealth, old_age_limit, cutoffs_age, n_age_cutoffs
 
 
 def simulate_SI(
@@ -205,25 +206,12 @@ def simulate_SI_mean_vola(
         dZ_SI: np.ndarray,
         tau: np.ndarray,
         cohort_size: np.ndarray,
-        top: float,
-        old_limit: int,
-        cutoffs: np.ndarray,
-        n_age_groups: int,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+        top=top_wealth,
+        old_limit=old_age_limit,
+        cutoffs=cutoffs_age,
+        n_age_groups=n_age_cutoffs,
+) -> tuple[list[Any], list[Any], list[Any], list[int] | list[Any], list[int] | list[Any], list[
+    tuple[float, float, float, float] | tuple[int, int, int, int]] | list[Any], list[Any], list[Any], Any, Any]:
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
     # :param Nc: number of cohorts
@@ -282,19 +270,14 @@ def simulate_SI_mean_vola(
     (
         r_matrix,
         theta_matrix,
-        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
         Phi_parti_1_matrix,
         popu_age_matrix,
-        #belief_age_matrix,
         wealthshare_age_matrix,
-        popu_can_short_matrix,
-        popu_short_matrix,
-        Phi_can_short_matrix,
-        Phi_short_matrix,
-        variance_matrix,
         Delta_popu_parti_matrix,
+        short_save_matrix,
+        cov_save_matrix,
     ) = simulate_cohorts_mean_vola(
         Y,
         biasvec,
@@ -336,19 +319,14 @@ def simulate_SI_mean_vola(
     return (
         r_matrix,
         theta_matrix,
-        #popu_parti_matrix,
         Delta_bar_parti_matrix,
         Phi_parti_matrix,
         Phi_parti_1_matrix,
         popu_age_matrix,
-        #belief_age_matrix,
         wealthshare_age_matrix,
-        popu_can_short_matrix,
-        popu_short_matrix,
-        Phi_can_short_matrix,
-        Phi_short_matrix,
-        variance_matrix,
         Delta_popu_parti_matrix,
+        short_save_matrix,
+        cov_save_matrix,
     )
 
 
