@@ -304,45 +304,39 @@ for i, y_var in enumerate(y_names):
     # print(summary.as_latex())
 
 
-#### SCF figure:
-SCF_data = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/data/Country panel.xlsx', sheet_name=None,
-                     index_col=0)
-# detrend:
-sheet_names_data = list(SCF_data.keys())[4:8]
-for j, sheet_name_data in enumerate(sheet_names_data):
-    parti_rates = pd.DataFrame.copy(SCF_data[sheet_name_data])
-    # detrend_national = pd.DataFrame(
-    #     parti_rates_1.values - parti_rates_1.iloc[[-1]].values,
-    #     index=parti_rates_1.index,
-    #     columns=parti_rates_1.columns
-    # )
-    # detrend_national = detrend_national.drop(index='United States')
-    detrend_category = pd.DataFrame.copy(parti_rates)
-    parti_rates_fit = pd.DataFrame.copy(parti_rates)
-    year = parti_rates_fit.columns
-    detrend_category.columns = year
+### Norwegian data
+import pandas as pd
+import pyreadstat as pyreadstat
 
-    parti_rates_fit.loc['year_index'] = (year - year[0])/3
-    parti_rates_fit.loc['year_index_sqrd'] = ((year - year[0]) / 3) ** 2
-    categories = parti_rates.index
-    x1 = parti_rates_fit.loc['year_index']
-    x = sm.add_constant(x1)
-    for i, cat in enumerate(categories):  # detrend the data
-        y = parti_rates_fit.loc[cat]
-        lm = sm.OLS(y, x, missing='drop').fit()
-        lm_fit = lm.predict(x)
-        # print(lm.params[1])
-        detrend_category.loc[cat] = y - lm_fit
-
-y_direct_stock = SCF_data[sheet_names_data[0]]/100
-y_families_with_stock = SCF_data[sheet_names_data[1]]
-y_median_value_stock = SCF_data[sheet_names_data[2]]
-y_stock_as_share = SCF_data[sheet_names_data[3]]
-
-plt.figure()
-y_direct_stock.loc['All families'].plot()
-annual_returns.loc['Two-year'][-35:].plot()
-
-
-
-state_connection = pd.read_csv(r'E:/Users/A2010290/Documents/GitHub/NoShort/data/state_count.csv.gz', compression='gzip', header=0, sep=',', quotechar='"', error_bad_lines=False)
+# merge demographic data (age end of the year) into stock ownership data, and store the number of participants of age groups
+ages = np.array([18, 30, 45, 60, 75])
+path = r'G:\BI_Research\0209_LaborMarketOutcomes\Data\STATA\STATA2'
+a = pyreadstat.read_dta(r"G:\BI_Research\0209_LaborMarketOutcomes\Data\STATA\STATA2\W19_1210_AMELD_STATDATA_2015_M12.dta")
+# # Zip code level data:
+# path = r'E:\Users\A2010290\Documents\GitHub\NoShort\data\Zip code data'
+# data_keep = ['STATE', 'ZIPCODE', 'AGI_CLASS', 'N1', 'N00600']
+# merged_data_numbers = []
+# merged_data_parti_rate = []
+# for filename in os.listdir(path):
+#     if filename.endswith('.csv'):
+#         print(filename)
+#         data_read = pd.read_csv(os.path.join(path, filename))
+#         year = int('20' + filename[:2])
+#         data_focus = data_read[data_keep]
+#         data_focus['STATE'] = data_focus['STATE'].str.upper()
+#         zipcode_int = data_focus[data_keep[1]].astype('Int64')
+#         data_focus.insert(0, 'year', year)
+#         data_focus.insert(0, 'id', data_focus['STATE'] + '_' + zipcode_int.astype(str).str[:5] + '_' + data_focus[
+#             data_keep[2]].astype(str))
+#         data_focus.insert(0, 'parti_rate', data_focus['N00600'].div(data_focus['N1']))
+#         data_focus = data_focus.loc[
+#             (zipcode_int != 0) & (data_focus[data_keep[2]].astype(str) != '0') & (data_focus['N1'] != 0)]
+#         data_focus_numbers = data_focus[['id', 'year', 'N00600', 'N1']]
+#         data_focus_parti_rate = data_focus[['id', 'year', 'parti_rate']]
+#         if year == 2005:
+#             merged_data_numbers = data_focus_numbers
+#             merged_data_parti_rate = data_focus_parti_rate
+#         else:
+#             merged_data_numbers = merged_data_numbers.append(data_focus_numbers, ignore_index=True)
+#             merged_data_parti_rate = merged_data_parti_rate.append(data_focus_parti_rate, ignore_index=True)
+#

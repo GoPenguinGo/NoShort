@@ -509,8 +509,7 @@ def simulate_cohorts_mean_vola(
         old_limit: float,
         cutoffs: np.ndarray,
         n_age_groups: int,
-) -> tuple[list[Any], list[Any], list[Any], list[int] | list[Any], list[int] | list[Any], list[
-    tuple[float, float, float, float] | tuple[int, int, int, int]] | list[Any], list[Any], list[Any], Any, Any]:
+):
     """"" Simulate the economy forward
 
     Args:

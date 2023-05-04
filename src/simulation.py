@@ -210,8 +210,7 @@ def simulate_SI_mean_vola(
         old_limit=old_age_limit,
         cutoffs=cutoffs_age,
         n_age_groups=n_age_cutoffs,
-) -> tuple[list[Any], list[Any], list[Any], list[int] | list[Any], list[int] | list[Any], list[
-    tuple[float, float, float, float] | tuple[int, int, int, int]] | list[Any], list[Any], list[Any], Any, Any]:
+):
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
     # :param Nc: number of cohorts
