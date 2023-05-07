@@ -1566,62 +1566,51 @@ plt.show()
 # ######################################
 print('Figure 4, 11, and 15')
 # fig 4: phi = 0.0, 0.4, & 0.8, complete vs. reentry
-# fig 11: tau = 0.01 and tau = 0.015, phi == 0, reentry
-# fig 15: phi == 0, initial window = 60 and 240, complete vs. reentry
-n_scenarios_short = 2  # complete vs. reentry
+# fig 11: tau = 0.01 and tau = 0.015, phi == 0, reentry & disappointment
+# fig 15: phi == 0, initial window = 60 and 240, complete, reentry & disappointment
+need_fig4 = 'false'
+need_fig11 = 'true'
+n_scenarios_short = 3  # complete vs. reentry
 scenarios_short = scenarios[:n_scenarios_short]
-# ages_focus = np.array([10, 50, 100], dtype=int)
-# ts_focus = (ages_focus / dt).astype(int)
-# n_ages = len(ages_focus)
-# t_begin = np.max(ts_focus)
-t_gap = int(2 / dt)  # 2-year window
-N_cut = int(Nc - t_gap)
-t_rolling = np.arange(0, Nt - 1, t_gap).astype(int)
-n_cut = len(t_rolling)
-# t_rolling_pre = t_rolling[:-1]  # pre
-# t_rolling_post = t_rolling[1:]
-# n_gap = len(t_rolling)
-# shocks = np.cumsum(dZ_matrix, axis=1)
-# shocks_mat = shocks[:Mpath_short, t_rolling_post] - shocks[:Mpath_short, t_rolling_pre]
-# shocks_SI = np.cumsum(dZ_SI_matrix, axis=1)
-# shocks_SI_mat = shocks_SI[:Mpath_short, t_rolling_post] - shocks_SI[:Mpath_short, t_rolling_pre]
-parti_rate_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-parti_rate_post_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-belief_gap_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, N_cut), dtype=np.float32)
-belief_gap_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, N_cut), dtype=np.float32)
-belief_std_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, N_cut), dtype=np.float32)
-belief_std_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, N_cut), dtype=np.float32)
-belief_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-belief_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-cohort_size_short = cohort_size[1:]
-cohort_size_short_mat = np.tile(cohort_size_short, (Nt - 1, 1))
-cohort_size_mat = np.tile(cohort_size, (Nt, 1))
-tau_mat = np.tile(tau, (Nt, 1))
-popu_fig11 = 0.1
-cutoff_age_old_below_fig11 = np.searchsorted(cummu_popu, popu_fig11)
-cutoff_age_young_fig11 = np.searchsorted(cummu_popu, 1 - popu_fig11)
-tax_short = [0.01, 0.015]
-n_tax_short = len(tax_short)
-P_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-P_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_old_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_young_compare_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-belief_popu_fig11 = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-Wealthshare_old_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-Wealthshare_young_compare = np.empty((Mpath, n_tax_short, Nt), dtype=np.float32)
-Npres_short = [60, 240]
-n_Npres_short = len(Npres_short)
-popu_fig15 = 0.5
-cutoff_age_old_below_fig15 = np.searchsorted(cummu_popu, popu_fig15)
-cutoff_age_young_fig15 = np.searchsorted(cummu_popu, 1 - popu_fig15)
-belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
-Phi_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Delta_bar_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
-Phi_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Phi_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_f_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
-belief_f_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
+if need_fig4 == 'true':
+    # ages_focus = np.array([10, 50, 100], dtype=int)
+    # ts_focus = (ages_focus / dt).astype(int)
+    # n_ages = len(ages_focus)
+    # t_begin = np.max(ts_focus)
+    t_gap = int(2 / dt)  # 2-year window
+    N_cut = int(Nc - t_gap)
+    # t_rolling = np.arange(0, Nt - 1, t_gap).astype(int)
+    # n_cut = len(t_rolling)
+    # t_rolling_pre = t_rolling[:-1]  # pre
+    # t_rolling_post = t_rolling[1:]
+    # n_gap = len(t_rolling)
+    # shocks = np.cumsum(dZ_matrix, axis=1)
+    # shocks_mat = shocks[:Mpath_short, t_rolling_post] - shocks[:Mpath_short, t_rolling_pre]
+    # shocks_SI = np.cumsum(dZ_SI_matrix, axis=1)
+    # shocks_SI_mat = shocks_SI[:Mpath_short, t_rolling_post] - shocks_SI[:Mpath_short, t_rolling_pre]
+    parti_rate_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+    parti_rate_post_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+    belief_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+    belief_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+    cohort_size_short = cohort_size[1:]
+    cohort_size_short_mat = np.tile(cohort_size_short, (Nt - 1, 1))
+    cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+    tau_mat = np.tile(tau, (Nt, 1))
+if need_fig11 == 'true':
+    cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+    tau_mat = np.tile(tau, (Nt, 1))
+    popu_fig11 = 0.1
+    cutoff_age_old_below_fig11 = np.searchsorted(cummu_popu, popu_fig11)
+    cutoff_age_young_fig11 = np.searchsorted(cummu_popu, 1 - popu_fig11)
+    tax_short = [0.01, 0.015]
+    n_tax_short = len(tax_short)
+    P_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+    P_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+    belief_popu_old_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+    belief_popu_young_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+    belief_popu_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+    Wealthshare_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+    Wealthshare_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
 
 # run
 for i in range(Mpath):
@@ -1636,260 +1625,197 @@ for i in range(Mpath):
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         for n, phi_try in enumerate(phi_vector_short):
-            for k, tax_try in enumerate(tax_short):
-                beta_try = rho + nu - tax_try
-                for m, Npre_try in enumerate(Npres_short):
-                    T_hat_try = Npre_try * dt
-                    Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
+            if (need_fig4 == 'true') and (need_fig11 == 'true'):
+                for k, tax_try in enumerate(tax_short):
+                    beta_try = rho + nu - tax_try
+                    (
+                        r,
+                        theta,
+                        f,
+                        Delta,
+                        pi,
+                        popu_parti,
+                        f_parti,
+                        Delta_bar_parti,
+                        dR,
+                        invest_tracker,
+                        popu_can_short,
+                        popu_short,
+                        Phi_can_short,
+                        Phi_short,
+                    ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                    Vhat,
+                                    mu_Y, sigma_Y, sigma_S,
+                                    tax_try,
+                                    beta_try,
+                                    phi_try,
+                                    Npre, Ninit,
+                                    T_hat,
+                                    dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                    need_f='True',
+                                    need_Delta='True',
+                                    need_pi='True',
+                                    )
+
+                    if tax_try == 0.01:
+                        for mm in range(n_age_cutoffs):
+                            age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
+                            age_top = cutoffs_age[mm]
+                            weights_group = cohort_size[age_bottom:age_top]
+                            belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
+                                                                     weights=weights_group,
+                                                                     axis=1)
+                            belief_post_mat[i, j, n, mm] = np.average(
+                                Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
+                                weights=weights_group,
+                                axis=1)
+                            if mode_trade == 'w_constraint':
+                                parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
+                                                                      weights=weights_group, axis=1)
+                                parti_rate_post_mat[i, n, mm] = np.average(
+                                    invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
+                                    weights=weights_group, axis=1)
                     if phi_try == 0:
-                        # if (tax_try == 0.015 and mode_trade != 'w_constraint') or (tax_try == 0.015 and Npre_try == 60):
-                        #     pass
-                        if (tax_try == 0.015) or (Npre_try == 60):
-                            pass
-                        else:
-                            (
-                                r,
-                                theta,
-                                f,
-                                Delta,
-                                pi,
-                                popu_parti,
-                                f_parti,
-                                Delta_bar_parti,
-                                dR,
-                                invest_tracker,
-                                popu_can_short,
-                                popu_short,
-                                Phi_can_short,
-                                Phi_short,
-                            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                            Vhat_try,
-                                            mu_Y, sigma_Y, sigma_S,
-                                            tax_try,
-                                            beta_try,
-                                            phi_try,
-                                            Npre_try, Ninit,
-                                            T_hat_try,
-                                            dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                            need_f='False',
-                                            need_Delta='True',
-                                            need_pi='True',
-                                            )
-                            # if tax_try == 0.015 and mode_trade == 'w_constraint':
-                            # save results for fig 11
-                            # belief_popu_fig15[i, k] = np.average(Delta, weights=cohort_size_mat,
-                            #                                      axis=1)  # same average belief as phi == 0
-                            # P_old_compare[i, k] = np.sum(
-                            #     invest_tracker[:, :cutoff_age_old_below_fig11] *
-                            #     cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            #     axis=1) / popu_fig11
-                            # P_young_compare[i, k] = np.sum(invest_tracker[:, cutoff_age_young_fig11:] *
-                            #                                cohort_size_mat[:, cutoff_age_young_fig11:],
-                            #                                axis=1) / popu_fig11
-                            # Wealthshare_old_compare[i, k] = np.sum(
-                            #     f[:, :cutoff_age_old_below_fig11] * dt, axis=1)
-                            # Wealthshare_young_compare[i, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt, axis=1)
-                            # belief_popu_old_compare_fig11[i, k] = np.average(
-                            #     Delta[:, :cutoff_age_old_below_fig11],
-                            #     weights=cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            #     axis=1)
-                            # belief_popu_young_compare_fig11[i, k] = np.average(Delta[:, cutoff_age_young_fig11:],
-                            #                                                    weights=cohort_size_mat[:,
-                            #                                                            cutoff_age_young_fig11:],
-                            #                                                    axis=1)
+                        # save results for fig 11
+                        invest = pi > 0
+                        if j == 0 and k == 0:
+                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size, axis=1)  # same average belief bc phi == 0
+                            belief_popu_old_compare_fig11[i] = np.average(
+                                Delta[:, :cutoff_age_old_below_fig11],
+                                weights=cohort_size[:cutoff_age_old_below_fig11],
+                                axis=1)
+                            belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
+                                                                                  weights=cohort_size[
+                                                                                          cutoff_age_young_fig11:],
+                                                                                  axis=1)
+                        P_old_compare[i, j, k] = np.sum(
+                            invest[:, :cutoff_age_old_below_fig11] *
+                            cohort_size_mat[:, :cutoff_age_old_below_fig11],
+                            axis=1) / popu_fig11
+                        P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
+                                                          cohort_size_mat[:, cutoff_age_young_fig11:],
+                                                          axis=1) / popu_fig11
+                        Wealthshare_old_compare[i, j, k] = np.sum(
+                            f[:, :cutoff_age_old_below_fig11] * dt,
+                            axis=1)
+                        Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
+                                                                    axis=1)
 
-                            # elif Npre_try == 60:
-                            # save results for fig 15
-                            # Phi_compare[i, j, m] = f_parti
-                            # Delta_bar_compare[i, j, m] = Delta_bar_parti
-                            # if j == 0:
-                            #     belief_popu_fig15[i, m] = np.average(Delta, weights=cohort_size_mat,
-                            #                                          axis=1)  # same average belief as phi == 0
-                            #     belief_f_old_compare[i, j, m] = np.average(Delta[:, :cutoff_age_old_below_fig15],
-                            #                                                weights=f[:,
-                            #                                                        :cutoff_age_old_below_fig15] * dt,
-                            #                                                axis=1)
-                            #     belief_f_young_compare[i, j, m] = np.average(Delta[:, cutoff_age_young_fig15:],
-                            #                                                  weights=f[:,
-                            #                                                          cutoff_age_young_fig15:] * dt,
-                            #                                                  axis=1)
-                            #     Phi_old_compare[i, j, m] = np.sum(f[:, :cutoff_age_old_below_fig15] * dt, axis=1)
-                            #     Phi_young_compare[i, j, m] = np.sum(f[:, cutoff_age_young_fig15:] * dt, axis=1)
-                            # else:
-                            #     parti = pi > 0
-                            #     belief_f_old_compare[i, j, m] = np.ma.average(Delta[:, :cutoff_age_old_below_fig15],
-                            #                                                   weights=f[:,
-                            #                                                           :cutoff_age_old_below_fig15] * parti[
-                            #                                                                                          :,
-                            #                                                                                          :cutoff_age_old_below_fig15] * dt,
-                            #                                                   axis=1)
-                            #     belief_f_young_compare[i, j, m] = np.ma.average(Delta[:, cutoff_age_young_fig15:],
-                            #                                                     weights=f[:,
-                            #                                                             cutoff_age_young_fig15:] * parti[
-                            #                                                                                        :,
-                            #                                                                                        cutoff_age_young_fig15:] * dt,
-                            #                                                     axis=1)
-                            #     Phi_old_compare[i, j, m] = np.sum(parti[:, :cutoff_age_old_below_fig15]
-                            #                                       * f[:, :cutoff_age_old_below_fig15] * dt,
-                            #                                       axis=1)
-                            #     Phi_young_compare[i, j, m] = np.sum(parti[:, cutoff_age_young_fig15:]
-                            #                                         * f[:, cutoff_age_young_fig15:] * dt,
-                            #                                         axis=1)
-                            # else:
-                            # save results for fig 4]
-                            # if mode_trade == 'w_constraint':
-                            #     parti_rate_mat[i, n] = popu_parti
-                            # belief_cross_std = np.std(Delta, axis=1)
-                            # belief_cross_std_mat[i, j, n] = belief_cross_std
+            elif need_fig11 == 'false':
+                tax_try = tax
+                beta_try = beta
+                (
+                    r,
+                    theta,
+                    f,
+                    Delta,
+                    pi,
+                    popu_parti,
+                    f_parti,
+                    Delta_bar_parti,
+                    dR,
+                    invest_tracker,
+                    popu_can_short,
+                    popu_short,
+                    Phi_can_short,
+                    Phi_short,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                Vhat,
+                                mu_Y, sigma_Y, sigma_S,
+                                tax_try,
+                                beta_try,
+                                phi_try,
+                                Npre, Ninit,
+                                T_hat,
+                                dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                need_f='False',
+                                need_Delta='True',
+                                need_pi='True',
+                                )
 
-                            # belief_age_mat[i, j, n] = Delta[t_begin:, -ts_focus][t_rolling - t_begin]
-                            for mm in range(n_age_cutoffs):
-                                age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
-                                age_top = cutoffs_age[mm]
-                                weights_group = cohort_size[age_bottom:age_top]
-                                belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
-                                                                         weights=weights_group,
-                                                                         axis=1)
-                                belief_post_mat[i, j, n, mm] = np.average(
-                                    Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                    weights=weights_group,
-                                    axis=1)
-                                if mode_trade == 'w_constraint':
-                                    parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
-                                                                          weights=weights_group, axis=1)
-                                    parti_rate_post_mat[i, n, mm] = np.average(
-                                        invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                        weights=weights_group, axis=1)
+                for mm in range(n_age_cutoffs):
+                    age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
+                    age_top = cutoffs_age[mm]
+                    weights_group = cohort_size[age_bottom:age_top]
+                    belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
+                                                             weights=weights_group,
+                                                             axis=1)
+                    belief_post_mat[i, j, n, mm] = np.average(
+                        Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
+                        weights=weights_group,
+                        axis=1)
+                    if mode_trade == 'w_constraint':
+                        parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
+                                                              weights=weights_group, axis=1)
+                        parti_rate_post_mat[i, n, mm] = np.average(
+                            invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
+                            weights=weights_group, axis=1)
+            else:
+                if phi_try == 0:
+                    for k, tax_try in enumerate(tax_short):
+                        beta_try = rho + nu - tax_try
+                        (
+                            r,
+                            theta,
+                            f,
+                            Delta,
+                            pi,
+                            popu_parti,
+                            f_parti,
+                            Delta_bar_parti,
+                            dR,
+                            invest_tracker,
+                            popu_can_short,
+                            popu_short,
+                            Phi_can_short,
+                            Phi_short,
+                        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+                                        Vhat,
+                                        mu_Y, sigma_Y, sigma_S,
+                                        tax_try,
+                                        beta_try,
+                                        phi_try,
+                                        Npre, Ninit,
+                                        T_hat,
+                                        dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                        need_f='True',
+                                        need_Delta='True',
+                                        need_pi='True',
+                                        )
 
-                            # belief_gap_pre_mat[i, j, n, kk] = \
-                            # (np.max(Delta[:, -N_cut:], axis=1) - np.min(Delta[:, -N_cut:], axis=1))[t_rolling_pre]
-                            # belief_gap_post_mat[i, j, n, kk] = (
-                            #             np.max(Delta[:, -N_cut - t_gap:-t_gap], axis=1) - np.min(
-                            #         Delta[:, -N_cut - t_gap:-t_gap], axis=1))[t_rolling_post]
-                            # belief_std_pre_mat[i, j, n, kk] = np.std(Delta[:, -N_cut:],
-                            #                                          axis=1)[t_rolling_pre]
-                            # belief_std_post_mat[i, j, n, kk] = np.std(Delta[:, -N_cut - t_gap:-t_gap],
-                            #                                           axis=1)[t_rolling_post]
+                        # save results for fig 11
+                        invest = pi > 0
+                        if j == 0 and k == 0:
+                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
+                                                              axis=1)  # same average belief bc phi == 0
+                            belief_popu_old_compare_fig11[i] = np.average(
+                                Delta[:, :cutoff_age_old_below_fig11],
+                                weights=cohort_size[:cutoff_age_old_below_fig11],
+                                axis=1)
+                            belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
+                                                                            weights=cohort_size[
+                                                                                    cutoff_age_young_fig11:],
+                                                                            axis=1)
+                        P_old_compare[i, j, k] = np.sum(
+                            invest[:, :cutoff_age_old_below_fig11] *
+                            cohort_size_mat[:, :cutoff_age_old_below_fig11],
+                            axis=1) / popu_fig11
+                        P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
+                                                          cohort_size_mat[:, cutoff_age_young_fig11:],
+                                                          axis=1) / popu_fig11
+                        Wealthshare_old_compare[i, j, k] = np.sum(
+                            f[:, :cutoff_age_old_below_fig11] * dt,
+                            axis=1)
+                        Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
+                                                                    axis=1)
 
-                            # for yy, t_sample in enumerate(t_rolling):
-                            #     for cc, t_focus in enumerate(ts_focus):
-                            #         if -t_sample + t_focus == 0:
-                            #             cohort_parti_mat = invest_tracker[t_sample - t_focus:t_sample, -t_sample:]
-                            #         else:
-                            #             cohort_parti_mat = invest_tracker[t_sample - t_focus:t_sample, -t_sample:-t_sample + t_focus]
-                            #         parti_cohort = np.average(np.diag(np.fliplr(cohort_parti_mat)))
-                            #         parti_rate_age_mat[i, n, yy, cc] = parti_cohort
 
-                            # # save results for fig 11
-                            # belief_popu_fig11[i, k] = np.average(Delta, weights=cohort_size_mat,
-                            #                                      axis=1)  # same average belief as phi == 0
-                            # P_old_compare[i, k] = np.sum(
-                            #     invest_tracker[:, :cutoff_age_old_below_fig11] *
-                            #     cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            #     axis=1) / popu_fig11
-                            # P_young_compare[i, k] = np.sum(invest_tracker[:, cutoff_age_young_fig11:] *
-                            #                                cohort_size_mat[:, cutoff_age_young_fig11:],
-                            #                                axis=1) / popu_fig11
-                            # Wealthshare_old_compare[i, k] = np.sum(
-                            #     f[:, :cutoff_age_old_below_fig11] * dt, axis=1)
-                            # Wealthshare_young_compare[i, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt, axis=1)
-                            # belief_popu_old_compare_fig11[i, k] = np.average(
-                            #     Delta[:, :cutoff_age_old_below_fig11],
-                            #     weights=cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            #     axis=1)
-                            # belief_popu_young_compare_fig11[i, k] = np.average(Delta[:, cutoff_age_young_fig11:],
-                            #                                                    weights=cohort_size_mat[:,
-                            #                                                            cutoff_age_young_fig11:],
-                            #                                                    axis=1)
-                            #
-                            # # save results for fig 15
-                            # Phi_compare[i, j, m] = f_parti
-                            # Delta_bar_compare[i, j, m] = Delta_bar_parti
-                            # if j == 0:
-                            #     belief_popu_fig15[i, m] = np.average(Delta, weights=cohort_size_mat,
-                            #                                          axis=1)  # same average belief as phi == 0
-                            #     belief_f_old_compare[i, j, m] = np.average(Delta[:, :cutoff_age_old_below_fig15],
-                            #                                                weights=f[:,
-                            #                                                        :cutoff_age_old_below_fig15] * dt,
-                            #                                                axis=1)
-                            #     belief_f_young_compare[i, j, m] = np.average(Delta[:, cutoff_age_young_fig15:],
-                            #                                                  weights=f[:,
-                            #                                                          cutoff_age_young_fig15:] * dt,
-                            #                                                  axis=1)
-                            #     Phi_old_compare[i, j, m] = np.sum(f[:, :cutoff_age_old_below_fig15] * dt, axis=1)
-                            #     Phi_young_compare[i, j, m] = np.sum(f[:, cutoff_age_young_fig15:] * dt, axis=1)
-                            # else:
-                            #     parti = pi > 0
-                            #     belief_f_old_compare[i, j, m] = np.ma.average(Delta[:, :cutoff_age_old_below_fig15],
-                            #                                                   weights=f[:,
-                            #                                                           :cutoff_age_old_below_fig15] * parti[
-                            #                                                                                          :,
-                            #                                                                                          :cutoff_age_old_below_fig15] * dt,
-                            #                                                   axis=1)
-                            #     belief_f_young_compare[i, j, m] = np.ma.average(Delta[:, cutoff_age_young_fig15:],
-                            #                                                     weights=f[:,
-                            #                                                             cutoff_age_young_fig15:] * parti[
-                            #                                                                                        :,
-                            #                                                                                        cutoff_age_young_fig15:] * dt,
-                            #                                                     axis=1)
-                            #     Phi_old_compare[i, j, m] = np.sum(parti[:, :cutoff_age_old_below_fig15]
-                            #                                       * f[:, :cutoff_age_old_below_fig15] * dt,
-                            #                                       axis=1)
-                            #     Phi_young_compare[i, j, m] = np.sum(parti[:, cutoff_age_young_fig15:]
-                            #                                         * f[:, cutoff_age_young_fig15:] * dt,
-                            #                                         axis=1)
-                    else:
-                        if tax_try == 0.015 or Npre_try == 60:
-                            pass
-                        else:
-                            (
-                                r,
-                                theta,
-                                f,
-                                Delta,
-                                pi,
-                                popu_parti,
-                                f_parti,
-                                Delta_bar_parti,
-                                dR,
-                                invest_tracker,
-                                popu_can_short,
-                                popu_short,
-                                Phi_can_short,
-                                Phi_short,
-                            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                            Vhat_try,
-                                            mu_Y, sigma_Y, sigma_S,
-                                            tax_try,
-                                            beta_try,
-                                            phi_try,
-                                            Npre_try, Ninit,
-                                            T_hat,
-                                            dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                            need_f='False',
-                                            need_Delta='True',
-                                            need_pi='False',
-                                            )
-                            # save results for fig 4
-                            # update_belief = Delta[1:, :-1] - Delta[:-1, 1:]  # change of belief
-                            # update_belief_t = np.average(update_belief, weights=cohort_size_short, axis=1)  # everyone
-                            for mm in range(n_age_cutoffs):
-                                age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
-                                age_top = cutoffs_age[mm]
-                                weights_group = cohort_size[age_bottom:age_top]
-                                belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
-                                                                         weights=weights_group,
-                                                                         axis=1)
-                                belief_post_mat[i, j, n, mm] = np.average(
-                                    Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                    weights=weights_group,
-                                    axis=1)
-                                if mode_trade == 'w_constraint':
-                                    parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
-                                                                          weights=weights_group, axis=1)
-                                    parti_rate_post_mat[i, n, mm] = np.average(
-                                        invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                        weights=weights_group, axis=1)
+
+                else:
+                    pass
+
+
+
 
 # Figure 4
 n_bins = 15
@@ -2076,14 +2002,8 @@ belief_popu_distance_old = belief_popu_old_compare_fig11 - cutoff_belief
 parti_gap = P_old_compare - P_young_compare
 Phi_gap = Phi_old_compare - Phi_young_compare
 wealth_gap = Wealthshare_old_compare - Wealthshare_young_compare
-# y_variables = [parti_gap[:, popu_index, :], belief_f_distance_young[:, popu_index, :], belief_f_distance_old[:, popu_index, :]
-# y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
-# x_mat = belief_f_gap_compare[:, popu_index, :]
-# x_varname = r'Wealth weighted $\Delta_{s,t}$, old minus young'
 x_mat = belief_popu_gap_compare[:, popu_index, :]
 x_varname = r'Average estimation error $\Delta_{s,t}$, old minus young'
-# x_mat = wealth_gap[:, popu_index, :]
-# x_varname =  r'Wealth share old minus young'
 x_range = 0.25
 x_range_left = np.percentile(x_mat, 5)
 x_range_right = np.percentile(x_mat, 95)
@@ -2093,22 +2013,10 @@ b = x_mat <= x_range_right
 where_within = np.where(a * b == 1)  # winsorize
 x_mat_within = x_mat[where_within]
 total_count = np.shape(where_within)[1]
-# y_varnames = ['Participation rate, old - young', 'Distance to cutoff belief, young', 'Distance to cutoff belief, old']
-# condition_var = Wealthshare_young_compare[:, popu_index, :]
-# condition_label = r'Wealth share young, quartile '
-# condition_var = Phi_gap[:, popu_index, :]
-# condition_label = r'$\Phi$ old-young, quartile '
 condition_var = wealth_gap[:, popu_index, :]
 condition_label = r'Wealth share, old minus young'
-# condition_var = belief_f_gap_compare[:, popu_index, :]
-# condition_label = r'Wealth weighted $\Delta_{s,t}$, old - young, Quartile'
-
 condition_var_within = condition_var[where_within]
 condition = np.percentile(condition_var_within, np.arange(0, 101, (100 / n_tiles)))
-# condition = (np.max(condition_var_within) - np.min(condition_var_within)) \
-#             * np.arange(0, 101, (100/n_tiles)) / 100 + np.min(condition_var_within)
-
-
 y = np.empty((n_tiles, n_bins, 3))
 x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
 X_ = np.linspace(x_range_left, x_range_right, 50)
@@ -2341,27 +2249,21 @@ data_where = np.where(below_data * above_data == 1)
 n_bins = 10
 bins = np.linspace(below_dz, above_dz, n_bins)
 # quartile_var = (Wealthshare_old_compare - Wealthshare_young_compare)[:, :, Npre_index]
-quartile_var = Wealthshare_old_compare[:, :, Npre_index]
 # quartile_var = belief_popu_young_compare[:, Npre_index] - belief_popu_old_compare[:, Npre_index]
 # quartile_var = parti_young_compare[:, :, Npre_index]
 y_percentiles = [50, 25, 75]
-phi_old = phi_old_compare / (phi_old_compare + phi_young_compare)
-phi_young = phi_young_compare / (phi_old_compare + phi_young_compare)
+phi_old = Phi_old_compare / Phi_compare
+phi_young = Phi_young_compare / Phi_compare
 belief_f_young = np.where(belief_f_young_compare == 0, np.nan,
                           belief_f_young_compare)  # converting empty cells from 0 to nan
 belief_f_old = np.where(belief_f_old_compare == 0, np.nan, belief_f_old_compare)
 data_var = Delta_bar_compare[:, :, Npre_index]
-data_figure = np.zeros((2, n_bins - 1, len(y_percentiles)))
-parti_figure = np.zeros((n_bins - 1, 2, len(y_percentiles)))
-wealthshare_figure = np.zeros((n_bins - 1, 2, len(y_percentiles)))
-phi_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
-belief_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
-belief_phi_figure = np.zeros((2, 2, n_bins - 1, len(y_percentiles)))
-for i in range(2):
+data_figure = np.zeros((n_Npres_short, n_bins - 1, len(y_percentiles)))
+phi_figure = np.zeros((n_scenarios_short, n_Npres_short, n_bins - 1, len(y_percentiles)))
+belief_figure = np.zeros((n_scenarios_short, n_Npres_short, n_bins - 1, len(y_percentiles)))
+belief_phi_figure = np.zeros((n_scenarios_short, n_Npres_short, n_bins - 1, len(y_percentiles)))
+for i in range(n_scenarios_short):
     data_focus = data_var[:, i]
-    # quartile_var_focus = quartile_var[:, i]
-    # # quartile_var_focus = quartile_var
-    # quartiles = np.percentile(quartile_var_focus[data_where], np.linspace(0, 100, 5))
     phi_var_old = phi_old
     phi_var_young = phi_young[:, Npre_index]
     for j in range(n_bins - 1):
@@ -2370,43 +2272,16 @@ for i in range(2):
         below_bin = bin_1 >= x_index
         above_bin = x_index >= bin_0
         bin_where = np.where(below_bin * above_bin == 1)
-        # condition_bin = quartile_var_focus[bin_where]
         data_focus_z = data_focus[bin_where]
         data_figure[i, j] = np.percentile(data_focus_z, y_percentiles)
-        for l in range(2):
-            parti_var = parti_old_compare[:, Npre_index] if l == 0 else parti_young_compare[:, Npre_index]
-            # wealthshare_var = Wealthshare_old_compare[:, 1, Npre_index] if l == 0 else Wealthshare_young_compare[:, 1, Npre_index]
+        for l in range(n_Npres_short):
             phi_var = phi_old[:, i, Npre_index] if l == 0 else phi_young[:, i, Npre_index]
             belief_var_nan = belief_f_old[:, i, Npre_index] if l == 0 else belief_f_young[:, i, Npre_index]
             belief_var = belief_f_old_compare[:, i, Npre_index] if l == 0 else belief_f_young_compare[:, i, Npre_index]
-            # parti_figure[j, l, 0] = np.mean(parti_var[bin_where])
-            # parti_figure[j, l, 1] = np.std(parti_var[bin_where])
-            # wealthshare_figure[j, l, 0] = np.mean(wealthshare_var[bin_where])
-            # wealthshare_figure[j, l, 1] = np.std(wealthshare_var[bin_where])
-            # phi_figure[i, l, j, 0] = np.mean(phi_var[bin_where])
-            # phi_figure[i, l, j, 1] = np.std(phi_var[bin_where])
-            parti_figure[j, l] = np.percentile(parti_var[bin_where], y_percentiles)
-            # wealthshare_figure[j, l] = np.percentile(wealthshare_var[bin_where], y_percentiles)
             phi_figure[i, l, j] = np.percentile(phi_var[bin_where], y_percentiles)
             belief_figure[i, l, j] = np.nanpercentile(belief_var_nan[bin_where], y_percentiles)
             belief_phi = phi_var * belief_var
             belief_phi_figure[i, l, j] = np.percentile(belief_phi[bin_where], y_percentiles)
-
-        # # quartiles = np.percentile(condition_bin, np.linspace(0, 100, 5))
-        # for k in range(1, 5):
-        #     quartile_below = quartiles[k - 1]
-        #     quartile_above = quartiles[k]
-        #     below_bin = condition_bin <= quartile_above
-        #     above_bin = condition_bin >= quartile_below
-        #     bin_focus = np.where(above_bin * below_bin == 1)
-        #     data_focus_bin = data_focus_z[bin_focus]
-        #
-        #     # data_figure[i1, i2, j, k, 0] = np.mean(data_focus_bin)
-        #     # data_figure[i1, i2, j, k, 1] = np.percentile(data_focus_bin, 5)
-        #     # data_figure[i1, i2, j, k, 2] = np.percentile(data_focus_bin, 95)
-        #     data_figure[i, j, k] = np.percentile(data_focus_bin, y_percentiles)
-        #     data_figure_variance[i, j, k, 0] = np.mean(data_focus_bin)
-        #     data_figure_variance[i, j, k, 1] = np.sqrt(np.mean((data_focus_bin - average_Delta_bar[i]) ** 2))
 bin_size = (above_dz - below_dz) / (n_bins - 1)
 x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
 labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
@@ -2420,7 +2295,7 @@ y_labels = ['Estimation error of the participants',
             r'Contribution to $\bar{\Delta}_t$']
 # X_ = np.linspace(-0.2, 0.2, 100)
 X_ = np.linspace(below_dz, above_dz, 100)
-fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(10, 15), sharex='all', sharey='row')
+fig, axes = plt.subplots(ncols=3, nrows=3, figsize=(15, 15), sharex='all', sharey='row')
 for j, rows in enumerate(axes):
     for i, ax in enumerate(rows):
         if j == 0:
@@ -2432,33 +2307,27 @@ for j, rows in enumerate(axes):
         for k in range(2):
             if j == 2:
                 y_i = y_focus[k]
-                Y_ = np.empty((3, 100))
-                for l in range(3):
-                    X_Y_Spline = make_interp_spline(x, y_i[:, l])
-                    Y_[l] = X_Y_Spline(X_)
-                ax.plot(X_, Y_[0], color=colors_short[k], linewidth=1, label=labels[j][k])
-                ax.fill_between(X_, Y_[2], Y_[1], color=colors_short[k], linewidth=0., alpha=0.4)
+                X_Y_Spline = make_interp_spline(x, y_i)
+                Y_ = X_Y_Spline(X_)
+                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
                 if k == 1:
                     y_i = data_figure[i]  # n_bin-1 * 3
-                    Y_ = np.empty((3, 100))
-                    for l in range(3):
-                        X_Y_Spline = make_interp_spline(x, y_i[:, l])
-                        Y_[l] = X_Y_Spline(X_)
-                    ax.plot(X_, Y_[0], color='gray', linewidth=1,
+                    X_Y_Spline = make_interp_spline(x, y_i)
+                    Y_ = X_Y_Spline(X_)
+                    ax.plot(X_, Y_[:, 0], color='gray', linewidth=1,
                             label=r'$\bar{\Delta}_t$')
-                    ax.fill_between(X_, Y_[2], Y_[1], color='gray', linewidth=0., alpha=0.2)
+                    ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color='gray', linewidth=0., alpha=0.2)
                     ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8, linestyle='dashed',
                                label=r'Unconditional mean $\bar{\Delta}_t$')
                     x_mean = [X_[np.searchsorted(Y_[0], average_Delta_bar[i])]]
                     ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
             else:
                 y_i = y_focus[k]
-                Y_ = np.empty((3, 100))
-                for l in range(3):
-                    X_Y_Spline = make_interp_spline(x, y_i[:, l])
-                    Y_[l] = X_Y_Spline(X_)
-                ax.plot(X_, Y_[0], color=colors_short[k], linewidth=1, label=labels[j][k])
-                ax.fill_between(X_, Y_[2], Y_[1], color=colors_short[k], linewidth=0., alpha=0.4)
+                X_Y_Spline = make_interp_spline(x, y_i)
+                Y_ = X_Y_Spline(X_)
+                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
             ax.set_ylabel(y_labels[j])
         if i == 0:
             ax.legend(loc='upper left')
@@ -2470,7 +2339,7 @@ for j, rows in enumerate(axes):
             ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
         # ax.set_xlim(-0.25, 0.25)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(Npres[Npre_index]) + 'DeltaVola.png', dpi=100)
+plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola.png', dpi=100)
 plt.show()
 
 # ######################################
