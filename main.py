@@ -1147,6 +1147,7 @@ for i in range(Mpath):
                     Delta_bar_param_mat[i, j, l, m] = Delta_bar_parti
                     cov_param_mat[i, j, l, m] = cov_save
                     parti_param_mat[i, j, l, m] = popu_age
+                    wealth_param_mat[i, j, l, m] = wealthshare_age
 
 # Table 1:
 # Panel 1
@@ -1885,44 +1886,82 @@ for phi_index in range(n_phi_short):
                 #         data_figure_y[phi_index, age_index, i, j, 0] = np.average(y_bin)
                 #         data_figure_y[phi_index, age_index, i, j, 1] = np.median(y_bin)
 
-labels_quartile = ['First quartile', 'Second quartile', 'Third quartile', 'Fourth quartile']
-sce_index = 1
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15))
-nn = -1
-for i, ax_row in enumerate(axes):
-    for j, ax in enumerate(ax_row):
-        nn += 1
-        for phi_index in range(n_phi_short):
-            age_group = nn
-            line_style_i = 'solid' if phi_index == 1 else 'dotted'
-            for condition_i in range(2):
-                condition_ii = 0 if condition_i == 0 else 2
-                y = data_figure_y[phi_index, nn, :, condition_ii, 0]
-                x = data_figure_x[sce_index, phi_index, nn]
-                X_Y_Spline = make_interp_spline(x, y, k=5)
-                X_ = np.linspace(x.min(), x.max(), 200)
-                Y_ = X_Y_Spline(X_)
-                # line_style_i = 'solid' if sce_index == 1 else 'dashed'
-                # ax.plot(x, y, color=colors_short[l], linewidth=0.8, label=labels[l])
-                # ax.plot(x, y, color='gray', linewidth=0.8, linestyle='dashed', label='Complete market')
-                ax.plot(X_, Y_, color=colors_short[condition_ii], linewidth=0.8, label=labels_quartile[condition_ii],
-                        linestyle=line_style_i)
-                # ax.axhline(data_average_y[sce_index, phi_index], 0.05, 0.95, color='gray', linestyle='dashed')
-                # ax.axvline(data_average_x[sce_index, phi_index], 0.05, 0.95, color='gray', linestyle='dashed')
-                # ax.plot(x, y, color='b', linewidth=0.8, linestyle=line_style_i)
-                ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
-                # ax.axvline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
-                # ax.plot(x, x, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
-                ax.legend()
-        ax.set_xlabel(r'Average estimation error, prior')
-        ax.set_xlim(x[0], x[3])
-        ax.set_ylim(y[3], y[0])
-        ax.set_ylabel(r'Change in average estimation error, post - prior')
-        ax.set_title(age_labels[nn])
+average_belief_age = np.average(np.average(belief_pre_mat, axis=0), axis=3)
+average_belief_all = np.average(average_belief_age, axis=2)
+age_index = 0  # youngest group
+fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(8, 20))
+for i, ax in enumerate(axes):
+    x_var = data_figure_x[:, :, age_index] if i < 2 else data_all_x
+    y_var = data_average_y[:, :, age_index] if i < 2 else data_all_y
+    condi_var = data_figure_parti[:, age_index] if i < 2 else data_all_condition
+    average_var = average_belief_age[:, :, age_index] if i < 2 else average_belief_all
+    title_group = ', youngest quartile' if i < 2 else ', overall'
+    # age_index = 0 if i == 0 else 3
+    phi_index = 0 if i == 0 else 2
+    title_i = r'$\phi=0.0$' + title_group if phi_index == 0 else r'$\phi=0.8$' + title_group
+    ax.set_title(title_i)
+    for j in range(n_scenarios_short):
+        sce_index = 1 - j
+        y = y_var[sce_index, phi_index]
+        x = x_var[sce_index, phi_index]
+        x_average = average_var[sce_index, phi_index]
+        x_y_spline = make_interp_spline(x, y)
+        X_ = np.linspace(x.min(), x.max(), 100)
+        Y_ = x_y_spline(X_)
+        Y_average = x_y_spline(x_average)
+        line_style_i = 'solid' if sce_index == 1 else 'dashed'
+        label_i = 'Complete' if sce_index == 0 else 'Reentry'
+        color_i = 'orange' if sce_index == 0 else 'midnightblue'
+        # ax.plot(x, y, color=colors_short[l], linewidth=0.8, label=labels[l])
+        ax.plot(X_, Y_, color=color_i, linewidth=1.2, alpha=0.8, label=label_i,
+                linestyle=line_style_i)
+        if sce_index == 1 and j == 0:
+            X_ave = X_ - x_average
+            ax.plot(X_ave, Y_, color=color_i, linewidth=1.2, alpha=0.8, label='Reentry - shifted',
+                    linestyle='dashed')
+            # ax.fill_between()
+            ax.scatter(0, Y_average, c='None', edgecolors=color_i, marker='o')
+        ax.scatter(x_average, Y_average, color=color_i, marker='o', linewidth=0)
+        if sce_index == 1:
+            ax2 = ax.twinx()
+            # for k in range(2):
+            #     kk = 1 + k
+            #     y_condition = data_figure_condition[phi_index, age_index, :, kk]
+            #     x_y_condi_spline = make_interp_spline(x, y_condition)
+            #     Y_condition = x_y_condi_spline(X_)
+            #     ax2.plot(x, y_condition, color='gray', linewidth=0.6,
+            #             linestyle='dotted')
+            #     ax2.set_ylim(0, 1)
+            y_condition = condi_var[phi_index]
+            x_y_condi_spline = make_interp_spline(x, y_condition)
+            Y_condition = x_y_condi_spline(X_)
+            ax2.plot(X_, Y_condition, color='red', linewidth=1, alpha=0.6, label='Participation rate')
+            ax2.set_ylim(0, 1)
+        # ax.plot(x, y, color=colors[condi_index], linewidth=0.8, label=labels[condi_index],
+        #     linestyle=line_style_i)
+        # ax.scatter(1, y_complete, color=colors_short[l], marker='o')
+        # ax.plot(X_gap, [Y_[-1], y_complete], color=colors_short[l], linewidth=0.8, linestyle='dashed')
+    if i < 2:
+        ax.set_xlim(-0.3, 0.3)
+    else:
+        ax.set_xlim(-0.15, 0.15)
+    ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
+    ax.axvline(0, 0.05, 0.95, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
+    # ax.plot(x, x, color='gray', linestyle='dashed', linewidth=0.6, alpha=0.6)
+    ax.set_xlabel('Average estimation error, prior')
+    if i == 0:
+        ax.legend(loc='upper left')
+        ax2.legend(loc='upper right')
+    ax.set_ylabel('Change in average estimation error, post - prior')
+    ax2.set_ylabel('Average participation rate')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+    fig.savefig('Endogenous_learning_long' + str(i) + '.png',
+                bbox_inches=extent.expanded(1.3, 1.2), dpi=200)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-# plt.savefig('Endogenous_learning2.png', dpi=100)
+plt.savefig('Endogenous_learning_long.png', dpi=100)
+plt.savefig('Endogenous_learning_longHD.png', dpi=200)
 plt.show()
-# plt.close()
 
 # figure 11
 for i in range(Mpath):
@@ -2235,7 +2274,7 @@ for i in range(Mpath):
                                                     axis=1)
 
 # winsorize extreme shocks
-Npre_index = 0
+Npre_index = 1
 average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index], axis=0), axis=1)
 x_index = belief_popu_fig15
 x_label = 'Average estimation error'
