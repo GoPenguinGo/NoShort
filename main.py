@@ -53,18 +53,18 @@ plt.rcParams["font.family"] = 'serif'
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
-theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
-popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
-market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
-survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt))
-r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
-belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
-delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
-Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt))
-Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
-pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
-cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
-invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc))
+theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
+pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
+cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
+invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
 cohort_size_mat = np.tile(cohort_size, (Nc, 1))
 for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
@@ -120,11 +120,11 @@ for g, scenario in enumerate(scenarios_short):
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)
-Delta_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
-pi_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
-cons_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
-switch_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
-parti_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length))
+Delta_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
+cons_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
+switch_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
 for o in range(n_scenarios_short):
     for i in range(2):
         for j in range(2):
@@ -952,19 +952,19 @@ for case_dzY in cases:
             x = t[int(left_t / dt):int(right_t / dt)]
             scenario_indexes = [0, 1]
             fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(15, 15))
-            for i, ax_row in enumerate(axes):
-                scenario_index = scenario_indexes[i]
+            for ii, ax_row in enumerate(axes):
+                scenario_index = scenario_indexes[ii]
                 y1 = y_overall[scenario_index, int(left_t / dt):int(right_t / dt)]
                 y2 = y_P[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
                 y3 = y_N[scenario_index, int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
                 y4 = y_min[scenario_index, int(left_t / dt):int(right_t / dt)]
                 y5 = y_max[scenario_index, int(left_t / dt):int(right_t / dt)]
                 belief_cutoff_case = -theta_compare[scenario_index, int(left_t / dt):int(right_t / dt)]
-                for j, ax in enumerate(ax_row):
+                for jj, ax in enumerate(ax_row):
                     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
                     ax.set_title(scenario_labels[scenario_index + 1] + r', $\phi=0.4$')
-                    if j == 0:
-                        if i == 0:
+                    if jj == 0:
+                        if ii == 0:
                             ax2 = ax.twinx()
                             ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
                             ax2.plot(x, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
@@ -1005,14 +1005,14 @@ for case_dzY in cases:
                                 bbox_inches=extent.expanded(1.25, 1.3),
                                 dpi=200)
             if case_dzY == case_dzSI == 1:
-                if j == 0:
+                if j == 1:
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta HD.png', dpi=200)
-                else:
+                if j == 0:
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta, short window.png', dpi=60)
                     plt.savefig(str(case_dzY) + str(case_dzSI) + 'Distribution of Delta, short window HD.png', dpi=200)
             else:
-                if j == 0:
+                if j == 1:
                     plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
             # plt.show()
             # plt.close()
