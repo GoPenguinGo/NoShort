@@ -2,15 +2,17 @@ import numpy as np
 
 # Parameters
 rho = 0.001  # Time discount factor
+rho_i = np.array([[0.001], [0.002]])
+alpha_i = np.array([[0.5], [0.5]])
 nu = 0.02  # Death rate
 # nu = 0.01
 # nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
-sigma_S = (
-    sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
-)
+# sigma_S = (
+#     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
+# )
 # for the SI signal:
 sigma_SI = 0.3
 # phi = 0.3
@@ -20,7 +22,11 @@ v = 0.018  # from Nagel and Xu (2021 RFS)
 # tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
 tax = 0.01
-beta = rho + nu - tax  # marginal propensity to consume
+# beta = rho + nu - tax  # marginal propensity to consume
+beta_i = rho_i + nu - tax  # marginal propensity to consume
+beta = np.average(rho_i, weights=alpha_i)
+
+
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
@@ -35,8 +41,12 @@ Nc = int(T_cohort / dt)  # number of cohorts
 
 
 # generate values that are fixed in the main loop
-tau = np.arange(T_cohort, 0, -dt)  # age from 500 to 0
+tau = np.reshape(np.arange(T_cohort, 0, -dt), (1, -1))  # age from 500 to 0; shape(1, 6000)
 cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
+cohort_type_size = cohort_size * alpha_i
+beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
+beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
+
 
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
