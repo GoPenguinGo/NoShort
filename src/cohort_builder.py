@@ -11,7 +11,7 @@ def build_cohorts_SI(
     Nc: int,
     dt: float,
     tau: np.ndarray,
-    n_type: int,
+    Ntype: int,
     rho_i: np.ndarray,
     alpha_i: np.ndarray,
     beta_i: np.ndarray,
@@ -65,15 +65,15 @@ def build_cohorts_SI(
     """
 
     # size of matrix: type * cohort; or type * 1; or 1 * cohort
-    Delta_s_t = np.zeros((n_type, 1))  # belief bias, eq(3)
-    d_eta_st = np.zeros((n_type, 1))  # disagreement, eq(11)
-    X = np.ones((n_type, 1))
-    eta_st_eta_ss_init = np.ones((n_type, 1))
+    Delta_s_t = np.zeros((Ntype, 1))  # belief bias, eq(3)
+    d_eta_st = np.zeros((Ntype, 1))  # disagreement, eq(11)
+    X = np.ones((Ntype, 1))
+    eta_st_eta_ss_init = np.ones((Ntype, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
-    invest_tracker = np.ones((n_type, Ninit)) if mode_trade != 'complete' else np.ones((n_type, Nc))
-    can_short_tracker = np.zeros((n_type, Ninit)) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros((n_type, Nc))
-    tau_info = np.ones((n_type, 1)) * dt
-    Vhat_init = np.ones((n_type, 1)) * Vhat
+    invest_tracker = np.ones((Ntype, Ninit)) if mode_trade != 'complete' else np.ones((Ntype, Nc))
+    can_short_tracker = np.zeros((Ntype, Ninit)) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros((Ntype, Nc))
+    tau_info = np.ones((Ntype, 1)) * dt
+    Vhat_init = np.ones((Ntype, 1)) * Vhat
     Vhat_vector = Vhat_init
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -95,21 +95,21 @@ def build_cohorts_SI(
         )  # equation (11)
 
         X_parts = tax * np.exp(-tax * tau_short) * X * beta_cohort_type_short * eta_st_eta_ss * dt    # equation (18)
-        X_t = np.ones((n_type, 1)) * np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        X_t = np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
-        eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init)
-        X = np.append(X, X_t)
+        eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=1)
+        X = np.append(X, np.ones((Ntype, 1)) * X_t, axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
-        f_w_st = X_parts / X_t / dt
-        f_w_st = np.append(f_w_st, tax * np.ones((n_type, 1)))
+        f_w_ist = X_parts / X_t / dt
+        f_w_ist = np.append(f_w_ist, tax * np.ones((Ntype, 1)), axis=1)
 
-        beta_t = np.average(f_w_st * beta_i)
-        f_c_st = f_w_st * beta_i / beta_t
+        beta_t = np.sum(f_w_ist * beta_i) * dt
+        f_c_ist = f_w_ist * beta_i / beta_t
 
         # update beliefs
         # todo: rewrite the functions to allow matrix calculation
@@ -133,20 +133,20 @@ def build_cohorts_SI(
 
 
         # add a new cohort to Vhat_vector and tau_info
-        Vhat_vector = np.append(Vhat_vector, Vhat_init)
+        Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=1)
         if mode_trade == 'complete':  # where tau_info is the same with age; no switch between N and P for complete market
             tau_info = tau[:, -i - 1:]
         else:  # where tau_info is the time distance from the latest state switch
-            tau_info = np.append(tau_info, np.zeros((ntype, 1))) + dt
+            tau_info = np.append(tau_info, np.zeros((Ntype, 1)), axis=1) + dt
 
         if i < Npre:
             Delta_s_t += dDelta_s_t
-            Delta_s_t = np.append(Delta_s_t, np.zeros((ntype, 1)))  # newborns begin with 0 bias when there are not enough earlier observations
+            Delta_s_t = np.append(Delta_s_t, np.zeros((Ntype, 1)), axis=1)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
             init_bias = np.average(dZ_build[int(i - Npre) : i]) / dt
             Delta_s_t+= dDelta_s_t
             Delta_s_t = np.append(
-                Delta_s_t, init_bias * np.zeros((ntype, 1))
+                Delta_s_t, init_bias * np.zeros((Ntype, 1)), axis=1
             )  # newborns begin with Npre earlier observations of the dividend process
 
         # find the market clearing theta, given beliefs and consumption shares
@@ -156,10 +156,10 @@ def build_cohorts_SI(
             )
 
         elif mode_trade == 'w_constraint':
-            invest_tracker = np.append(invest_tracker, np.ones((n_type, 1)))  # indicator of current type, =1 for a cohort if type == P
+            invest_tracker = np.append(invest_tracker, np.ones((Ntype, 1)), axis=1)  # indicator of current type, =1 for a cohort if type == P
 
             if mode_learn == 'disappointment':  # agents switch from type P to type N once constrained, and stay as type N
-                possible_cons_share = f_c_st * dt * invest_tracker
+                possible_cons_share = f_c_ist * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
                 lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound
                 theta_t = bisection(
@@ -171,11 +171,11 @@ def build_cohorts_SI(
                 invest_tracker = invest * invest_tracker
                 d_eta_st = a * invest_tracker - theta_t
                 # tau_info and V_hat has to change for the agents who switched to N
-                Vhat_vector = np.append(V_st_P, Vhat * np.ones((n_type, 1))) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
+                Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
 
             elif mode_learn == 'reentry':   # agents switch between type P and type N
-                possible_cons_share = f_c_st * dt
+                possible_cons_share = f_c_ist * dt
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection(
@@ -190,7 +190,7 @@ def build_cohorts_SI(
                 d_eta_st = a * invest_tracker - theta_t
 
                 # tau_info and V_hat has to change for the agents who switched to N
-                Vhat_vector = np.append(V_st_P, Vhat * np.ones((n_type, 1))) * switch_P_to_N + np.append(V_st_N, Vhat * np.ones((n_type, 1))) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
+                Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + np.append(V_st_N, Vhat * np.ones((Ntype, 1)), axis=1) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
                 tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
 
             else:
@@ -324,7 +324,7 @@ def build_cohorts_SI(
         else:
             print('mode_trade not found')
             break
-        #theta_mat[i] = theta_t
+        # theta_mat[i] = theta_t
 
     #print(theta_mat)
 

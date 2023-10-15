@@ -2,8 +2,9 @@ import numpy as np
 
 # Parameters
 rho = 0.001  # Time discount factor
+Ntype = 2
 rho_i = np.array([[0.001], [0.002]])
-alpha_i = np.array([[0.5], [0.5]])
+alpha_i = np.ones((2, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
 # nu = 0.01
 # nu = 0.03
@@ -24,7 +25,7 @@ v = 0.018  # from Nagel and Xu (2021 RFS)
 tax = 0.01
 # beta = rho + nu - tax  # marginal propensity to consume
 beta_i = rho_i + nu - tax  # marginal propensity to consume
-beta = np.average(rho_i, weights=alpha_i)
+beta = np.sum(beta_i * alpha_i)
 
 
 
