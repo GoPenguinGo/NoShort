@@ -147,15 +147,15 @@ def simulate_cohorts_SI(
         invest_mat = 0
 
     if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        popu_can_short_mat = np.zeros((Nt))
-        popu_short_mat = np.zeros((Nt))
-        Phi_can_short_mat = np.zeros((Nt))
-        Phi_short_mat = np.zeros((Nt))
+        popu_can_short= np.zeros((Nt))
+        popu_short = np.zeros((Nt))
+        Phi_can_short = np.zeros((Nt))
+        Phi_short = np.zeros((Nt))
     else:
-        popu_can_short_mat = 0
-        popu_short_mat = 0
-        Phi_can_short_mat = 0
-        Phi_short_mat = 0
+        popu_can_short = 0
+        popu_short = 0
+        Phi_can_short = 0
+        Phi_short = 0
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -507,10 +507,10 @@ def simulate_cohorts_SI(
             parti[i] = popu_parti_t
             invest_mat[i] = invest_tracker
         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            popu_can_short_mat[i] = popu_can_short_t
-            popu_short_mat[i] = popu_short_t
-            Phi_can_short_mat[i] = Phi_can_short_t
-            Phi_short_mat[i] = Phi_short_t
+            popu_can_short[i] = popu_can_short_t
+            popu_short[i] = popu_short_t
+            Phi_can_short[i] = Phi_can_short_t
+            Phi_short[i] = Phi_short_t
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
@@ -534,10 +534,10 @@ def simulate_cohorts_SI(
         # age,
         # n_parti,
         invest_mat,
-        popu_can_short_mat,
-        popu_short_mat,
-        Phi_can_short_mat,
-        Phi_short_mat,
+        popu_can_short,
+        popu_short,
+        Phi_can_short,
+        Phi_short,
     )
 
 

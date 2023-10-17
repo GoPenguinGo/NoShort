@@ -140,10 +140,10 @@ def simulate_SI(
         # age,
         # n_parti,
         invest_tracker,
-        popu_can_short_mat,
-        popu_short_mat,
-        Phi_can_short_mat,
-        Phi_short_mat,
+        popu_can_short,
+        popu_short,
+        Phi_can_short,
+        Phi_short,
     ) = simulate_cohorts_SI(
         Y,
         biasvec,
@@ -202,10 +202,10 @@ def simulate_SI(
         sigma_S,
         beta,
         invest_tracker,
-        popu_can_short_mat,
-        popu_short_mat,
-        Phi_can_short_mat,
-        Phi_short_mat,
+        popu_can_short,
+        popu_short,
+        Phi_can_short,
+        Phi_short,
     )
 
 
