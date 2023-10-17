@@ -332,7 +332,7 @@ def simulate_cohorts_SI(
             Delta_bar_parti_t = np.sum(Delta_s_t * f_c_ist * dt)
             Delta_tilde_parti_t = np.sum(Delta_s_t * f_w_ist * dt)
             sigma_S_t = sigma_Y - Delta_bar_parti_t + Delta_tilde_parti_t
-            pi_ist = (d_eta_st + theta_t) / sigma_S_t
+            pi_st = (d_eta_st + theta_t) / sigma_S_t
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
 
