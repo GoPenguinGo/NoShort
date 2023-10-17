@@ -493,8 +493,8 @@ def simulate_cohorts_SI(
         sigma_S[i] = sigma_S_t
         beta[i] = beta_t
         # w[i, :] = w_st
-        age[i] = age_t
-        n_parti[i] = n_parti_t
+        # age[i] = age_t
+        # n_parti[i] = n_parti_t
         if need_f == 'True':
             f_c[i, :] = f_c_ist
             f_w[i, :] = f_w_ist
