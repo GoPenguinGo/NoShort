@@ -470,8 +470,8 @@ def simulate_cohorts_SI(
             print('mode_trade not found')
             exit()
 
-        rho_bar_t = np.sum(rho_i * f_c_ist)
-        rho_tilde_t = np.sum(rho_i * f_w_ist)
+        rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
+        rho_tilde_t = np.sum(rho_i * f_w_ist) / np.sum(f_w_ist)
 
         r_t = (
                 nu - tax * beta0 / beta_t

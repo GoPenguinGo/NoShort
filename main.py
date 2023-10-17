@@ -56,17 +56,17 @@ plt.rcParams["font.family"] = 'serif'
 print('Generating data for the graphs:')
 theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+# market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+# survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+# belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 
-dR = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-mu_S = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-sigma_S = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+dR_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+mu_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+sigma_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 beta_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 
 Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
@@ -121,12 +121,12 @@ for g, scenario in enumerate(scenarios_short):
                 r_compare[g, i, j, k] = r
                 # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
                 popu_parti_compare[g, i, j, k] = popu_parti
-                market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f_c)
+                # market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f_c)
                 Delta_bar_compare[g, i, j, k] = Delta_bar_parti
                 Delta_tilde_compare[g, i, j, k] = Delta_tilde_parti
                 Phi_compare[g, i, j, k] = Phi_parti
-                survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_type_size)
-                belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
+                # survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_type_size)
+                # belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
                 cons_compare[g, i, j, k] = f_c / cohort_type_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
 
