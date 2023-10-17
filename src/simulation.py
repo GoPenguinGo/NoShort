@@ -96,6 +96,7 @@ def simulate_SI(
         alpha_i,
         beta_i,
         beta_cohort_type,
+        beta,
         nu,
         Vhat,
         mu_Y,
