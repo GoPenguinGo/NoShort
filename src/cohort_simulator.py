@@ -25,7 +25,7 @@ def simulate_cohorts_SI(
         Vhat: float,
         mu_Y: float,
         sigma_Y: float,
-        sigma_S: float,
+        sigma_S_t: float,
         tax: float,
         phi: float,
         T_hat: float,
@@ -128,6 +128,7 @@ def simulate_cohorts_SI(
     theta = np.zeros(Nt)  # market price of risk
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
+    beta_mat = np.zeros(Nt)
     Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
     Phi_can_short_mat = np.zeros((Nt))
     Phi_short_mat = np.zeros((Nt))
@@ -168,7 +169,7 @@ def simulate_cohorts_SI(
         )  # equation (11)
 
 
-        X_parts = tax * np.exp(-tax * tau_short) * X * beta_cohort_type_short * eta_st_eta_ss * dt    # equation (18)
+        X_parts = tax * np.exp(-tax * tau) * X * beta_cohort_type * eta_st_eta_ss * dt    # equation (18)
         X_t = np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
@@ -196,8 +197,8 @@ def simulate_cohorts_SI(
             w_indiv_ist = w_indiv_ist + dw_indiv_ist
             w_ist = w_indiv_ist * cohort_type_size / dt
             adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
-            w_ist = np.append(w_ist[:, 1:] * adjust_scale, w_t * tax)
-            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, w_t * tax / nu)
+            w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
+            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
@@ -444,8 +445,8 @@ def simulate_cohorts_SI(
         rho_tilde_t = np.sum(rho_i * f_w_ist)
 
         r_t = (
-                n - tax * beta / beta_t
-                + rho_t
+                nu - tax * beta / beta_t
+                + rho_bar_t
                 + mu_Y
                 - sigma_Y * theta_t
         )
@@ -460,6 +461,7 @@ def simulate_cohorts_SI(
         Delta_bar_parti[i] = Delta_bar_parti_t
         mu_S[i] = mu_S_t
         sigma_S[i] = sigma_S_t
+        beta_mat[i] = beta_t
         # w[i, :] = w_st
         # age[i] = age_t
         # n_parti[i] = n_parti_t
@@ -492,6 +494,9 @@ def simulate_cohorts_SI(
         Phi_parti,
         Delta_bar_parti,
         dR,
+        mu_S,
+        sigma_S,
+        beta_mat,
         # w,
         # age,
         # n_parti,
