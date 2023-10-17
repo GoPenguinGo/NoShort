@@ -25,7 +25,6 @@ def simulate_cohorts_SI(
         Vhat: float,
         mu_Y: float,
         sigma_Y: float,
-        sigma_S_t: float,
         tax: float,
         phi: float,
         T_hat: float,
@@ -49,6 +48,9 @@ def simulate_cohorts_SI(
         top: float,
         old_limit: float,
 ) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
