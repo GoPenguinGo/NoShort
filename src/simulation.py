@@ -88,7 +88,7 @@ def simulate_SI(
     (
         Delta_s_t,
         eta_st_eta_ss,
-        eta_bar,
+        X,
         d_eta_st,
         invest_tracker_build,
         tau_info_build,
@@ -174,7 +174,7 @@ def simulate_SI(
         cohort_type_size,
         Delta_s_t,
         eta_st_eta_ss,
-        eta_bar,
+        X,
         d_eta_st,
         invest_tracker_build,
         can_short_tracker_build,

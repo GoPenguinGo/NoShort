@@ -105,15 +105,13 @@ for g, scenario in enumerate(scenarios_short):
                     popu_short,
                     Phi_can_short,
                     Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta0,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
                                 Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
                                 need_f='True',
                                 need_Delta='True',
                                 need_pi='True',
-                                top=0.05,
-                                old_limit=100
                                 )
                 # invest_tracker = pi > 0
                 Delta_compare[g, i, j, k] = Delta

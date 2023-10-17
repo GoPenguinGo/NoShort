@@ -331,7 +331,7 @@ def build_cohorts_SI(
     return (
         Delta_s_t,
         eta_st_eta_ss,
-        eta_bar,
+        X,
         d_eta_st,
         invest_tracker,
         tau_info,

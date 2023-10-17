@@ -36,7 +36,7 @@ def simulate_cohorts_SI(
         cohort_type_size: np.ndarray,
         Delta_s_t: np.ndarray,
         eta_st_eta_ss: np.ndarray,
-        eta_bar: np.ndarray,
+        X: np.ndarray,
         d_eta_st: np.ndarray,
         invest_tracker: np.ndarray,
         can_short_tracker: np.ndarray,
