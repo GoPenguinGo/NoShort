@@ -137,7 +137,7 @@ def simulate_SI(
         # w,
         # age,
         # n_parti,
-        invest_mat,
+        invest_tracker,
         popu_can_short_mat,
         popu_short_mat,
         Phi_can_short_mat,
@@ -198,7 +198,7 @@ def simulate_SI(
         mu_S,
         sigma_S,
         beta_mat,
-        invest_mat,
+        invest_tracker,
         popu_can_short_mat,
         popu_short_mat,
         Phi_can_short_mat,
@@ -207,7 +207,7 @@ def simulate_SI(
 
 
 
-
+# todo: 10.17: update this as well
 def simulate_SI_mean_vola(
         mode_trade: str,
         mode_learn: str,
