@@ -16,7 +16,6 @@ def build_cohorts_SI(
     alpha_i: np.ndarray,
     beta_i: np.ndarray,
     beta_cohort_type: np.ndarray,
-    beta: float,
     nu: float,
     Vhat: float,
     mu_Y: float,

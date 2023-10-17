@@ -25,7 +25,7 @@ v = 0.018  # from Nagel and Xu (2021 RFS)
 tax = 0.01
 # beta = rho + nu - tax  # marginal propensity to consume
 beta_i = rho_i + nu - tax  # marginal propensity to consume
-beta = np.sum(beta_i * alpha_i)
+beta0 = np.sum(beta_i * alpha_i)
 
 
 

@@ -5,12 +5,13 @@ from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI, simulate_SI_mean_vola
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, sigma_S, v, tax, \
-    beta, dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
+from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
+    dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root
+    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root, \
+    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
@@ -59,43 +60,56 @@ market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype
 survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 
-Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
-pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
-cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
-invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Nc), dtype=np.float32)
+dR = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+mu_S = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+sigma_S = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+beta_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
 
-cohort_size_mat = np.tile(cohort_size, (Nc, 1))
+Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+wealth_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+
+cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
 for g, scenario in enumerate(scenarios_short):
     mode_trade = scenario[0]
     mode_learn = scenario[1]
     for i in range(2):
         dZ = dZ_Y_cases[i]
         log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
-        log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
+        # log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
         for j in range(2):
             dZ_SI = dZ_SI_cases[j]
             for k, phi in enumerate(phi_vector_short):
                 (
                     r,
                     theta,
-                    f,
+                    f_c,
+                    f_w,
                     Delta,
                     pi,
                     popu_parti,
                     Phi_parti,
                     Delta_bar_parti,
+                    Delta_tilde_parti,
                     dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
                     invest_tracker,
                     popu_can_short,
                     popu_short,
                     Phi_can_short,
                     Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta0,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
+                                Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
                                 need_f='True',
                                 need_Delta='True',
                                 need_pi='True',
@@ -107,15 +121,22 @@ for g, scenario in enumerate(scenarios_short):
                 pi_compare[g, i, j, k] = pi
                 theta_compare[g, i, j, k] = theta
                 r_compare[g, i, j, k] = r
-                theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
+                # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
                 popu_parti_compare[g, i, j, k] = popu_parti
-                market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f)
-                delta_bar_compare[g, i, j, k] = Delta_bar_parti
+                market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f_c)
+                Delta_bar_compare[g, i, j, k] = Delta_bar_parti
+                Delta_tilde_compare[g, i, j, k] = Delta_tilde_parti
                 Phi_compare[g, i, j, k] = Phi_parti
-                survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_size)
+                survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_type_size)
                 belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
-                cons_compare[g, i, j, k] = f / cohort_size_mat
+                cons_compare[g, i, j, k] = f_c / cohort_type_size_mat
                 invest_tracker_compare[g, i, j, k] = invest_tracker
+
+                dR_mat[g, i, j, k] = dR
+                mu_S_mat[g, i, j, k] = mu_S
+                sigma_S_mat[g, i, j, k] = sigma_S
+                beta_mat[g, i, j, k] = beta
+
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 
 
@@ -470,7 +491,7 @@ titles_subfig = [r'Wealth weighted average estimation error conditional on parti
                  r'Wealth share of participants $\Phi_t$', 'Participation rate']
 yaxis_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
 phi_indexes = [0, 2]
-y1_case = delta_bar_compare[:, red_case, yellow_case]
+y1_case = Delta_bar_compare[:, red_case, yellow_case]
 y2_case = Phi_compare[:, red_case, yellow_case]
 y3_case = popu_parti_compare[:, red_case, yellow_case]
 left_t = 300
@@ -528,7 +549,7 @@ yaxis_subfig = [r'$\bar{\Delta}_t$', r'$\Phi_t$', 'Participation rate']
 phi_indexes = [0, 2]
 red_cases = [0, 0, 1]
 yellow_cases = [0, 1, 0]
-var_list = [delta_bar_compare, Phi_compare, popu_parti_compare]
+var_list = [Delta_bar_compare, Phi_compare, popu_parti_compare]
 left_t = 300
 right_t = 400
 x = t[int(left_t / dt):int(right_t / dt)]
@@ -593,9 +614,9 @@ y1_pi = pi_time_series[:, red_case, yellow_case, phi_index,
 y2_pi = pi_time_series[scenario_index, red_case, yellow_case, :,
         cohort_index]  # (n_scenarios, 2, 2, n_phi_short, nn, length) -> (n_phi_short, length)
 y1_belief = (Delta_time_series[:, red_case, yellow_case, phi_index, cohort_index] -
-             delta_bar_compare[:, red_case, yellow_case, phi_index]) / sigma_Y
+             Delta_bar_compare[:, red_case, yellow_case, phi_index]) / sigma_Y
 y2_belief = (Delta_time_series[scenario_index, red_case, yellow_case, :, cohort_index] -
-             delta_bar_compare[scenario_index, red_case, yellow_case, :]) / sigma_Y
+             Delta_bar_compare[scenario_index, red_case, yellow_case, :]) / sigma_Y
 y1_wealth = 1 / Phi_compare[:, red_case, yellow_case, phi_index]
 y2_wealth = 1 / Phi_compare[scenario_index, red_case, yellow_case]
 y_cases = [y1_pi, y1_belief, y1_wealth,
@@ -658,7 +679,7 @@ yellow_cases = [0, 1, 0]
 scenario_indexes = [0, 1, 2]
 phi_indexes = [0, 2]
 pi_compare_cohort = pi_time_series[:, :, :, :, cohort_index]
-Delta_compo_cohort = (Delta_time_series[:, :, :, :, cohort_index] - delta_bar_compare) / sigma_Y
+Delta_compo_cohort = (Delta_time_series[:, :, :, :, cohort_index] - Delta_bar_compare) / sigma_Y
 var_list = [pi_compare_cohort, Delta_compo_cohort, 1 / Phi_compare]
 left_t = 300
 right_t = 400

@@ -20,7 +20,7 @@ def simulate_cohorts_SI(
         alpha_i: np.ndarray,
         beta_i: np.ndarray,
         beta_cohort_type: np.ndarray,
-        beta: float,
+        beta0: float,
         nu: float,
         Vhat: float,
         mu_Y: float,
@@ -48,6 +48,8 @@ def simulate_cohorts_SI(
         top: float,
         old_limit: float,
 ) -> Tuple[
+    np.ndarray,
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -116,13 +118,44 @@ def simulate_cohorts_SI(
     """ ""
     # Initializing variables
     # cohort-type-specific terms:
-    Delta = np.zeros((Nt, Ntype, Nc))  # stores bias in beliefs
     # max = np.zeros((Nt, Ntype, Nc))  # stores max(delta, -theta)
-    f = np.zeros((Nt, Ntype, Nc))  # evolution of cohort consumption share
-    pi = np.zeros((Nt, Ntype, Nc))  # portfolio choices
-    # w = np.zeros((Nt, Ntype, Nc))  # evolution of wealth for cohorts
-    # short = np.zeros((Nt, Ntype, Nc))
     invest_mat = np.ones((Nt, Ntype, Nc))
+
+    if need_f == 'True':
+        f_c = np.zeros((Nt, Ntype, Nc))    # evolution of cohort consumption share
+        f_w = np.zeros((Nt, Ntype, Nc))   # evolution of cohort wealth share
+    else:
+        f_c = f_w = 0
+
+    if need_Delta == 'True':
+        Delta = np.zeros((Nt, Ntype, Nc))  # stores bias in beliefs
+    else:
+        Delta = 0
+
+    if need_pi == 'True':
+        pi = np.zeros((Nt, Ntype, Nc))  # portfolio choices
+    else:
+        pi = 0
+
+    if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+        Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
+        parti = np.ones((Nt, Ntype, Nc))
+        invest_mat = np.ones((Nt, Ntype, Nc))
+    else:
+        Phi_parti = 0
+        parti = 0
+        invest_mat = 0
+
+    if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+        popu_can_short_mat = np.zeros((Nt))
+        popu_short_mat = np.zeros((Nt))
+        Phi_can_short_mat = np.zeros((Nt))
+        Phi_short_mat = np.zeros((Nt))
+    else:
+        popu_can_short_mat = 0
+        popu_short_mat = 0
+        Phi_can_short_mat = 0
+        Phi_short_mat = 0
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -130,16 +163,10 @@ def simulate_cohorts_SI(
     theta = np.zeros(Nt)  # market price of risk
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
-    beta_mat = np.zeros(Nt)
-    Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
-    Phi_can_short_mat = np.zeros((Nt))
-    Phi_short_mat = np.zeros((Nt))
+    beta = np.zeros(Nt)
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
+    Delta_tilde_parti = np.zeros((Nt))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt))  # participation rate
-    popu_can_short_mat = np.zeros((Nt))
-    popu_short_mat = np.zeros((Nt))
-
-    Delta_mat = np.zeros((Nt, Ntype, Nc))
 
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
@@ -447,7 +474,7 @@ def simulate_cohorts_SI(
         rho_tilde_t = np.sum(rho_i * f_w_ist)
 
         r_t = (
-                nu - tax * beta / beta_t
+                nu - tax * beta0 / beta_t
                 + rho_bar_t
                 + mu_Y
                 - sigma_Y * theta_t
@@ -461,44 +488,48 @@ def simulate_cohorts_SI(
         theta[i] = theta_t
         r[i] = r_t
         Delta_bar_parti[i] = Delta_bar_parti_t
+        Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
         sigma_S[i] = sigma_S_t
-        beta_mat[i] = beta_t
-        # w[i, :] = w_st
-        # age[i] = age_t
-        # n_parti[i] = n_parti_t
-        # if need_f == 'True':
-        #     f[i, :] = f_st
-        # if need_Delta == 'True':
-        #     Delta[i, :] = Delta_s_t
-        # if need_pi == 'True':
-        #     pi[i, :] = pi_st
-        # if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        #     Phi_parti[i] = f_parti_t
-        #     parti[i] = popu_parti_t
-        #     invest_mat[i] = invest_tracker
-        # if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        #     popu_can_short_mat[i] = popu_can_short_t
-        #     popu_short_mat[i] = popu_short_t
-        #     Phi_can_short_mat[i] = Phi_can_short_t
-        #     Phi_short_mat[i] = Phi_short_t
-        # # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
-        # # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
+        beta[i] = beta_t
+        w[i, :] = w_st
+        age[i] = age_t
+        n_parti[i] = n_parti_t
+        if need_f == 'True':
+            f_c[i, :] = f_c_ist
+            f_w[i, :] = f_w_ist
+        if need_Delta == 'True':
+            Delta[i, :] = Delta_s_t
+        if need_pi == 'True':
+            pi[i, :] = pi_st
+        if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            Phi_parti[i] = fc_parti_t
+            parti[i] = popu_parti_t
+            invest_mat[i] = invest_tracker
+        if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+            popu_can_short_mat[i] = popu_can_short_t
+            popu_short_mat[i] = popu_short_t
+            Phi_can_short_mat[i] = Phi_can_short_t
+            Phi_short_mat[i] = Phi_short_t
+        # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
+        # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
     return (
         r,
         theta,
-        f,
+        f_c,
+        f_w,
         Delta,
         # max,
         pi,
         parti,
         Phi_parti,
         Delta_bar_parti,
+        Delta_tilde_parti,
         dR,
         mu_S,
         sigma_S,
-        beta_mat,
+        beta,
         # w,
         # age,
         # n_parti,
