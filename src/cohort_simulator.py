@@ -995,7 +995,7 @@ def simulate_cohorts_mean_vola(
             r[ii] = r_t
             Delta_bar_parti[ii] = Delta_bar_parti_t
             Delta_tilde_parti[ii] = Delta_tilde_parti_t
-            mu_S[i] = mu_S_t
+            mu_S[ii] = mu_S_t
             sigma_S[ii] = sigma_S_t
             beta[ii] = beta_t
             # if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
