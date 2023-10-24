@@ -314,7 +314,7 @@ def simulate_cohorts_SI(
             fw_parti_t = np.sum(invest_fw_st)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
@@ -331,7 +331,7 @@ def simulate_cohorts_SI(
             fc_parti_t = fw_parti_t = 1
             Delta_bar_parti_t = np.sum(Delta_s_t * f_c_ist * dt)
             Delta_tilde_parti_t = np.sum(Delta_s_t * f_w_ist * dt)
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
@@ -455,7 +455,7 @@ def simulate_cohorts_SI(
             fw_parti_t = np.sum(invest_fw_st)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             # age_t = np.sum(cohort_size * tau * invest_tracker)
             # n_parti_t = np.sum(invest_tracker) / Nc
@@ -821,7 +821,7 @@ def simulate_cohorts_mean_vola(
             fw_parti_t = np.sum(invest_fw_st)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             age_t = np.sum(cohort_size * tau * invest_tracker)
             n_parti_t = np.sum(invest_tracker) / Nc
@@ -838,7 +838,7 @@ def simulate_cohorts_mean_vola(
             fc_parti_t = fw_parti_t = 1
             Delta_bar_parti_t = np.sum(Delta_s_t * f_c_ist * dt)
             Delta_tilde_parti_t = np.sum(Delta_s_t * f_w_ist * dt)
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             age_t = np.sum(cohort_size * tau * invest)
             n_parti_t = np.sum(invest) / Nc
@@ -962,7 +962,7 @@ def simulate_cohorts_mean_vola(
             fw_parti_t = np.sum(invest_fw_st)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = theta_t + Delta_tilde_parti_t
+            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             # age_t = np.sum(cohort_size * tau * invest_tracker)
             # n_parti_t = np.sum(invest_tracker) / Nc
