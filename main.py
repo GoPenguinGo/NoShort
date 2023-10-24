@@ -36,7 +36,7 @@ phi_5 = phi_vector[phi_indexes_5]
 
 label_phi = []
 for i in range(n_phi_short):
-    label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
+    label_phi.append(r'$phi$ = ' + str(phi_vector_short[i]))
 labels = [scenario_labels, label_phi, label_phi]
 
 age_cutoff = cutoffs_age[2]
@@ -423,7 +423,7 @@ for j, ax in enumerate(axes):
     ax2.set_ylabel(y_title, color='black')
     for i in range(n_lines[j]):
         y = y_vec[i]  # Nt
-        color_i = colors_short2[i] if j == 0 else colors_short[i]
+        color_i = colors_short2[i] if j == 0 else  colors_short[i]
         ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)
     if i < 2:
         ax2.set_ylim(lower, upper)
@@ -477,6 +477,251 @@ fig.tight_layout(h_pad=2)
 plt.savefig('IA r and theta.png', dpi=60)
 plt.show()
 plt.close()
+
+# ######################################
+# ############# hetero rho #############
+# ######################################
+# comparing the complete market and the reentry scenario, with phi=0.4
+red_case = 1
+yellow_case = 1
+phi_case = 1
+r_mat = r_compare[:, red_case, yellow_case, phi_case]  # n_scenarios, n_phi_short, Nt
+theta_mat = theta_compare[:, red_case, yellow_case, phi_case]
+sigma_S = sigma_S_mat[:, red_case, yellow_case, phi_case]
+beta = beta_mat[:, red_case, yellow_case, phi_case]
+mu_S = mu_S_mat[:, red_case, yellow_case, phi_case]
+equi_premium = mu_S - r_mat
+dR = dR_mat[:, red_case, yellow_case, phi_case]
+window = 60
+R_cumu = np.cumsum(dR, axis=1)[:, window:] - np.cumsum(dR, axis=1)[:, :-window]
+
+y_list = [r_mat, theta_mat, sigma_S, beta, mu_S, equi_premium, R_cumu]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+n_lines = 2
+y_title_list = [r'Interest rate $r_t$',
+                r'Market price of risk $\theta_t$',
+                r'Stock volatility $\sigma_t^S$',
+                r'Average consumption wealth ratio $\bar{\beta}_t$',
+                r'Expected returns $\mu_t^S$',
+                r'Equity premium $\mu_t^S - r_t$',
+                r'Realized stock returns $dR$']
+labels = scenario_labels
+for m, y_vec in enumerate(y_list):
+    fig, ax = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(20, 7))
+    y_title = y_title_list[m]
+    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+    ax.tick_params(axis='both', labelcolor='black')
+    ax.set_xlabel('Time in simulation')
+
+    ax2 = ax.twinx()
+    ax2.set_ylabel(y_title, color='black')
+    for i in range(n_lines):
+        y = y_vec[i]  # Nt
+        color_i = colors_short2[i]
+        ax2.plot(t, y, label=labels[i], color=color_i, linewidth=0.4) if m != 6 else ax2.plot(t[window:], y, label=labels[i], color=color_i, linewidth=0.4)
+    ax.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+    ax.set_title(y_title)
+    # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
+
+    fig.tight_layout(h_pad=2)
+    # plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+    plt.savefig('HR' + str(m) + 'HD.png', dpi=200)
+    plt.show()
+    # plt.close()
+
+
+red_case = 1
+yellow_case = 1
+r_mat = r_compare[:, red_case, yellow_case]  # n_scenarios, n_phi_short, Nt
+theta_mat = theta_compare[:, red_case, yellow_case]
+sigma_S = sigma_S_mat[:, red_case, yellow_case]
+beta = beta_mat[:, red_case, yellow_case]
+mu_S = mu_S_mat[:, red_case, yellow_case]
+equi_premium = mu_S - r_mat
+dR = dR_mat[:, red_case, yellow_case]
+window = 60
+R_cumu = (np.cumsum(dR, axis=2)[:, :, window:] - np.cumsum(dR, axis=2)[:, :, :-window]) / (window * dt)
+
+y_list = [r_mat, theta_mat, sigma_S, beta, mu_S, equi_premium, R_cumu]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+n_lines = 2
+y_title_list = [r'Interest rate $r_t$',
+                r'Market price of risk $\theta_t$',
+                r'Stock volatility $\sigma_t^S$',
+                r'Average consumption wealth ratio $\bar{\beta}_t$',
+                r'Expected returns $\mu_t^S$',
+                r'Equity premium $\mu_t^S - r_t$',
+                r'Realized stock returns $dR$, 5y moving window, annualized']
+labels = [scenario_labels, label_phi]
+
+for m, y_mat in enumerate(y_list):
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', sharey='all', figsize=(15, 10))
+    y_title = y_title_list[m]
+
+    for j, ax in enumerate(axes):
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+        ax.tick_params(axis='both', labelcolor='black')
+        ax.set_xlabel('Time in simulation')
+
+        ax2 = ax.twinx()
+        ax2.set_ylabel(y_title, color='black')
+
+        y_vec = y_mat[:, 1] if j == 0 else y_mat[1]
+        n_lines = 3 if j == 0 else 3
+        for i in range(n_lines):
+            y = y_vec[i]  # Nt
+            color_i = colors_short2[i] if j == 0 else colors_short[i]
+            ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)  if m != 6 \
+                else ax2.plot(t[window:], y, label=labels[j][i], color=color_i, linewidth=0.4)
+        # if i < 2:
+        #     ax2.set_ylim(lower, upper)
+        if j == 0:
+            ax.legend(loc='upper left')
+        ax2.legend(loc='upper right')
+        # title_app = r', $\phi=0.4$' if j == 0 else ', reentry'
+        ax.set_title(y_title)
+        # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
+    fig.tight_layout(h_pad=2)
+    plt.savefig('Hrho' + str(m) + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
+    # plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
+    plt.show()
+    plt.close()
+
+
+# regressions:
+# 2 different measures:
+#   (1) RCFS 2021 paper, sqrt of moving average of squared stock returns (~Integrated GARCH)
+#   (2) GJR-GARCH
+x_horizon1 = x_horizon_raw[: -horizon]
+x_horizon1 = x_horizon1 / np.std(x_horizon1)
+x_horizon1 = x_horizon1.reshape(-1, 1)
+x_horizon = sm.add_constant(x_horizon1)
+
+model = sm.OLS(y_horizon, x_horizon)
+est = model.fit()
+
+regression_results_uni[i, j, k, l, m, 0] = est.params[1]
+regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
+regression_results_uni[i, j, k, l, m, 2] = est.rsquared
+
+# ~Integrated GARCH
+horizon = 3
+Inte_garch_vola = np.sqrt(
+    (np.cumsum(dR_mat ** 2, axis=4)[:, :, :, :, window:]
+     - np.cumsum(dR_mat ** 2, axis=4)[:, :, :, :, :-window])
+    / (window * dt))
+horizon_vola = np.sqrt(
+    (np.cumsum(sigma_S_mat ** 2, axis=4)[:, :, :, :, horizon+1:]
+     - np.cumsum(sigma_S_mat ** 2, axis=4)[:, :, :, :, 1:-horizon])
+    / (horizon))  # transform monthly data to #horizon-monthly data
+
+# GJR-GARCH
+Garch_results_coef = np.zeros((3, 2, 2, 3, 4))
+Garch_results_tvar = np.zeros((3, 2, 2, 3, 4))
+# y_mat = sigma_S_mat ** 2
+y_mat = horizon_vola
+for i in range(n_scenarios_short):
+    for j in range(2):
+        dZ = np.reshape(dZ_Y_cases[j], (-1, 1))
+        Z = np.cumsum(dZ, axis=0)
+        dZ_horizon = (Z[horizon:] - Z[:-horizon])[np.arange(0, Nt-horizon, horizon)]
+        for k in range(2):
+            for l in range(n_phi_short):
+                vola_raw = y_mat[i, j, k, l, np.arange(0, Nt-horizon, horizon)]
+                y = vola_raw[1:]
+                y = (y - np.average(y)) / np.std(y)
+                reshape_sigma = np.reshape(vola_raw, (-1, 1))
+                x_2 = reshape_sigma[:-1]
+                x_2 = (x_2 - np.average(x_2)) / np.std(x_2)
+                # x_1_raw = (reshape_sigma * dZ) ** 2
+                x_1 = reshape_sigma[:-1] * dZ_horizon[1:]
+                x_1 = (x_1 - np.average(x_1)) / np.std(x_1)
+                # x_2_raw = reshape_sigma ** 2
+                contraction = -mu_Y / sigma_Y * dt * horizon
+                condi = (dZ_horizon[1:] < contraction) * (dZ_horizon[:-1] < contraction)
+                x_3 = condi * x_1
+                x_4 = condi * x_2
+                x_3 = (x_3 - np.average(x_3)) / np.std(x_3)
+                x_4 = (x_4 - np.average(x_4)) / np.std(x_4)
+                # x_raw = np.concatenate((x_1, x_2, x_3, x_4), axis=1)
+                x_raw = np.concatenate((x_1, x_2, x_4), axis=1)
+                x = sm.add_constant(x_raw)
+                model = sm.OLS(y, x)
+                est = model.fit()
+                Garch_results_coef[i, j, k, l] = est.params
+                Garch_results_tvar[i, j, k, l] = est.tvalues
+
+
+# todo: unconditional average; record negative sigma_S
+# Monte Carlo to check the unconditional average of:
+#   (1) sigma_S (conditional vola), std(dR)
+#   (2) dR, std(dR)
+#   (3) r, std(r)
+#   (4) theta, std(theta)
+#   (5) mu_S, std(mu_S)
+
+phi = 0
+Npaths = 500
+sigma_S_mat = np.empty((Npaths, n_scenarios_short, 2))
+mu_S_mat = np.empty((Npaths, n_scenarios_short, 2))
+dR_mat = np.empty((Npaths, n_scenarios_short, 2))
+r_mat = np.empty((Npaths, n_scenarios_short, 2))
+theta_mat = np.empty((Npaths, n_scenarios_short, 2))
+beta_mat = np.empty((Npaths, n_scenarios_short, 2))
+Delta_bar_parti_mat = np.empty((Npaths, n_scenarios_short, 2))
+Delta_tilde_parti_mat = np.empty((Npaths, n_scenarios_short, 2))
+for i in range(Npaths):
+    print(i)
+    dZ_build = np.random.randn(Nt) * dt_root
+    dZ_SI_build = np.random.randn(Nt) * dt_root
+    dZ = np.random.randn(Nt) * dt_root
+    dZ_SI = np.random.randn(Nt) * dt_root
+    for j, scenario in enumerate(scenarios_short):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        (
+            dR_mean_vola,
+            theta_mean_vola,
+            r_mean_vola,
+            mu_S_mean_vola,
+            sigma_S_mean_vola,
+            beta_mean_vola,
+            Delta_bar_parti_mean_vola,
+            Delta_tilde_parti_mean_vola
+        ) = simulate_SI_mean_vola(
+            mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+            phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+            Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
+        )
+        sigma_S_mat[i, j] = sigma_S_mean_vola
+        mu_S_mat[i, j] = mu_S_mean_vola
+        dR_mat[i, j] = dR_mean_vola
+        r_mat[i, j] = r_mean_vola
+        theta_mat[i, j] = theta_mean_vola
+        beta_mat[i, j] = beta_mean_vola
+        Delta_bar_parti_mat[i, j] = Delta_bar_parti_mean_vola
+        Delta_tilde_parti_mat[i, j] = Delta_tilde_parti_mean_vola
+
+sigma_S_ave = np.average(sigma_S_mat, axis=0)
+mu_S_ave = np.average(mu_S_mat, axis=0)
+dR_ave = np.average(dR_mat, axis=0)
+r_ave = np.average(r_mat, axis=0)
+theta_ave = np.average(theta_mat, axis=0)
+beta_ave = np.average(beta_mat, axis=0)
+Delta_bar_parti_ave = np.average(Delta_bar_parti_mat, axis=0)
+Delta_tilde_parti_ave = np.average(Delta_tilde_parti_mat, axis=0)
+
+
+
 
 # ######################################
 # ############# Figure 7 #############
