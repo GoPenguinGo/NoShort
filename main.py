@@ -711,15 +711,14 @@ for i in range(Npaths):
         Delta_bar_parti_mat[i, j] = Delta_bar_parti_mean_vola
         Delta_tilde_parti_mat[i, j] = Delta_tilde_parti_mean_vola
 
-sigma_S_ave = np.average(sigma_S_mat, axis=0)
-mu_S_ave = np.average(mu_S_mat, axis=0)
-dR_ave = np.average(dR_mat, axis=0)
-r_ave = np.average(r_mat, axis=0)
-theta_ave = np.average(theta_mat, axis=0)
-beta_ave = np.average(beta_mat, axis=0)
-Delta_bar_parti_ave = np.average(Delta_bar_parti_mat, axis=0)
-Delta_tilde_parti_ave = np.average(Delta_tilde_parti_mat, axis=0)
-
+ave_sigma_S = np.average(sigma_S_mat, axis=0)
+ave_mu_S = np.average(mu_S_mat, axis=0)
+ave_dR = np.average(dR_mat, axis=0)
+ave_r = np.average(r_mat, axis=0)
+ave_theta = np.average(theta_mat, axis=0)
+ave_beta = np.average(beta_mat, axis=0)
+ave_Delta_bar_parti = np.average(Delta_bar_parti_mat, axis=0)
+ave_Delta_tilde_parti = np.average(Delta_tilde_parti_mat, axis=0)
 
 
 
