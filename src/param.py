@@ -14,7 +14,7 @@ sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
 # for the SI signal:
 sigma_SI = 0.3
-# phi = 0.3
+phi = 0.4
 
 v = 0.018  # from Nagel and Xu (2021 RFS)
 

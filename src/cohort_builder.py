@@ -176,7 +176,7 @@ def build_cohorts_mix_type(
                           Vhat_vector * (1 - switch)  # reset initial variance
             tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
 
-            print(theta_t)
+            # print(theta_t)
 
     return (
         Delta_s_t,
