@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
-from src.simulation import simulate_SI, simulate_SI_mean_vola
+from src.simulation import simulate_SI, simulate_SI_mix_type, simulate_SI_mean_vola
 from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
@@ -20,31 +20,6 @@ import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
 import pandas as pd
-
-n_scenarios_short = 3
-scenarios_short = scenarios[:n_scenarios_short]
-
-phi_vector = np.arange(0, 1, 0.1)
-n_phi = len(phi_vector)
-
-phi_indexes = [0, 4, 8]
-n_phi_short = len(phi_indexes)
-phi_vector_short = phi_vector[phi_indexes]
-
-phi_indexes_5 = [0, 2, 4, 6, 8]
-n_phi_5 = 5
-phi_5 = phi_vector[phi_indexes_5]
-
-label_phi = []
-for i in range(n_phi_short):
-    label_phi.append(r'$phi$ = ' + str(phi_vector_short[i]))
-labels = [scenario_labels, label_phi, label_phi]
-
-age_cutoff = cutoffs_age[2]
-
-scenarios_two = scenarios[1:3]
-Npre_short = np.array([60, 240])
-T_hat_short = dt * Npre_short
 
 plt.rcParams["font.family"] = 'serif'
 

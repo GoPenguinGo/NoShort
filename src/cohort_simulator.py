@@ -117,6 +117,7 @@ def simulate_cohorts_mix_type(
     # max = np.zeros((Nt, Ntype, Nc))  # stores max(delta, -theta)
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1))
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
+    top = np.array([1, 0.75, 0.5, 0.25, 0])
 
     invest_mat = np.ones((Nt, Ntype, Nconstraint, Nc))
 
@@ -152,6 +153,8 @@ def simulate_cohorts_mix_type(
     Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros((Nt))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt))  # participation rate
+    parti_wealth_group = np.zeros((Nt, 4))
+    parti_age_group = np.zeros((Nt, 4))
 
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
@@ -305,9 +308,6 @@ def simulate_cohorts_mix_type(
         if sigma_S_t<0:
             print('negative vola')
         beta[i] = beta_t
-        # w[i, :] = w_st
-        # age[i] = age_t
-        # n_parti[i] = n_parti_t
         if need_f == 'True':
             f_c[i, :] = f_c_ist
             f_w[i, :] = f_w_ist
@@ -321,6 +321,18 @@ def simulate_cohorts_mix_type(
         invest_mat[i] = invest_tracker
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
+
+        wealth_cutoffs = find_the_rich_mix(
+            w_indiv_ist,
+            cohort_type_size,
+            top
+        )
+        for j in range(4):
+            parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs[j + 1]:cutoffs[j]], weights=cohort_type_size[:, :, cutoffs[j + 1]:cutoffs[j]])
+            within_group = (parti_wealth_group >= wealth_cutoffs[j]) * (parti_wealth_group < wealth_cutoffs[j + 1])
+            parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
+                                       np.sum(within_group * cohort_type_size)
+
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 

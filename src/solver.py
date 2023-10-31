@@ -161,6 +161,30 @@ def find_the_rich(
     return wealth_cutoff
 
 
+
+@jit(nopython = True)
+def find_the_rich_mix(
+        indiv_w: np.ndarray,
+        cohort_type_size: np.ndarray,
+        top: np.ndarray) -> np.float64:
+    '''
+    :param indiv_w (np.ndarray): individual wealth of the agents, shape (Nc,)
+    :param cohort_size (np.ndarray): shape (Nc,)
+    :param top (float): can short criteria
+    :return: a cutoff individual wealth level above which agents are then able to short
+    '''
+    indiv_w_flat = indiv_w.flatten()
+    wealth_rank = indiv_w_flat.argsort()
+    indiv_w_sorted = indiv_w[wealth_rank[::-1]]
+    cohort_size_sorted = cohort_type_size[wealth_rank[::-1]]
+    popu_cumsum = np.cumsum(cohort_size_sorted)
+    popu_cum = popu_cumsum / popu_cumsum[-1]
+    cutoff = np.searchsorted(popu_cum, top)
+    wealth_cutoff = indiv_w_sorted[cutoff]
+    return wealth_cutoff
+
+
+
 @jit(nopython = True)
 def solve_theta_partial_constraint(
         theta_guess: float,

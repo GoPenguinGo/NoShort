@@ -3,7 +3,8 @@ import numpy as np
 # Parameters
 Ntype = 2
 Nconstraint = 4
-alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * np.ones((1, Nconstraint)) * 1 / Nconstraint, (Ntype, Nconstraint, 1))
+alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint
+alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * alpha_constraint, (Ntype, Nconstraint, 1))
 rho_i = np.array([[[0.001]], [[0.01]]]) * np.ones((Ntype, Nconstraint, 1))
 nu = 0.02  # Death rate
 # nu = 0.01
