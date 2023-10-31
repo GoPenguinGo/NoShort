@@ -6,7 +6,7 @@ from tqdm import tqdm
 from numba import jit
 
 # todo: use matrix calculation in the functions, calculate multiple paths per run
-def simulate_cohorts_SI(
+def simulate_cohorts_mix_type(
         Y: np.ndarray,
         biasvec: np.ndarray,
         dZ: np.ndarray,
@@ -30,8 +30,6 @@ def simulate_cohorts_SI(
         T_hat: float,
         Npre: float,
         Ninit: int,
-        mode_trade: str,
-        mode_learn: str,
         cohort_size: np.ndarray,
         cohort_type_size: np.ndarray,
         Delta_s_t: np.ndarray,

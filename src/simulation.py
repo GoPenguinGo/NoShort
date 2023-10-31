@@ -1,14 +1,12 @@
 import numpy as np
 from typing import Tuple, List, Any
-from src.cohort_builder import build_cohorts_SI
-from src.cohort_simulator import simulate_cohorts_SI, simulate_cohorts_mean_vola
+from src.cohort_builder import build_cohorts_mix_type
+from src.cohort_simulator import simulate_cohorts_mix_type, simulate_cohorts_mean_vola
 from src.stats import shocks
 from src.param import top_wealth, old_age_limit, cutoffs_age, n_age_cutoffs
 
 
-def simulate_SI(
-        mode_trade: str,
-        mode_learn: str,
+def simulate_SI_mix_type(
         Nc: int,
         Nt: int,
         dt: float,
@@ -93,7 +91,7 @@ def simulate_SI(
         tau_info_build,
         Vhat_vector,
         can_short_tracker_build,
-    ) = build_cohorts_SI(
+    ) = build_cohorts_mix_type(
         dZ_build,
         dZ_SI_build,
         Nc,
@@ -113,8 +111,6 @@ def simulate_SI(
         Npre,
         Ninit,
         T_hat,
-        mode_trade,
-        mode_learn,
     )
 
     (
@@ -141,7 +137,7 @@ def simulate_SI(
         popu_short,
         Phi_can_short,
         Phi_short,
-    ) = simulate_cohorts_SI(
+    ) = simulate_cohorts_mix_type(
         Y,
         biasvec,
         dZ,
@@ -165,8 +161,6 @@ def simulate_SI(
         T_hat,
         Npre,
         Ninit,
-        mode_trade,
-        mode_learn,
         cohort_size,
         cohort_type_size,
         Delta_s_t,

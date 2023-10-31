@@ -11,7 +11,8 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
+    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size, \
+    Nconstraint
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
