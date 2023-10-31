@@ -1,19 +1,16 @@
 import numpy as np
 
 # Parameters
-rho = 0.001  # Time discount factor
 Ntype = 2
-rho_i = np.array([[0.001], [0.01]])
-alpha_i = np.ones((2, 1)) * 1 / Ntype
+Nconstraint = 4
+alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * np.ones((1, Nconstraint)) * 1 / Nconstraint, (Ntype, Nconstraint, 1))
+rho_i = np.array([[[0.001]], [[0.01]]]) * np.ones((Ntype, Nconstraint, 1))
 nu = 0.02  # Death rate
 # nu = 0.01
 # nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
-# sigma_S = (
-#     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
-# )
 # for the SI signal:
 sigma_SI = 0.3
 # phi = 0.3

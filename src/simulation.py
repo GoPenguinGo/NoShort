@@ -37,8 +37,6 @@ def simulate_SI(
         need_f: str,
         need_Delta: str,
         need_pi: str,
-        top=0.05,
-        old_limit=100,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -117,8 +115,6 @@ def simulate_SI(
         T_hat,
         mode_trade,
         mode_learn,
-        top,
-        old_limit,
     )
 
     (
@@ -184,8 +180,6 @@ def simulate_SI(
         need_f,
         need_Delta,
         need_pi,
-        top,
-        old_limit,
     )
 
     return (
