@@ -48,6 +48,8 @@ dR_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
 mu_S_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
 sigma_S_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
 beta_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
+parti_wealth_group_compare = np.zeros((Nscenario, Nt, 4), dtype=np.float32)
+parti_age_group_compare = np.zeros((Nscenario, Nt, 4), dtype=np.float32)
 
 Delta_compare = np.empty((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
 pi_compare = np.empty((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
@@ -82,10 +84,10 @@ for g, alpha_constraint in enumerate(scenarios):
         sigma_S,
         beta,
         invest_tracker,
-        popu_can_short,
         popu_short,
         Phi_can_short,
-        Phi_short,
+        parti_wealth_group,
+        parti_age_group,
     ) = simulate_SI_mix_type(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                     phi,
                     Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
@@ -111,6 +113,9 @@ for g, alpha_constraint in enumerate(scenarios):
     mu_S_mat[g] = mu_S
     sigma_S_mat[g] = sigma_S
     beta_mat[g] = beta
+
+    parti_wealth_group_compare[g] = parti_wealth_group
+    parti_age_group_compare[g] = parti_age_group
 
 
 
