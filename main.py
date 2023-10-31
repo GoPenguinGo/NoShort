@@ -22,7 +22,14 @@ from scipy.interpolate import make_interp_spline
 import pandas as pd
 
 plt.rcParams["font.family"] = 'serif'
-
+Nscenario = 5
+scenarios = np.array([
+    [[1, 0, 0, 0]],  # complete market
+    [[0, 0, 0, 1]],  # reentry
+    [[0, 0, 1, 0]],  # disappointment
+    [[0.25, 0.25, 0.25, 0.25]],  # even distribution of 4 types
+    [[0.2, 0.2, 0.2, 0.4]],  # 40% reentry
+        ])
 # ######################################
 # ########## ONE RANDOM PATH ############
 # ############ GRAPH ONE ###############
@@ -30,86 +37,84 @@ plt.rcParams["font.family"] = 'serif'
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
-theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+theta_compare = np.empty((Nscenario, Nt), dtype=np.float32)
+popu_parti_compare = np.empty((Nscenario, Nt), dtype=np.float32)
+r_compare = np.zeros((Nscenario, Nt), dtype=np.float32)
+Delta_bar_compare = np.zeros((Nscenario, Nt), dtype=np.float32)
+Delta_tilde_compare = np.zeros((Nscenario, Nt), dtype=np.float32)
+Phi_compare = np.zeros((Nscenario, Nt), dtype=np.float32)
 
-dR_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-mu_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-sigma_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-beta_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
+dR_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
+mu_S_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
+sigma_S_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
+beta_mat = np.zeros((Nscenario, Nt), dtype=np.float32)
 
-Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-wealth_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+Delta_compare = np.empty((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
+pi_compare = np.empty((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
+cons_compare = np.zeros((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
+wealth_compare = np.zeros((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
+invest_tracker_compare = np.zeros((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype=np.float32)
 
-cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
-for g, scenario in enumerate(scenarios_short):
-    mode_trade = scenario[0]
-    mode_learn = scenario[1]
-    for i in range(2):
-        dZ = dZ_Y_cases[i]
-        log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
-        # log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
-        for j in range(2):
-            dZ_SI = dZ_SI_cases[j]
-            for k, phi in enumerate(phi_vector_short):
-                (
-                    r,
-                    theta,
-                    f_c,
-                    f_w,
-                    Delta,
-                    pi,
-                    popu_parti,
-                    Phi_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                                phi,
-                                Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
-                                Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
-                                need_f='True',
-                                need_Delta='True',
-                                need_pi='True',
-                                )
-                # invest_tracker = pi > 0
-                Delta_compare[g, i, j, k] = Delta
-                pi_compare[g, i, j, k] = pi
-                theta_compare[g, i, j, k] = theta
-                r_compare[g, i, j, k] = r
-                # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-                popu_parti_compare[g, i, j, k] = popu_parti
-                # market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f_c)
-                Delta_bar_compare[g, i, j, k] = Delta_bar_parti
-                Delta_tilde_compare[g, i, j, k] = Delta_tilde_parti
-                Phi_compare[g, i, j, k] = Phi_parti
-                # survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_type_size)
-                # belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
-                cons_compare[g, i, j, k] = f_c / cohort_type_size_mat
-                invest_tracker_compare[g, i, j, k] = invest_tracker
+dZ = dZ_Y_cases[1]
+dZ_SI = dZ_SI_cases[1]
 
-                dR_mat[g, i, j, k] = dR
-                mu_S_mat[g, i, j, k] = mu_S
-                sigma_S_mat[g, i, j, k] = sigma_S
-                beta_mat[g, i, j, k] = beta
+for g, alpha_constraint in enumerate(scenarios):
+    alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * alpha_constraint, (Ntype, Nconstraint, 1))
+    rho_i = np.array([[[0.001]], [[0.01]]]) * np.ones((Ntype, Nconstraint, 1))
+    beta0 = np.sum(beta_i * alpha_i)
+    cohort_type_size = cohort_size * alpha_i
+    beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
+    beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
+    cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1, 1))
+    (
+        r,
+        theta,
+        f_c,
+        f_w,
+        Delta,
+        pi,
+        popu_parti,
+        Phi_parti,
+        Delta_bar_parti,
+        Delta_tilde_parti,
+        dR,
+        mu_S,
+        sigma_S,
+        beta,
+        invest_tracker,
+        popu_can_short,
+        popu_short,
+        Phi_can_short,
+        Phi_short,
+    ) = simulate_SI_mix_type(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                    phi,
+                    Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
+                    Ntype, Nconstraint,
+                    rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                    need_f='True',
+                    need_Delta='True',
+                    need_pi='True',
+                    )
+    # invest_tracker = pi > 0
+    Delta_compare[g] = Delta
+    pi_compare[g] = pi
+    theta_compare[g] = theta
+    r_compare[g] = r
+    popu_parti_compare[g] = popu_parti
+    Delta_bar_compare[g] = Delta_bar_parti
+    Delta_tilde_compare[g] = Delta_tilde_parti
+    Phi_compare[g] = Phi_parti
+    cons_compare[g] = f_c / cohort_type_size_mat  # indiv consumption
+    invest_tracker_compare[g] = invest_tracker
+
+    dR_mat[g] = dR
+    mu_S_mat[g] = mu_S
+    sigma_S_mat[g] = sigma_S
+    beta_mat[g] = beta
+
+
+
+
 
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 

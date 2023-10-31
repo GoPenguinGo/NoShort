@@ -64,8 +64,6 @@ def simulate_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -359,10 +357,8 @@ def simulate_cohorts_mix_type(
         # age,
         # n_parti,
         invest_mat,
-        popu_can_short,
         popu_short,
         Phi_can_short,
-        Phi_short,
         parti_wealth_group,
         parti_age_group,
     )

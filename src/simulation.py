@@ -56,8 +56,6 @@ def simulate_SI_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     # '''  A program that combines cohort_builder and cohort_simulator, and finishes one whole simulation path
     # :param mode: scenario of the function, see param for scenario names
@@ -137,10 +135,8 @@ def simulate_SI_mix_type(
         # age,
         # n_parti,
         invest_tracker,
-        popu_can_short,
         popu_short,
         Phi_can_short,
-        Phi_short,
         parti_wealth_group,
         parti_age_group,
     ) = simulate_cohorts_mix_type(
@@ -199,10 +195,8 @@ def simulate_SI_mix_type(
         sigma_S,
         beta,
         invest_tracker,
-        popu_can_short,
         popu_short,
         Phi_can_short,
-        Phi_short,
         parti_wealth_group,
         parti_age_group,
     )
