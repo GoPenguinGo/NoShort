@@ -27,6 +27,7 @@ def simulate_SI_mix_type(
         tau: np.ndarray,
         cohort_size: np.ndarray,
         Ntype: int,
+        Nconstraint: int,
         rho_i: np.ndarray,
         alpha_i: np.ndarray,
         beta_i: np.ndarray,
@@ -36,6 +37,8 @@ def simulate_SI_mix_type(
         need_Delta: str,
         need_pi: str,
 ) -> Tuple[
+    np.ndarray,
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -98,6 +101,7 @@ def simulate_SI_mix_type(
         dt,
         tau,
         Ntype,
+        Nconstraint,
         rho_i,
         alpha_i,
         beta_i,
@@ -137,6 +141,8 @@ def simulate_SI_mix_type(
         popu_short,
         Phi_can_short,
         Phi_short,
+        parti_wealth_group,
+        parti_age_group,
     ) = simulate_cohorts_mix_type(
         Y,
         biasvec,
@@ -147,6 +153,7 @@ def simulate_SI_mix_type(
         tau,
         dt,
         Ntype,
+        Nconstraint,
         rho_i,
         alpha_i,
         beta_i,
@@ -196,6 +203,8 @@ def simulate_SI_mix_type(
         popu_short,
         Phi_can_short,
         Phi_short,
+        parti_wealth_group,
+        parti_age_group,
     )
 
 

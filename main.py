@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
-from src.simulation import simulate_SI, simulate_SI_mix_type, simulate_SI_mean_vola
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
+from src.simulation import simulate_SI_mix_type, simulate_SI_mean_vola
+from src.param import nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
