@@ -175,8 +175,9 @@ def find_the_rich_mix(
     '''
     indiv_w_flat = indiv_w.flatten()
     wealth_rank = indiv_w_flat.argsort()
-    indiv_w_sorted = indiv_w[wealth_rank[::-1]]
-    cohort_size_sorted = cohort_type_size[wealth_rank[::-1]]
+    indiv_w_sorted = indiv_w_flat[wealth_rank[::-1]]
+    cohort_type_size_flat = cohort_type_size.flatten()
+    cohort_size_sorted = cohort_type_size_flat[wealth_rank[::-1]]
     popu_cumsum = np.cumsum(cohort_size_sorted)
     popu_cum = popu_cumsum / popu_cumsum[-1]
     cutoff = np.searchsorted(popu_cum, top)
