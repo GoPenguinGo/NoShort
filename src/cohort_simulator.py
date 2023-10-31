@@ -332,7 +332,7 @@ def simulate_cohorts_mix_type(
         for j in range(4):
             parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
-            within_group = (parti_wealth_group >= wealth_cutoffs[j]) * (parti_wealth_group < wealth_cutoffs[j + 1])
+            within_group = (w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1])
             parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                        np.sum(within_group * cohort_type_size)
 
