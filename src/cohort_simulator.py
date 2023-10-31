@@ -33,6 +33,7 @@ def simulate_cohorts_mix_type(
         Ninit: int,
         cohort_size: np.ndarray,
         cohort_type_size: np.ndarray,
+        cutoffs_age: np.ndarray,
         Delta_s_t: np.ndarray,
         eta_st_eta_ss: np.ndarray,
         X: np.ndarray,
@@ -329,7 +330,8 @@ def simulate_cohorts_mix_type(
             top
         )
         for j in range(4):
-            parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs[j + 1]:cutoffs[j]], weights=cohort_type_size[:, :, cutoffs[j + 1]:cutoffs[j]])
+            parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
+                                               weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
             within_group = (parti_wealth_group >= wealth_cutoffs[j]) * (parti_wealth_group < wealth_cutoffs[j + 1])
             parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                        np.sum(within_group * cohort_type_size)

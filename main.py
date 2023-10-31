@@ -100,7 +100,7 @@ for g, alpha_constraint in enumerate(scenarios):
                     phi,
                     Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
                     Ntype, Nconstraint,
-                    rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                    rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size, cutoffs_age,
                     need_f='True',
                     need_Delta='True',
                     need_pi='True',
