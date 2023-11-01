@@ -130,7 +130,6 @@ old_age_limit = 100
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
-
 # modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
 modes_trade = ['complete', 'w_constraint', 'partial_constraint_old']
 modes_learn = ['reentry', 'disappointment']

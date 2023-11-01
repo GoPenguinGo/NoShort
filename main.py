@@ -60,12 +60,12 @@ invest_tracker_compare = np.zeros((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype
 dZ = dZ_Y_cases[1]
 dZ_SI = dZ_SI_cases[1]
 
-need_f = 'True'
-need_Delta = 'True'
-need_pi = 'True'
-alpha_constraint = scenarios[3]
-dZ_build = dZ_build_case
-dZ_SI_build = dZ_SI_build_case
+# need_f = 'True'
+# need_Delta = 'True'
+# need_pi = 'True'
+# alpha_constraint = scenarios[3]
+# dZ_build = dZ_build_case
+# dZ_SI_build = dZ_SI_build_case
 
 
 for g, alpha_constraint in enumerate(scenarios):
@@ -126,121 +126,205 @@ for g, alpha_constraint in enumerate(scenarios):
     parti_age_group_compare[g] = parti_age_group
 
 
+cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
+start = int(150 * (1 / dt))  # look at the cohort born in the year 100
+
+Delta_time_series = np.zeros((Nscenario, Ntype, Nconstraint, Nt), dtype=np.float32)
+pi_time_series = np.zeros((Nscenario, Ntype, Nconstraint, Nt), dtype=np.float32)
+cons_time_series = np.zeros((Nscenario, Ntype, Nconstraint, Nt), dtype=np.float32)
+switch_time_series = np.zeros((Nscenario, Ntype, Nconstraint, Nt), dtype=np.float32)
+parti_time_series = np.zeros((Nscenario, Ntype, Nconstraint, Nt), dtype=np.float32)
+for o in range(Nscenario):
+    for i in range(Ntype):
+        for j in range(Nconstraint):
+            pi = pi_compare[o, :, i, j]
+            cons = cons_compare[o, :, i, j]
+            Delta = Delta_compare[o, :, i, j]
+            for n in range(Nt):
+                if n < start:
+                    pi_time_series[o, i, j, n] = np.nan
+                    cons_time_series[o, i, j, n] = np.nan
+                    Delta_time_series[o, i, j, n] = np.nan
+                else:
+                    cohort_rank = Nt - (n - start) - 1
+                    Delta_time_series[o, i, j, n] = Delta[n, cohort_rank]
+                    pi_time_series[o, i, j, n] = pi[n, cohort_rank]
+                    cons_time_series[o, i, j, n] = cons[n, cohort_rank]
+                    if j > 1:
+                        parti_time_series[o, i, j, n] = 1 if pi_time_series[o, i, j, n]>0 else 0
+                        switch_PN = 1 if (pi_time_series[o, i, j, n-1] > 0) and (pi_time_series[o, i, j, n] == 0) else 0
+                        switch_NP = 1 if (pi_time_series[o, i, j, n] > 0) and (
+                                    pi_time_series[o, i, j, n-1] == 0) else 0
+                        switch_time_series[o, i, j, n] = 1 if switch_PN == 1 else 0
+                        switch_time_series[o, i, j, n-1] = 1 if switch_NP == 1 else 0
+                        if switch_NP == 1:
+                            parti_time_series[o, i, j, n] = 0.5
+                        if switch_PN == 1:
+                            parti_time_series[o, i, j, n - 1] = 0.5
+
+                            # if j > 1:
+            #     parti = pi_time_series[o, i, j] > 0
+            #     switch_PN = (parti[:-1]>0) * (parti[1:])
+            #     switch = abs(parti[1:] ^ parti[:-1])
+            #     sw = np.append(switch, 0)
+            #     parti = np.where(sw == 1, 0.5, parti)
+            #     switch = np.insert(switch, 0, 0)
+            #     parti = np.where(switch == 1, 0.5, parti)
+            #     parti_time_series[o, i, j] = parti
+            #     switch_time_series[o, i, j] = sw
+            if j == 0:
+                parti_time_series[o, i, j] = 1
+                switch_time_series[o, i, j] = 0
+            if j == 1:
+                parti_time_series[o, i, j] = 0
+                switch_time_series[o, i, j] = 0
 
 
+# ######################################
+# ########### Figure 1 & IA1 #############
+# ######################################
+# Delta (2 phi * 4 cases)
+print('Figure 1')
+upper = 60  # todo: endogenize these parameters
+lower = -60
+fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(15, 10))
+red_index = 1
+yellow_index = 1
+for j, ax in enumerate(axes):
+    Z = np.cumsum(dZ_Y_cases[red_index])
+    Z_SI = np.cumsum(dZ_SI_cases[yellow_index])
+    scenario_index = int(j + 3)
+    if j == 1:
+        ax.set_xlabel('Time in simulation')
+    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+    ax.set_ylim([lower, upper])
+    ax.tick_params(axis='y', labelcolor='black')
+    ax.tick_params(axis='x', labelcolor='black')
+    if j == 0:
+        ax.legend()
+    # ax.set_title(red_case + yellow_case)
 
-# cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
-#
-#
-# nn = 3  # number of cohorts illustrated
-# length = len(t)
-# starts = np.zeros(nn)
-# Delta_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-# pi_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-# cons_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-# switch_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-# parti_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-# for o in range(n_scenarios_short):
-#     for i in range(2):
-#         for j in range(2):
-#             for l in range(n_phi_short):
-#                 pi = pi_compare[o, i, j, l]
-#                 cons = cons_compare[o, i, j, l]
-#                 Delta = Delta_compare[o, i, j, l]
-#                 for m in range(nn):
-#                     start = int((m + 1) * 100 * (1 / dt))
-#                     starts[m] = start * dt
-#                     for n in range(length):
-#                         if n < start:
-#                             pi_time_series[o, i, j, l, m, n] = np.nan
-#                             cons_time_series[o, i, j, l, m, n] = np.nan
-#                             Delta_time_series[o, i, j, l, m, n] = np.nan
-#                         else:
-#                             cohort_rank = length - (n - start) - 1
-#                             Delta_time_series[o, i, j, l, m, n] = Delta[n, cohort_rank]
-#                             pi_time_series[o, i, j, l, m, n] = pi[n, cohort_rank]
-#                             cons_time_series[o, i, j, l, m, n] = cons[n, cohort_rank]
-#                     parti = pi_time_series[o, i, j, l, m] > 0
-#                     switch = abs(parti[1:] ^ parti[:-1])
-#                     sw = np.append(switch, 0)
-#                     parti = np.where(sw == 1, 0.5, parti)
-#                     switch = np.insert(switch, 0, 0)
-#                     parti = np.where(switch == 1, 0.5, parti)
-#                     parti_time_series[o, i, j, l, m] = parti
-#                     switch_time_series[o, i, j, l, m] = sw
-#
-# # ######################################
-# # ########### Figure 1 & IA1 #############
-# # ######################################
-# # Delta (2 phi * 4 cases)
-# print('Figure 1')
-# upper = 60  # todo: endogenize these parameters
-# lower = -60
-# scenario_index = 1
-# for i in range(1, n_phi_short, 1):
-#     phi = phi_vector_short[i]
-#     fig, axes = plt.subplots(nrows=4, ncols=1, sharey='all', sharex='all', figsize=(15, 20))
-#     for j, ax in enumerate(axes):
-#         red_index = 0 if j == 0 or j == 1 else 1
-#         yellow_index = 0 if j == 0 or j == 2 else 1
-#         red_case = red_labels[red_index]
-#         yellow_case = yellow_labels[yellow_index]
-#         Z = np.cumsum(dZ_Y_cases[red_index])
-#         Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
-#         if j == 3:
-#             ax.set_xlabel('Time in simulation')
-#         ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-#         ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-#         ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-#         ax.set_ylim([lower, upper])
-#         ax.tick_params(axis='y', labelcolor='black')
-#         ax.tick_params(axis='x', labelcolor='black')
-#         if j == 0:
-#             ax.legend()
-#         ax.set_title(red_case + yellow_case)
-#
-#         ax2 = ax.twinx()
-#         ax2.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-#         ax2.set_ylim([-0.3, 0.4])
-#         for m in range(nn):
-#             # switch[m, starts[m]] = 1
-#             y_cohort = Delta_time_series[scenario_index, red_index, yellow_index, i, m]
-#             y_cohort_N = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, i, m] == 1,
-#                                             y_cohort)
-#             y_cohort_P = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, i, m] == 0,
-#                                             y_cohort)
-#             y_cohort_switch = np.ma.masked_where(switch_time_series[scenario_index, red_index, yellow_index, i, m] == 0,
-#                                                  y_cohort)
-#             plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
-#             #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-#             if j == 0:
-#                 ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4, label=cohort_labels[m])
-#                 ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted')
-#                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-#             elif j == 1 and m == 0:
-#                 ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4, label=PN_labels[0])
-#                 ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted', label=PN_labels[1])
-#                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
-#             else:
-#                 ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.4)
-#                 ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.4, linestyle='dotted')
-#                 ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-#
-#         ax2.tick_params(axis='y', labelcolor='black')
-#         if j <= 1:
-#             ax2.legend()
-#         # Save the subfigs for slides, etc.
-#         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-#         # Pad the saved area by 10% in the x-direction and 20% in the y-direction
-#         fig.savefig(' Shocks and Delta time series subfig' + str(i) + str(j + 1) + '.png',
-#                     bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
-#
-#     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-#     plt.savefig(
-#         'Shocks and Delta time series' + str(round(phi, 2)) + '.png',
-#         dpi=100)
-#     # plt.show()
-#     # plt.close()
+    ax2 = ax.twinx()
+    ax2.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+    ax2.set_ylim([-0.35, 0.15])
+    for m in range(Nconstraint):
+        # switch[m, starts[m]] = 1
+        y_cohort = Delta_time_series[scenario_index, 0, m]
+        y_cohort_N = np.ma.masked_where(parti_time_series[scenario_index, 0, m] == 1,
+                                        y_cohort)
+        y_cohort_P = np.ma.masked_where(parti_time_series[scenario_index, 0, m] == 0,
+                                        y_cohort)
+        y_cohort_switch = np.ma.masked_where(switch_time_series[scenario_index, 0, m] == 0,
+                                             y_cohort)
+        plt.vlines(start * dt, ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
+        #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+        if j == 0:
+            ax2.plot(t, y_cohort_P, color=colors[m+5], linewidth=0.4)
+            ax2.plot(t, y_cohort_N, color=colors[m+5], linewidth=0.4, linestyle='dotted')
+            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
+        elif j == 1 and m == 0:
+            ax2.plot(t, y_cohort_P, color=colors[m+5], linewidth=0.4, label=PN_labels[0])
+            ax2.plot(t, y_cohort_N, color=colors[m+5], linewidth=0.4, linestyle='dotted', label=PN_labels[1])
+            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
+        else:
+            ax2.plot(t, y_cohort_P, color=colors[m+5], linewidth=0.4)
+            ax2.plot(t, y_cohort_N, color=colors[m+5], linewidth=0.4, linestyle='dotted')
+            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
+
+    ax2.tick_params(axis='y', labelcolor='black')
+    if j <= 1:
+        ax2.legend()
+    # # Save the subfigs for slides, etc.
+    # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    # # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+    # fig.savefig(' Shocks and Delta time series subfig' + str(i) + str(j + 1) + '.png',
+    #             bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'Shocks and Delta time series'+ '.png',
+    dpi=100)
+plt.show()
+# plt.close()
+
+zoom_in = np.array([start+1, int(start + 100/dt)])
+red_index = 1
+yellow_index = 1
+Z = np.cumsum(dZ_Y_cases[red_index])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_index])
+y_list = [Delta_time_series, cons_time_series, pi_time_series]
+y_title_list = [r'Estimation error $\Delta_{s,t}$', r'Constumption', r'Portfolio $\frac{\pi}{W}$ ']
+# plot Delta, pi, consumption time-series for 4 constraint types * 2 time preference types
+scenario_index = 3
+t_focus = t[zoom_in[0]:zoom_in[1]]
+for i in range(Ntype):
+    fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(10, 15))
+    for j, ax in enumerate(axes):
+        if j == 2:
+            ax.set_xlabel('Time in simulation')
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(t_focus, Z[zoom_in[0]:zoom_in[1]], color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t_focus, Z_SI[zoom_in[0]:zoom_in[1]], color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+        # ax.set_ylim([lower, upper])
+        ax.tick_params(axis='y', labelcolor='black')
+        ax.tick_params(axis='x', labelcolor='black')
+        # ax.set_title(red_case + yellow_case)
+        ax2 = ax.twinx()
+        ax2.set_ylabel(y_title_list[j], color='black')
+
+        y = y_list[j][scenario_index, :, :, zoom_in[0]:zoom_in[1]]
+        y_low = np.nanmin(y)
+        y_high = np.nanmax(y)
+        ax2.set_ylim([y_low, y_high])
+
+        parti_time_series_focus = parti_time_series[scenario_index, i, :, zoom_in[0]:zoom_in[1]]
+        switch_time_series_focus = switch_time_series[scenario_index, i, :, zoom_in[0]:zoom_in[1]]
+
+        if j == 0:
+            ax.legend()
+            # ax2.plot(t_focus, -theta_compare[scenario_index, zoom_in[0]:zoom_in[1]], color='blue', linewidth=0.4, label='cutoff belief')
+
+        for m in range(Nconstraint):
+            # switch[m, starts[m]] = 1
+            y_cohort = y[i, m]
+            y_cohort_N = np.ma.masked_where(parti_time_series_focus[m] == 1,
+                                            y_cohort)
+            y_cohort_P = np.ma.masked_where(parti_time_series_focus[m] == 0,
+                                            y_cohort)
+            y_cohort_switch = np.ma.masked_where(switch_time_series_focus[m] == 0,
+                                                 y_cohort)
+            # plt.vlines(start * dt, ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
+            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+            if j == 0:
+                ax2.plot(t_focus, y_cohort_P, color=colors[m + 5], linewidth=0.4)
+                ax2.plot(t_focus, y_cohort_N, color=colors[m + 5], linewidth=0.4, linestyle='dotted')
+                ax2.scatter(t_focus, y_cohort_switch, color='red', s=10, marker='o')
+            elif j == 1 and m == 0:
+                ax2.plot(t_focus, y_cohort_P, color=colors[m + 5], linewidth=0.4, label=PN_labels[0])
+                ax2.plot(t_focus, y_cohort_N, color=colors[m + 5], linewidth=0.4, linestyle='dotted', label=PN_labels[1])
+                ax2.scatter(t_focus, y_cohort_switch, color='red', s=10, marker='o', label='switch')
+            else:
+                ax2.plot(t_focus, y_cohort_P, color=colors[m + 5], linewidth=0.4)
+                ax2.plot(t_focus, y_cohort_N, color=colors[m + 5], linewidth=0.4, linestyle='dotted')
+                ax2.scatter(t_focus, y_cohort_switch, color='red', s=10, marker='o')
+        ax2.tick_params(axis='y', labelcolor='black')
+        if j <= 1:
+            ax2.legend()
+        # # Save the subfigs for slides, etc.
+        # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+        # fig.savefig(' Shocks and Delta time series subfig' + str(i) + str(j + 1) + '.png',
+        #             bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    rho_type = rho_i[i, 0, 0]
+    plt.savefig(
+        'Mix types Shocks and Delta time series_rho' + str(round(rho_type, 3)) + '.png',
+        dpi=100)
+    plt.show()
+    # plt.close()
+
+
 #
 # # ######################################
 # # ############### Figure ###############
@@ -324,11 +408,6 @@ for g, alpha_constraint in enumerate(scenarios):
 # year = 100
 # t_length = int(year / dt)
 # t_indexes = np.empty((2, 2, 2))
-# red_case = 1
-# yellow_case = 1
-# cohort_start = 3
-# t_indexes[0, 0, 0] = t_indexes[1, 0, 0] = t_indexes[1, 1, 0] = t_indexes[0, 1, 0] = t_length * cohort_start
-# t_indexes[0, 0, 1] = t_indexes[1, 0, 1] = t_indexes[1, 1, 1] = t_indexes[0, 1, 1] = t_length * (1 + cohort_start)
 # phi_where = [(1, 2), (1, 1)]
 # cohort_indexes = [(cohort_start - 1, cohort_start - 1), (cohort_start - 1, cohort_start - 1)]
 # scenario_indexs = [(1, 1), (0, 2)]
@@ -381,58 +460,48 @@ for g, alpha_constraint in enumerate(scenarios):
 # plt.show()
 # plt.close()
 #
-# # ######################################
-# # ############## Figure 5 ##############
-# # ######################################
-# # time-series of interest rate and market price of risk, bad z^Y, bad z&SI
-# # 4.1.1 interest rate across different phi values, reentry
-# # 4.1.2 interest rate across different scenarios, phi = 0
-# # 4.1.3 market price of risk across different phi values, reentry
+# ######################################
+# ############## Figure 5 ##############
+# ######################################
+# time-series of interest rate and market price of risk, bad z^Y, bad z&SI
+# 4.1.1 interest rate across different phi values, reentry
+# 4.1.2 interest rate across different scenarios, phi = 0
+# 4.1.3 market price of risk across different phi values, reentry
 # print('Figure 5')
-# red_case = 1
-# yellow_case = 1
-# r_mat = r_compare[:, red_case, yellow_case]  # n_scenarios, n_phi_short, Nt
-# theta_mat = theta_compare[:, red_case, yellow_case]
-# y1 = r_mat[:, 0]  # n_scenarios, Nt
-# y2 = r_mat[1]  # n_phi_short, Nt
-# y3 = theta_mat[1]  # n_phi_short, Nt
-# y_list = [y1, y2, y3]
-# Z = np.cumsum(dZ_Y_cases[red_case])
-# Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
-# n_lines = [n_scenarios_short, n_phi_short, n_phi_short]
-# y_title_list = [r'Interest rate $r_t$, $\phi=0$', r'Interest rate $r_t$, Reentry',
-#                 r'Market price of risk $\theta_t$, Reentry']
-# labels = [scenario_labels, label_phi, label_phi]
-# fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 20))
-# for j, ax in enumerate(axes):
-#     ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-#     ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-#     ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-#     ax.tick_params(axis='both', labelcolor='black')
-#     ax.set_xlabel('Time in simulation')
-#
-#     y_vec = y_list[j]  # n_phi_short, Nt
-#     y_title = y_title_list[j]
-#     ax2 = ax.twinx()
-#     ax2.set_ylabel(y_title, color='black')
-#     for i in range(n_lines[j]):
-#         y = y_vec[i]  # Nt
-#         color_i = colors_short2[i] if j == 0 else  colors_short[i]
-#         ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)
-#     if i < 2:
-#         ax2.set_ylim(lower, upper)
-#     if j == 0:
-#         ax.legend(loc='upper left')
-#     ax2.legend(loc='upper right')
-#     ax.set_title(y_title)
-#     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-#     fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
-# fig.tight_layout(h_pad=2)
-# plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
-# plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
-# plt.show()
-# plt.close()
-#
+
+colors_4 = ['firebrick', 'midnightblue', 'darkgreen', 'darkviolet']
+y_list = [r_compare, theta_compare, sigma_S_mat, popu_parti_compare]
+y_title_list = [r'Interest rate $r_t$',
+                r'Market price of risk $\theta_t$',
+                r'Stock volatility $\sigma^S_t$',
+                r'Participation rate'
+                ]
+# labels = ['Unconstrained', 'Excluded', 'Reentry', 'Disappointment']
+labels = ['Complete', 'Reentry', 'Disappointment', 'Mix 1']
+for i, y in enumerate(y_list):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 10))
+    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+    ax.tick_params(axis='both', labelcolor='black')
+    ax.set_xlabel('Time in simulation')
+    y_title = y_title_list[i]
+    ax.set_title(y_title)
+    ax2 = ax.twinx()
+    ax2.set_ylabel(y_title, color='black')
+    for j in range(Nscenario-1):
+        y_focus = y[j]
+        ax2.plot(t, y_focus, label=labels[j], color=colors_4[j], linewidth=0.4)
+        ax2.legend(loc='upper right')
+        # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
+    fig.tight_layout(h_pad=2)
+    plt.savefig(str(i) + '_comparison_HD.png', dpi=200)
+    plt.show()
+    plt.close()
+
+
+
 # ############ IA other cases
 # red_cases = [0, 0, 1]
 # yellow_cases = [0, 1, 0]
