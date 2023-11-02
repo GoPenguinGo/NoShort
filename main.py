@@ -22,14 +22,110 @@ from scipy.interpolate import make_interp_spline
 import pandas as pd
 
 plt.rcParams["font.family"] = 'serif'
-Nscenario = 5
+# Nscenario = 5
+# scenarios = np.array([
+#     [[1, 0.00001, 0.00001, 0.00001]],  # complete market
+#     [[0.00001, 0.00001, 0.00001, 1]],  # reentry
+#     [[0.00001, 0.00001, 1, 0.00001]],  # disappointment
+#     [[0.25, 0.25, 0.25, 0.25]],  # even distribution of 4 types
+#     [[0.2, 0.2, 0.2, 0.4]],  # 40% reentry
+#         ])
+Nscenario = 2
 scenarios = np.array([
-    [[1, 0.0001, 0.0001, 0.0001]],  # complete market
-    [[0.0001, 0.0001, 0.0001, 1]],  # reentry
-    [[0.0001, 0.0001, 1, 0.0001]],  # disappointment
     [[0.25, 0.25, 0.25, 0.25]],  # even distribution of 4 types
     [[0.2, 0.2, 0.2, 0.4]],  # 40% reentry
         ])
+
+# save data for the mix scenarios, and compare to complete and reentry
+Mpath_small = 200
+theta_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
+popu_parti_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
+r_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Delta_bar_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Delta_tilde_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Phi_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+
+dR_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+mu_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+sigma_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+beta_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+parti_wealth_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
+parti_age_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
+
+for i in range(Mpath_small):
+    print(i)
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
+    for g, alpha_constraint in enumerate(scenarios):
+        alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * alpha_constraint, (Ntype, Nconstraint, 1))
+        rho_i = np.array([[[0.001]], [[0.01]]]) * np.ones((Ntype, Nconstraint, 1))
+        beta0 = np.sum(beta_i * alpha_i)
+        cohort_type_size = cohort_size * alpha_i
+        beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
+        beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
+        cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1, 1))
+        (
+            r,
+            theta,
+            f_c,
+            f_w,
+            Delta,
+            pi,
+            popu_parti,
+            Phi_parti,
+            Delta_bar_parti,
+            Delta_tilde_parti,
+            dR,
+            mu_S,
+            sigma_S,
+            beta,
+            invest_tracker,
+            popu_short,
+            Phi_can_short,
+            parti_wealth_group,
+            parti_age_group,
+        ) = simulate_SI_mix_type(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                                 phi,
+                                 Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                                 Ntype, Nconstraint,
+                                 rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size, cutoffs_age,
+                                 need_f='True',
+                                 need_Delta='True',
+                                 need_pi='True',
+                                 )
+        # invest_tracker = pi > 0
+        # Delta_mat[i, g] = Delta
+        # pi_mat[i, g] = pi
+        theta_mat[i, g] = theta
+        r_mat[i, g] = r
+        popu_parti_mat[i, g] = popu_parti
+        Delta_bar_mat[i, g] = Delta_bar_parti
+        Delta_tilde_mat[i, g] = Delta_tilde_parti
+        Phi_mat[i, g] = Phi_parti
+        # cons_mat[i, g] = f_c / cohort_type_size_mat  # indiv consumption
+        # invest_tracker_mat[i, g] = invest_tracker
+
+        dR_mat[i, g] = dR
+        mu_S_mat[i, g] = mu_S
+        sigma_S_mat[i, g] = sigma_S
+        beta_mat[i, g] = beta
+
+        parti_wealth_group_mat[i, g] = parti_wealth_group
+        parti_age_group_mat[i, g] = parti_age_group
+
+np.savez('mat.npz',
+         theta=theta_mat,
+         r=r_mat,
+         popu_parti=popu_parti_mat,
+         mu_S=mu_S_mat,
+         sigma_S=sigma_S_mat,
+         Delta_bar=Delta_bar_mat,
+         Delta_tilde=Delta_tilde_mat)
+
+
+
 # ######################################
 # ########## ONE RANDOM PATH ############
 # ############ GRAPH ONE ###############
@@ -59,14 +155,6 @@ invest_tracker_compare = np.zeros((Nscenario, Nt, Ntype, Nconstraint, Nc), dtype
 
 dZ = dZ_Y_cases[1]
 dZ_SI = dZ_SI_cases[1]
-
-# need_f = 'True'
-# need_Delta = 'True'
-# need_pi = 'True'
-# alpha_constraint = scenarios[3]
-# dZ_build = dZ_build_case
-# dZ_SI_build = dZ_SI_build_case
-
 
 for g, alpha_constraint in enumerate(scenarios):
     alpha_i = np.reshape(np.ones((Ntype, 1)) * 1 / Ntype * alpha_constraint, (Ntype, Nconstraint, 1))
@@ -288,7 +376,7 @@ for i in range(Ntype):
         for m in range(Nconstraint):
             # switch[m, starts[m]] = 1
             y_cohort = y[i, m]
-            y_cohort_N = np.ma.masked_where(parti_time_series_focus[m] == 1,
+            y_cohort_N = np.ma.masked_where(parti_time_series_focus[m] > 0,
                                             y_cohort)
             y_cohort_P = np.ma.masked_where(parti_time_series_focus[m] == 0,
                                             y_cohort)
