@@ -5,7 +5,7 @@ from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI, simulate_SI_mean_vola
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, \
+from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi,\
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
@@ -67,8 +67,8 @@ for i in range(Mpath_small):
             parti_wealth_group,
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                         phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size, cutoffs_age,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size, cutoffs_age,
+                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
                         need_f='True',
                         need_Delta='True',
                         need_pi='True',

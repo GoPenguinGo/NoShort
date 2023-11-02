@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple, List, Any
 from src.stats import post_var, fadingmemo, dDelta_st_calculator, weighted_variance
-from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
+from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint, find_the_rich_mix
 from tqdm import tqdm
 from numba import jit
 
