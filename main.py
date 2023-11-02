@@ -20,6 +20,90 @@ import tabulate as tab
 from scipy.interpolate import make_interp_spline
 import pandas as pd
 
+# save data for the mix scenarios, and compare to complete and reentry
+Mpath_small = 400
+Nscenario = 3
+scenarios_short = scenarios[:Nscenario]
+theta_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
+popu_parti_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
+r_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Delta_bar_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Delta_tilde_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+Phi_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+
+dR_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+mu_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+sigma_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+beta_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
+parti_wealth_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
+parti_age_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
+
+for i in range(Mpath_small):
+    print(i)
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
+    for g, scenario in enumerate(scenarios_short):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        (
+            r,
+            theta,
+            f_c,
+            f_w,
+            Delta,
+            pi,
+            popu_parti,
+            Phi_parti,
+            Delta_bar_parti,
+            Delta_tilde_parti,
+            dR,
+            mu_S,
+            sigma_S,
+            beta,
+            invest_tracker,
+            parti_age_group,
+            parti_wealth_group,
+        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                        phi,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size, cutoffs_age,
+                        need_f='True',
+                        need_Delta='True',
+                        need_pi='True',
+                        )
+        # invest_tracker = pi > 0
+        # Delta_mat[i, g] = Delta
+        # pi_mat[i, g] = pi
+        theta_mat[i, g] = theta
+        r_mat[i, g] = r
+        popu_parti_mat[i, g] = popu_parti
+        Delta_bar_mat[i, g] = Delta_bar_parti
+        Delta_tilde_mat[i, g] = Delta_tilde_parti
+        Phi_mat[i, g] = Phi_parti
+        # cons_mat[i, g] = f_c / cohort_type_size_mat  # indiv consumption
+        # invest_tracker_mat[i, g] = invest_tracker
+
+        dR_mat[i, g] = dR
+        mu_S_mat[i, g] = mu_S
+        sigma_S_mat[i, g] = sigma_S
+        beta_mat[i, g] = beta
+
+        parti_wealth_group_mat[i, g] = parti_wealth_group
+        parti_age_group_mat[i, g] = parti_age_group
+
+np.savez('mat.npz',
+         theta=theta_mat,
+         r=r_mat,
+         popu_parti=popu_parti_mat,
+         mu_S=mu_S_mat,
+         sigma_S=sigma_S_mat,
+         Delta_bar=Delta_bar_mat,
+         Delta_tilde=Delta_tilde_mat)
+
+
+
 n_scenarios_short = 3
 scenarios_short = scenarios[:n_scenarios_short]
 

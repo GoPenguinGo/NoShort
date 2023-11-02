@@ -28,6 +28,7 @@ def simulate_SI(
         dZ_SI: np.ndarray,
         tau: np.ndarray,
         cohort_size: np.ndarray,
+        cutoffs_age: np.ndarray,
         Ntype: int,
         rho_i: np.ndarray,
         alpha_i: np.ndarray,
@@ -40,8 +41,6 @@ def simulate_SI(
         top=0.05,
         old_limit=100,
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -141,10 +140,8 @@ def simulate_SI(
         # age,
         # n_parti,
         invest_tracker,
-        popu_can_short,
-        popu_short,
-        Phi_can_short,
-        Phi_short,
+        parti_age_group,
+        parti_wealth_group
     ) = simulate_cohorts_SI(
         Y,
         biasvec,
@@ -173,6 +170,7 @@ def simulate_SI(
         mode_learn,
         cohort_size,
         cohort_type_size,
+        cutoffs_age,
         Delta_s_t,
         eta_st_eta_ss,
         X,
@@ -204,10 +202,8 @@ def simulate_SI(
         sigma_S,
         beta,
         invest_tracker,
-        popu_can_short,
-        popu_short,
-        Phi_can_short,
-        Phi_short,
+        parti_age_group,
+        parti_wealth_group
     )
 
 

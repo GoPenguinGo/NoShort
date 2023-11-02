@@ -34,6 +34,7 @@ def simulate_cohorts_SI(
         mode_learn: str,
         cohort_size: np.ndarray,
         cohort_type_size: np.ndarray,
+        cutoffs_age: np.ndarray,
         Delta_s_t: np.ndarray,
         eta_st_eta_ss: np.ndarray,
         X: np.ndarray,
@@ -48,8 +49,6 @@ def simulate_cohorts_SI(
         top: float,
         old_limit: float,
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -137,25 +136,23 @@ def simulate_cohorts_SI(
     else:
         pi = 0
 
-    if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
-        parti = np.ones((Nt, Ntype, Nc))
-        invest_mat = np.ones((Nt, Ntype, Nc))
-    else:
-        Phi_parti = 0
-        parti = 0
-        invest_mat = 0
+    quartiles = np.array([1, 0.75, 0.5, 0.25, 0])
+    Phi_parti = np.ones((Nt))
+    parti = np.ones((Nt, Ntype, Nc))
+    invest_mat = np.ones((Nt, Ntype, Nc))
+    parti_wealth_group = np.ones((Nt, 4))
+    parti_age_group = np.ones((Nt, 4))
 
-    if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        popu_can_short= np.zeros((Nt))
-        popu_short = np.zeros((Nt))
-        Phi_can_short = np.zeros((Nt))
-        Phi_short = np.zeros((Nt))
-    else:
-        popu_can_short = 0
-        popu_short = 0
-        Phi_can_short = 0
-        Phi_short = 0
+    # if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+    #     popu_can_short= np.zeros((Nt))
+    #     popu_short = np.zeros((Nt))
+    #     Phi_can_short = np.zeros((Nt))
+    #     Phi_short = np.zeros((Nt))
+    # else:
+    #     popu_can_short = 0
+    #     popu_short = 0
+    #     Phi_can_short = 0
+    #     Phi_short = 0
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -508,11 +505,22 @@ def simulate_cohorts_SI(
             Phi_parti[i] = fc_parti_t
             parti[i] = popu_parti_t
             invest_mat[i] = invest_tracker
-        if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            popu_can_short[i] = popu_can_short_t
-            popu_short[i] = popu_short_t
-            Phi_can_short[i] = Phi_can_short_t
-            Phi_short[i] = Phi_short_t
+            wealth_cutoffs = find_the_rich_mix(
+                w_indiv_ist,
+                cohort_type_size,
+                quartiles,
+            )
+            for j in range(4):
+                parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
+                                                   weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
+                within_group = (w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1])
+                parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
+                                           np.sum(within_group * cohort_type_size)
+        # if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
+        #     popu_can_short[i] = popu_can_short_t
+        #     popu_short[i] = popu_short_t
+        #     Phi_can_short[i] = Phi_can_short_t
+        #     Phi_short[i] = Phi_short_t
         # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
         # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
@@ -536,10 +544,12 @@ def simulate_cohorts_SI(
         # age,
         # n_parti,
         invest_mat,
-        popu_can_short,
-        popu_short,
-        Phi_can_short,
-        Phi_short,
+        parti_age_group,
+        parti_wealth_group
+        # popu_can_short,
+        # popu_short,
+        # Phi_can_short,
+        # Phi_short,
     )
 
 
