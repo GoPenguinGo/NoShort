@@ -5,7 +5,7 @@ from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI, simulate_SI_mean_vola
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi,\
+from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
@@ -19,6 +19,35 @@ import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
 import pandas as pd
+
+# calculate mean variance of complete and reentry scenarios for the baseline parameters
+Nscenario = 2
+for i in range(Mpath):
+    print(i)
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
+    for g, scenario in enumerate(scenarios[:Nscenario]):
+        mode_trade = scenario[0]
+        mode_learn = scenario[1]
+        (
+            dR_mean_vola,
+            theta_mean_vola,
+            r_mean_vola,
+            mu_S_mean_vola,
+            sigma_S_mean_vola,
+            beta_mean_vola,
+            theta_save_mean_vola,
+            sigma_S_save_mean_vola,
+            parti_group_mean_vola,
+            cov_save_mean_vola,
+        ) = simulate_SI_mean_vola(
+            mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+            phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
+            Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size
+        )
+
 
 # save data for the mix scenarios, and compare to complete and reentry
 Mpath_small = 400
@@ -67,8 +96,8 @@ for i in range(Mpath_small):
             parti_wealth_group,
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                         phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size, cutoffs_age,
-                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                        Npre, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
+                        Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size,
                         need_f='True',
                         need_Delta='True',
                         need_pi='True',
@@ -103,10 +132,8 @@ np.savez('mat.npz',
          Delta_tilde=Delta_tilde_mat)
 
 np.savez('mat_group.npz',
-            parti_wealth_group=parti_wealth_group_mat,
-            parti_age_group=parti_age_group_mat)
-
-
+         parti_wealth_group=parti_wealth_group_mat,
+         parti_age_group=parti_age_group_mat)
 
 n_scenarios_short = 3
 scenarios_short = scenarios[:n_scenarios_short]
@@ -511,7 +538,7 @@ for j, ax in enumerate(axes):
     ax2.set_ylabel(y_title, color='black')
     for i in range(n_lines[j]):
         y = y_vec[i]  # Nt
-        color_i = colors_short2[i] if j == 0 else  colors_short[i]
+        color_i = colors_short2[i] if j == 0 else colors_short[i]
         ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)
     if i < 2:
         ax2.set_ylim(lower, upper)
@@ -609,7 +636,10 @@ for m, y_vec in enumerate(y_list):
     for i in range(n_lines):
         y = y_vec[i]  # Nt
         color_i = colors_short2[i]
-        ax2.plot(t, y, label=labels[i], color=color_i, linewidth=0.4) if m != 6 else ax2.plot(t[window:], y, label=labels[i], color=color_i, linewidth=0.4)
+        ax2.plot(t, y, label=labels[i], color=color_i, linewidth=0.4) if m != 6 else ax2.plot(t[window:], y,
+                                                                                              label=labels[i],
+                                                                                              color=color_i,
+                                                                                              linewidth=0.4)
     ax.legend(loc='upper left')
     ax2.legend(loc='upper right')
     ax.set_title(y_title)
@@ -621,7 +651,6 @@ for m, y_vec in enumerate(y_list):
     plt.savefig('HR' + str(m) + 'HD.png', dpi=200)
     plt.show()
     # plt.close()
-
 
 red_case = 1
 yellow_case = 1
@@ -667,7 +696,7 @@ for m, y_mat in enumerate(y_list):
         for i in range(n_lines):
             y = y_vec[i]  # Nt
             color_i = colors_short2[i] if j == 0 else colors_short[i]
-            ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4)  if m != 6 \
+            ax2.plot(t, y, label=labels[j][i], color=color_i, linewidth=0.4) if m != 6 \
                 else ax2.plot(t[window:], y, label=labels[j][i], color=color_i, linewidth=0.4)
         # if i < 2:
         #     ax2.set_ylim(lower, upper)
@@ -683,7 +712,6 @@ for m, y_mat in enumerate(y_list):
     # plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
     plt.show()
     plt.close()
-
 
 # regressions:
 # 2 different measures:
@@ -708,7 +736,7 @@ Inte_garch_vola = np.sqrt(
      - np.cumsum(dR_mat ** 2, axis=4)[:, :, :, :, :-window])
     / (window * dt))
 horizon_vola = np.sqrt(
-    (np.cumsum(sigma_S_mat ** 2, axis=4)[:, :, :, :, horizon+1:]
+    (np.cumsum(sigma_S_mat ** 2, axis=4)[:, :, :, :, horizon + 1:]
      - np.cumsum(sigma_S_mat ** 2, axis=4)[:, :, :, :, 1:-horizon])
     / (horizon))  # transform monthly data to #horizon-monthly data
 
@@ -721,10 +749,10 @@ for i in range(n_scenarios_short):
     for j in range(2):
         dZ = np.reshape(dZ_Y_cases[j], (-1, 1))
         Z = np.cumsum(dZ, axis=0)
-        dZ_horizon = (Z[horizon:] - Z[:-horizon])[np.arange(0, Nt-horizon, horizon)]
+        dZ_horizon = (Z[horizon:] - Z[:-horizon])[np.arange(0, Nt - horizon, horizon)]
         for k in range(2):
             for l in range(n_phi_short):
-                vola_raw = y_mat[i, j, k, l, np.arange(0, Nt-horizon, horizon)]
+                vola_raw = y_mat[i, j, k, l, np.arange(0, Nt - horizon, horizon)]
                 y = vola_raw[1:]
                 y = (y - np.average(y)) / np.std(y)
                 reshape_sigma = np.reshape(vola_raw, (-1, 1))
@@ -747,7 +775,6 @@ for i in range(n_scenarios_short):
                 est = model.fit()
                 Garch_results_coef[i, j, k, l] = est.params
                 Garch_results_tvar[i, j, k, l] = est.tvalues
-
 
 # todo: unconditional average; record negative sigma_S
 # Monte Carlo to check the unconditional average of:
@@ -807,8 +834,6 @@ ave_theta = np.average(theta_mat, axis=0)
 ave_beta = np.average(beta_mat, axis=0)
 ave_Delta_bar_parti = np.average(Delta_bar_parti_mat, axis=0)
 ave_Delta_tilde_parti = np.average(Delta_tilde_parti_mat, axis=0)
-
-
 
 # ######################################
 # ############# Figure 7 #############
@@ -1625,7 +1650,8 @@ popus = np.array([0.1, 0.5])
 popus_1 = 1 - popus
 cutoff_young = np.searchsorted(popu_cummu, popus_1)
 cutoff_old = np.searchsorted(popu_cummu, popus)
-diffusion_P_matrix = np.empty((Mpath, n_scenarios, Nt_short, Nc_short), dtype=np.float32)  # store data only when phi == 0
+diffusion_P_matrix = np.empty((Mpath, n_scenarios, Nt_short, Nc_short),
+                              dtype=np.float32)  # store data only when phi == 0
 diffusion_matrix = np.empty((Mpath, n_scenarios, Nt_short, Nc_short), dtype=np.float32)
 drift_matrix = np.empty((Mpath, n_scenarios, Nt_short, Nc_short), dtype=np.float32)
 drift_P_matrix = np.empty((Mpath, n_scenarios, Nt_short, Nc_short), dtype=np.float32)
@@ -1870,11 +1896,11 @@ for k, ax_row in enumerate(axes):  # 3
         if i == 0:  # drift
             ax.plot(X_, drift_c_focus, color='black', label='Average', alpha=0.8)
             ax.plot(X_, drift_P_focus, color='red', label='Participants', alpha=0.8,
-                            linestyle='dashdot')
+                    linestyle='dashdot')
             ax.plot(X_, drift_N_focus, color='mediumblue', label='Nonparticipants', alpha=0.8,
-                            linestyle='dashed')
+                    linestyle='dashed')
             ax.axhline(r_rho_focus[0], 0.05, 0.95, color='gray', label=r'Average $r_t - \rho$',
-                               alpha=0.4)
+                       alpha=0.4)
             if k == 0:
                 ax.text(12, 0.01, 'Low', size=12,
                         bbox={'facecolor': 'w', 'alpha': 0.2, 'pad': 0.5, 'boxstyle': 'larrow'})
@@ -2024,15 +2050,16 @@ for i in range(Mpath):
                         # save results for fig 11
                         invest = pi > 0
                         if j == 0 and k == 0:
-                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size, axis=1)  # same average belief bc phi == 0
+                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
+                                                              axis=1)  # same average belief bc phi == 0
                             belief_popu_old_compare_fig11[i] = np.average(
                                 Delta[:, :cutoff_age_old_below_fig11],
                                 weights=cohort_size[:cutoff_age_old_below_fig11],
                                 axis=1)
                             belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
-                                                                                  weights=cohort_size[
-                                                                                          cutoff_age_young_fig11:],
-                                                                                  axis=1)
+                                                                            weights=cohort_size[
+                                                                                    cutoff_age_young_fig11:],
+                                                                            axis=1)
                         P_old_compare[i, j, k] = np.sum(
                             invest[:, :cutoff_age_old_below_fig11] *
                             cohort_size_mat[:, :cutoff_age_old_below_fig11],
@@ -2158,7 +2185,6 @@ for i in range(Mpath):
 
                 else:
                     pass
-
 
 # Figure 4
 n_bins = 15
@@ -2324,11 +2350,12 @@ for i in range(Mpath):
                                                   weights=f[:, cutoff_age_young:] * dt,
                                                   axis=1)
         belief_popu_old_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
-                                                   weights=cohort_size_mat[:, cutoff_age_old_below:cutoff_age_old_top],
-                                                   axis=1)
+                                                         weights=cohort_size_mat[:,
+                                                                 cutoff_age_old_below:cutoff_age_old_top],
+                                                         axis=1)
         belief_popu_young_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_young:],
-                                                     weights=cohort_size_mat[:, cutoff_age_young:],
-                                                     axis=1)
+                                                           weights=cohort_size_mat[:, cutoff_age_young:],
+                                                           axis=1)
 
 # construct the condition:
 n_tiles = 4

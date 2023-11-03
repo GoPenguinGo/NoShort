@@ -57,7 +57,7 @@ tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 cutoffs_age = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 n_age_cutoffs = 4
 
-Mpath = 10000
+Mpath = 1000
 
 # for graphs:
 t = np.arange(0, T_cohort, dt)
