@@ -1,9 +1,8 @@
 import numpy as np
-from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, solve_theta_partial_constraint
+from src.solver import bisection, solve_theta
 from tqdm import tqdm
 from typing import Tuple
 from src.stats import post_var, dDelta_st_calculator
-from numba import jit
 
 def build_cohorts_SI(
     dZ_build: np.ndarray,
@@ -12,23 +11,16 @@ def build_cohorts_SI(
     dt: float,
     tau: np.ndarray,
     Ntype: int,
-    rho_i: np.ndarray,
-    alpha_i: np.ndarray,
     beta_i: np.ndarray,
     beta_cohort_type: np.ndarray,
-    nu: float,
     Vhat: float,
-    mu_Y: float,
     sigma_Y: float,
     tax: float,
     phi: float,
     Npre: int,
     Ninit: int,
-    T_hat: float,
     mode_trade: str,
     mode_learn: str,
-    top,
-    old_limit,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -143,8 +135,8 @@ def build_cohorts_SI(
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, np.zeros((Ntype, 1)), axis=1)  # newborns begin with 0 bias when there are not enough earlier observations
         else:
-            init_bias = np.average(dZ_build[int(i - Npre) : i]) / dt
-            Delta_s_t+= dDelta_s_t
+            init_bias = np.average(dZ_build[int(i - Npre):i]) / dt
+            Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, init_bias * np.zeros((Ntype, 1)), axis=1
             )  # newborns begin with Npre earlier observations of the dividend process
