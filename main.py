@@ -102,6 +102,10 @@ np.savez('mat.npz',
          Delta_bar=Delta_bar_mat,
          Delta_tilde=Delta_tilde_mat)
 
+np.savez('mat_group.npz',
+            parti_wealth_group=parti_wealth_group_mat,
+            parti_age_group=parti_age_group_mat)
+
 
 
 n_scenarios_short = 3
