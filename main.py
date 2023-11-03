@@ -18,36 +18,14 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
+from multiprocessing import Pool
 import pandas as pd
 
-# calculate mean variance of complete and reentry scenarios for the baseline parameters
-Nscenario = 2
-for i in range(Mpath):
-    print(i)
-    dZ_build = dZ_build_matrix[i]
-    dZ = dZ_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
-    for g, scenario in enumerate(scenarios[:Nscenario]):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        (
-            dR_mean_vola,
-            theta_mean_vola,
-            r_mean_vola,
-            mu_S_mean_vola,
-            sigma_S_mean_vola,
-            beta_mean_vola,
-            theta_save_mean_vola,
-            sigma_S_save_mean_vola,
-            parti_group_mean_vola,
-            cov_save_mean_vola,
-        ) = simulate_SI_mean_vola(
-            mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-            phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
-            Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size
-        )
-
+results = np.load('results.npz')
+file_list = results.files
+for file in file_list:
+    print(file)
+    print(np.average(results[file], axis=0))
 
 # save data for the mix scenarios, and compare to complete and reentry
 Mpath_small = 400
@@ -96,7 +74,7 @@ for i in range(Mpath_small):
             parti_wealth_group,
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                         phi,
-                        Npre, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
                         Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size,
                         need_f='True',
                         need_Delta='True',
