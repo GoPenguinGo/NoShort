@@ -92,7 +92,7 @@ def simulate_mpath(i: int,
 # Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=8) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mpath, i) for i in range(Mpath)]
 
     # Initialize a list to store the results

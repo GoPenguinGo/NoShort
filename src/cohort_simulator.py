@@ -1073,7 +1073,7 @@ def simulate_cohorts_mean_vola(
     #         #                var_Delta_cohort_parti_t, var_Delta_indiv_parti_t]
     # # var_save_matrix = np.mean(var_save, axis=0)
 
-    dR_matrix = np.array([np.mean(dR), np.std(dR)])
+    dR_matrix = np.array([np.mean(dR/dt), np.std(dR/dt)])
     theta_matrix = np.array([np.mean(theta), np.std(theta)])
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
