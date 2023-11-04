@@ -232,8 +232,8 @@ def simulate_cohorts_SI(
             w_indiv_ist = w_indiv_ist + dw_indiv_ist
             w_ist = w_indiv_ist * cohort_type_size / dt
             adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
-            w_ist = np.append(w_ist[:, 1:] * adjust_scale, alpha_i * w_t * tax, axis=1)
-            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, w_t * tax * alpha_i / nu, axis=1)
+            w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
+            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
         w_indiv_mat[i] = w_indiv_ist
 
         # update beliefs
