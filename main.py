@@ -72,6 +72,7 @@ for i in range(Mpath_small):
             invest_tracker,
             parti_age_group,
             parti_wealth_group,
+            w_indiv,
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                         phi,
                         Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,

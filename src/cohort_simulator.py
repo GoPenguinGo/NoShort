@@ -215,7 +215,7 @@ def simulate_cohorts_SI(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist[:, 1:], tax * np.ones((Ntype, 1)) * alpha_i, axis=1)
+        f_w_ist = np.append(f_w_ist[:, 1:], tax * alpha_i, axis=1)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
@@ -232,8 +232,8 @@ def simulate_cohorts_SI(
             w_indiv_ist = w_indiv_ist + dw_indiv_ist
             w_ist = w_indiv_ist * cohort_type_size / dt
             adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
-            w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
-            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
+            w_ist = np.append(w_ist[:, 1:] * adjust_scale, alpha_i * w_t * tax, axis=1)
+            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, w_t * tax * alpha_i / nu, axis=1)
         w_indiv_mat[i] = w_indiv_ist
 
         # update beliefs
