@@ -75,7 +75,7 @@ for i in range(Mpath_small):
         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                         phi,
                         Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
-                        Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size,
+                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
                         need_f='True',
                         need_Delta='True',
                         need_pi='True',

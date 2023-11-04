@@ -68,6 +68,7 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -125,8 +126,9 @@ def simulate_cohorts_SI(
     if need_f == 'True':
         f_c = np.zeros((Nt, Ntype, Nc))  # evolution of cohort consumption share
         f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
+        w_indiv_mat = np.zeros((Nt, Ntype, Nc))
     else:
-        f_c = f_w = 0
+        f_c = f_w = w_indiv_mat = 0
 
     if need_Delta == 'True':
         Delta = np.zeros((Nt, Ntype, Nc))  # stores bias in beliefs
@@ -232,6 +234,7 @@ def simulate_cohorts_SI(
             adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
             w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
             w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
+        w_indiv_mat[i] = w_indiv_ist
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
@@ -558,11 +561,12 @@ def simulate_cohorts_SI(
         # n_parti,
         invest_mat,
         parti_age_group,
-        parti_wealth_group
+        parti_wealth_group,
         # popu_can_short,
         # popu_short,
         # Phi_can_short,
         # Phi_short,
+        w_indiv_mat,
     )
 
 
