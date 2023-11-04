@@ -19,7 +19,7 @@ def simulate_cohorts_SI(
         dt: float,
         Ntype: int,
         rho_i: np.ndarray,
-        # alpha_i: np.ndarray,
+        alpha_i: np.ndarray,
         beta_i: np.ndarray,
         beta_cohort_type: np.ndarray,
         beta0: float,
@@ -213,7 +213,7 @@ def simulate_cohorts_SI(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist[:, 1:], tax * np.ones((Ntype, 1)), axis=1)
+        f_w_ist = np.append(f_w_ist[:, 1:], tax * np.ones((Ntype, 1)) * alpha_i, axis=1)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
@@ -577,7 +577,7 @@ def simulate_cohorts_mean_vola(
         dt: float,
         Ntype: int,
         rho_i: np.ndarray,
-        # alpha_i: np.ndarray,
+        alpha_i: np.ndarray,
         beta_i: np.ndarray,
         beta_cohort_type: np.ndarray,
         beta0: float,
@@ -749,7 +749,7 @@ def simulate_cohorts_mean_vola(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist[:, 1:], tax * np.ones((Ntype, 1)), axis=1)
+        f_w_ist = np.append(f_w_ist[:, 1:], tax * np.ones((Ntype, 1) * alpha_i), axis=1)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t

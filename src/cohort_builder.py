@@ -12,6 +12,7 @@ def build_cohorts_SI(
     tau: np.ndarray,
     Ntype: int,
     beta_i: np.ndarray,
+    alpha_i: np.ndarray,
     beta_cohort_type: np.ndarray,
     Vhat: float,
     sigma_Y: float,
@@ -71,7 +72,7 @@ def build_cohorts_SI(
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
-    theta_mat = np.empty(Nc)
+    # theta_mat = np.empty(Nc)
 
     for i in tqdm(range(1, Nc)):
     #for i in tqdm(range(1, Ninit)):
@@ -98,7 +99,7 @@ def build_cohorts_SI(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist, tax * np.ones((Ntype, 1)), axis=1)
+        f_w_ist = np.append(f_w_ist, tax * np.ones((Ntype, 1)) * alpha_i, axis=1)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
