@@ -60,7 +60,7 @@ def simulate_mpath(i: int,
         ) = simulate_SI_mean_vola(
             mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
             phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
-            Ntype, rho_i, beta_i, beta_cohort_type, cohort_type_size
+            Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
         )
 
         dR_mean_vola_results[g] = dR_mean_vola
@@ -92,7 +92,7 @@ def simulate_mpath(i: int,
 # Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mpath, i) for i in range(Mpath)]
 
     # Initialize a list to store the results
