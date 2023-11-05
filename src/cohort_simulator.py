@@ -671,7 +671,7 @@ def simulate_cohorts_mean_vola(
         n_parti (np.ndarray): number of cohorts participating in the stock market, shape(Nt, )
     """ ""
     # Initializing variables
-    keep_when = int(200 / dt)
+    keep_when = int(0 / dt)
     # Phi_parti = np.zeros((Nt - keep_when))  # consumption share of the stock market participants
     # Phi_parti_1_matrix = np.zeros((Nt - keep_when))
     # # parti = np.zeros((Nt - keep_when))  # participation rate
