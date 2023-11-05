@@ -67,7 +67,6 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -120,12 +119,12 @@ def simulate_cohorts_SI(
     # Initializing variables
     # cohort-type-specific terms:
     # max = np.zeros((Nt, Ntype, Nc))  # stores max(delta, -theta)
-    invest_mat = np.ones((Nt, Ntype, Nc))
+    # invest_mat = np.ones((Nt, Ntype, Nc))
 
     if need_f == 'True':
         f_c = np.zeros((Nt, Ntype, Nc))  # evolution of cohort consumption share
-        f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
-        w_indiv_mat = np.zeros((Nt, Ntype, Nc))
+        # f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
+        # w_indiv_mat = np.zeros((Nt, Ntype, Nc))
     else:
         f_c = f_w = w_indiv_mat = 0
 
@@ -512,7 +511,7 @@ def simulate_cohorts_SI(
         # n_parti[i] = n_parti_t
         if need_f == 'True':
             f_c[i, :] = f_c_ist
-            f_w[i, :] = f_w_ist
+            # f_w[i, :] = f_w_ist
         if need_Delta == 'True':
             Delta[i, :] = Delta_s_t
         if need_pi == 'True':
@@ -544,7 +543,7 @@ def simulate_cohorts_SI(
         r,
         theta,
         f_c,
-        f_w,
+        # f_w,
         Delta,
         # max,
         pi,
