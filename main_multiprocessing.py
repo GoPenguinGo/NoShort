@@ -90,6 +90,7 @@ def simulate_mpath(i: int,
 
 # Create a Pool of processes for parallel execution
 # Create a ProcessPoolExecutor for parallel execution
+Mpath = 100
 def main():
     # Create a ProcessPoolExecutor for parallel execution
     with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed

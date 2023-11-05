@@ -706,8 +706,9 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    parti_wealth_group = np.ones((Nt - keep_when, 4))
-    quartiles = np.array([1, 0.75, 0.5, 0.25, 0])
+    N_wealth_group = 4
+    parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+    wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
     # age = np.zeros(Nt)
@@ -1053,13 +1054,14 @@ def simulate_cohorts_mean_vola(
                 wealth_cutoffs = find_the_rich_mix(
                     w_indiv_ist,
                     cohort_type_size,
-                    quartiles,
+                    wealth_groups,
                 )
                 for j in range(4):
                     parti_age_group[ii, j] = np.average(invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                         weights=cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]])
-                    within_group = (w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1])
-                    parti_wealth_group[ii, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
+                for l in range(N_wealth_group):
+                    within_group = (w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1])
+                    parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                                 np.sum(within_group * cohort_type_size)
 
             # if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
