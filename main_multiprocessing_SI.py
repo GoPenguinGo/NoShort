@@ -38,12 +38,14 @@ def simulate_mpath(i: int,
     Nc_cut = int(age_cut / dt)
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
+    N_data = 15
+    data_point = np.arange(0, N_cut, N_data)
     # Initialize results for the current Mpath
     parti_rate_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
     belief_pre_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
     belief_post_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
-    Delta_matrix = np.empty((Nscenario, n_phi_short, Nc_cut), dtype=np.float32)
-    invest_matrix = np.empty((Nscenario, n_phi_short, Nc_cut), dtype=int)
+    Delta_matrix = np.empty((Nscenario, n_phi_short, Nt, N_data), dtype=np.float32)
+    invest_matrix = np.empty((Nscenario, n_phi_short, Nt, N_data), dtype=int)
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -57,7 +59,7 @@ def simulate_mpath(i: int,
                 r,
                 theta,
                 f_c,
-                f_w,
+                # f_w,
                 Delta,
                 pi,
                 popu_parti,
@@ -78,7 +80,7 @@ def simulate_mpath(i: int,
                             Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
                             need_f='True',
                             need_Delta='True',
-                            need_pi='True',
+                            need_pi='False',
                             )
             parti_rate_mat[g, l] = np.average(np.average(invest_tracker[:-t_gap] * cohort_type_size, axis=2),
                                               axis=1)  # population weighted
