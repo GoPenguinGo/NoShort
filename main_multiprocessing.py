@@ -35,7 +35,9 @@ def simulate_mpath(i: int,
     beta_mean_vola_results = np.zeros((Nscenario, 2))
     theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
-    parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
+    # parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
+    parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
+    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 10))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
 
     dZ_build = dZ_build_matrix[i]
@@ -55,7 +57,9 @@ def simulate_mpath(i: int,
             beta_mean_vola,
             theta_save_mean_vola,
             sigma_S_save_mean_vola,
-            parti_group_mean_vola,
+            # parti_group_mean_vola,
+            parti_age_group_mean_vola,
+            parti_wealth_group_mean_vola,
             cov_save_mean_vola,
         ) = simulate_SI_mean_vola(
             mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
@@ -71,7 +75,9 @@ def simulate_mpath(i: int,
         beta_mean_vola_results[g] = beta_mean_vola
         theta_save_mean_vola_results[g] = theta_save_mean_vola
         sigma_S_save_mean_vola_results[g] = sigma_S_save_mean_vola
-        parti_group_mean_vola_results[g] = parti_group_mean_vola
+        # parti_group_mean_vola_results[g] = parti_group_mean_vola
+        parti_age_group_mean_vola_results[g] = parti_age_group_mean_vola
+        parti_wealth_group_mean_vola_results[g] = parti_wealth_group_mean_vola
         cov_save_mean_vola_results[g] = cov_save_mean_vola
 
     return (
@@ -84,7 +90,9 @@ def simulate_mpath(i: int,
         beta_mean_vola_results,
         theta_save_mean_vola_results,
         sigma_S_save_mean_vola_results,
-        parti_group_mean_vola_results,
+        # parti_group_mean_vola_results,
+        parti_age_group_mean_vola_results,
+        parti_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
     )
 
@@ -101,7 +109,17 @@ def main():
 
     # Retrieve results from parallel processes
     for result in results:
-        i, dR_mean_vola_results, theta_mean_vola_results, r_mean_vola_results, mu_S_mean_vola_results, sigma_S_mean_vola_results, beta_mean_vola_results, theta_save_mean_vola_results, sigma_S_save_mean_vola_results, parti_group_mean_vola_results, cov_save_mean_vola_results = result.result()
+        i, dR_mean_vola_results, \
+            theta_mean_vola_results, \
+            r_mean_vola_results, \
+            mu_S_mean_vola_results, \
+            sigma_S_mean_vola_results, \
+            beta_mean_vola_results, \
+            theta_save_mean_vola_results, \
+            sigma_S_save_mean_vola_results, \
+            parti_age_group_mean_vola_results,\
+            parti_wealth_group_mean_vola_results,\
+            cov_save_mean_vola_results = result.result()
 
         data = {
             "i": i,
@@ -113,7 +131,8 @@ def main():
             "beta_mean_vola": beta_mean_vola_results,
             "theta_save_mean_vola": theta_save_mean_vola_results,
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
-            "parti_group_mean_vola": parti_group_mean_vola_results,
+            "parti_age_group_mean_vola":  parti_age_group_mean_vola_results,
+            "parti_wealth_group_mean_vola":  parti_wealth_group_mean_vola_results,
             "cov_save_mean_vola": cov_save_mean_vola_results
         }
         results_list.append(data)

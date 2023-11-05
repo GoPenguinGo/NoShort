@@ -620,6 +620,7 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -1118,11 +1119,10 @@ def simulate_cohorts_mean_vola(
         Delta_Phi_tilde_matrix,
     ])
 
-    parti_group_matrix = np.array([
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-    ])
-
+    # parti_group_matrix = np.array([
+    #     parti_age_group_matrix,
+    #     parti_wealth_group_matrix,
+    # ])
 
     cov_save_matrix = np.array([
         cov_theta_z_Y,
@@ -1142,7 +1142,9 @@ def simulate_cohorts_mean_vola(
         beta_matrix,
         theta_save_matrix,
         sigma_S_save_matrix,
-        parti_group_matrix,
+        # parti_group_matrix,
+        parti_age_group_matrix,
+        parti_wealth_group_matrix,
         cov_save_matrix,
     )
 
