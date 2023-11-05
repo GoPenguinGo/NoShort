@@ -122,19 +122,19 @@ def simulate_cohorts_SI(
     # invest_mat = np.ones((Nt, Ntype, Nc))
 
     if need_f == 'True':
-        f_c = np.zeros((Nt, Ntype, Nc), dtype=np.float32)  # evolution of cohort consumption share
+        f_c = np.zeros((Nt, Ntype, Nc), dtype=np.float16)  # evolution of cohort consumption share
         # f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
         # w_indiv_mat = np.zeros((Nt, Ntype, Nc))
     else:
         f_c = f_w = w_indiv_mat = 0
 
     if need_Delta == 'True':
-        Delta = np.zeros((Nt, Ntype, Nc), dtype=np.float32)  # stores bias in beliefs
+        Delta = np.zeros((Nt, Ntype, Nc), dtype=np.float16)  # stores bias in beliefs
     else:
         Delta = 0
 
     if need_pi == 'True':
-        pi = np.zeros((Nt, Ntype, Nc), dtype=np.float32)  # portfolio choices
+        pi = np.zeros((Nt, Ntype, Nc), dtype=np.float16)  # portfolio choices
     else:
         pi = 0
 

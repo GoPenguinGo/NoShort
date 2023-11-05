@@ -38,8 +38,10 @@ def simulate_mpath(i: int,
     Nc_cut = int(age_cut / dt)
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
-    N_data = 15
-    data_point = np.arange(0, N_cut, N_data)
+    gap = 15
+    data_point = np.arange(0, N_cut, gap)
+    N_data = len(data_point)
+
     # Initialize results for the current Mpath
     parti_rate_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
     belief_pre_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
@@ -78,7 +80,7 @@ def simulate_mpath(i: int,
                             phi,
                             Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
                             Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
-                            need_f='True',
+                            need_f='False',
                             need_Delta='True',
                             need_pi='False',
                             )
@@ -86,8 +88,8 @@ def simulate_mpath(i: int,
                                               axis=1)  # population weighted
             belief_pre_mat[g, l] = np.average(np.average(Delta[:-t_gap] * cohort_type_size, axis=2), axis=1)
             belief_post_mat[g, l] = np.average(np.average(Delta[t_gap:] * cohort_type_size, axis=2), axis=1)
-            Delta_matrix[g, l] = np.average(np.abs(Delta), axis=0)[0, -Nc_cut:]
-            invest_matrix[g, l] = np.average(invest_tracker, axis=0)[0, -Nc_cut:]
+            Delta_matrix[g, l] = np.flip(np.average(Delta, axis=0), axis=1)[0, data_point]
+            invest_matrix[g, l] = np.flip(np.average(invest_tracker, axis=0), axis=1)[0, data_point]
 
     return (
         i,
