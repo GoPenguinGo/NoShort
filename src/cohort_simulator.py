@@ -68,7 +68,6 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     """"" Simulate the economy forward
 
@@ -221,20 +220,21 @@ def simulate_cohorts_SI(
         f_c_ist = f_w_ist * beta_i / beta_t
 
         # Wealth
-        w_t = Y[i] / beta_t  # total wealth at time t
-        if i == 0:
-            w_ist = w_t * f_w_ist  # cohort
-            w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
-        else:
-            dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
-            dw_indiv_ist = ((r_t - rho_i) + pi_st * (
-                    mu_S_t - r_t)) * w_indiv_ist * dt + w_indiv_ist * pi_st * sigma_S_t * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
-            w_indiv_ist = w_indiv_ist + dw_indiv_ist
-            w_ist = w_indiv_ist * cohort_type_size / dt
-            adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
-            w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
-            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
-        w_indiv_mat[i] = w_indiv_ist
+        # w_t = Y[i] / beta_t  # total wealth at time t
+        w_indiv_ist = f_w_ist / cohort_type_size
+        # if i == 0:
+        #     w_ist = w_t * f_w_ist  # cohort
+        #     w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
+        # else:
+        #     dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+        #     dw_indiv_ist = ((r_t - rho_i) + pi_st * (
+        #             mu_S_t - r_t)) * w_indiv_ist * dt + w_indiv_ist * pi_st * sigma_S_t * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+        #     w_indiv_ist = w_indiv_ist + dw_indiv_ist
+        #     w_ist = w_indiv_ist * cohort_type_size / dt
+        #     adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
+        #     w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
+        #     w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
+        # # w_indiv_mat[i] = w_indiv_ist
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
@@ -566,7 +566,7 @@ def simulate_cohorts_SI(
         # popu_short,
         # Phi_can_short,
         # Phi_short,
-        w_indiv_mat,
+        # w_indiv_mat,
     )
 
 
@@ -758,20 +758,22 @@ def simulate_cohorts_mean_vola(
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
 
+        w_indiv_ist = f_w_ist / cohort_type_size
+
         # Wealth
-        w_t = Y[i] / beta_t  # total wealth at time t
-        if i == 0:
-            w_ist = w_t * f_w_ist  # cohort
-            w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
-        else:
-            dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
-            dw_indiv_ist = ((r_t - rho_i) + pi_st * (
-                    mu_S_t - r_t)) * w_indiv_ist * dt + w_indiv_ist * pi_st * sigma_S_t * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
-            w_indiv_ist = w_indiv_ist + dw_indiv_ist
-            w_ist = w_indiv_ist * cohort_type_size / dt
-            adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
-            w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
-            w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
+        # w_t = Y[i] / beta_t  # total wealth at time t
+        # if i == 0:
+        #     w_ist = w_t * f_w_ist  # cohort
+        #     w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
+        # else:
+        #     dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+        #     dw_indiv_ist = ((r_t - rho_i) + pi_st * (
+        #             mu_S_t - r_t)) * w_indiv_ist * dt + w_indiv_ist * pi_st * sigma_S_t * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
+        #     w_indiv_ist = w_indiv_ist + dw_indiv_ist
+        #     w_ist = w_indiv_ist * cohort_type_size / dt
+        #     adjust_scale = w_t * (1 / dt - tax) / np.sum(w_ist[:, 1:])
+        #     w_ist = np.append(w_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax, axis=1)
+        #     w_indiv_ist = np.append(w_indiv_ist[:, 1:] * adjust_scale, np.ones((2, 1)) * w_t * tax / nu, axis=1)
 
         # update beliefs
         if mode_trade == 'complete':  # everyone is P
