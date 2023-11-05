@@ -46,8 +46,8 @@ def simulate_mpath(i: int,
     parti_rate_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
     belief_pre_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
     belief_post_mat = np.zeros((Nscenario, n_phi_short, N_cut), dtype=np.float32)
-    Delta_matrix = np.empty((Nscenario, n_phi_short, Nt, N_data), dtype=np.float32)
-    invest_matrix = np.empty((Nscenario, n_phi_short, Nt, N_data), dtype=int)
+    Delta_matrix = np.empty((Nscenario, n_phi_short, N_data), dtype=np.float32)
+    invest_matrix = np.empty((Nscenario, n_phi_short, N_data), dtype=np.float32)
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -88,7 +88,7 @@ def simulate_mpath(i: int,
                                               axis=1)  # population weighted
             belief_pre_mat[g, l] = np.average(np.average(Delta[:-t_gap] * cohort_type_size, axis=2), axis=1)
             belief_post_mat[g, l] = np.average(np.average(Delta[t_gap:] * cohort_type_size, axis=2), axis=1)
-            Delta_matrix[g, l] = np.flip(np.average(Delta, axis=0), axis=1)[0, data_point]
+            Delta_matrix[g, l] = np.flip(np.average(np.abs(Delta), axis=0), axis=1)[0, data_point]
             invest_matrix[g, l] = np.flip(np.average(invest_tracker, axis=0), axis=1)[0, data_point]
 
     return (
@@ -103,7 +103,7 @@ def simulate_mpath(i: int,
 
 # Create a Pool of processes for parallel execution
 # Create a ProcessPoolExecutor for parallel execution
-Mpath = 100
+Mpath = 32
 
 
 def main():
@@ -129,7 +129,7 @@ def main():
             "parti_rate": parti_rate_results,
             "belief_pre": belief_pre_results,
             "belief_post": belief_post_results,
-            "Dela": Delta_results,
+            "Delta": Delta_results,
             "invest": invest_results,
         }
         results_list.append(data)
