@@ -706,7 +706,7 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 4
+    N_wealth_group = 10
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     # upperbound = np.arange(10,55,5)
