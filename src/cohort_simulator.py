@@ -199,7 +199,7 @@ def simulate_cohorts_mix_type(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist[:, :, 1:], tax * append_init, axis=2)
+        f_w_ist = np.append(f_w_ist[:, :, 1:], tax * append_init * alpha_i, axis=2)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t

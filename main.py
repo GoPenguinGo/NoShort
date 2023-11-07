@@ -37,7 +37,7 @@ scenarios = np.array([
         ])
 
 # save data for the mix scenarios, and compare to complete and reentry
-Mpath_small = 200
+Mpath_small = 100
 theta_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
 popu_parti_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
 r_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
@@ -115,7 +115,7 @@ for i in range(Mpath_small):
         parti_wealth_group_mat[i, g] = parti_wealth_group
         parti_age_group_mat[i, g] = parti_age_group
 
-np.savez('mat.npz',
+np.savez('mat1.npz',
          theta=theta_mat,
          r=r_mat,
          popu_parti=popu_parti_mat,
