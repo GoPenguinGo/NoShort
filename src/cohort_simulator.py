@@ -1100,10 +1100,10 @@ def simulate_cohorts_mean_vola(
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    average_belief = np.average(Delta_s_t)
     Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, 4))
-    parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) * (Delta_bar_mat <= -0.05),
-                                            parti_wealth_group)
+    # parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) * (Delta_bar_mat <= -0.05),
+    #                                         parti_wealth_group)
+    parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_muS_z_Y = np.corrcoef(dZ[keep_when:], mu_S)[0, 1]
