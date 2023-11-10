@@ -40,6 +40,7 @@ def simulate_mpath(i: int,
     # parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
     parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 4))
+    parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 4))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
 
     dZ_build = dZ_build_matrix[i]
@@ -62,6 +63,7 @@ def simulate_mpath(i: int,
             # parti_group_mean_vola,
             parti_age_group_mean_vola,
             parti_wealth_group_mean_vola,
+            parti_age_wealth_group_mean_vola,
             cov_save_mean_vola,
         ) = simulate_SI_mean_vola(
             mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
@@ -80,6 +82,7 @@ def simulate_mpath(i: int,
         # parti_group_mean_vola_results[g] = parti_group_mean_vola
         parti_age_group_mean_vola_results[g] = parti_age_group_mean_vola
         parti_wealth_group_mean_vola_results[g] = parti_wealth_group_mean_vola
+        parti_age_wealth_group_mean_vola_results[g] = parti_age_wealth_group_mean_vola
         cov_save_mean_vola_results[g] = cov_save_mean_vola
 
     return (
@@ -95,6 +98,7 @@ def simulate_mpath(i: int,
         # parti_group_mean_vola_results,
         parti_age_group_mean_vola_results,
         parti_wealth_group_mean_vola_results,
+        parti_age_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
     )
 
@@ -119,6 +123,7 @@ def main():
             sigma_S_save_mean_vola_results, \
             parti_age_group_mean_vola_results,\
             parti_wealth_group_mean_vola_results,\
+            parti_age_wealth_group_mean_vola_results,\
             cov_save_mean_vola_results = result.result()
 
         data = {
@@ -133,6 +138,7 @@ def main():
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
             "parti_age_group_mean_vola":  parti_age_group_mean_vola_results,
             "parti_wealth_group_mean_vola":  parti_wealth_group_mean_vola_results,
+            "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
             "cov_save_mean_vola": cov_save_mean_vola_results
         }
         results_list.append(data)
