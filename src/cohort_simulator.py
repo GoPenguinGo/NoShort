@@ -671,7 +671,7 @@ def simulate_cohorts_mean_vola(
         n_parti (np.ndarray): number of cohorts participating in the stock market, shape(Nt, )
     """ ""
     # Initializing variables
-    keep_when = int(0 / dt)
+    keep_when = int(200 / dt)
     # Phi_parti = np.zeros((Nt - keep_when))  # consumption share of the stock market participants
     # Phi_parti_1_matrix = np.zeros((Nt - keep_when))
     # # parti = np.zeros((Nt - keep_when))  # participation rate
@@ -708,7 +708,7 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 4
+    N_wealth_group = 10
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
@@ -1113,7 +1113,7 @@ def simulate_cohorts_mean_vola(
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, 4))
+    Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
     parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
     # parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
