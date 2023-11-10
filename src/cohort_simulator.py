@@ -1519,11 +1519,10 @@ def simulate_mean_vola_mix_type(
                 parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                             np.sum(within_group * cohort_type_size)
             for j in range(4):
-                invest_age = invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]]
+                invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
                 # w_indiv_ist_age = w_indiv_ist[:, cutoffs_age[j + 1]:cutoffs_age[j]]
-                cohort_type_age = cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]]
-                parti_age_group[ii, j] = np.average(invest_age,
-                                                    weights=cohort_type_age)
+                cohort_type_age = cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
+                parti_age_group[ii, j] = np.average(invest_age, weights=cohort_type_age)
                 # wealth_cutoffs_age_group = find_the_rich_mix(
                 #     w_indiv_ist_age,
                 #     cohort_type_age,
