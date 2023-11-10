@@ -4,14 +4,17 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
-from src.simulation import simulate_SI, simulate_SI_mean_vola
+from src.simulation import simulate_SI, simulate_SI_mean_vola, simulate_mix_types, simulate_mean_vola_mix_type, \
+    simulate_mix_mean_vola
 from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
+    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size, beta_cohort
+from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, beta_cohort_mix, beta_cohort_type_mix, \
+    rho_i_mix, cohort_type_size_mix
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
 import matplotlib.pyplot as plt
@@ -24,8 +27,9 @@ import pandas as pd
 # Define the simulate_scenario function as shown in the previous answer
 Mpath = 5000
 
+
 def simulate_mpath(i: int,
-                   Nscenario=2,
+                   Nscenario=3
                    ):
     print(i)
     # Initialize results for the current Mpath
@@ -37,11 +41,12 @@ def simulate_mpath(i: int,
     beta_mean_vola_results = np.zeros((Nscenario, 2))
     theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
-    # parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
     parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 10))
-    parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 10))
+    # parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 10))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
+    parti_results = np.zeros((Nscenario, Nt))
+    cov_parti_results = np.zeros((Nscenario, 2))
 
     # dZ_build = dZ_build_matrix[i]
     # dZ = dZ_matrix[i]
@@ -53,28 +58,76 @@ def simulate_mpath(i: int,
     dZ_SI_build = np.random.randn(Nc) * dt_root
     dZ_SI = np.random.randn(Nt) * dt_root
 
-    for g, scenario in enumerate(scenarios[:Nscenario]):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        (
-            dR_mean_vola,
-            theta_mean_vola,
-            r_mean_vola,
-            mu_S_mean_vola,
-            sigma_S_mean_vola,
-            beta_mean_vola,
-            theta_save_mean_vola,
-            sigma_S_save_mean_vola,
-            # parti_group_mean_vola,
-            parti_age_group_mean_vola,
-            parti_wealth_group_mean_vola,
-            parti_age_wealth_group_mean_vola,
-            cov_save_mean_vola,
-        ) = simulate_SI_mean_vola(
-            mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-            phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
-            Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
-        )
+    for g in range(Nscenario):
+        if g <= 1:
+            scenario = scenarios[g]
+            mode_trade = scenario[0]
+            mode_learn = scenario[1]
+            (
+                dR_mean_vola,
+                theta_mean_vola,
+                r_mean_vola,
+                mu_S_mean_vola,
+                sigma_S_mean_vola,
+                beta_mean_vola,
+                theta_save_mean_vola,
+                sigma_S_save_mean_vola,
+                # parti_group_mean_vola,
+                parti_age_group_mean_vola,
+                parti_wealth_group_mean_vola,
+                # parti_age_wealth_group_mean_vola,
+                cov_save_mean_vola,
+                parti_mean_vola,
+                cov_parti_mean_vola,
+            ) = simulate_SI_mean_vola(
+                mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
+                Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
+            )
+        else:
+            (
+                dR_mean_vola,
+                theta_mean_vola,
+                r_mean_vola,
+                mu_S_mean_vola,
+                sigma_S_mean_vola,
+                beta_mean_vola,
+                theta_save_mean_vola,
+                sigma_S_save_mean_vola,
+                # parti_group_mean_vola,
+                parti_age_group_mean_vola,
+                parti_wealth_group_mean_vola,
+                # parti_age_wealth_group_mean_vola,
+                cov_save_mean_vola,
+                parti_mean_vola,
+                cov_parti_mean_vola
+            ) = simulate_mix_mean_vola(
+                Nc,
+                Nt,
+                dt,
+                nu,
+                Vhat,
+                mu_Y,
+                sigma_Y,
+                tax,
+                beta0_mix,
+                phi,
+                Npre,
+                Ninit,
+                T_hat,
+                dZ_build,
+                dZ,
+                dZ_SI_build,
+                dZ_SI,
+                tau,
+                Ntype,
+                Nconstraint,
+                rho_i_mix,
+                alpha_i_mix,
+                beta_i_mix,
+                beta_cohort_type_mix,
+                cohort_type_size_mix,
+            )
 
         dR_mean_vola_results[g] = dR_mean_vola
         theta_mean_vola_results[g] = theta_mean_vola
@@ -87,8 +140,11 @@ def simulate_mpath(i: int,
         # parti_group_mean_vola_results[g] = parti_group_mean_vola
         parti_age_group_mean_vola_results[g] = parti_age_group_mean_vola
         parti_wealth_group_mean_vola_results[g] = parti_wealth_group_mean_vola
-        parti_age_wealth_group_mean_vola_results[g] = parti_age_wealth_group_mean_vola
+        # parti_age_wealth_group_mean_vola_results[g] = parti_age_wealth_group_mean_vola
         cov_save_mean_vola_results[g] = cov_save_mean_vola
+        parti_results[g] = parti_mean_vola
+        cov_parti_results[g] = cov_parti_mean_vola
+    covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
 
     return (
         i,
@@ -103,9 +159,12 @@ def simulate_mpath(i: int,
         # parti_group_mean_vola_results,
         parti_age_group_mean_vola_results,
         parti_wealth_group_mean_vola_results,
-        parti_age_wealth_group_mean_vola_results,
+        # parti_age_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
+        covariance_parti,
+        cov_parti_results,
     )
+
 
 # Create a Pool of processes for parallel execution
 # Create a ProcessPoolExecutor for parallel execution
@@ -126,10 +185,12 @@ def main():
             beta_mean_vola_results, \
             theta_save_mean_vola_results, \
             sigma_S_save_mean_vola_results, \
-            parti_age_group_mean_vola_results,\
-            parti_wealth_group_mean_vola_results,\
-            parti_age_wealth_group_mean_vola_results,\
-            cov_save_mean_vola_results = result.result()
+            parti_age_group_mean_vola_results, \
+            parti_wealth_group_mean_vola_results, \
+            # parti_age_wealth_group_mean_vola_results, \
+            cov_save_mean_vola_results, \
+            covariance_parti, \
+            cov_parti_results = result.result()
 
         data = {
             "i": i,
@@ -141,10 +202,12 @@ def main():
             "beta_mean_vola": beta_mean_vola_results,
             "theta_save_mean_vola": theta_save_mean_vola_results,
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
-            "parti_age_group_mean_vola":  parti_age_group_mean_vola_results,
-            "parti_wealth_group_mean_vola":  parti_wealth_group_mean_vola_results,
-            "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
-            "cov_save_mean_vola": cov_save_mean_vola_results
+            "parti_age_group_mean_vola": parti_age_group_mean_vola_results,
+            "parti_wealth_group_mean_vola": parti_wealth_group_mean_vola_results,
+            # "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
+            "cov_save_mean_vola": cov_save_mean_vola_results,
+            "cov_parti_between": covariance_parti, \
+            "cov_parti_mean_vola": cov_parti_results
         }
         results_list.append(data)
 
@@ -154,6 +217,7 @@ def main():
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
     np.savez("results.npz", **results_dict)
+
 
 if __name__ == '__main__':
     main()

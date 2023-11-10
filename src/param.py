@@ -4,7 +4,7 @@ import numpy as np
 rho = 0.001  # Time discount factor
 Ntype = 2
 rho_i = np.array([[0.001], [0.005]])
-alpha_i = np.ones((2, 1)) * 1 / Ntype
+alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
 # nu = 0.01
 # nu = 0.03
