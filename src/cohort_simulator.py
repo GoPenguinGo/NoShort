@@ -770,7 +770,7 @@ def simulate_cohorts_mean_vola(
         #     w_ist = w_t * f_w_ist  # cohort
         #     w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
         # else:
-        #     dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
+        dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
         #     dw_indiv_ist = ((r_t - rho_i) + pi_st * (
         #             mu_S_t - r_t)) * w_indiv_ist * dt + w_indiv_ist * pi_st * sigma_S_t * dZ_t  # r_t, theta_t, pi_st from last loop, dZ_t just realized
         #     w_indiv_ist = w_indiv_ist + dw_indiv_ist
