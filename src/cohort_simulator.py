@@ -1103,7 +1103,7 @@ def simulate_cohorts_mean_vola(
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
     beta_matrix = np.array([np.mean(beta), np.std(beta)])
 
-    Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
+    sigma_Delta_bar_parti_matrix = np.array([np.mean(sigma_Y * Delta_bar_parti), np.std(sigma_Y * Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
     Delta_tilde_bar_parti_matrix = np.array([np.mean(Delta_tilde_bar_parti), np.std(Delta_tilde_bar_parti)])
     Phi_tilde_bar_parti = Phi_tilde_parti * Phi_bar_parti_1
@@ -1127,7 +1127,7 @@ def simulate_cohorts_mean_vola(
 
     theta_save_matrix = np.array([
         Phi_bar_parti_1_matrix,
-        Delta_bar_parti_matrix,
+        sigma_Delta_bar_parti_matrix,
     ])
 
     sigma_S_save_matrix = np.array([
