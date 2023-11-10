@@ -88,7 +88,7 @@ def build_cohorts_SI(
         )  # equation (11)
 
         X_parts = tax * np.exp(-tax * tau_short) * X * beta_cohort_type_short * eta_st_eta_ss * dt    # equation (18)
-        X_t = np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        X_t = np.sum(X_parts) / (1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=1)
@@ -99,7 +99,7 @@ def build_cohorts_SI(
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist, tax * np.ones((Ntype, 1)) * alpha_i, axis=1)
+        f_w_ist = np.append(f_w_ist, tax * alpha_i, axis=1)
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t

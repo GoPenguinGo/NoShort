@@ -51,11 +51,13 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
-tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
-tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
-tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
-cutoffs_age = [Nc, tau_cutoff1, tau_cutoff2, tau_cutoff3, 0]
 n_age_cutoffs = 4
+quartiles = np.linspace(1, 0, n_age_cutoffs+1)
+# tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
+# tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
+# tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
+cutoffs_age = np.searchsorted(cummu_popu, quartiles)
+
 
 Mpath = 1000
 

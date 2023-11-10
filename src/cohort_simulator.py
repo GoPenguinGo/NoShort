@@ -699,6 +699,7 @@ def simulate_cohorts_mean_vola(
     mu_S = np.zeros(Nt - keep_when)
     sigma_S = np.zeros(Nt - keep_when)
     beta = np.zeros(Nt - keep_when)
+    Delta_bar = np.zeros(Nt - keep_when)
     Delta_bar_parti = np.zeros(
         (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
@@ -706,7 +707,7 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 10
+    N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     # upperbound = np.arange(10,55,5)
@@ -1040,6 +1041,7 @@ def simulate_cohorts_mean_vola(
             dR[ii] = dR_t  # realized return from t-1 to t
             theta[ii] = theta_t
             r[ii] = r_t
+            Delta_bar[ii] = np.average(Delta_s_t, weights=cohort_type_size)
             Delta_bar_parti[ii] = Delta_bar_parti_t
             Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
@@ -1098,7 +1100,10 @@ def simulate_cohorts_mean_vola(
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    parti_wealth_group_matrix = np.array(np.mean(parti_wealth_group, axis=0))
+    average_belief = np.average(Delta_s_t)
+    parti_wealth_group_mask = np.ma.masked_where((Delta_bar >= 0.5) * (Delta_bar <= -0.5),
+                                            parti_wealth_group)
+    parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_muS_z_Y = np.corrcoef(dZ[keep_when:], mu_S)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]

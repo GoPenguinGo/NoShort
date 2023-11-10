@@ -37,7 +37,7 @@ def simulate_mpath(i: int,
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
     # parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
-    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 10))
+    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 4))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
 
     dZ_build = dZ_build_matrix[i]
@@ -98,12 +98,10 @@ def simulate_mpath(i: int,
 
 # Create a Pool of processes for parallel execution
 # Create a ProcessPoolExecutor for parallel execution
-Mpath = 100
 def main():
     # Create a ProcessPoolExecutor for parallel execution
     with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mpath, i) for i in range(Mpath)]
-
     # Initialize a list to store the results
     results_list = []
 
