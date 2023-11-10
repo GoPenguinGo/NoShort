@@ -32,10 +32,10 @@ beta0 = np.sum(beta_i * alpha_i)
 # Setting prior variance
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
-T_hat = 20  # Pre-trading period
+T_hat = 50  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
-Ninit = int(50 / dt)
+Ninit = int(20 / dt)
 T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
