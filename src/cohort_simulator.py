@@ -1065,20 +1065,20 @@ def simulate_cohorts_mean_vola(
                     parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                                 np.sum(within_group * cohort_type_size)
                 for j in range(4):
-                    parti_age_group[ii, j] = np.average(invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]],
-                                                        weights=cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]])
-                    mask_age_group = 0 * invest_tracker
-                    mask_age_group[:, cutoffs_age[j + 1]:cutoffs_age[j]] = 1
-                    w_indiv_ist_age_group = np.ma.array(w_indiv_ist, mask=mask_age_group)
+                    invest_age = invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]]
+                    w_indiv_ist_age = w_indiv_ist[:, cutoffs_age[j + 1]:cutoffs_age[j]]
+                    cohort_type_age = cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]]
+                    parti_age_group[ii, j] = np.average(invest_age,
+                                                        weights=cohort_type_age)
                     wealth_cutoffs_age_group = find_the_rich_mix(
-                        w_indiv_ist_age_group,
-                        cohort_type_size,
+                        w_indiv_ist_age,
+                        cohort_type_age,
                         wealth_groups,
                     )
                     for jj in range(N_wealth_group):
-                        within_group = (w_indiv_ist >= wealth_cutoffs_age_group[jj]) * (w_indiv_ist < wealth_cutoffs_age_group[jj + 1])
-                        total = within_group[:, cutoffs_age[j + 1]:cutoffs_age[j]] * cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]]
-                        parti_age_wealth_group[ii, j, jj] = np.sum(invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]] * total) / np.sum(total)
+                        within_group = (w_indiv_ist_age >= wealth_cutoffs_age_group[jj]) * (w_indiv_ist_age < wealth_cutoffs_age_group[jj + 1])
+                        total = within_group * cohort_type_age
+                        parti_age_wealth_group[ii, j, jj] = np.sum(invest_age * total) / np.sum(total)
             # if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             #     Phi_parti[ii] = fc_parti_t
     #         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
