@@ -22,7 +22,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 5000
+# Mpath = 5000
 
 def simulate_mpath(i: int,
                    Nscenario=2,
@@ -43,15 +43,15 @@ def simulate_mpath(i: int,
     parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 10))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
 
-    # dZ_build = dZ_build_matrix[i]
-    # dZ = dZ_matrix[i]
-    # dZ_SI_build = dZ_SI_build_matrix[i]
-    # dZ_SI = dZ_SI_matrix[i]
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
 
-    dZ_build = np.random.randn(Nc) * dt_root
-    dZ = np.random.randn(Nt) * dt_root
-    dZ_SI_build = np.random.randn(Nc) * dt_root
-    dZ_SI = np.random.randn(Nt) * dt_root
+    # dZ_build = np.random.randn(Nc) * dt_root
+    # dZ = np.random.randn(Nt) * dt_root
+    # dZ_SI_build = np.random.randn(Nc) * dt_root
+    # dZ_SI = np.random.randn(Nt) * dt_root
 
     for g, scenario in enumerate(scenarios[:Nscenario]):
         mode_trade = scenario[0]

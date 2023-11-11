@@ -28,14 +28,16 @@ for file in file_list:
     print(file)
     print(np.average(results[file], axis=0))
 
+Nsce = 3
+Ncolumn = int(Nsce * 2)
 # Panel 1: mean vola of asset pricing values
-table_output = np.zeros((5, 4))
+table_output = np.zeros((5, Ncolumn))
 # var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
 header = np.tile(['Mean', 'Std'], 2)
 # show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
 for j, file in enumerate(file_list[1:6]):
     var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-    for i in range(2):
+    for i in range(Nsce):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index:col_index + 2] = var_average[i]
@@ -45,9 +47,9 @@ print(tab.tabulate(table_output, headers=header, showindex=file_list[1:6], float
 file = file_list[7]
 var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, 4))
+table_output = np.zeros((N_row, Ncolumn))
 for j in range(N_row):
-    for i in range(2):
+    for i in range(Nsce):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
@@ -58,9 +60,9 @@ print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt=
 file = file_list[8]
 var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, 4))
+table_output = np.zeros((N_row, Ncolumn))
 for j in range(N_row):
-    for i in range(2):
+    for i in range(Nsce):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
@@ -71,12 +73,12 @@ show_index = [r'$\tilde{\Phi}_t$',
 print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
 
 # Panel 4: covariance
-file = file_list[12]
+file = file_list[11]
 var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, 4))
+table_output = np.zeros((N_row, Ncolumn))
 for j in range(N_row):
-    for i in range(2):
+    for i in range(Nsce):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index] = var_average[i, j]
@@ -93,18 +95,22 @@ print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt=
 file = file_list[9]
 var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, 4))
+table_output = np.zeros((N_row, Ncolumn))
 for j in range(N_row):
-    for i in range(2):
+    for i in range(Nsce):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index] = var_average[i, j]
-show_index = [r'$0 < \text{Age} \leq 15$',
-              r'$15 < \text{Age} \leq 35$',
-              r'$35 < \text{Age} \leq 69$',
-              r'$\text{Age} > 69$',
-              ]
-print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
+# show_index = [r'$0 < \text{Age} \leq 15$',
+#               r'$15 < \text{Age} \leq 35$',
+#               r'$35 < \text{Age} \leq 69$',
+#               r'$\text{Age} > 69$',
+#               ]
+print(tab.tabulate(table_output,
+                   # showindex=show_index,
+                   floatfmt=".3f", tablefmt='latex_raw'))
+
+
 
 # save data for the mix scenarios, and compare to complete and reentry
 Mpath_small = 400

@@ -206,7 +206,7 @@ def simulate_cohorts_SI(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
-        X = np.append(X[:, 1:], np.ones((Ntype, 1)) * X_t, axis=1)
+        X = np.append(X[:, 1:], X_t * alpha_i, axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -709,7 +709,7 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 10
+    N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
@@ -751,7 +751,7 @@ def simulate_cohorts_mean_vola(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
-        X = np.append(X[:, 1:], np.ones((Ntype, 1)) * X_t, axis=1)
+        X = np.append(X[:, 1:], X_t * alpha_i, axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -983,8 +983,8 @@ def simulate_cohorts_mean_vola(
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
     Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
-    parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
-    # parti_wealth_group_mask = parti_wealth_group
+    # parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
+    parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
     # parti_age_wealth_group_matrix = np.array(np.nanmean(parti_age_wealth_group, axis=0))
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
@@ -1146,7 +1146,7 @@ def simulate_cohorts_mix_type(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, :, 1:], append_init, axis=2)
-        X = np.append(X[:, :, 1:], append_init * X_t, axis=2)
+        X = np.append(X[:, :, 1:], X_t * alpha_i, axis=2)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -1360,7 +1360,7 @@ def simulate_mean_vola_mix_type(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
     parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 10
+    N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
@@ -1394,7 +1394,7 @@ def simulate_mean_vola_mix_type(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, :, 1:], append_init, axis=2)
-        X = np.append(X[:, :, 1:], append_init * X_t, axis=2)
+        X = np.append(X[:, :, 1:], X_t * alpha_i, axis=2)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -1551,8 +1551,8 @@ def simulate_mean_vola_mix_type(
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
     Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
-    parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
-    # parti_wealth_group_mask = parti_wealth_group
+    # parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
+    parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
     # parti_age_wealth_group_matrix = np.array(np.nanmean(parti_age_wealth_group, axis=0))
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]

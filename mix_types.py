@@ -42,21 +42,21 @@ def simulate_mpath(i: int,
     theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
-    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 10))
-    # parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 10))
+    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 4))
+    # parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 4))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
     parti_results = np.zeros((Nscenario, keep_data))
     cov_parti_results = np.zeros((Nscenario, 2))
 
-    # dZ_build = dZ_build_matrix[i]
-    # dZ = dZ_matrix[i]
-    # dZ_SI_build = dZ_SI_build_matrix[i]
-    # dZ_SI = dZ_SI_matrix[i]
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
 
-    dZ_build = np.random.randn(Nc) * dt_root
-    dZ = np.random.randn(Nt) * dt_root
-    dZ_SI_build = np.random.randn(Nc) * dt_root
-    dZ_SI = np.random.randn(Nt) * dt_root
+    # dZ_build = np.random.randn(Nc) * dt_root
+    # dZ = np.random.randn(Nt) * dt_root
+    # dZ_SI_build = np.random.randn(Nc) * dt_root
+    # dZ_SI = np.random.randn(Nt) * dt_root
 
     for g in range(Nscenario):
         if g <= 1:
@@ -161,7 +161,8 @@ def simulate_mpath(i: int,
         parti_wealth_group_mean_vola_results,
         # parti_age_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
-        covariance_parti,
+        # covariance_parti,
+        parti_results,
         cov_parti_results,
     )
 
@@ -205,7 +206,7 @@ def main():
             "parti_wealth_group_mean_vola": parti_wealth_group_mean_vola_results,
             # "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
             "cov_save_mean_vola": cov_save_mean_vola_results,
-            "cov_parti_between": covariance_parti, \
+            "cov_parti_between": covariance_parti,
             "cov_parti_mean_vola": cov_parti_results
         }
         results_list.append(data)
