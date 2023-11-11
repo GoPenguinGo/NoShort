@@ -736,10 +736,6 @@ def simulate_cohorts_mean_vola(
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
 
-        # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
-        #  eta_bar_t is the denominator; it creates issues if too close to 0
-        #  so I rescale eta_bar to keep it away from 0, without changing f_st
-
         # new cohort born (age 0), get wealth transfer, observe, invest
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st ** 2) * dt
@@ -751,11 +747,8 @@ def simulate_cohorts_mean_vola(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
-        X = np.append(X[:, 1:], X_t * alpha_i, axis=1)
+        X = np.append(X[:, 1:], X_t * np.ones((1, 1)), axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
-        # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
-        #  eta_bar_t is the denominator; it creates issues if too close to 0
-        #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
         f_w_ist = X_parts / X_t / dt
         f_w_ist = np.append(f_w_ist[:, 1:], tax * alpha_i, axis=1)
@@ -764,6 +757,7 @@ def simulate_cohorts_mean_vola(
         f_c_ist = f_w_ist * beta_i / beta_t
 
         w_indiv_ist = f_w_ist / cohort_type_size
+        c_indiv_ist = f_c_ist / cohort_type_size
 
         # Wealth
         # w_t = Y[i] / beta_t  # total wealth at time t
@@ -925,7 +919,8 @@ def simulate_cohorts_mean_vola(
                 Phi_bar_parti_1[ii] = 1 / fc_parti_t
                 Phi_tilde_parti[ii] = fw_parti_t
                 wealth_cutoffs = find_the_rich_mix(
-                    w_indiv_ist,
+                    # w_indiv_ist,
+                    c_indiv_ist,
                     cohort_type_size,
                     wealth_groups,
                 )
@@ -1394,7 +1389,7 @@ def simulate_mean_vola_mix_type(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, :, 1:], append_init, axis=2)
-        X = np.append(X[:, :, 1:], X_t * alpha_i, axis=2)
+        X = np.append(X[:, :, 1:], X_t * np.ones((1, 1, 1)), axis=2)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -1406,6 +1401,7 @@ def simulate_mean_vola_mix_type(
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
         w_indiv_ist = f_w_ist / cohort_type_size
+        c_indiv_ist = f_c_ist / cohort_type_size
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
         else:
@@ -1510,7 +1506,8 @@ def simulate_mean_vola_mix_type(
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
             wealth_cutoffs = find_the_rich_mix(
-                w_indiv_ist,
+                # w_indiv_ist,
+                c_indiv_ist,
                 cohort_type_size,
                 wealth_groups,
             )

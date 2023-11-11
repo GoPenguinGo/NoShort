@@ -60,7 +60,7 @@ def build_cohorts_SI(
     # size of matrix: type * cohort; or type * 1; or 1 * cohort
     Delta_s_t = np.zeros((Ntype, 1))  # belief bias, eq(3)
     d_eta_st = np.zeros((Ntype, 1))  # disagreement, eq(11)
-    X = np.ones((Ntype, 1))
+    X = np.ones((1, 1))
     eta_st_eta_ss_init = np.ones((Ntype, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Ninit)) if mode_trade != 'complete' else np.ones((Ntype, Nc))
@@ -92,7 +92,7 @@ def build_cohorts_SI(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=1)
-        X = np.append(X, np.ones((Ntype, 1)) * X_t, axis=1)
+        X = np.append(X, np.ones((1, 1)) * X_t, axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -393,7 +393,7 @@ def build_cohorts_mix_type(
     # size of matrix: type * cohort; or type * 1; or 1 * cohort
     Delta_s_t = np.zeros((Ntype, Nconstraint, 1))  # belief bias, eq(3)
     d_eta_st = np.zeros((Ntype, Nconstraint, 1))  # disagreement, eq(11)
-    X = np.ones((Ntype, Nconstraint, 1))
+    X = np.ones((1, 1, 1))
     eta_st_eta_ss_init = np.ones((Ntype, Nconstraint, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Nconstraint, Ninit))
@@ -422,11 +422,11 @@ def build_cohorts_mix_type(
         )  # equation (11)
 
         X_parts = tax * np.exp(-tax * tau_short) * X * beta_cohort_type_short * eta_st_eta_ss * dt    # equation (18)
-        X_t = np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        X_t = np.sum(X_parts) / (1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=2)
-        X = np.append(X, eta_st_eta_ss_init * X_t, axis=2)
+        X = np.append(X, np.ones((1, 1, 1)) * X_t, axis=2)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
