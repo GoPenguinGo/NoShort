@@ -187,6 +187,8 @@ def simulate_cohorts_SI(
     pi_st = 0
     w_indiv_ist = 0
 
+    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
+
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
@@ -220,7 +222,7 @@ def simulate_cohorts_SI(
 
         # Wealth
         # w_t = Y[i] / beta_t  # total wealth at time t
-        w_indiv_ist = f_w_ist / cohort_type_size
+        w_indiv_ist = f_w_ist / cohort_type_size * dt
         # if i == 0:
         #     w_ist = w_t * f_w_ist  # cohort
         #     w_indiv_ist = w_ist / cohort_type_size * dt  # indiv
@@ -520,17 +522,17 @@ def simulate_cohorts_SI(
             Phi_parti[i] = fc_parti_t
             parti[i] = popu_parti_t
             invest_mat[i] = invest_tracker
-            wealth_cutoffs = find_the_rich_mix(
-                w_indiv_ist,
-                cohort_type_size,
-                quartiles,
-            )
+            # wealth_cutoffs = find_the_rich_mix(
+            #     w_indiv_ist,
+            #     cohort_type_size,
+            #     quartiles,
+            # )
             for j in range(4):
                 parti_age_group[i, j] = np.average(invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                    weights=cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]])
-                within_group = (w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1])
-                parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
-                                           np.sum(within_group * cohort_type_size)
+                within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
+                parti_wealth_group[i, j] = np.average(invest_tracker[within_group],
+                                                      weights=cohort_type_size[within_group])
         # if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
         #     popu_can_short[i] = popu_can_short_t
         #     popu_short[i] = popu_short_t
@@ -734,7 +736,7 @@ def simulate_cohorts_mean_vola(
     pi_st = 0
     w_indiv_ist = 0
     parti_window = int(3 / dt)
-    wealth_cutoffs = np.array([0, 0.5, 1, 10, 100000])
+    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -1155,6 +1157,7 @@ def simulate_cohorts_mix_type(
     sigma_Y_sq = sigma_Y ** 2
 
     append_init = np.ones((Ntype, Nconstraint, 1))
+    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -1187,7 +1190,7 @@ def simulate_cohorts_mix_type(
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
-        w_indiv_ist = f_w_ist / cohort_type_size
+        w_indiv_ist = f_w_ist / cohort_type_size * dt
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
 
@@ -1297,17 +1300,16 @@ def simulate_cohorts_mix_type(
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
 
-        wealth_cutoffs = find_the_rich_mix(
-            w_indiv_ist,
-            cohort_type_size,
-            top
-        )
+        # wealth_cutoffs = find_the_rich_mix(
+        #     w_indiv_ist,
+        #     cohort_type_size,
+        #     top
+        # )
         for j in range(4):
             parti_age_group[i, j] = np.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
-            within_group = (w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1])
-            parti_wealth_group[i, j] = np.sum(invest_tracker * within_group * cohort_type_size) / \
-                                       np.sum(within_group * cohort_type_size)
+            within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
+            parti_wealth_group[i, j] = np.average(invest_tracker[within_group], weights=cohort_type_size[within_group])
 
     return (
         r,
@@ -1403,7 +1405,7 @@ def simulate_mean_vola_mix_type(
     append_init = np.ones((Ntype, Nconstraint, 1))
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1))
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
-    top = np.array([1, 0.75, 0.5, 0.25, 0])
+    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -1540,16 +1542,16 @@ def simulate_mean_vola_mix_type(
                 print('negative vola')
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
-            wealth_cutoffs = find_the_rich_mix(
-                # w_indiv_ist,
-                c_indiv_ist,
-                cohort_type_size,
-                wealth_groups,
-            )
+            # wealth_cutoffs = find_the_rich_mix(
+            #     # w_indiv_ist,
+            #     c_indiv_ist,
+            #     cohort_type_size,
+            #     wealth_groups,
+            # )
             for l in range(N_wealth_group):
-                within_group = (w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1])
-                parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
-                                            np.sum(within_group * cohort_type_size)
+                within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
+                parti_wealth_group[i, j] = np.average(invest_tracker[within_group],
+                                                      weights=cohort_type_size[within_group])
             for j in range(4):
                 invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
                 # w_indiv_ist_age = w_indiv_ist[:, cutoffs_age[j + 1]:cutoffs_age[j]]
