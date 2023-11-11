@@ -734,7 +734,7 @@ def simulate_cohorts_mean_vola(
     pi_st = 0
     w_indiv_ist = 0
     parti_window = int(3 / dt)
-    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
+    wealth_cutoffs = np.array([0, 0.5, 1, 10, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
