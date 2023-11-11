@@ -925,7 +925,8 @@ def simulate_cohorts_mean_vola(
                     wealth_groups,
                 )
                 for l in range(N_wealth_group):
-                    within_group = (w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1])
+                    # within_group = (w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1])
+                    within_group = (c_indiv_ist >= wealth_cutoffs[l]) * (c_indiv_ist < wealth_cutoffs[l + 1])
                     parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
                                                 np.sum(within_group * cohort_type_size)
                 for j in range(4):

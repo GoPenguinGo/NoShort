@@ -29,7 +29,7 @@ Mpath = 10
 keep_data = int(Nt - 200/dt)
 
 def simulate_mpath(i: int,
-                   Nscenario=3
+                   Nscenario=2
                    ):
     print(i)
     # Initialize results for the current Mpath
@@ -144,7 +144,7 @@ def simulate_mpath(i: int,
         cov_save_mean_vola_results[g] = cov_save_mean_vola
         parti_results[g] = parti_mean_vola
         cov_parti_results[g] = cov_parti_mean_vola
-    covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
+    # covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
 
     return (
         i,
