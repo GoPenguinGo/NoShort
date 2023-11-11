@@ -711,6 +711,8 @@ def simulate_cohorts_mean_vola(
     parti_age_group = np.ones((Nt - keep_when, 4))
     N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+    ave_age_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+    ave_belief_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group+1)
     parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
     # upperbound = np.arange(10,55,5)
@@ -731,6 +733,8 @@ def simulate_cohorts_mean_vola(
     r_t = 0
     pi_st = 0
     w_indiv_ist = 0
+    parti_window = int(3 / dt)
+    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -756,8 +760,8 @@ def simulate_cohorts_mean_vola(
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
 
-        w_indiv_ist = f_w_ist / cohort_type_size
-        c_indiv_ist = f_c_ist / cohort_type_size
+        w_indiv_ist = f_w_ist / cohort_type_size * dt
+        c_indiv_ist = f_c_ist / cohort_type_size * dt
 
         # Wealth
         # w_t = Y[i] / beta_t  # total wealth at time t
@@ -918,17 +922,47 @@ def simulate_cohorts_mean_vola(
             if mode_trade == 'w_constraint':
                 Phi_bar_parti_1[ii] = 1 / fc_parti_t
                 Phi_tilde_parti[ii] = fw_parti_t
-                wealth_cutoffs = find_the_rich_mix(
-                    # w_indiv_ist,
-                    c_indiv_ist,
-                    cohort_type_size,
-                    wealth_groups,
-                )
+                # if np.mod(ii, parti_window) == 0:
+                #     wealth_cutoffs = find_the_rich_mix(
+                #         w_indiv_ist[:, parti_window:],
+                #         # c_indiv_ist,
+                #         cohort_type_size[:, parti_window:],
+                #         wealth_groups,
+                #     )
+                #     print(wealth_cutoffs)
+                #     mark_where = np.zeros((Ntype, Nt-parti_window))
+                #     mark = ii
+                #     for l in range(N_wealth_group):
+                #         within_group = np.where((w_indiv_ist[:, parti_window:] >= wealth_cutoffs[l]) * (w_indiv_ist[:, parti_window:] < wealth_cutoffs[l + 1]))
+                #         mark_where[within_group] = l + 1
+                #
+                # for l in range(N_wealth_group):
+                #     within_group = np.where(
+                #         mark_where == l + 1
+                #     )
+                #     if mark == ii:
+                #         invest_tracker_move = invest_tracker[:, parti_window:]
+                #         cohort_type_size_move = cohort_type_size[:, parti_window:]
+                #     else:
+                #         invest_tracker_move = invest_tracker[:, parti_window - (ii - mark):-(ii - mark)]
+                #         cohort_type_size_move = cohort_type_size[:, parti_window - (ii - mark):-(ii - mark)]
+                #     parti_wealth_group[ii, l] = np.average(invest_tracker_move[within_group],
+                #                                            weights=cohort_type_size_move[within_group]
+                #                                            )
                 for l in range(N_wealth_group):
-                    # within_group = (w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1])
-                    within_group = (c_indiv_ist >= wealth_cutoffs[l]) * (c_indiv_ist < wealth_cutoffs[l + 1])
-                    parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
-                                                np.sum(within_group * cohort_type_size)
+                    within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
+                    # within_group = np.where((c_indiv_ist >= wealth_cutoffs[l]) * (c_indiv_ist < wealth_cutoffs[l + 1]))
+                    # parti_wealth_group[ii, l] = np.sum(invest_tracker * within_group * cohort_type_size) / \
+                    #                             np.sum(within_group * cohort_type_size)
+                    parti_wealth_group[ii, l] = np.average(invest_tracker[within_group],
+                                                           weights=cohort_type_size[within_group]
+                                                           )
+                    # ave_age_wealth_group[ii, l] = np.average(tau_mat[within_group],
+                    #                                        weights=cohort_type_size[within_group]
+                    #                                        )
+                    # ave_belief_wealth_group[ii, l] = np.average(Delta_s_t[within_group],
+                    #                                        weights=cohort_type_size[within_group]
+                    #                                        )
                 for j in range(4):
                     invest_age = invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]]
                     # w_indiv_ist_age = w_indiv_ist[:, cutoffs_age[j + 1]:cutoffs_age[j]]

@@ -22,7 +22,7 @@ v = 0.018  # from Nagel and Xu (2021 RFS)
 
 # tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
-tax = 0.01
+tax = 0.008
 # beta = rho + nu - tax  # marginal propensity to consume
 beta_i = rho_i + nu - tax  # marginal propensity to consume
 beta0 = np.sum(beta_i * alpha_i)
@@ -147,3 +147,4 @@ for mode_trade in modes_trade:
             scenarios.append([mode_trade, mode_learn])
 
 
+np.set_printoptions(precision=3, suppress=True)
