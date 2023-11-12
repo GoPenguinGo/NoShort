@@ -14,12 +14,13 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
     Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
-import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
 from multiprocessing import Pool
 import pandas as pd
+
+np.set_printoptions(precision=3, suppress=True)
 
 # Table 1
 results = np.load('results.npz')

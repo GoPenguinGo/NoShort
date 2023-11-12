@@ -147,4 +147,3 @@ for mode_trade in modes_trade:
             scenarios.append([mode_trade, mode_learn])
 
 
-np.set_printoptions(precision=3, suppress=True)

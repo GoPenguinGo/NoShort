@@ -876,8 +876,8 @@ def simulate_cohorts_mean_vola(
     cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1]
     cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1]
 
-    cov_parti_dR = np.corrcoef(parti, dR)[0, 1]
-    cov_parti_zY = np.corrcoef(parti, dZ[keep_when:])[0, 1]
+    # cov_parti_dR = np.corrcoef(parti, dR)[0, 1]
+    # cov_parti_zY = np.corrcoef(parti, dZ[keep_when:])[0, 1]
 
     theta_save_matrix = np.array([
         Phi_bar_parti_1_matrix,
@@ -891,11 +891,6 @@ def simulate_cohorts_mean_vola(
         Delta_Phi_tilde_matrix,
     ])
 
-    # parti_group_matrix = np.array([
-    #     parti_age_group_matrix,
-    #     parti_wealth_group_matrix,
-    # ])
-
     cov_save_matrix = np.array([
         cov_theta_z_Y,
         cov_muS_z_Y,
@@ -905,10 +900,16 @@ def simulate_cohorts_mean_vola(
         cov_parti_wealth_share,
     ])
 
-    cov_parti_matrix = np.array([
-        cov_parti_dR,
-        cov_parti_zY
-    ])
+    cov_parti_matrix = np.array([])
+
+    windows = np.array([6, 24, 60])
+    R_cumu = np.cumsum(dR / dt)
+    for j, window in enumerate(windows):
+        R_window = R_cumu[window:] - R_cumu[:-window]
+        R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
+        parti_window = np.reshape(parti, (-1, window))[:, 0]
+        corr = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
+        cov_parti_matrix = np.append(cov_parti_matrix, corr)
 
     return (
         dR_matrix,
@@ -1447,8 +1448,8 @@ def simulate_mean_vola_mix_type(
     cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1]
     cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1]
 
-    cov_parti_dR = np.corrcoef(parti, dR)[0, 1]
-    cov_parti_zY = np.corrcoef(parti, dZ[keep_when:])[0, 1]
+    # cov_parti_dR = np.corrcoef(parti, dR)[0, 1]
+    # cov_parti_zY = np.corrcoef(parti, dZ[keep_when:])[0, 1]
 
     theta_save_matrix = np.array([
         Phi_bar_parti_1_matrix,
@@ -1471,10 +1472,16 @@ def simulate_mean_vola_mix_type(
         cov_parti_wealth_share,
     ])
 
-    cov_parti_matrix = np.array([
-        cov_parti_dR,
-        cov_parti_zY
-    ])
+    cov_parti_matrix = np.array([])
+
+    windows = np.array([6, 24, 60])
+    R_cumu = np.cumsum(dR / dt)
+    for j, window in enumerate(windows):
+        R_window = R_cumu[window:] - R_cumu[:-window]
+        R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
+        parti_window = np.reshape(parti, (-1, window))[:, 0]
+        corr = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
+        cov_parti_matrix = np.append(cov_parti_matrix, corr)
 
     return (
         dR_matrix,

@@ -17,7 +17,6 @@ from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, beta_
     rho_i_mix, cohort_type_size_mix
 from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
 from numba import jit
-import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
@@ -25,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 10
+# Mpath = 10
 keep_data = int(Nt - 200/dt)
 
 def simulate_mpath(i: int,
@@ -144,7 +143,7 @@ def simulate_mpath(i: int,
         cov_save_mean_vola_results[g] = cov_save_mean_vola
         parti_results[g] = parti_mean_vola
         cov_parti_results[g] = cov_parti_mean_vola
-    # covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
+    covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
 
     return (
         i,
@@ -161,8 +160,8 @@ def simulate_mpath(i: int,
         parti_wealth_group_mean_vola_results,
         # parti_age_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
-        # covariance_parti,
-        parti_results,
+        covariance_parti,
+        # parti_results,
         cov_parti_results,
     )
 
