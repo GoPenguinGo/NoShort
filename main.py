@@ -22,185 +22,102 @@ import pandas as pd
 
 np.set_printoptions(precision=3, suppress=True)
 
-# Table 1
-results = np.load('results_mean_vola.npz')
-file_list = results.files
-for file in file_list:
-    print(file)
-    print(np.average(results[file], axis=0))
+######################################
+#############  Table 1  ##############
+######################################
+# results = np.load('results_mean_vola.npz')
+# file_list = results.files
+# for file in file_list:
+#     print(file)
+#     print(np.average(results[file], axis=0))
 
-Nsce = 3
-Ncolumn = int(Nsce * 2)
-# Panel 1: mean vola of asset pricing values
-table_output = np.zeros((5, Ncolumn))
-# var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
-header = np.tile(['Mean', 'Std'], 2)
-# show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-for j, file in enumerate(file_list[1:6]):
-    var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-    for i in range(Nsce):
-        row_index = j
-        col_index = i * 2
-        table_output[row_index, col_index:col_index + 2] = var_average[i]
-print(tab.tabulate(table_output, headers=header, showindex=file_list[1:6], floatfmt=".3f", tablefmt='latex_raw'))
-
-# Panel 2: mean vola of theta state variables
-file = file_list[7]
-var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
-for j in range(N_row):
-    for i in range(Nsce):
-        row_index = j
-        col_index = i * 2
-        table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-
-# Panel 3: mean vola of sigma_S state variables
-file = file_list[8]
-var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
-for j in range(N_row):
-    for i in range(Nsce):
-        row_index = j
-        col_index = i * 2
-        table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-show_index = [r'$\tilde{\Phi}_t$',
-              r'$\tilde{\Phi}_t/\Bar{\Phi}_t$',
-              r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
-              r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
-print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-
-# Panel 4: covariance
-file = file_list[11]
-var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
-for j in range(N_row):
-    for i in range(Nsce):
-        row_index = j
-        col_index = i * 2
-        table_output[row_index, col_index] = var_average[i, j]
-show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
-              r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
-              r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
-              r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
-              r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
-              r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
-              ]
-print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-
-# Panel 5: participation rate in age groups
-file = file_list[9]
-var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
-for j in range(N_row):
-    for i in range(Nsce):
-        row_index = j
-        col_index = i * 2
-        table_output[row_index, col_index] = var_average[i, j]
+# Nsce = 3
+# Ncolumn = int(Nsce * 2)
+# # Panel 1: mean vola of asset pricing values
+# table_output = np.zeros((5, Ncolumn))
+# # var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
+# header = np.tile(['Mean', 'Std'], 2)
+# # show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+# for j, file in enumerate(file_list[1:6]):
+#     var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i * 2
+#         table_output[row_index, col_index:col_index + 2] = var_average[i]
+# print(tab.tabulate(table_output, headers=header, showindex=file_list[1:6], floatfmt=".3f", tablefmt='latex_raw'))
+#
+# # Panel 2: mean vola of theta state variables
+# file = file_list[7]
+# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+# table_output = np.zeros((N_row, Ncolumn))
+# for j in range(N_row):
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i * 2
+#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
+# show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
+#
+# # Panel 3: mean vola of sigma_S state variables
+# file = file_list[8]
+# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+# table_output = np.zeros((N_row, Ncolumn))
+# for j in range(N_row):
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i * 2
+#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
+# show_index = [r'$\tilde{\Phi}_t$',
+#               r'$\tilde{\Phi}_t/\Bar{\Phi}_t$',
+#               r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
+#               r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
+# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
+#
+# # Panel 4: covariance
+# file = file_list[11]
+# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+# table_output = np.zeros((N_row, Ncolumn))
+# for j in range(N_row):
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i * 2
+#         table_output[row_index, col_index] = var_average[i, j]
+# show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
+#               r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
+#               r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
+#               r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
+#               r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
+#               r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
+#               ]
+# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
+#
+# # Panel 5: participation rate in age groups
+# file = file_list[9]
+# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+# table_output = np.zeros((N_row, Ncolumn))
+# for j in range(N_row):
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i * 2
+#         table_output[row_index, col_index] = var_average[i, j]
 # show_index = [r'$0 < \text{Age} \leq 15$',
 #               r'$15 < \text{Age} \leq 35$',
 #               r'$35 < \text{Age} \leq 69$',
 #               r'$\text{Age} > 69$',
 #               ]
-print(tab.tabulate(table_output,
-                   # showindex=show_index,
-                   floatfmt=".3f", tablefmt='latex_raw'))
+# print(tab.tabulate(table_output,
+#                    showindex=show_index,
+#                    floatfmt=".3f", tablefmt='latex_raw'))
 
 
 
 # save data for the mix scenarios, and compare to complete and reentry
-Mpath_small = 400
-Nscenario = 3
-scenarios_short = scenarios[:Nscenario]
-theta_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
-popu_parti_mat = np.empty((Mpath_small, Nscenario, Nt), dtype=np.float32)
-r_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-Delta_bar_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-Delta_tilde_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-Phi_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
 
-dR_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-mu_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-sigma_S_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-beta_mat = np.zeros((Mpath_small, Nscenario, Nt), dtype=np.float32)
-parti_wealth_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
-parti_age_group_mat = np.zeros((Mpath_small, Nscenario, Nt, 4), dtype=np.float32)
-
-for i in range(Mpath_small):
-    print(i)
-    dZ_build = dZ_build_matrix[i]
-    dZ = dZ_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
-    for g, scenario in enumerate(scenarios_short):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        (
-            r,
-            theta,
-            f_c,
-            f_w,
-            Delta,
-            pi,
-            popu_parti,
-            Phi_parti,
-            Delta_bar_parti,
-            Delta_tilde_parti,
-            dR,
-            mu_S,
-            sigma_S,
-            beta,
-            invest_tracker,
-            parti_age_group,
-            parti_wealth_group,
-            # w_indiv,
-        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                        phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
-                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
-                        need_f='True',
-                        need_Delta='True',
-                        need_pi='True',
-                        )
-        # invest_tracker = pi > 0
-        # Delta_mat[i, g] = Delta
-        # pi_mat[i, g] = pi
-        theta_mat[i, g] = theta
-        r_mat[i, g] = r
-        popu_parti_mat[i, g] = popu_parti
-        Delta_bar_mat[i, g] = Delta_bar_parti
-        Delta_tilde_mat[i, g] = Delta_tilde_parti
-        Phi_mat[i, g] = Phi_parti
-        # cons_mat[i, g] = f_c / cohort_type_size_mat  # indiv consumption
-        # invest_tracker_mat[i, g] = invest_tracker
-
-        dR_mat[i, g] = dR
-        mu_S_mat[i, g] = mu_S
-        sigma_S_mat[i, g] = sigma_S
-        beta_mat[i, g] = beta
-
-        parti_wealth_group_mat[i, g] = parti_wealth_group
-        parti_age_group_mat[i, g] = parti_age_group
-
-np.savez('mat.npz',
-         theta=theta_mat,
-         r=r_mat,
-         popu_parti=popu_parti_mat,
-         mu_S=mu_S_mat,
-         sigma_S=sigma_S_mat,
-         Delta_bar=Delta_bar_mat,
-         Delta_tilde=Delta_tilde_mat)
-
-np.savez('mat_group.npz',
-         parti_wealth_group=parti_wealth_group_mat,
-         parti_age_group=parti_age_group_mat)
-
-n_scenarios_short = 3
+n_scenarios_short = 2
 scenarios_short = scenarios[:n_scenarios_short]
 
 phi_vector = np.arange(0, 1, 0.1)
@@ -227,33 +144,28 @@ T_hat_short = dt * Npre_short
 
 plt.rcParams["font.family"] = 'serif'
 
-# ######################################
-# ########## ONE RANDOM PATH ############
-# ############ GRAPH ONE ###############
-# ######################################
+######################################
+########## ONE RANDOM PATH ############
+############ GRAPH ONE ###############
+######################################
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
-theta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-popu_parti_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# market_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# survey_view_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-r_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-# belief_dispersion_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-Phi_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-
-dR_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-mu_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-sigma_S_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-beta_mat = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt), dtype=np.float32)
-
-Delta_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-pi_compare = np.empty((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-cons_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-wealth_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
-invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, n_phi_short, Nt, Ntype, Nc), dtype=np.float32)
+theta_compare = np.empty((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+popu_parti_compare = np.empty((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+r_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Phi_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+dR_mat = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+mu_S_mat = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+sigma_S_mat = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+beta_mat = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Delta_compare = np.empty((n_scenarios_short, 2, 2, Nt, Ntype, Nc), dtype=np.float32)
+pi_compare = np.empty((n_scenarios_short, 2, 2, Nt, Ntype, Nc), dtype=np.float32)
+cons_compare = np.zeros((n_scenarios_short, 2, 2, Nt, Ntype, Nc), dtype=np.float32)
+wealth_compare = np.zeros((n_scenarios_short, 2, 2, Nt, Ntype, Nc), dtype=np.float32)
+invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2,  Nt, Ntype, Nc), dtype=np.float32)
 
 cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
 for g, scenario in enumerate(scenarios_short):
@@ -262,98 +174,86 @@ for g, scenario in enumerate(scenarios_short):
     for i in range(2):
         dZ = dZ_Y_cases[i]
         log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
-        # log_Yt_mat = np.transpose(np.tile(log_Yt, (Nc, 1)))
         for j in range(2):
             dZ_SI = dZ_SI_cases[j]
-            for k, phi in enumerate(phi_vector_short):
-                (
-                    r,
-                    theta,
-                    f_c,
-                    f_w,
-                    Delta,
-                    pi,
-                    popu_parti,
-                    Phi_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                                phi,
-                                Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
-                                Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
-                                need_f='True',
-                                need_Delta='True',
-                                need_pi='True',
-                                )
-                # invest_tracker = pi > 0
-                Delta_compare[g, i, j, k] = Delta
-                pi_compare[g, i, j, k] = pi
-                theta_compare[g, i, j, k] = theta
-                r_compare[g, i, j, k] = r
-                # theta_mat = np.transpose(np.tile(theta, (Nc, 1)))
-                popu_parti_compare[g, i, j, k] = popu_parti
-                # market_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=f_c)
-                Delta_bar_compare[g, i, j, k] = Delta_bar_parti
-                Delta_tilde_compare[g, i, j, k] = Delta_tilde_parti
-                Phi_compare[g, i, j, k] = Phi_parti
-                # survey_view_compare[g, i, j, k] = np.average(Delta, axis=1, weights=cohort_type_size)
-                # belief_dispersion_compare[g, i, j, k] = np.std(Delta, axis=1)  # todo: maybe add weights
-                cons_compare[g, i, j, k] = f_c / cohort_type_size_mat
-                invest_tracker_compare[g, i, j, k] = invest_tracker
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                            phi,
+                            Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cohort_size,
+                            Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                            need_f='True',
+                            need_Delta='True',
+                            need_pi='True',
+                            )
+            # invest_tracker = pi > 0
+            Delta_compare[g, i, j] = Delta
+            pi_compare[g, i, j] = pi
+            theta_compare[g, i, j] = theta
+            r_compare[g, i, j] = r
+            popu_parti_compare[g, i, j] = parti
+            Delta_bar_compare[g, i, j] = Delta_bar_parti
+            Delta_tilde_compare[g, i, j] = Delta_tilde_parti
+            Phi_compare[g, i, j] = Phi_parti
+            cons_compare[g, i, j] = f_c / cohort_type_size_mat
+            invest_tracker_compare[g, i, j] = invest_tracker
+            dR_mat[g, i, j] = dR
+            mu_S_mat[g, i, j] = mu_S
+            sigma_S_mat[g, i, j] = sigma_S
+            beta_mat[g, i, j] = beta
 
-                dR_mat[g, i, j, k] = dR
-                mu_S_mat[g, i, j, k] = mu_S
-                sigma_S_mat[g, i, j, k] = sigma_S
-                beta_mat[g, i, j, k] = beta
 
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
-
-
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)
-Delta_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-pi_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-cons_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-switch_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
-parti_time_series = np.zeros((n_scenarios_short, 2, 2, n_phi_short, nn, length), dtype=np.float32)
+Delta_time_series = np.zeros((n_scenarios_short, 2, 2, nn, length), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios_short, 2, 2, nn, length), dtype=np.float32)
+cons_time_series = np.zeros((n_scenarios_short, 2, 2, nn, length), dtype=np.float32)
+switch_time_series = np.zeros((n_scenarios_short, 2, 2, nn, length), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios_short, 2, 2, nn, length), dtype=np.float32)
 for o in range(n_scenarios_short):
     for i in range(2):
         for j in range(2):
-            for l in range(n_phi_short):
-                pi = pi_compare[o, i, j, l]
-                cons = cons_compare[o, i, j, l]
-                Delta = Delta_compare[o, i, j, l]
-                for m in range(nn):
-                    start = int((m + 1) * 100 * (1 / dt))
-                    starts[m] = start * dt
-                    for n in range(length):
-                        if n < start:
-                            pi_time_series[o, i, j, l, m, n] = np.nan
-                            cons_time_series[o, i, j, l, m, n] = np.nan
-                            Delta_time_series[o, i, j, l, m, n] = np.nan
-                        else:
-                            cohort_rank = length - (n - start) - 1
-                            Delta_time_series[o, i, j, l, m, n] = Delta[n, cohort_rank]
-                            pi_time_series[o, i, j, l, m, n] = pi[n, cohort_rank]
-                            cons_time_series[o, i, j, l, m, n] = cons[n, cohort_rank]
-                    parti = pi_time_series[o, i, j, l, m] > 0
-                    switch = abs(parti[1:] ^ parti[:-1])
-                    sw = np.append(switch, 0)
-                    parti = np.where(sw == 1, 0.5, parti)
-                    switch = np.insert(switch, 0, 0)
-                    parti = np.where(switch == 1, 0.5, parti)
-                    parti_time_series[o, i, j, l, m] = parti
-                    switch_time_series[o, i, j, l, m] = sw
+            pi = pi_compare[o, i, j]
+            cons = cons_compare[o, i, j]
+            Delta = Delta_compare[o, i, j]
+            for m in range(nn):
+                start = int((m + 1) * 100 * (1 / dt))
+                starts[m] = start * dt
+                for n in range(length):
+                    if n < start:
+                        pi_time_series[o, i, j, m, n] = np.nan
+                        cons_time_series[o, i, j, m, n] = np.nan
+                        Delta_time_series[o, i, j, m, n] = np.nan
+                    else:
+                        cohort_rank = length - (n - start) - 1
+                        Delta_time_series[o, i, j, m, n] = Delta[n, cohort_rank]
+                        pi_time_series[o, i, j, m, n] = pi[n, cohort_rank]
+                        cons_time_series[o, i, j, m, n] = cons[n, cohort_rank]
+                parti = pi_time_series[o, i, j, m] > 0
+                switch = abs(parti[1:] ^ parti[:-1])
+                sw = np.append(switch, 0)
+                parti = np.where(sw == 1, 0.5, parti)
+                switch = np.insert(switch, 0, 0)
+                parti = np.where(switch == 1, 0.5, parti)
+                parti_time_series[o, i, j, m] = parti
+                switch_time_series[o, i, j, m] = sw
 
 # ######################################
 # ########### Figure 1 & IA1 #############
