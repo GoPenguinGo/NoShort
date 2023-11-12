@@ -22,26 +22,50 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-# Mpath = 5000
+Mpath = 10
 
-def simulate_mpath(i: int,
-                   Nscenario=2,
-                   ):
+
+# noinspection PyTypeChecker
+def simulate_path(i: int,
+                  Nscenario=2,
+                  ):
     print(i)
     # Initialize results for the current Mpath
-    dR_mean_vola_results = np.zeros((Nscenario, 2))
-    theta_mean_vola_results = np.zeros((Nscenario, 2))
-    r_mean_vola_results = np.zeros((Nscenario, 2))
-    mu_S_mean_vola_results = np.zeros((Nscenario, 2))
-    sigma_S_mean_vola_results = np.zeros((Nscenario, 2))
-    beta_mean_vola_results = np.zeros((Nscenario, 2))
-    theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
-    sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
-    # parti_group_mean_vola_results = np.zeros((Nscenario, 2, 4))
-    parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
-    parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 10))
-    parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 10))
-    cov_save_mean_vola_results = np.zeros((Nscenario, 6))
+    # for fig 4:
+    age_cut = 100
+    Nc_cut = int(age_cut / dt)
+    data_point = np.arange(0, Nc_cut, 15)
+    invest_results = 0
+    Delta_results = np.zeros((Nscenario, len(data_point)), dtype=np.float32)
+    t_gap = int(2 / dt)  # 2-year window
+    N_cut = int(Nc - t_gap)
+    parti_rate_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    belief_pre_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
+    belief_post_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
+
+    # for figure 9
+    popu_cummu = np.cumsum(cohort_size)
+    popu = 0.1
+    cutoff_age_old_below = np.searchsorted(popu_cummu, popu)
+    cutoff_age_young = np.searchsorted(popu_cummu, 1 - popu)
+    belief_popu_old_results = 0
+    belief_popu_young_results = 0
+    P_old_results = 0
+    P_young_results = 0
+    Wealthshare_old_results = 0
+    Wealthshare_young_results = 0
+
+    # for figure 8
+    popu_5 = 0.5
+    cutoff_age_old_below_5 = np.searchsorted(cummu_popu, popu_5)
+    cutoff_age_young_5 = np.searchsorted(cummu_popu, 1 - popu_5)
+    Phi_results = np.zeros((Nscenario, Nt), dtype=np.float32)
+    Delta_bar_results = np.zeros((Nscenario, Nt), dtype=np.float32)
+    belief_popu_results = 0
+    belief_f_old_results = np.zeros((Nscenario, Nt), dtype=np.float32)
+    belief_f_young_results = np.zeros((Nscenario, Nt), dtype=np.float32)
+    Phi_old_results = np.zeros((Nscenario, Nt), dtype=np.float32)
+    Phi_young_results = np.zeros((Nscenario, Nt), dtype=np.float32)
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -57,94 +81,218 @@ def simulate_mpath(i: int,
         mode_trade = scenario[0]
         mode_learn = scenario[1]
         (
-            dR_mean_vola,
-            theta_mean_vola,
-            r_mean_vola,
-            mu_S_mean_vola,
-            sigma_S_mean_vola,
-            beta_mean_vola,
-            theta_save_mean_vola,
-            sigma_S_save_mean_vola,
-            # parti_group_mean_vola,
-            parti_age_group_mean_vola,
-            parti_wealth_group_mean_vola,
-            parti_age_wealth_group_mean_vola,
-            cov_save_mean_vola,
-        ) = simulate_SI_mean_vola(
-            mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-            phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
-            Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
-        )
+            r,
+            theta,
+            f_c,
+            Delta,
+            pi,
+            parti,
+            Phi_parti,
+            Delta_bar_parti,
+            Delta_tilde_parti,
+            dR,
+            mu_S,
+            sigma_S,
+            beta,
+            invest_tracker,
+            parti_age_group,
+            parti_wealth_group,
+        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                        phi,
+                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
+                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                        need_f='True',
+                        need_Delta='True',
+                        need_pi='True',
+                        )
 
-        dR_mean_vola_results[g] = dR_mean_vola
-        theta_mean_vola_results[g] = theta_mean_vola
-        r_mean_vola_results[g] = r_mean_vola
-        mu_S_mean_vola_results[g] = mu_S_mean_vola
-        sigma_S_mean_vola_results[g] = sigma_S_mean_vola
-        beta_mean_vola_results[g] = beta_mean_vola
-        theta_save_mean_vola_results[g] = theta_save_mean_vola
-        sigma_S_save_mean_vola_results[g] = sigma_S_save_mean_vola
-        # parti_group_mean_vola_results[g] = parti_group_mean_vola
-        parti_age_group_mean_vola_results[g] = parti_age_group_mean_vola
-        parti_wealth_group_mean_vola_results[g] = parti_wealth_group_mean_vola
-        parti_age_wealth_group_mean_vola_results[g] = parti_age_wealth_group_mean_vola
-        cov_save_mean_vola_results[g] = cov_save_mean_vola
+        Delta_results[g] = np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:][data_point]
+        if g == 1:
+            invest_results = np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:][data_point]
+
+            belief_popu_old_results = np.average(
+                Delta[:, 0, :cutoff_age_old_below],
+                weights=cohort_type_size[0, :cutoff_age_old_below],
+                axis=1)
+            belief_popu_young_results = np.average(
+                Delta[:, 0, cutoff_age_young:],
+                weights=cohort_type_size[0, cutoff_age_young:],
+                axis=1)
+            P_old_results = np.average(
+                invest_tracker[:, 0, :cutoff_age_old_below],
+                weights=cohort_type_size[0, :cutoff_age_old_below],
+                axis=1) / popu
+            P_young_results = np.average(
+                invest_tracker[:, 0, cutoff_age_young:],
+                weights=cohort_type_size[0, cutoff_age_young:],
+                axis=1) / popu
+            Wealthshare_old_results = np.sum(
+                np.sum(
+                    f_c[:, :, :cutoff_age_old_below] * dt,
+                    axis=2), axis=1
+            )
+            Wealthshare_young_results = np.sum(
+                np.sum(
+                    f_c[:, :, cutoff_age_young:] * dt,
+                    axis=2), axis=1
+            )
+
+        for mm in range(n_age_cutoffs):
+            age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
+            age_top = cutoffs_age[mm]
+            weights_group = cohort_type_size[0, age_bottom:age_top]
+            belief_pre_results[g, mm] = np.average(Delta[:-t_gap, 0, age_bottom:age_top],
+                                                   weights=weights_group,
+                                                   axis=1)
+            belief_post_results[g, mm] = np.average(
+                Delta[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
+                weights=weights_group,
+                axis=1)
+            if g == 1:
+                parti_rate_results[mm] = np.average(invest_tracker[:-t_gap, 0, age_bottom:age_top],
+                                                    weights=weights_group, axis=1)
+
+        Phi_results[g] = Phi_parti
+        Delta_bar_results[g] = Delta_bar_parti
+        if g == 0:
+            belief_popu_results = np.average(Delta[:, 0], weights=cohort_type_size[0],
+                                             axis=1)  # same average belief as phi == 0
+            belief_f_old_results[g] = np.sum(
+                np.sum(Delta[:, :, :cutoff_age_old_below_5] * f_c[:, :, :cutoff_age_old_below_5], axis=2
+                       ), axis=1
+            ) / np.sum(
+                np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=2
+                       ), axis=1
+            )
+            belief_f_young_results[g] = np.sum(
+                np.sum(Delta[:, :, cutoff_age_young_5:] * f_c[:, :, cutoff_age_young_5:], axis=2
+                       ), axis=1
+            ) / np.sum(
+                np.sum(f_c[:, :, cutoff_age_young_5:], axis=2
+                       ), axis=1
+            )
+            Phi_old_results[g] = np.sum(
+                np.sum(
+                    f_c[:, :, :cutoff_age_old_below_5] * dt,
+                    axis=2
+                ),
+                axis=1
+            )
+            Phi_young_results[g] = np.sum(
+                np.sum(
+                    f_c[:, :, cutoff_age_young_5:] * dt,
+                    axis=2
+                ),
+                axis=1
+            )
+        else:
+            belief_f_old_results[g] = np.sum(
+                np.sum(Delta[:, :, :cutoff_age_old_below_5] * invest_tracker[:, :, :cutoff_age_old_below_5] *
+                       f_c[:, :, :cutoff_age_old_below_5],
+                       axis=2
+                       ), axis=1
+            ) / np.sum(
+                np.sum(f_c[:, :, :cutoff_age_old_below_5] * invest_tracker[:, :, :cutoff_age_old_below_5], axis=2
+                       ), axis=1
+            )
+            belief_f_young_results[g] = np.sum(
+                np.sum(Delta[:, :, cutoff_age_young_5:] * invest_tracker[:, :, cutoff_age_young_5:] *
+                       f_c[:, :, cutoff_age_young_5:],
+                       axis=2
+                       ), axis=1
+            ) / np.sum(
+                np.sum(f_c[:, :, cutoff_age_young_5:] * invest_tracker[:, :, cutoff_age_young_5:], axis=2
+                       ), axis=1
+            )
+            Phi_old_results[g] = np.sum(
+                np.sum(
+                    f_c[:, :, :cutoff_age_old_below_5] * invest_tracker[:, :, :cutoff_age_old_below_5] * dt,
+                    axis=2
+                ),
+                axis=1
+            )
+            Phi_young_results[g] = np.sum(
+                np.sum(
+                    f_c[:, :, cutoff_age_young_5:] * invest_tracker[:, :, cutoff_age_young_5:] * dt,
+                    axis=2
+                ),
+                axis=1
+            )
 
     return (
         i,
-        dR_mean_vola_results,
-        theta_mean_vola_results,
-        r_mean_vola_results,
-        mu_S_mean_vola_results,
-        sigma_S_mean_vola_results,
-        beta_mean_vola_results,
-        theta_save_mean_vola_results,
-        sigma_S_save_mean_vola_results,
-        # parti_group_mean_vola_results,
-        parti_age_group_mean_vola_results,
-        parti_wealth_group_mean_vola_results,
-        parti_age_wealth_group_mean_vola_results,
-        cov_save_mean_vola_results,
+        Delta_results,
+        invest_results,
+        belief_pre_results,
+        belief_post_results,
+        parti_rate_results,
+        belief_popu_old_results,
+        belief_popu_young_results,
+        P_old_results,
+        P_young_results,
+        Wealthshare_old_results,
+        Wealthshare_young_results,
+        Phi_results,
+        Delta_bar_results,
+        belief_popu_results,
+        belief_f_old_results,
+        belief_f_young_results,
+        Phi_old_results,
+        Phi_young_results
     )
+
 
 # Create a Pool of processes for parallel execution
 # Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
     with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
-        results = [executor.submit(simulate_mpath, i) for i in range(Mpath)]
+        results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
 
     # Retrieve results from parallel processes
     for result in results:
-        i, dR_mean_vola_results, \
-            theta_mean_vola_results, \
-            r_mean_vola_results, \
-            mu_S_mean_vola_results, \
-            sigma_S_mean_vola_results, \
-            beta_mean_vola_results, \
-            theta_save_mean_vola_results, \
-            sigma_S_save_mean_vola_results, \
-            parti_age_group_mean_vola_results,\
-            parti_wealth_group_mean_vola_results,\
-            parti_age_wealth_group_mean_vola_results,\
-            cov_save_mean_vola_results = result.result()
+        i, \
+            Delta_results, \
+            invest_results, \
+            belief_pre_results, \
+            belief_post_results, \
+            parti_rate_results, \
+            belief_popu_old_results, \
+            belief_popu_young_results, \
+            P_old_results, \
+            P_young_results, \
+            Wealthshare_old_results, \
+            Wealthshare_young_results, \
+            Phi_results, \
+            Delta_bar_results, \
+            belief_popu_results, \
+            belief_f_old_results, \
+            belief_f_young_results, \
+            Phi_old_results, \
+            Phi_young_results = result.result()
 
         data = {
             "i": i,
-            "dR_mean_vola": dR_mean_vola_results,
-            "theta_mean_vola": theta_mean_vola_results,
-            "r_mean_vola": r_mean_vola_results,
-            "mu_S_mean_vola": mu_S_mean_vola_results,
-            "sigma_S_mean_vola": sigma_S_mean_vola_results,
-            "beta_mean_vola": beta_mean_vola_results,
-            "theta_save_mean_vola": theta_save_mean_vola_results,
-            "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
-            "parti_age_group_mean_vola":  parti_age_group_mean_vola_results,
-            "parti_wealth_group_mean_vola":  parti_wealth_group_mean_vola_results,
-            "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
-            "cov_save_mean_vola": cov_save_mean_vola_results
+            "fig4_abs_Delta": Delta_results,
+            "fig4_parti_prob": invest_results,
+            "fig4_belief_pre": belief_pre_results,
+            "fig4_belief_post": belief_post_results,
+            "fig4_parti_rate": parti_rate_results,
+            "fig9_old_belief": belief_popu_old_results,
+            "fig9_young_belief": belief_popu_young_results,
+            "fig9_old_parti": P_old_results,
+            "fig9_young_parti": P_young_results,
+            "fig9_old_fw": Wealthshare_old_results,
+            "fig9_young_fw": Wealthshare_young_results,
+            "fig8_Phi": Phi_results,
+            "fig8_Delta_bar": Delta_bar_results,
+            "fig8_belief": belief_popu_results,
+            "fig8_old_belief_fc": belief_f_old_results,
+            "fig8_young_belief_fc": belief_f_young_results,
+            "fig8_Phi_old": Phi_old_results,
+            "fig8_Phi_young": Phi_young_results
         }
         results_list.append(data)
 
@@ -154,6 +302,7 @@ def main():
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
     np.savez("results.npz", **results_dict)
+
 
 if __name__ == '__main__':
     main()
