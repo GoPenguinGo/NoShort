@@ -208,7 +208,7 @@ def simulate_cohorts_SI(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
-        X = np.append(X[:, 1:], X_t * np.ones((1, 1, 1)), axis=1)
+        X = np.append(X[:, 1:],  X_t * np.ones((1, 1)), axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
