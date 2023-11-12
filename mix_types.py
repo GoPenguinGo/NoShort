@@ -25,11 +25,11 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 100
+Mpath = 10
 keep_data = int(Nt - 200/dt)
 
 def simulate_mpath(i: int,
-                   Nscenario=2
+                   Nscenario=3
                    ):
     print(i)
     # Initialize results for the current Mpath

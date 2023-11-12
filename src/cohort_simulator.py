@@ -208,7 +208,7 @@ def simulate_cohorts_SI(
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
-        X = np.append(X[:, 1:], X_t * alpha_i, axis=1)
+        X = np.append(X[:, 1:], X_t * np.ones((1, 1, 1)), axis=1)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -351,135 +351,6 @@ def simulate_cohorts_SI(
             pi_st = (d_eta_st + theta_t) / sigma_S_t
             # age_t = np.sum(cohort_size * tau * invest)
             # n_parti_t = np.sum(invest) / Nc
-
-        # elif mode_trade == 'partial_constraint_rich':  #todo: edit the cases, think hard about invest_tracker, participation rate, etc.
-        #     can_short_tracker = np.append(can_short_tracker[1:], 0)
-        #     if mode_learn == 'disappointment':
-        #         possible_cons_share = f_st * dt * invest_tracker
-        #         possible_delta_st = Delta_s_t * invest_tracker
-        #         indiv_w_possible = w_indiv_st * invest_tracker
-        #         cohort_size_possible = cohort_size * invest_tracker
-        #         wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
-        #                                       top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-        #         can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-        #         can_short_tracker = (can_short_tracker + can_short >= 1)
-        #
-        #         lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-        #         theta_t = bisection_partial_constraint(
-        #             solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-        #             sigma_Y
-        #         )
-        #         a = Delta_s_t + theta_t
-        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
-        #         switch_P_to_N = invest_tracker * (1 - invest)
-        #         invest_tracker = invest * invest_tracker  # update invest tracker
-        #
-        #         # tau_info and V_hat has to change for the agents who switched to N
-        #         Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
-        #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
-        #
-        #     elif mode_learn == 'reentry':
-        #         possible_cons_share = f_st * dt
-        #         possible_delta_st = Delta_s_t
-        #         indiv_w_possible = w_indiv_st
-        #         cohort_size_possible = cohort_size
-        #         wealth_cutoff = find_the_rich(indiv_w_possible, cohort_size_possible,
-        #                                       top)  # find the cohorts that make the richest 1% pupolation in the current period that are still in the market
-        #         can_short = indiv_w_possible >= wealth_cutoff  # these cohorts can short in this period
-        #         can_short_tracker = (can_short_tracker + can_short >= 1)
-        #
-        #         lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-        #         theta_t = bisection_partial_constraint(
-        #             solve_theta_partial_constraint, -50, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-        #             sigma_Y
-        #         )
-        #         a = Delta_s_t + theta_t
-        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
-        #         switch_P_to_N = invest_tracker * (1 - invest)
-        #         switch_N_to_P = np.maximum(invest - invest_tracker, 0)
-        #         # tau_info and V_hat has to change for the agents who switched to N
-        #         switch = switch_N_to_P + switch_P_to_N
-        #         invest_tracker = invest
-        #
-        #         Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + np.append(V_st_N[1:], Vhat) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
-        #         tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
-        #
-        #     else:
-        #         print('mode_learn not found')
-        #         exit()
-        #     d_eta_st = a * invest_tracker - theta_t
-        #     invest_fst = invest_tracker * f_st * dt
-        #     popu_parti_t = np.sum(cohort_size * invest_tracker)
-        #     f_parti_t = np.sum(invest_fst)
-        #     Delta_bar_parti_t = np.sum(Delta_s_t * invest_fst) / f_parti_t
-        #     pi_st = (d_eta_st + theta_t) / sigma_S
-        #     age_t = np.sum(cohort_size * tau * invest_tracker)
-        #     n_parti_t = np.sum(invest_tracker) / Nc
-        #
-        # elif mode_trade == 'partial_constraint_old':
-        #     can_short_tracker = np.append(can_short_tracker[:, 1:], np.zeros((Ntype, 1)), axis=1)
-        #
-        #     if mode_learn == 'disappointment':
-        #         possible_cons_share = f_c_ist * dt * invest_tracker
-        #         possible_delta_st = Delta_s_t * invest_tracker
-        #         can_short_possible = (tau >= old_limit)
-        #         can_short_tracker = can_short_possible * invest_tracker
-        #
-        #         lowest_bound = lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound for theta among active investors
-        #         theta_t = bisection_partial_constraint(
-        #             solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-        #             sigma_Y
-        #         )
-        #         a = Delta_s_t + theta_t
-        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
-        #         switch_P_to_N = invest_tracker * (1 - invest)
-        #         invest_tracker = invest * invest_tracker  # update invest tracker
-        #
-        #         # tau_info and V_hat has to change for the agents who switched to N
-        #         Vhat_vector = np.append(V_st_P[1:], Vhat) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset initial variance
-        #         tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock
-        #
-        #     elif mode_learn == 'reentry':
-        #         possible_cons_share = f_c_ist * dt
-        #         possible_delta_st = Delta_s_t
-        #         can_short_tracker = (tau >= old_limit)
-        #
-        #         lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
-        #         theta_t = bisection_partial_constraint(
-        #             solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-        #             sigma_Y
-        #         )
-        #         a = Delta_s_t + theta_t
-        #         invest = 1 - (a < 0) * (can_short_tracker < 1)
-        #         switch_P_to_N = invest_tracker * (1 - invest)
-        #         switch_N_to_P = np.maximum(invest - invest_tracker, 0)
-        #         # tau_info and V_hat has to change for the agents who switched to N
-        #         switch = switch_N_to_P + switch_P_to_N
-        #         invest_tracker = invest
-        #
-        #         Vhat_vector = np.append(V_st_P[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + np.append(V_st_N[:, 1:], Vhat* np.ones((Ntype, 1)), axis=1) * switch_N_to_P + Vhat_vector * (1 - switch)  # reset initial variance
-        #         tau_info = dt * switch + tau_info * (1 - switch)  # reset clock
-        #     else:
-        #         print('mode_learn not found')
-        #         exit()
-        #
-        #     d_eta_st = a * invest_tracker - theta_t
-        #     invest_fc_st = invest_tracker * f_c_ist * dt
-        #     invest_fw_st = invest_tracker * f_w_ist * dt
-        #     popu_parti_t = np.sum(cohort_type_size * invest_tracker)
-        #     fc_parti_t = np.sum(invest_fc_st)
-        #     fw_parti_t = np.sum(invest_fw_st)
-        #     Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
-        #     Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-        #     sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
-        #     pi_st = (d_eta_st + theta_t) / sigma_S_t
-        #     # age_t = np.sum(cohort_size * tau * invest_tracker)
-        #     # n_parti_t = np.sum(invest_tracker) / Nc
-        #     popu_can_short_t = np.sum(cohort_type_size * can_short_tracker)
-        #     Phi_can_short_t = np.sum(can_short_tracker * f_c_ist * dt)
-        #     short = pi_st < 0
-        #     Phi_short_t = np.sum(short * f_c_ist * dt)
-        #     popu_short_t = np.sum(cohort_type_size * short)
         else:
             print('mode_trade not found')
             exit()
@@ -533,13 +404,6 @@ def simulate_cohorts_SI(
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
                 parti_wealth_group[i, j] = np.average(invest_tracker[within_group],
                                                       weights=cohort_type_size[within_group])
-        # if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-        #     popu_can_short[i] = popu_can_short_t
-        #     popu_short[i] = popu_short_t
-        #     Phi_can_short[i] = Phi_can_short_t
-        #     Phi_short[i] = Phi_short_t
-        # switch_P_to_N_ts[i] = np.sum(switch_P_to_N)
-        # switch_N_to_P_ts[i] = np.sum(switch_N_to_P)
 
     return (
         r,
@@ -713,10 +577,10 @@ def simulate_cohorts_mean_vola(
     parti_age_group = np.ones((Nt - keep_when, 4))
     N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
-    ave_age_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
-    ave_belief_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
-    wealth_groups = np.linspace(1, 0, N_wealth_group+1)
-    parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
+    # ave_age_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+    # ave_belief_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+    # wealth_groups = np.linspace(1, 0, N_wealth_group+1)
+    # parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
     # upperbound = np.arange(10,55,5)
     # theta_t_matrix = np.zeros((Nt, len(upperbound)))
     # age = np.zeros(Nt)
@@ -732,10 +596,10 @@ def simulate_cohorts_mean_vola(
     dR_t = 0
     mu_S_t = 0
     sigma_S_t = 0
-    r_t = 0
-    pi_st = 0
-    w_indiv_ist = 0
-    parti_window = int(3 / dt)
+    # r_t = 0
+    # pi_st = 0
+    # w_indiv_ist = 0
+    # parti_window = int(3 / dt)
     wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
@@ -763,7 +627,7 @@ def simulate_cohorts_mean_vola(
         f_c_ist = f_w_ist * beta_i / beta_t
 
         w_indiv_ist = f_w_ist / cohort_type_size * dt
-        c_indiv_ist = f_c_ist / cohort_type_size * dt
+        # c_indiv_ist = f_c_ist / cohort_type_size * dt
 
         # Wealth
         # w_t = Y[i] / beta_t  # total wealth at time t
@@ -982,20 +846,6 @@ def simulate_cohorts_mean_vola(
                     #     parti_age_wealth_group[ii, j, jj] = np.sum(invest_age * total) / np.sum(total)
             # if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             #     Phi_parti[ii] = fc_parti_t
-    #         if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-    #             popu_can_short[ii] = popu_can_short_t
-    #             popu_short[ii] = popu_short_t
-    #             Phi_can_short[ii] = Phi_can_short_t
-    #             Phi_short[ii] = Phi_short_t
-    #         # parti_rate = invest_tracker * cohort_size
-    #         # belief = (Delta_s_t * sigma_Y + mu_Y)
-    #         for j in range(4):
-    #             if mode_trade != 'complete':
-    #                 popu_age[ii, j] = np.average(invest_tracker[cutoffs[j + 1]:cutoffs[j]], weights=cohort_size[cutoffs[j + 1]:cutoffs[j]])
-    #             wealthshare_age[ii, j] = np.sum(f_st[cutoffs[j + 1]:cutoffs[j]] * dt)
-    #         # var_save[ii] = [var_cons_cohort_parti_t, var_cons_indiv_parti_t,
-    #         #                var_Delta_cohort_parti_t, var_Delta_indiv_parti_t]
-    # # var_save_matrix = np.mean(var_save, axis=0)
 
     dR_matrix = np.array([np.mean(dR/dt), np.std(dR/dt)])
     theta_matrix = np.array([np.mean(theta), np.std(theta)])
@@ -1131,7 +981,7 @@ def simulate_cohorts_mix_type(
     # Initializing variables
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1))
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
-    top = np.array([1, 0.75, 0.5, 0.25, 0])
+    # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
     Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
 
@@ -1175,11 +1025,11 @@ def simulate_cohorts_mix_type(
 
 
         X_parts = tax * np.exp(-tax * tau) * X * beta_cohort_type * eta_st_eta_ss * dt    # equation (18)
-        X_t = np.sum(X_parts) / ( 1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        X_t = np.sum(X_parts) / (1 - tax * dt)  # equation (18)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
         # eta_bar_t = np.sum(eta_bar_parts)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, :, 1:], append_init, axis=2)
-        X = np.append(X[:, :, 1:], X_t * alpha_i, axis=2)
+        X = np.append(X[:, :, 1:], X_t * np.ones((1, 1, 1)), axis=2)
         X = X / X_t  # rescale, does not change the relative magnitude of each cohort
         # todo: eta_bar_t goes to 0 too quickly if (1) mode != 'comp', and (2) initial window very small
         #  eta_bar_t is the denominator; it creates issues if too close to 0
@@ -1437,8 +1287,8 @@ def simulate_mean_vola_mix_type(
 
         beta_t = np.sum(f_w_ist * beta_i) * dt
         f_c_ist = f_w_ist * beta_i / beta_t
-        w_indiv_ist = f_w_ist / cohort_type_size
-        c_indiv_ist = f_c_ist / cohort_type_size
+        w_indiv_ist = f_w_ist / cohort_type_size * dt
+        # c_indiv_ist = f_c_ist / cohort_type_size * dt
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
         else:
@@ -1504,7 +1354,7 @@ def simulate_mean_vola_mix_type(
         Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
         Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
         sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
-        pi_st = (d_eta_st + theta_t) / sigma_S_t
+        # pi_st = (d_eta_st + theta_t) / sigma_S_t
         # age_t = np.sum(cohort_size * tau * invest_tracker)
         # n_parti_t = np.sum(invest_tracker) / Nc
         # popu_can_short_t = np.sum(cohort_type_size * can_short_tracker)
@@ -1543,14 +1393,15 @@ def simulate_mean_vola_mix_type(
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
             # wealth_cutoffs = find_the_rich_mix(
-            #     # w_indiv_ist,
-            #     c_indiv_ist,
+            #     w_indiv_ist,
+            #     # c_indiv_ist,
             #     cohort_type_size,
             #     wealth_groups,
             # )
+            # print(wealth_cutoffs)
             for l in range(N_wealth_group):
-                within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
-                parti_wealth_group[i, j] = np.average(invest_tracker[within_group],
+                within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
+                parti_wealth_group[ii, l] = np.average(invest_tracker[within_group],
                                                       weights=cohort_type_size[within_group])
             for j in range(4):
                 invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
@@ -1584,7 +1435,7 @@ def simulate_mean_vola_mix_type(
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
+    # Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
     # parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
     parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
