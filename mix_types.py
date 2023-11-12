@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 10
+# Mpath = 10
 keep_data = int(Nt - 200/dt)
 
 def simulate_mpath(i: int,
@@ -45,7 +45,7 @@ def simulate_mpath(i: int,
     # parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 4))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
     parti_results = np.zeros((Nscenario, keep_data))
-    cov_parti_results = np.zeros((Nscenario, 3))
+    cov_parti_results = np.zeros((Nscenario, 2, 3))
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -199,14 +199,14 @@ def main():
             "mu_S_mean_vola": mu_S_mean_vola_results,
             "sigma_S_mean_vola": sigma_S_mean_vola_results,
             "beta_mean_vola": beta_mean_vola_results,
-            "theta_save_mean_vola": theta_save_mean_vola_results,
+            "theta_compo_mean_vola": theta_save_mean_vola_results,
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
-            "parti_age_group_mean_vola": parti_age_group_mean_vola_results,
-            "parti_wealth_group_mean_vola": parti_wealth_group_mean_vola_results,
+            "parti_age_group": parti_age_group_mean_vola_results,
+            "parti_wealth_group": parti_wealth_group_mean_vola_results,
             # "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
-            "cov_save_mean_vola": cov_save_mean_vola_results,
+            "cov_list": cov_save_mean_vola_results,
             "cov_parti_between": covariance_parti,
-            "cov_parti_mean_vola": cov_parti_results
+            "cov_parti": cov_parti_results
         }
         results_list.append(data)
 
