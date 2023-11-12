@@ -138,7 +138,7 @@ def simulate_cohorts_SI(
     else:
         pi = 0
 
-    quartiles = np.array([1, 0.75, 0.5, 0.25, 0])
+    # quartiles = np.array([1, 0.75, 0.5, 0.25, 0])
     Phi_parti = np.ones((Nt))
     invest_mat = np.ones((Nt, Ntype, Nc), dtype=int)
     parti_wealth_group = np.ones((Nt, 4))
