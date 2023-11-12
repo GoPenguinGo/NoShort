@@ -900,16 +900,25 @@ def simulate_cohorts_mean_vola(
         cov_parti_wealth_share,
     ])
 
-    cov_parti_matrix = np.array([])
+    cov_parti_matrix1 = np.array([])
+    cov_parti_matrix2 = np.array([])
 
     windows = np.array([6, 24, 60])
-    R_cumu = np.cumsum(dR / dt)
+    R_cumu = np.cumsum(dR)
     for j, window in enumerate(windows):
         R_window = R_cumu[window:] - R_cumu[:-window]
+        r_reshape = np.reshape(r, (-1, window))
+        r_window_gap = np.sum(r_reshape, axis=1)[:-1]
         R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
         parti_window = np.reshape(parti, (-1, window))[:, 0]
-        corr = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
-        cov_parti_matrix = np.append(cov_parti_matrix, corr)
+        corr1 = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
+        corr2 = np.corrcoef(R_window_gap - r_window_gap, parti_window[:-1])[0, 1]
+        cov_parti_matrix1 = np.append(cov_parti_matrix1, corr1)
+        cov_parti_matrix2 = np.append(cov_parti_matrix2, corr2)
+    cov_parti_matrix = np.array([
+        cov_parti_matrix1,
+        cov_parti_matrix2
+    ])
 
     return (
         dR_matrix,
@@ -1472,16 +1481,25 @@ def simulate_mean_vola_mix_type(
         cov_parti_wealth_share,
     ])
 
-    cov_parti_matrix = np.array([])
+    cov_parti_matrix1 = np.array([])
+    cov_parti_matrix2 = np.array([])
 
     windows = np.array([6, 24, 60])
-    R_cumu = np.cumsum(dR / dt)
+    R_cumu = np.cumsum(dR)
     for j, window in enumerate(windows):
         R_window = R_cumu[window:] - R_cumu[:-window]
+        r_reshape = np.reshape(r, (-1, window))
+        r_window_gap = np.sum(r_reshape, axis=1)[:-1]
         R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
         parti_window = np.reshape(parti, (-1, window))[:, 0]
-        corr = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
-        cov_parti_matrix = np.append(cov_parti_matrix, corr)
+        corr1 = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
+        corr2 = np.corrcoef(R_window_gap - r_window_gap, parti_window[:-1])[0, 1]
+        cov_parti_matrix1 = np.append(cov_parti_matrix1, corr1)
+        cov_parti_matrix2 = np.append(cov_parti_matrix2, corr2)
+    cov_parti_matrix = np.array([
+        cov_parti_matrix1,
+        cov_parti_matrix2
+    ])
 
     return (
         dR_matrix,
