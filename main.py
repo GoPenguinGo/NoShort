@@ -23,7 +23,7 @@ import pandas as pd
 np.set_printoptions(precision=3, suppress=True)
 
 # Table 1
-results = np.load('results.npz')
+results = np.load('results_mean_vola.npz')
 file_list = results.files
 for file in file_list:
     print(file)

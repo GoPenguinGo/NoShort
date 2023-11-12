@@ -903,27 +903,34 @@ def simulate_cohorts_mean_vola(
     cov_parti_matrix1 = np.array([])
     cov_parti_matrix2 = np.array([])
     cov_parti_matrix3 = np.array([])
+    cov_parti_matrix4 = np.array([])
     windows = np.array([6, 24, 60])
     R_cumu = np.cumsum(dR)
     vola_cumu = np.cumsum(sigma_S**2)
+    r_cumu = np.cumsum(r)
     for j, window in enumerate(windows):
         R_window = R_cumu[window:] - R_cumu[:-window]
         vola_window = np.sqrt((vola_cumu[window:] - vola_cumu[:-window]) / window)
-        r_reshape = np.reshape(r, (-1, window))
-        r_window_gap = np.sum(r_reshape, axis=1)[:-1]
+        r_window = r_cumu[window:] - r_cumu[:-window]
         R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
         vola_window_gap = np.reshape(vola_window, (-1, window))[:, 0]
+        r_window_gap = np.reshape(r_window, (-1, window))[:, 0]
         parti_window = np.reshape(parti, (-1, window))[:, 0]
+        r_reshape = np.reshape(r, (-1, window))
+        erp_window_gap = R_window_gap - np.sum(r_reshape, axis=1)[:-1]
         corr1 = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
-        corr2 = np.corrcoef(R_window_gap - r_window_gap, parti_window[:-1])[0, 1]
-        corr3 = np.corrcoef(vola_window_gap, parti_window[:-1])[0, 1]
+        corr2 = np.corrcoef(r_window_gap, parti_window[:-1])[0, 1]
+        corr3 = np.corrcoef(erp_window_gap, parti_window[:-1])[0, 1]
+        corr4 = np.corrcoef(vola_window_gap, parti_window[:-1])[0, 1]
         cov_parti_matrix1 = np.append(cov_parti_matrix1, corr1)
         cov_parti_matrix2 = np.append(cov_parti_matrix2, corr2)
         cov_parti_matrix3 = np.append(cov_parti_matrix3, corr3)
+        cov_parti_matrix4 = np.append(cov_parti_matrix4, corr4)
     cov_parti_matrix = np.array([
         cov_parti_matrix1,
         cov_parti_matrix2,
         cov_parti_matrix3,
+        cov_parti_matrix4,
     ])
 
     return (
@@ -1490,27 +1497,34 @@ def simulate_mean_vola_mix_type(
     cov_parti_matrix1 = np.array([])
     cov_parti_matrix2 = np.array([])
     cov_parti_matrix3 = np.array([])
+    cov_parti_matrix4 = np.array([])
     windows = np.array([6, 24, 60])
     R_cumu = np.cumsum(dR)
     vola_cumu = np.cumsum(sigma_S**2)
+    r_cumu = np.cumsum(r)
     for j, window in enumerate(windows):
         R_window = R_cumu[window:] - R_cumu[:-window]
         vola_window = np.sqrt((vola_cumu[window:] - vola_cumu[:-window]) / window)
-        r_reshape = np.reshape(r, (-1, window))
-        r_window_gap = np.sum(r_reshape, axis=1)[:-1]
+        r_window = r_cumu[window:] - r_cumu[:-window]
         R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
         vola_window_gap = np.reshape(vola_window, (-1, window))[:, 0]
+        r_window_gap = np.reshape(r_window, (-1, window))[:, 0]
         parti_window = np.reshape(parti, (-1, window))[:, 0]
+        r_reshape = np.reshape(r, (-1, window))
+        erp_window_gap = R_window_gap - np.sum(r_reshape, axis=1)[:-1]
         corr1 = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
-        corr2 = np.corrcoef(R_window_gap - r_window_gap, parti_window[:-1])[0, 1]
-        corr3 = np.corrcoef(vola_window_gap, parti_window[:-1])[0, 1]
+        corr2 = np.corrcoef(r_window_gap, parti_window[:-1])[0, 1]
+        corr3 = np.corrcoef(erp_window_gap, parti_window[:-1])[0, 1]
+        corr4 = np.corrcoef(vola_window_gap, parti_window[:-1])[0, 1]
         cov_parti_matrix1 = np.append(cov_parti_matrix1, corr1)
         cov_parti_matrix2 = np.append(cov_parti_matrix2, corr2)
         cov_parti_matrix3 = np.append(cov_parti_matrix3, corr3)
+        cov_parti_matrix4 = np.append(cov_parti_matrix4, corr4)
     cov_parti_matrix = np.array([
         cov_parti_matrix1,
         cov_parti_matrix2,
         cov_parti_matrix3,
+        cov_parti_matrix4,
     ])
 
     return (
