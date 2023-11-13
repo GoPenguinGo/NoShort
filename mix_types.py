@@ -24,7 +24,8 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-# Mpath = 10
+# Mpath = 100
+
 keep_data = int(Nt - 200/dt)
 
 def simulate_mean_vola_path(i: int,

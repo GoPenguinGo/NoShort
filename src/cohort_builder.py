@@ -63,8 +63,8 @@ def build_cohorts_SI(
     X = np.ones((1, 1))
     eta_st_eta_ss_init = np.ones((Ntype, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
-    invest_tracker = np.ones((Ntype, Ninit)) if mode_trade != 'complete' else np.ones((Ntype, Nc))
-    can_short_tracker = np.zeros((Ntype, Ninit)) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros((Ntype, Nc))
+    invest_tracker = np.ones((Ntype, Ninit), dtype=int) if mode_trade != 'complete' else np.ones((Ntype, Nc))
+    can_short_tracker = np.zeros((Ntype, Ninit), dtype=int) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros((Ntype, Nc))
     tau_info = np.ones((Ntype, 1)) * dt
     Vhat_init = np.ones((Ntype, 1)) * Vhat
     Vhat_vector = Vhat_init

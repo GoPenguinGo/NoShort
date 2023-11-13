@@ -21,13 +21,9 @@ from multiprocessing import Pool
 import pandas as pd
 
 
-np.set_printoptions(precision=3, suppress=True)
+np.set_printoptions(precision=4, suppress=True)
 results = np.load('results.npz')
 file_list = results.files
-for file in file_list:
-    print(file)
-    print(np.nanmean(results[file]))
-
 
 
 ######################################

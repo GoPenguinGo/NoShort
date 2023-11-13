@@ -22,8 +22,8 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 10
-
+# Mpath = 10
+np.seterr(invalid='ignore')
 
 # noinspection PyTypeChecker
 def simulate_path(i: int,
@@ -39,7 +39,7 @@ def simulate_path(i: int,
     Delta_results = np.zeros((Nscenario, len(data_point)), dtype=np.float32)
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
-    parti_rate_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
     belief_pre_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
     belief_post_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
 
@@ -67,6 +67,14 @@ def simulate_path(i: int,
     Phi_old_results = np.zeros((Nscenario, Nt), dtype=np.float32)
     Phi_young_results = np.zeros((Nscenario, Nt), dtype=np.float32)
 
+    # for figure 10:
+    # can use parti_pre from fig4
+    parti_post_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    leverage_parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    leverage_parti_post_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+
+
+    # shocks
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
     dZ_SI_build = dZ_SI_build_matrix[i]
@@ -149,8 +157,16 @@ def simulate_path(i: int,
                 weights=weights_group,
                 axis=1)
             if g == 1:
-                parti_rate_results[mm] = np.average(invest_tracker[:-t_gap, 0, age_bottom:age_top],
+                parti_pre_results[mm] = np.average(invest_tracker[:-t_gap, 0, age_bottom:age_top],
                                                     weights=weights_group, axis=1)
+                parti_post_results[mm] = np.average(invest_tracker[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
+                                                    weights=weights_group, axis=1)
+                leverage_condi = np.ma.masked_where(pi == 0, pi)
+                leverage_parti_pre_results[mm] = np.ma.average(
+                    leverage_condi[:-t_gap, 0, age_bottom:age_top], weights=weights_group, axis=1)
+                leverage_parti_post_results[mm] = np.ma.average(
+                    leverage_condi[t_gap:, 0, age_bottom - t_gap:age_top - t_gap], weights=weights_group, axis=1)
+
 
         Phi_results[g] = Phi_parti
         Delta_bar_results[g] = Delta_bar_parti
@@ -225,7 +241,7 @@ def simulate_path(i: int,
         invest_results,
         belief_pre_results,
         belief_post_results,
-        parti_rate_results,
+        parti_pre_results,
         belief_popu_old_results,
         belief_popu_young_results,
         P_old_results,
@@ -238,7 +254,10 @@ def simulate_path(i: int,
         belief_f_old_results,
         belief_f_young_results,
         Phi_old_results,
-        Phi_young_results
+        Phi_young_results,
+        parti_post_results,
+        leverage_parti_pre_results,
+        leverage_parti_post_results
     )
 
 
@@ -258,7 +277,7 @@ def main():
             invest_results, \
             belief_pre_results, \
             belief_post_results, \
-            parti_rate_results, \
+            parti_pre_results, \
             belief_popu_old_results, \
             belief_popu_young_results, \
             P_old_results, \
@@ -271,7 +290,10 @@ def main():
             belief_f_old_results, \
             belief_f_young_results, \
             Phi_old_results, \
-            Phi_young_results = result.result()
+            Phi_young_results, \
+            parti_post_results, \
+            leverage_parti_pre_results, \
+            leverage_parti_post_results = result.result()
 
         data = {
             "i": i,
@@ -279,7 +301,7 @@ def main():
             "fig4_parti_prob": invest_results,
             "fig4_belief_pre": belief_pre_results,
             "fig4_belief_post": belief_post_results,
-            "fig4_parti_rate": parti_rate_results,
+            "fig4_parti_pre": parti_pre_results,
             "fig9_old_belief": belief_popu_old_results,
             "fig9_young_belief": belief_popu_young_results,
             "fig9_old_parti": P_old_results,
@@ -292,7 +314,10 @@ def main():
             "fig8_old_belief_fc": belief_f_old_results,
             "fig8_young_belief_fc": belief_f_young_results,
             "fig8_Phi_old": Phi_old_results,
-            "fig8_Phi_young": Phi_young_results
+            "fig8_Phi_young": Phi_young_results,
+            "fig10_parti_post": parti_post_results,
+            "fig10_leverage_pre": leverage_parti_pre_results,
+            "fig10_leverage_post": leverage_parti_post_results
         }
         results_list.append(data)
 
