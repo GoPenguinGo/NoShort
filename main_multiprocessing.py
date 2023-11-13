@@ -40,8 +40,8 @@ def simulate_path(i: int,
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
     parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
-    belief_pre_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
-    belief_post_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
+    # belief_pre_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
+    # belief_post_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
 
     # for figure 9
     popu_cummu = np.cumsum(cohort_size)
@@ -149,13 +149,13 @@ def simulate_path(i: int,
             age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
             age_top = cutoffs_age[mm]
             weights_group = cohort_type_size[0, age_bottom:age_top]
-            belief_pre_results[g, mm] = np.average(Delta[:-t_gap, 0, age_bottom:age_top],
-                                                   weights=weights_group,
-                                                   axis=1)
-            belief_post_results[g, mm] = np.average(
-                Delta[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
-                weights=weights_group,
-                axis=1)
+            # belief_pre_results[g, mm] = np.average(Delta[:-t_gap, 0, age_bottom:age_top],
+            #                                        weights=weights_group,
+            #                                        axis=1)
+            # belief_post_results[g, mm] = np.average(
+            #     Delta[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
+            #     weights=weights_group,
+            #     axis=1)
             if g == 1:
                 parti_pre_results[mm] = np.average(invest_tracker[:-t_gap, 0, age_bottom:age_top],
                                                     weights=weights_group, axis=1)
@@ -239,8 +239,8 @@ def simulate_path(i: int,
         i,
         Delta_results,
         invest_results,
-        belief_pre_results,
-        belief_post_results,
+        # belief_pre_results,
+        # belief_post_results,
         parti_pre_results,
         belief_popu_old_results,
         belief_popu_young_results,
@@ -275,8 +275,6 @@ def main():
         i, \
             Delta_results, \
             invest_results, \
-            belief_pre_results, \
-            belief_post_results, \
             parti_pre_results, \
             belief_popu_old_results, \
             belief_popu_young_results, \
@@ -299,8 +297,6 @@ def main():
             "i": i,
             "fig4_abs_Delta": Delta_results,
             "fig4_parti_prob": invest_results,
-            "fig4_belief_pre": belief_pre_results,
-            "fig4_belief_post": belief_post_results,
             "fig4_parti_pre": parti_pre_results,
             "fig9_old_belief": belief_popu_old_results,
             "fig9_young_belief": belief_popu_young_results,
