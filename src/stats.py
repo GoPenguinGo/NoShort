@@ -4,7 +4,7 @@ from typing import Tuple, Callable
 
 
 @jit(nopython=True)
-def post_var(sigma_Y_sq: np.float32, V_hat: np.float32, tau: np.ndarray, a_phi: np.float32, type: str) -> np.ndarray:
+def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(2)
 
     Args:
@@ -22,18 +22,18 @@ def post_var(sigma_Y_sq: np.float32, V_hat: np.float32, tau: np.ndarray, a_phi: 
     else:
         print('Error: type not found')
         V = V_hat
-    return V
+    return V.astype(np.float32)
 
 
 # @jit(nopython=True)
-def dDelta_st_calculator(sigma_Y_sq: np.float32,
-                         a1: np.float32,
-                         a2: np.float32,
-                         dt: np.float32,
+def dDelta_st_calculator(sigma_Y_sq: float,
+                         a1: float,
+                         a2: float,
+                         dt: float,
                          V_st: np.ndarray,
                          Delta_s_t: np.ndarray,
-                         dZ_t: np.float32,
-                         dZ_SI_t: np.float32,
+                         dZ_t: float,
+                         dZ_SI_t: float,
                          type: str) -> np.ndarray:
     """Calculate change in beliefs
 
@@ -53,7 +53,7 @@ def dDelta_st_calculator(sigma_Y_sq: np.float32,
     else:
         print('Error: type not found')
         dDelta_s_t = 0
-    return dDelta_s_t
+    return dDelta_s_t.astype(np.float32)
 
 
 @jit(nopython=True)
