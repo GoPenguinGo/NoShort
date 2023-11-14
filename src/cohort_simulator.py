@@ -854,13 +854,13 @@ def simulate_cohorts_mean_vola(
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
     beta_matrix = np.array([np.mean(beta), np.std(beta)])
 
-    sigma_Delta_bar_parti_matrix = np.array([np.mean(sigma_Y * Delta_bar_parti), np.std(sigma_Y * Delta_bar_parti)])
+    Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
     Delta_tilde_bar_parti_matrix = np.array([np.mean(Delta_tilde_bar_parti), np.std(Delta_tilde_bar_parti)])
     Phi_tilde_bar_parti = Phi_tilde_parti * Phi_bar_parti_1
-    Phi_bar_parti_1_matrix = np.array([np.mean(Phi_bar_parti_1), np.std(Phi_bar_parti_1)])
+    Phi_bar_parti_1_matrix = np.array([np.mean(Phi_bar_parti_1 * sigma_Y), np.std(Phi_bar_parti_1 * sigma_Y)])
     Phi_tilde_parti_matrix = np.array([np.mean(Phi_tilde_parti), np.std(Phi_tilde_parti)])
-    Phi_tilde_bar_parti_matrix = np.array([np.mean(Phi_tilde_bar_parti), np.std(Phi_tilde_bar_parti)])
+    Phi_tilde_bar_parti_matrix = np.array([np.mean(Phi_tilde_bar_parti * sigma_Y), np.std(Phi_tilde_bar_parti * sigma_Y)])
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
@@ -881,7 +881,7 @@ def simulate_cohorts_mean_vola(
 
     theta_save_matrix = np.array([
         Phi_bar_parti_1_matrix,
-        sigma_Delta_bar_parti_matrix,
+        Delta_bar_parti_matrix,
     ])
 
     sigma_S_save_matrix = np.array([
@@ -1448,17 +1448,17 @@ def simulate_mean_vola_mix_type(
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
     beta_matrix = np.array([np.mean(beta), np.std(beta)])
 
-    sigma_Delta_bar_parti_matrix = np.array([np.mean(sigma_Y * Delta_bar_parti), np.std(sigma_Y * Delta_bar_parti)])
+    Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
     Delta_tilde_bar_parti_matrix = np.array([np.mean(Delta_tilde_bar_parti), np.std(Delta_tilde_bar_parti)])
     Phi_tilde_bar_parti = Phi_tilde_parti * Phi_bar_parti_1
-    Phi_bar_parti_1_matrix = np.array([np.mean(Phi_bar_parti_1), np.std(Phi_bar_parti_1)])
+    Phi_bar_parti_1_matrix = np.array([np.mean(Phi_bar_parti_1 * sigma_Y), np.std(Phi_bar_parti_1 * sigma_Y)])
     Phi_tilde_parti_matrix = np.array([np.mean(Phi_tilde_parti), np.std(Phi_tilde_parti)])
-    Phi_tilde_bar_parti_matrix = np.array([np.mean(Phi_tilde_bar_parti), np.std(Phi_tilde_bar_parti)])
+    Phi_tilde_bar_parti_matrix = np.array([np.mean(Phi_tilde_bar_parti * sigma_Y), np.std(Phi_tilde_bar_parti * sigma_Y)])
     Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
     Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
     parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    # Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
+    Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
     # parti_wealth_group_mask = np.ma.masked_where((Delta_bar_mat >= 0.05) | (Delta_bar_mat <= -0.05), parti_wealth_group)
     parti_wealth_group_mask = parti_wealth_group
     parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
@@ -1475,7 +1475,7 @@ def simulate_mean_vola_mix_type(
 
     theta_save_matrix = np.array([
         Phi_bar_parti_1_matrix,
-        sigma_Delta_bar_parti_matrix,
+        Delta_bar_parti_matrix,
     ])
 
     sigma_S_save_matrix = np.array([
