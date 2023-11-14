@@ -58,15 +58,15 @@ def build_cohorts_SI(
     """
 
     # size of matrix: type * cohort; or type * 1; or 1 * cohort
-    Delta_s_t = np.zeros((Ntype, 1))  # belief bias, eq(3)
-    d_eta_st = np.zeros((Ntype, 1))  # disagreement, eq(11)
+    Delta_s_t = np.zeros((Ntype, 1), dtype=np.float16)  # belief bias, eq(3)
+    d_eta_st = np.zeros((Ntype, 1), dtype=np.float16)  # disagreement, eq(11)
     X = np.ones((1, 1))
     eta_st_eta_ss_init = np.ones((Ntype, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Ninit), dtype=np.int8) if mode_trade != 'complete' else np.ones((Ntype, Nc), dtype=np.int8)
     can_short_tracker = np.zeros((Ntype, Ninit), dtype=np.int8) if mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old' else np.zeros((Ntype, Nc), np.int8)
     tau_info = np.ones((Ntype, 1)) * dt
-    Vhat_init = np.ones((Ntype, 1)) * Vhat
+    Vhat_init = np.ones((Ntype, 1), dtype=np.float16) * Vhat
     Vhat_vector = Vhat_init
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)

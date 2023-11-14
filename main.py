@@ -1767,1134 +1767,1134 @@ plt.show()
 
 
 
-
-print('Figure 4, 11, and 15')
-# fig 4: phi = 0.0, 0.4, & 0.8, complete vs. reentry
-# fig 11: tau = 0.01 and tau = 0.015, phi == 0, reentry & disappointment
-# fig 15: phi == 0, initial window = 60 and 240, complete, reentry & disappointment
-need_fig4 = 'false'
-need_fig11 = 'true'
-n_scenarios_short = 3  # complete vs. reentry
-scenarios_short = scenarios[:n_scenarios_short]
-if need_fig4 == 'true':
-    # ages_focus = np.array([10, 50, 100], dtype=int)
-    # ts_focus = (ages_focus / dt).astype(int)
-    # n_ages = len(ages_focus)
-    # t_begin = np.max(ts_focus)
-    t_gap = int(2 / dt)  # 2-year window
-    N_cut = int(Nc - t_gap)
-    # t_rolling = np.arange(0, Nt - 1, t_gap).astype(int)
-    # n_cut = len(t_rolling)
-    # t_rolling_pre = t_rolling[:-1]  # pre
-    # t_rolling_post = t_rolling[1:]
-    # n_gap = len(t_rolling)
-    # shocks = np.cumsum(dZ_matrix, axis=1)
-    # shocks_mat = shocks[:Mpath_short, t_rolling_post] - shocks[:Mpath_short, t_rolling_pre]
-    # shocks_SI = np.cumsum(dZ_SI_matrix, axis=1)
-    # shocks_SI_mat = shocks_SI[:Mpath_short, t_rolling_post] - shocks_SI[:Mpath_short, t_rolling_pre]
-    parti_rate_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-    parti_rate_post_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-    belief_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-    belief_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
-    cohort_size_short = cohort_size[1:]
-    cohort_size_short_mat = np.tile(cohort_size_short, (Nt - 1, 1))
-    cohort_size_mat = np.tile(cohort_size, (Nt, 1))
-    tau_mat = np.tile(tau, (Nt, 1))
-if need_fig11 == 'true':
-    cohort_size_mat = np.tile(cohort_size, (Nt, 1))
-    tau_mat = np.tile(tau, (Nt, 1))
-    popu_fig11 = 0.1
-    cutoff_age_old_below_fig11 = np.searchsorted(cummu_popu, popu_fig11)
-    cutoff_age_young_fig11 = np.searchsorted(cummu_popu, 1 - popu_fig11)
-    tax_short = [0.01, 0.015]
-    n_tax_short = len(tax_short)
-    P_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
-    P_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
-    belief_popu_old_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
-    belief_popu_young_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
-    belief_popu_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
-    Wealthshare_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
-    Wealthshare_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
-
-# run
-for i in range(Mpath):
-    # for i in range(Mpath):
-    print(i)
-    ii = i if i < 1000 else i + 4000
-    dZ = dZ_matrix[ii]
-    dZ_build = dZ_build_matrix[ii]
-    dZ_SI = dZ_SI_matrix[ii]
-    dZ_SI_build = dZ_SI_build_matrix[ii]
-    for j, scenario in enumerate(scenarios_short):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        for n, phi_try in enumerate(phi_vector_short):
-            if (need_fig4 == 'true') and (need_fig11 == 'true'):
-                for k, tax_try in enumerate(tax_short):
-                    beta_try = rho + nu - tax_try
-                    (
-                        r,
-                        theta,
-                        f,
-                        Delta,
-                        pi,
-                        popu_parti,
-                        f_parti,
-                        Delta_bar_parti,
-                        dR,
-                        invest_tracker,
-                        popu_can_short,
-                        popu_short,
-                        Phi_can_short,
-                        Phi_short,
-                    ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                    Vhat,
-                                    mu_Y, sigma_Y, sigma_S,
-                                    tax_try,
-                                    beta_try,
-                                    phi_try,
-                                    Npre, Ninit,
-                                    T_hat,
-                                    dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                    need_f='True',
-                                    need_Delta='True',
-                                    need_pi='True',
-                                    )
-
-                    if tax_try == 0.01:
-                        for mm in range(n_age_cutoffs):
-                            age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
-                            age_top = cutoffs_age[mm]
-                            weights_group = cohort_size[age_bottom:age_top]
-                            belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
-                                                                     weights=weights_group,
-                                                                     axis=1)
-                            belief_post_mat[i, j, n, mm] = np.average(
-                                Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                weights=weights_group,
-                                axis=1)
-                            if mode_trade == 'w_constraint':
-                                parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
-                                                                      weights=weights_group, axis=1)
-                                parti_rate_post_mat[i, n, mm] = np.average(
-                                    invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                                    weights=weights_group, axis=1)
-                    if phi_try == 0:
-                        # save results for fig 11
-                        invest = pi > 0
-                        if j == 0 and k == 0:
-                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
-                                                              axis=1)  # same average belief bc phi == 0
-                            belief_popu_old_compare_fig11[i] = np.average(
-                                Delta[:, :cutoff_age_old_below_fig11],
-                                weights=cohort_size[:cutoff_age_old_below_fig11],
-                                axis=1)
-                            belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
-                                                                            weights=cohort_size[
-                                                                                    cutoff_age_young_fig11:],
-                                                                            axis=1)
-                        P_old_compare[i, j, k] = np.sum(
-                            invest[:, :cutoff_age_old_below_fig11] *
-                            cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            axis=1) / popu_fig11
-                        P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
-                                                          cohort_size_mat[:, cutoff_age_young_fig11:],
-                                                          axis=1) / popu_fig11
-                        Wealthshare_old_compare[i, j, k] = np.sum(
-                            f[:, :cutoff_age_old_below_fig11] * dt,
-                            axis=1)
-                        Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
-                                                                    axis=1)
-
-            elif need_fig11 == 'false':
-                tax_try = tax
-                beta_try = beta
-                (
-                    r,
-                    theta,
-                    f,
-                    Delta,
-                    pi,
-                    popu_parti,
-                    f_parti,
-                    Delta_bar_parti,
-                    dR,
-                    invest_tracker,
-                    popu_can_short,
-                    popu_short,
-                    Phi_can_short,
-                    Phi_short,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                Vhat,
-                                mu_Y, sigma_Y, sigma_S,
-                                tax_try,
-                                beta_try,
-                                phi_try,
-                                Npre, Ninit,
-                                T_hat,
-                                dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                need_f='False',
-                                need_Delta='True',
-                                need_pi='True',
-                                )
-
-                for mm in range(n_age_cutoffs):
-                    age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
-                    age_top = cutoffs_age[mm]
-                    weights_group = cohort_size[age_bottom:age_top]
-                    belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
-                                                             weights=weights_group,
-                                                             axis=1)
-                    belief_post_mat[i, j, n, mm] = np.average(
-                        Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                        weights=weights_group,
-                        axis=1)
-                    if mode_trade == 'w_constraint':
-                        parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
-                                                              weights=weights_group, axis=1)
-                        parti_rate_post_mat[i, n, mm] = np.average(
-                            invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
-                            weights=weights_group, axis=1)
-            else:
-                if phi_try == 0:
-                    for k, tax_try in enumerate(tax_short):
-                        beta_try = rho + nu - tax_try
-                        (
-                            r,
-                            theta,
-                            f,
-                            Delta,
-                            pi,
-                            popu_parti,
-                            f_parti,
-                            Delta_bar_parti,
-                            dR,
-                            invest_tracker,
-                            popu_can_short,
-                            popu_short,
-                            Phi_can_short,
-                            Phi_short,
-                        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                                        Vhat,
-                                        mu_Y, sigma_Y, sigma_S,
-                                        tax_try,
-                                        beta_try,
-                                        phi_try,
-                                        Npre, Ninit,
-                                        T_hat,
-                                        dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                                        need_f='True',
-                                        need_Delta='True',
-                                        need_pi='True',
-                                        )
-
-                        # save results for fig 11
-                        invest = pi > 0
-                        if j == 0 and k == 0:
-                            belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
-                                                              axis=1)  # same average belief bc phi == 0
-                            belief_popu_old_compare_fig11[i] = np.average(
-                                Delta[:, :cutoff_age_old_below_fig11],
-                                weights=cohort_size[:cutoff_age_old_below_fig11],
-                                axis=1)
-                            belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
-                                                                            weights=cohort_size[
-                                                                                    cutoff_age_young_fig11:],
-                                                                            axis=1)
-                        P_old_compare[i, j, k] = np.sum(
-                            invest[:, :cutoff_age_old_below_fig11] *
-                            cohort_size_mat[:, :cutoff_age_old_below_fig11],
-                            axis=1) / popu_fig11
-                        P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
-                                                          cohort_size_mat[:, cutoff_age_young_fig11:],
-                                                          axis=1) / popu_fig11
-                        Wealthshare_old_compare[i, j, k] = np.sum(
-                            f[:, :cutoff_age_old_below_fig11] * dt,
-                            axis=1)
-                        Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
-                                                                    axis=1)
-                else:
-                    pass
-
-# figure 11
-for i in range(Mpath):
-    print(i)
-    dZ = dZ_matrix[i]
-    dZ_build = dZ_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
-    (
-        r,
-        theta,
-        f,
-        Delta,
-        pi,
-        popu_parti,
-        f_parti,
-        Delta_bar_parti,
-        dR,
-        invest_tracker,
-        popu_can_short,
-        popu_short,
-        Phi_can_short,
-        Phi_short,
-    ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
-                    phi_fix,
-                    Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                    need_f='True',
-                    need_Delta='True',
-                    need_pi='False',
-                    )
-    theta_compare[i] = theta
-    Phi_compare[i] = f_parti
-    Delta_bar_compare[i] = Delta_bar_parti
-    for j, popu in enumerate(popus):
-        # cutoff_age_old = np.searchsorted(cummu_popu, popu)
-        cutoff_age_old_top = np.searchsorted(cummu_popu, popu * 2)
-        cutoff_age_old_below = np.searchsorted(cummu_popu, popu)
-        cutoff_age_young = np.searchsorted(cummu_popu, 1 - popu)
-        total_popu_old = np.sum(cohort_size[cutoff_age_old_below:cutoff_age_old_top])
-        total_popu_young = np.sum(cohort_size[cutoff_age_young:])
-        P_old_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] *
-                                     cohort_size_mat[:, cutoff_age_old_below:cutoff_age_old_top],
-                                     axis=1) / total_popu_old
-        P_young_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_young:] *
-                                       cohort_size_mat[:, cutoff_age_young:],
-                                       axis=1) / total_popu_young
-        Phi_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] *
-                                       invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
-        Phi_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * invest_tracker[:, cutoff_age_young:] * dt, axis=1)
-        Wealthshare_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
-        Wealthshare_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
-        belief_f_old_compare[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
-                                                weights=f[:, cutoff_age_old_below:cutoff_age_old_top] * dt,
-                                                axis=1)
-        belief_f_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
-                                                  weights=f[:, cutoff_age_young:] * dt,
-                                                  axis=1)
-        belief_popu_old_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
-                                                         weights=cohort_size_mat[:,
-                                                                 cutoff_age_old_below:cutoff_age_old_top],
-                                                         axis=1)
-        belief_popu_young_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_young:],
-                                                           weights=cohort_size_mat[:, cutoff_age_young:],
-                                                           axis=1)
-
-# construct the condition:
-n_tiles = 4
-n_bins = 30
-popu_index = 0
-belief_f_gap_compare = belief_f_old_compare - belief_f_young_compare
-belief_popu_gap_compare = belief_popu_old_compare_fig11 - belief_popu_young_compare_fig11
-cutoff_belief = -theta_compare
-belief_f_distance_young = belief_f_young_compare - cutoff_belief
-belief_f_distance_old = belief_f_old_compare - cutoff_belief
-belief_popu_distance_young = belief_popu_young_compare_fig11 - cutoff_belief
-belief_popu_distance_old = belief_popu_old_compare_fig11 - cutoff_belief
-parti_gap = P_old_compare - P_young_compare
-Phi_gap = Phi_old_compare - Phi_young_compare
-wealth_gap = Wealthshare_old_compare - Wealthshare_young_compare
-# y_variables = [parti_gap[:, popu_index, :], belief_f_distance_young[:, popu_index, :], belief_f_distance_old[:, popu_index, :]
-# y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
-# x_mat = belief_f_gap_compare[:, popu_index, :]
-# x_varname = r'Wealth weighted $\Delta_{s,t}$, old minus young'
-x_mat = belief_popu_gap_compare[:, popu_index, :]
-x_varname = r'Average estimation error $\Delta_{s,t}$, old minus young'
-x_range = 0.25
-x_range_left = np.percentile(x_mat, 5)
-x_range_right = np.percentile(x_mat, 95)
-width_bins = (x_range_right - x_range_left) / n_bins
-a = x_range_left <= x_mat
-b = x_mat <= x_range_right
-where_within = np.where(a * b == 1)  # winsorize
-x_mat_within = x_mat[where_within]
-total_count = np.shape(where_within)[1]
-condition_var = wealth_gap
-condition_label = r'Wealth share, old minus young'
-condition_var_within = condition_var[where_within]
-condition = np.percentile(condition_var_within, np.arange(0, 101, (100 / n_tiles)))
-y = np.empty((n_tiles, n_bins, 3))
-x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
-X_ = np.linspace(x_range_left, x_range_right, 50)
-y_mat_within = parti_gap[where_within]
-y_varname = 'Participation rate, old minus young'
-fig, ax = plt.subplots(figsize=(10, 8))
-for i in range(n_tiles):
-    below = condition[i]
-    above = condition[i + 1]
-    a = below < condition_var_within
-    b = condition_var_within < above
-    data_where = np.where(a * b == 1)
-    x_var = x_mat_within[data_where]
-    y_var = y_mat_within[data_where]
-    for n in range(n_bins):
-        bin_left = x_range_left + n * width_bins
-        bin_right = bin_left + width_bins
-        bin_1 = x_var <= bin_right
-        bin_2 = x_var >= bin_left
-        bin_where = np.where(bin_1 * bin_2 == 1)
-        y[i, n, 0] = np.median(y_var[bin_where])
-        y[i, n, 1] = np.percentile(y_var[bin_where], 25)
-        y[i, n, 2] = np.percentile(y_var[bin_where], 75)
-    Y_ = np.empty((3, 50))
-    for m in range(3):
-        y_i = y[i, :, m]
-        X_Y_Spline = make_interp_spline(x, y_i)
-        Y_[m] = X_Y_Spline(X_)
-    # ax.plot(x, y[i, :, 0], linewidth=0.6, color=colors[i], label=condition_label + str(i + 1))
-    # ax.fill_between(x, y[i, :, 1], y[i, :, 2], color=colors[i], linewidth=0., alpha=0.3)
-    ax.plot(X_, Y_[0], linewidth=0.6, color=colors[i], label=condition_label + ', Quartile ' + str(i + 1))
-    ax.fill_between(X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.3)
-ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
-ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
-ax.legend(loc='upper left')
-ax.set_xlabel(x_varname)
-ax.set_ylabel(y_varname)
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-scenario_label = 'Complete' if scenario_index == 0 else scenarios_short[scenario_index][1]
-plt.savefig(scenario_label + str(tax_index) + 'belief two sorts.png', dpi=100)
-plt.savefig(scenario_label + str(tax_index) + 'belief two sorts HD.png', dpi=200)
-# plt.savefig('85-115old'+str(tax)+'Intuition'+ x_varname[:4] + 'belief two sorts.png', dpi=200)
-plt.show()
-# plt.close()
-
-
-# distribution of wealth gap given the belief gap in [-x_range, x_range]:
-n_bins = 30
-fig, axes = plt.subplots(ncols=2, sharey='all', figsize=(10, 4))
-for j, ax in enumerate(axes):
-    if j == 0:
-        condition_var_density = np.empty(n_bins)
-        min_condition = np.min(condition_var_within)
-        max_condition = np.max(condition_var_within)
-        width_bins = (max_condition - min_condition) / n_bins
-        condition_var_x = np.linspace(min_condition + width_bins / 2, max_condition - width_bins / 2, n_bins)
-        for i in range(n_bins):
-            bin_left = min_condition + i * width_bins
-            bin_right = bin_left + width_bins
-            bin_1 = condition_var_within <= bin_right
-            bin_2 = condition_var_within >= bin_left
-            bin_where = np.where(bin_1 * bin_2 == 1)
-            condition_var_density[i] = np.shape(bin_where)[1] / total_count
-        X_Y_Spline = make_interp_spline(condition_var_x, condition_var_density)
-        X_ = np.linspace(min_condition, max_condition, 1000)
-        Y_ = X_Y_Spline(X_)
-        for i in range(n_tiles):
-            if i > 0:
-                ax.axvline(condition[i], 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
-            left_x = min_condition if i == 0 else condition[i]
-            right_x = max_condition if i == n_tiles - 1 else condition[i + 1]
-            a = X_ >= left_x
-            b = right_x >= X_
-            bin_where = np.where(a * b == 1)
-            x = X_[bin_where]
-            y = Y_[bin_where]
-            ax.fill_between(x, 0, y, color=colors[i], linewidth=0., alpha=0.3, label='Quartile ' + str(i + 1))
-        ax.legend(loc='upper left')
-        ax.set_xlim(0, 0.45) if tax > 0.01 else ax.set_xlim(0, max_condition)
-        ax.set_xlabel(condition_label)
-        ax.set_ylabel('Density')
-    else:
-        width_bins = (x_range_right - x_range_left) / n_bins
-        y = np.empty((n_tiles, n_bins))
-        x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
-        y_bottom = 0
-        for i in range(n_tiles):
-            below = condition[i]
-            above = condition[i + 1]
-            a = below < condition_var_within
-            b = condition_var_within < above
-            data_where = np.where(a * b == 1)
-            x_var = x_mat_within[data_where]
-            # min_gap = np.min(x_var)
-            # max_gap = np.max(x_var)
-            # width_bins = (max_gap - min_gap) / n_bins
-            for n in range(n_bins):
-                # bin_left = min_gap + n * width_bins
-                # bin_right = bin_left + width_bins
-                bin_left = x_range_left + n * width_bins
-                bin_right = bin_left + width_bins
-                bin_1 = x_var <= bin_right
-                bin_2 = x_var >= bin_left
-                bin_where = np.where(bin_1 * bin_2 == 1)
-                y[i, n] = np.shape(bin_where)[1] / total_count
-            X_ = np.linspace(x_range_left, x_range_right, 100)
-            X_Y_Spline = make_interp_spline(x, y[i])
-            Y_ = X_Y_Spline(X_)
-            y_top = y_bottom + Y_
-            ax.fill_between(X_, y_top, y_bottom, linewidth=0., color=colors[i],
-                            alpha=0.3)
-            y_bottom = y_top
-        # ax.legend(loc='upper right')
-        ax.axvline(0, 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
-        # ax.set_ylim(top = 0.08)
-        ax.set_xlabel(x_varname)
-        # ax.set_ylabel('Density')
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-scenario_label = 'Complete' if scenario_index == 0 else scenarios_short[scenario_index][1]
-plt.savefig(scenario_label + str(tax_index) + 'Intuition wealth distribution.png', dpi=100)
-# plt.savefig('85-115old'+str(tax)+'Intuition wealth distribution.png', dpi=200)
-plt.show()
-# plt.close()
-
-
-# figure 15
-######################################################################
-#### why is Delta_bar more volatile with the shorting constraint? ####
-######################################################################
-# scenarios: complete, reentry, & disappointment
-# phi = 0
-# Npres: 60 & 240
-Npres_short = [60, 240]
-n_Npres_short = len(Npres_short)
-popu_fig15 = 0.5
-n_scenarios_short = 3
-phi_try = 0.0
-scenarios_short = scenarios[:n_scenarios_short]
-cutoff_age_old_below_fig15 = np.searchsorted(cummu_popu, popu_fig15)
-cutoff_age_young_fig15 = np.searchsorted(cummu_popu, 1 - popu_fig15)
-Phi_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Delta_bar_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
-Phi_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-Phi_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
-belief_f_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
-belief_f_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
-for i in range(Mpath):
-    # for i in range(Mpath):
-    print(i)
-    ii = i if i < 1000 else i + 4000
-    dZ = dZ_matrix[ii]
-    dZ_build = dZ_build_matrix[ii]
-    dZ_SI = dZ_SI_matrix[ii]
-    dZ_SI_build = dZ_SI_build_matrix[ii]
-    for j, scenario in enumerate(scenarios_short):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        for m, Npre_try in enumerate(Npres_short):
-            T_hat_try = Npre_try * dt
-            Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
-            (
-                r,
-                theta,
-                f,
-                Delta,
-                pi,
-                popu_parti,
-                f_parti,
-                Delta_bar_parti,
-                dR,
-                invest_tracker,
-                popu_can_short,
-                popu_short,
-                Phi_can_short,
-                Phi_short,
-            ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
-                            Vhat_try,
-                            mu_Y, sigma_Y, sigma_S,
-                            tax,
-                            beta,
-                            phi_try,
-                            Npre_try, Ninit,
-                            T_hat_try,
-                            dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
-                            need_f='True',
-                            need_Delta='True',
-                            need_pi='True',
-                            )
-            # save results for fig 15
-            Phi_compare[i, j, m] = f_parti
-            Delta_bar_compare[i, j, m] = Delta_bar_parti
-            if j == 0:
-                belief_popu_fig15[i, m] = np.average(Delta, weights=cohort_size,
-                                                     axis=1)  # same average belief as phi == 0
-                belief_f_old_compare[i, j, m] = np.average(Delta[:, :cutoff_age_old_below_fig15],
-                                                           weights=f[:, :cutoff_age_old_below_fig15] * dt,
-                                                           axis=1)
-                belief_f_young_compare[i, j, m] = np.average(Delta[:, cutoff_age_young_fig15:],
-                                                             weights=f[:, cutoff_age_young_fig15:] * dt,
-                                                             axis=1)
-                Phi_old_compare[i, j, m] = np.sum(f[:, :cutoff_age_old_below_fig15] * dt, axis=1)
-                Phi_young_compare[i, j, m] = np.sum(f[:, cutoff_age_young_fig15:] * dt, axis=1)
-            else:
-                parti = pi > 0
-                belief_f_old_compare[i, j, m] = np.ma.average(Delta[:, :cutoff_age_old_below_fig15],
-                                                              weights=f[:, : cutoff_age_old_below_fig15] *
-                                                                      parti[:, : cutoff_age_old_below_fig15] * dt,
-                                                              axis=1)
-                belief_f_young_compare[i, j, m] = np.ma.average(Delta[:, cutoff_age_young_fig15:],
-                                                                weights=f[:, cutoff_age_young_fig15:] *
-                                                                        parti[:, cutoff_age_young_fig15:] * dt,
-                                                                axis=1)
-                Phi_old_compare[i, j, m] = np.sum(parti[:, :cutoff_age_old_below_fig15]
-                                                  * f[:, :cutoff_age_old_below_fig15] * dt,
-                                                  axis=1)
-                Phi_young_compare[i, j, m] = np.sum(parti[:, cutoff_age_young_fig15:]
-                                                    * f[:, cutoff_age_young_fig15:] * dt,
-                                                    axis=1)
-
-# winsorize extreme shocks
-Npre_index = 0
-average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index], axis=0), axis=1)
-x_index = belief_popu_fig15[:, Npre_index]
-x_label = 'Average estimation error'
-below_dz = np.percentile(x_index, 10)
-below_data = x_index >= below_dz
-above_dz = np.percentile(x_index, 90)
-above_data = above_dz >= x_index
-data_where = np.where(below_data * above_data == 1)
-
-# prepare data for the figure:
-n_bins = 10
-bins = np.linspace(below_dz, above_dz, n_bins)
-# quartile_var = (Wealthshare_old_compare - Wealthshare_young_compare)[:, :, Npre_index]
-# quartile_var = belief_popu_young_compare[:, Npre_index] - belief_popu_old_compare[:, Npre_index]
-# quartile_var = parti_young_compare[:, :, Npre_index]
-y_percentiles = [50, 25, 75]
-phi_old = Phi_old_compare / Phi_compare
-phi_young = Phi_young_compare / Phi_compare
-belief_f_young = np.where(belief_f_young_compare == 0, np.nan,
-                          belief_f_young_compare)  # converting empty cells from 0 to nan
-belief_f_old = np.where(belief_f_old_compare == 0, np.nan, belief_f_old_compare)
-data_var = Delta_bar_compare[:, :, Npre_index]
-data_figure = np.zeros((n_scenarios_short, n_bins - 1, len(y_percentiles)))
-phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
-belief_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
-belief_phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
-for i in range(n_scenarios_short):
-    data_focus = data_var[:, i]
-    phi_var_old = phi_old
-    phi_var_young = phi_young[:, Npre_index]
-    for j in range(n_bins - 1):
-        bin_0 = bins[j]
-        bin_1 = bins[j + 1]
-        below_bin = bin_1 >= x_index
-        above_bin = x_index >= bin_0
-        bin_where = np.where(below_bin * above_bin == 1)
-        data_focus_z = data_focus[bin_where]
-        data_figure[i, j] = np.percentile(data_focus_z, y_percentiles)
-        for l in range(2):
-            phi_var = phi_old[:, i, Npre_index] if l == 0 else phi_young[:, i, Npre_index]
-            belief_var_nan = belief_f_old[:, i, Npre_index] if l == 0 else belief_f_young[:, i, Npre_index]
-            belief_var = belief_f_old_compare[:, i, Npre_index] if l == 0 else belief_f_young_compare[:, i, Npre_index]
-            phi_figure[i, l, j] = np.percentile(phi_var[bin_where], y_percentiles)
-            belief_figure[i, l, j] = np.nanpercentile(belief_var_nan[bin_where], y_percentiles)
-            belief_phi = phi_var * belief_var
-            belief_phi_figure[i, l, j] = np.percentile(belief_phi[bin_where], y_percentiles)
-
-bin_size = (above_dz - below_dz) / (n_bins - 1)
-x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
-labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
-          [r'$\Phi_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$', r'$\Phi_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$'],
-          [r'$\Phi_t^{old}\bar{\Delta}_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$',
-           r'$\Phi_t^{young}\bar{\Delta}_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$']]
-# labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
-sub_titles = ['Complete market', 'Reentry', 'Disappointment']
-y_labels = ['Estimation error of the participants',
-            'Wealth share of the participants',
-            r'Contribution to $\bar{\Delta}_t$']
-# X_ = np.linspace(-0.2, 0.2, 100)
-X_ = np.linspace(below_dz, above_dz, 100)
-fig, axes = plt.subplots(ncols=3, nrows=3, figsize=(15, 15), sharex='all', sharey='row')
-for j, rows in enumerate(axes):
-    for i, ax in enumerate(rows):
-        if j == 0:
-            y_focus = belief_figure[i]
-        elif j == 1:
-            y_focus = phi_figure[i]
-        else:
-            y_focus = belief_phi_figure[i]
-        for k in range(2):
-            if j == 2:
-                y_i = y_focus[k]
-                X_Y_Spline = make_interp_spline(x, y_i)
-                Y_ = X_Y_Spline(X_)
-                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
-                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
-                if k == 1:
-                    y_i = data_figure[i]  # n_bin-1 * 3
-                    X_Y_Spline = make_interp_spline(x, y_i)
-                    Y_ = X_Y_Spline(X_)
-                    ax.plot(X_, Y_[:, 0], color='gray', linewidth=1,
-                            label=r'$\bar{\Delta}_t$')
-                    ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color='gray', linewidth=0., alpha=0.2)
-                    ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8, linestyle='dashed',
-                               label=r'Unconditional mean $\bar{\Delta}_t$')
-                    x_mean = [X_[np.searchsorted(Y_[:, 0], average_Delta_bar[i])]]
-                    ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
-            else:
-                y_i = y_focus[k]
-                X_Y_Spline = make_interp_spline(x, y_i)
-                Y_ = X_Y_Spline(X_)
-                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
-                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
-        if i == 0:
-            ax.legend(loc='upper left')
-            ax.set_ylabel(y_labels[j])
-        if j == 0:
-            ax.set_title(sub_titles[i])
-        if j == 2:
-            ax.set_xlabel(x_label)
-        else:
-            ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
-        # ax.set_xlim(-0.25, 0.25)
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola.png', dpi=100)
-plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola HD.png', dpi=200)
-plt.show()
-
-# ######################################
-# ############ Figure 3.2 ##############
-# ######################################
-
-
-# ######################################
-# ############ GRAPH TWO ###############
-# ######################################
-# regressions
-
-horizons = [3, 6, 12, 24]
-n_horizon = len(horizons)
-report = ['coef', 't-stats', 'R-sqrd']
-n_report = len(report)
-# var_names = ['Participation rate', 'Belief dispersion', 'survey view', 'Participation rate, young', 'Participation rate, old']
-var_names = ['Participation rate', 'Belief dispersion', 'survey view']
-phi_indeces = [0, 4, 8]
-n_phi_short = len(phi_indeces)
-regression_results_uni = np.empty((N, n_scenarios, n_phi_short, n_horizon, len(var_names), n_report))
-# var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix, parti_young_matrix, parti_old_matrix]
-var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix]
-
-# predictive regression of stock returns on pariticipation rate
-for i in range(N):
-    for j in range(n_scenarios):
-        for k, phi_index in enumerate(phi_indeces):
-            excess_return_vector = np.cumsum(dR_matrix[i, j, phi_index, 1:] - r_matrix[i, j, phi_index, :-1] * dt)
-            x_list = []
-            for var in var_list:
-                var_vector = var[i, j, phi_index, :-1]
-                x_list.append(var_vector)
-            for l, horizon in enumerate(horizons):
-                y_horizon1 = (excess_return_vector[horizon:] - excess_return_vector[: -horizon]) / (
-                        dt * horizon)  # make sure the timings allign
-                y_horizon = y_horizon1.reshape(-1, 1)
-                for m, x_horizon_raw in enumerate(x_list):
-                    if scenarios[j][0] == 'complete' and var == popu_parti_matrix:
-                        regression_results_uni[i, j, k, l, m, 0] = est.params[1]
-                        regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
-                        regression_results_uni[i, j, k, l, m, 2] = est.rsquared
-                    x_horizon1 = x_horizon_raw[: -horizon]
-                    x_horizon1 = x_horizon1 / np.std(x_horizon1)
-                    x_horizon1 = x_horizon1.reshape(-1, 1)
-                    x_horizon = sm.add_constant(x_horizon1)
-
-                    model = sm.OLS(y_horizon, x_horizon)
-                    est = model.fit()
-                    regression_results_uni[i, j, k, l, m, 0] = est.params[1]
-                    regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
-                    regression_results_uni[i, j, k, l, m, 2] = est.rsquared
-
-mean_regression_results = np.mean(regression_results_uni, axis=0)
-header = ['(1) phi = 0', '(2) phi = 0.4', '(3) phi = 0.8']
-# present the regression results in tables:
-
-for k, scenario in enumerate(scenarios):
-    label_scenario = scenario[0] if scenario[0] == 'complete' else scenario[0] + scenario[1]
-    print(label_scenario)
-    for j, var in enumerate(var_names):
-        for i, horizon in enumerate(horizons):
-            reg_data = np.empty((n_report, n_phi))
-            for l in range(n_phi):
-                reg_data[:, l] = mean_regression_results[k, l, i, j]
-            report1 = [var, 't-stats', 'R-sqrd']
-            print(var, ', ' + str(horizon) + ' months')
-            print(tabulate.tabulate(reg_data, headers=header, showindex=report1, floatfmt=".4f", tablefmt='fancy_grid'))
-
-# #######################################
-# ############ GRAPH  FIVE ##############
-# #######################################
-# # The rich can short
-# # compare and plot theta
-# fig, ax1 = plt.subplots(figsize=(15, 5))
-# ax1.set_xlabel('Time in simulation, one random path')
-# ax1.set_ylabel('Zt', color=color5)
-# ax1.plot(t, y0, color=color5, linewidth=0.5)
-# ax1.tick_params(axis='y', labelcolor=color5)
-# ax2 = ax1.twinx()
-# ax2.set_ylabel('Market price of risk', color=color2)
-# ax2.set_ylim([-1, 1])
-# ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
-# ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
-# ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
-# # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-# ax2.tick_params(axis='y', labelcolor=color2)
-# plt.legend()
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
-# plt.show()
 #
-# # Compare the bias between investors having long and short positions
-# fig, ax1 = plt.subplots(figsize=(15, 5))
-# ax1.set_xlabel('Time in simulation, one random path')
-# ax1.set_ylabel('Zt', color=color5)
-# ax1.plot(t, y0, color=color5, linewidth=0.5)
-# ax1.tick_params(axis='y', labelcolor=color5)
-# ax2 = ax1.twinx()
-# ax2.set_ylabel('Market price of risk', color=color2)
-# ax2.set_ylim([-0.5, 1])
-# ax2.plot(t, y72, color='darkblue', linewidth=0.6, label='% investors')
-# ax2.plot(t, y73, color='darkgreen', linewidth=0.6, label='% Short sellers')
-# ax2.plot(t, y74, color='blue', linewidth=0.4, label='Average bias long')
-# ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
-# # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
-# ax2.tick_params(axis='y', labelcolor=color2)
-# plt.legend()
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
-# plt.show()
+# print('Figure 4, 11, and 15')
+# # fig 4: phi = 0.0, 0.4, & 0.8, complete vs. reentry
+# # fig 11: tau = 0.01 and tau = 0.015, phi == 0, reentry & disappointment
+# # fig 15: phi == 0, initial window = 60 and 240, complete, reentry & disappointment
+# need_fig4 = 'false'
+# need_fig11 = 'true'
+# n_scenarios_short = 3  # complete vs. reentry
+# scenarios_short = scenarios[:n_scenarios_short]
+# if need_fig4 == 'true':
+#     # ages_focus = np.array([10, 50, 100], dtype=int)
+#     # ts_focus = (ages_focus / dt).astype(int)
+#     # n_ages = len(ages_focus)
+#     # t_begin = np.max(ts_focus)
+#     t_gap = int(2 / dt)  # 2-year window
+#     N_cut = int(Nc - t_gap)
+#     # t_rolling = np.arange(0, Nt - 1, t_gap).astype(int)
+#     # n_cut = len(t_rolling)
+#     # t_rolling_pre = t_rolling[:-1]  # pre
+#     # t_rolling_post = t_rolling[1:]
+#     # n_gap = len(t_rolling)
+#     # shocks = np.cumsum(dZ_matrix, axis=1)
+#     # shocks_mat = shocks[:Mpath_short, t_rolling_post] - shocks[:Mpath_short, t_rolling_pre]
+#     # shocks_SI = np.cumsum(dZ_SI_matrix, axis=1)
+#     # shocks_SI_mat = shocks_SI[:Mpath_short, t_rolling_post] - shocks_SI[:Mpath_short, t_rolling_pre]
+#     parti_rate_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+#     parti_rate_post_mat = np.zeros((Mpath, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+#     belief_pre_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+#     belief_post_mat = np.zeros((Mpath, n_scenarios_short, n_phi_short, n_age_cutoffs, N_cut), dtype=np.float32)
+#     cohort_size_short = cohort_size[1:]
+#     cohort_size_short_mat = np.tile(cohort_size_short, (Nt - 1, 1))
+#     cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+#     tau_mat = np.tile(tau, (Nt, 1))
+# if need_fig11 == 'true':
+#     cohort_size_mat = np.tile(cohort_size, (Nt, 1))
+#     tau_mat = np.tile(tau, (Nt, 1))
+#     popu_fig11 = 0.1
+#     cutoff_age_old_below_fig11 = np.searchsorted(cummu_popu, popu_fig11)
+#     cutoff_age_young_fig11 = np.searchsorted(cummu_popu, 1 - popu_fig11)
+#     tax_short = [0.01, 0.015]
+#     n_tax_short = len(tax_short)
+#     P_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+#     P_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+#     belief_popu_old_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+#     belief_popu_young_compare_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+#     belief_popu_fig11 = np.empty((Mpath, Nt), dtype=np.float32)
+#     Wealthshare_old_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
+#     Wealthshare_young_compare = np.empty((Mpath, n_scenarios_short, n_tax_short, Nt), dtype=np.float32)
 #
-# #######################################
-# ############ GRAPH  SIX ###############
-# #######################################
-# #
-# # test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
-# # sensitivity of subjective vs. objective risk premia to business cycle indicator (dY/Y)
-# # x: output growth from time t-T to time t
-# # y: subjective and objective risk premia at tme t
-# horizons = [1, 3, 6, 12, 24]
-# m = len(horizons)
-# results_obj_matrix = np.empty((Mpaths, m, 3))
-# results_sub_matrix = np.empty((Mpaths, m, 3))
-# header = []
-# for i in range(Mpaths):
-#     x_path = np.cumsum(dY_Y_matrix[i])
-#
-#     for j, horizon in enumerate(horizons):
-#         if i == 0:
-#             header_j = str(horizon) + '-month'
-#             header.append(header_j)
-#         x = (x_path[horizon:-horizon] - x_path[:-horizon * 2]) / (horizon * dt)
-#         x = x / np.std(x)
-#         x = x.reshape(-1, 1)
-#         x = sm.add_constant(x)
-#
-#         y_sub_path = survey_view_parti_matrix[i, horizon:-horizon]
-#         y_sub = y_sub_path.reshape(-1, 1)
-#
-#         y_obj_path = obj_rp_matrix[i, horizon:-horizon]
-#         y_obj = y_obj_path.reshape(-1, 1)
-#
-#         # Objective risk premia:
-#         model = sm.OLS(y_obj, x)
-#
-#         est = model.fit()
-#         results_obj_matrix[i, j, 0] = est.params[1]
-#         results_obj_matrix[i, j, 1] = est.tvalues[1]
-#         results_obj_matrix[i, j, 2] = est.rsquared
-#
-#         # Subjective risk premia:
-#         model = sm.OLS(y_sub, x)
-#         est = model.fit()
-#         results_sub_matrix[i, j, 0] = est.params[1]
-#         results_sub_matrix[i, j, 1] = est.tvalues[1]
-#         results_sub_matrix[i, j, 2] = est.rsquared
-#
-# result_obj = np.mean(results_obj_matrix, axis=0)
-# result_sub = np.mean(results_sub_matrix, axis=0)
-#
-# # to table:
-# index = ['coef', 't-stats', 'R2']
-# n = len(index)
-# for i in range(2):
-#     reg_data = np.empty((n, m))
-#     var = result_obj if i == 0 else result_sub
-#     for j in range(n):
-#         reg_data[j] = var[:,j]
-#     print('result_obj' if i == 0 else 'result_sub')
-#     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-#
-#
-
-
-#######################################
-########### GRAPH  SEVEN ##############
-#######################################
-
-# regressing difference in participarion on difference in experienced stock market returns
-# over all simulated paths, and take average coefficient across all the paths
-
-# young_age_cut = Nt - 20 / dt
-# old_age_cut = Nt - 40 / dt
-# young_prior = 20 / dt
-# old_prior = 50 / dt
-# diff_exprienced_growth = np.zeros((Mpaths, Nt - old_prior))
-# diff_participation_rate = np.zeros((Mpaths, Nt - old_prior))
-# for i in range(Nt - old_prior):
-#     old_experienced_growth = np.average(dZ_matrix[:, i : i + old_prior])
-#     young_experienced_growth = np.average(dZ_matrix[:, (i + old_prior - young_prior) : i + old_prior])
-#     diff_exprienced_growth[:, i] = old_experienced_growth - young_experienced_growth
-#
-#     old_participation_rate = np.sum(y5[:, :old_age_cut], axis=1)  # not y5, but participation rate in matrix
-#     young_participation_rate = np.sum(y5[:, young_age_cut:], axis=1)
-#     diff_participation_rate[:, i] = old_participation_rate - young_participation_rate
-#
-# a = np.zeros(Mpaths)
-#
-# for j in range(Mpaths):
-#     model = LinearRegression().fit(diff_exprienced_growth[j], diff_participation_rate[j])
-#     a[j] = model.coef_
-
-#######################################
-########### GRAPH  EIGHT ##############
-#######################################
-
-# describe the mean and variance of beliefs (wealth-weighted) against belief of the marginal investor
-# specific to one path
-# relates to the information index. right now beliefs of non-participants make little sense
-
-# marginal_belief = (-theta_disappointment) * sigma_Y + mu_Y
-
-
-#######################################
-############ GRAPH  NINE ##############
-#######################################
-
-# # describe the predictive power of participation rate
-#
-#
-# start_t = 0
-# x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-# m = len(x_variables)
-# # np.cumsum(dR_matrix[i])
-# coeff_matrix1 = np.zeros((Mpaths, m, 3))
-# pvalue_matrix1 = np.zeros((Mpaths, m, 3))
-# tstats_matrix1 = np.zeros((Mpaths, m, 3))
-# rsqrd_matrix1 = np.zeros((Mpaths, m, 2))
-#
-# for i in range(Mpaths):
-#     path_y = erp_S_matrix[i]
-#     path_x2 = survey_view_parti_matrix[i]
-#     path_x2 = path_x2 / np.std(path_x2)
-#     for j, var in enumerate(x_variables):
-#         path_x = var[i]
-#         y_raw = path_y[start_t:]  # equity risk premium at time t
-#
-#         # univariate regressions
-#         x1_raw = path_x[start_t:]  # participation rate at time t
-#         x1_raw = x1_raw / np.std(x1_raw)
-#         x1_lag = x1_raw.reshape(-1, 1)
-#         x1_lag2 = sm.add_constant(x1_lag)
-#         y_predict = y_raw.reshape(-1, 1)
-#
-#         model = sm.OLS(y_predict, x1_lag2)
-#         est = model.fit()
-#         coeff_matrix1[i, j, 0] = est.params[1]
-#         pvalue_matrix1[i, j, 0] = est.pvalues[1]
-#         tstats_matrix1[i, j, 0] = est.tvalues[1]
-#         rsqrd_matrix1[i, j, 0] = est.rsquared
-#
-#         # bivariate regressions
-#         x2_lag = path_x2[start_t:]
-#
-#         x_lag = np.append(x1_lag, x2_lag)
-#         x_lag = np.transpose(x_lag.reshape(2, -1))
-#         x_lag = sm.add_constant(x_lag)
-#
-#         y_predict = y_raw.reshape(-1, 1)
-#
-#         model = sm.OLS(y_predict, x_lag)
-#         est = model.fit()
-#         coeff_matrix1[i, j, 1] = est.params[1]
-#         coeff_matrix1[i, j, 2] = est.params[2]
-#         pvalue_matrix1[i, j, 1] = est.pvalues[1]
-#         pvalue_matrix1[i, j, 2] = est.pvalues[2]
-#         tstats_matrix1[i, j, 1] = est.tvalues[1]
-#         tstats_matrix1[i, j, 2] = est.tvalues[2]
-#         rsqrd_matrix1[i, j, 1] = est.rsquared
-#
-# reg_coeffs1 = np.average(coeff_matrix1, axis=0)
-# reg_pvalues1 = np.average(pvalue_matrix1, axis=0)
-# reg_tstats1 = np.average(tstats_matrix1, axis=0)
-# reg_rsqrd1 = np.average(rsqrd_matrix1, axis=0)
-# reg_data = np.empty((5, 8))
-# header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age', '(8)']
-# index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-# for i in range(4):
-#     reg_data[0, i * 2] = reg_coeffs1[i, 0]
-#     reg_data[1, i * 2] = reg_tstats1[i, 0]
-#     reg_data[2, i * 2] = np.nan
-#     reg_data[3, i * 2] = np.nan
-#     reg_data[4, i * 2] = reg_rsqrd1[i, 0]
-#
-#     reg_data[0, i * 2 + 1] = reg_coeffs1[i, 1]
-#     reg_data[1, i * 2 + 1] = reg_tstats1[i, 1]
-#     reg_data[2, i * 2 + 1] = reg_coeffs1[i, 2]
-#     reg_data[3, i * 2 + 1] = reg_tstats1[i, 2]
-#     reg_data[4, i * 2 + 1] = reg_rsqrd1[i, 1]
-#
-# print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-#
-# ####
-# horizons = [1, 3, 6, 12, 36, 60, 120]
-# x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-# # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-# m = len(x_variables)
-# n = len(horizons)
-# # np.cumsum(dR_matrix[i])
-# coeff_matrix2 = np.zeros((Mpath, n, m, 3))
-# pvalue_matrix2 = np.zeros((Mpath, n, m, 3))
-# tstats_matrix2 = np.zeros((Mpath, n, m, 3))
-# rsqrd_matrix2 = np.zeros((Mpath, n, m, 2))
-#
+# # run
 # for i in range(Mpath):
-#     path_y = np.cumsum(dR_matrix[i])
-#     path_r = np.cumsum(r_matrix[i])
-#     path_x2 = survey_view_parti_matrix[i]
-#     path_x2 = path_x2 / np.std(path_x2)
-#     for j, horizon in enumerate(horizons):
-#         y_raw = (path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) / (horizon * dt)
-#         # dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
-#         y_predict = y_raw.reshape(-1, 1)
-#         for k, var in enumerate(x_variables):
-#             path_x = var[i]
-#             # univariate regressions
-#             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
-#             x1_raw = x1_raw / np.std(x1_raw)
-#             x1_lag = x1_raw.reshape(-1, 1)
-#             x1_lag2 = sm.add_constant(x1_lag)
+#     # for i in range(Mpath):
+#     print(i)
+#     ii = i if i < 1000 else i + 4000
+#     dZ = dZ_matrix[ii]
+#     dZ_build = dZ_build_matrix[ii]
+#     dZ_SI = dZ_SI_matrix[ii]
+#     dZ_SI_build = dZ_SI_build_matrix[ii]
+#     for j, scenario in enumerate(scenarios_short):
+#         mode_trade = scenario[0]
+#         mode_learn = scenario[1]
+#         for n, phi_try in enumerate(phi_vector_short):
+#             if (need_fig4 == 'true') and (need_fig11 == 'true'):
+#                 for k, tax_try in enumerate(tax_short):
+#                     beta_try = rho + nu - tax_try
+#                     (
+#                         r,
+#                         theta,
+#                         f,
+#                         Delta,
+#                         pi,
+#                         popu_parti,
+#                         f_parti,
+#                         Delta_bar_parti,
+#                         dR,
+#                         invest_tracker,
+#                         popu_can_short,
+#                         popu_short,
+#                         Phi_can_short,
+#                         Phi_short,
+#                     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+#                                     Vhat,
+#                                     mu_Y, sigma_Y, sigma_S,
+#                                     tax_try,
+#                                     beta_try,
+#                                     phi_try,
+#                                     Npre, Ninit,
+#                                     T_hat,
+#                                     dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                                     need_f='True',
+#                                     need_Delta='True',
+#                                     need_pi='True',
+#                                     )
 #
-#             model = sm.OLS(y_predict, x1_lag2)
-#             est = model.fit()
-#             coeff_matrix2[i, j, k, 0] = est.params[1]
-#             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
-#             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
-#             rsqrd_matrix2[i, j, k, 0] = est.rsquared
+#                     if tax_try == 0.01:
+#                         for mm in range(n_age_cutoffs):
+#                             age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
+#                             age_top = cutoffs_age[mm]
+#                             weights_group = cohort_size[age_bottom:age_top]
+#                             belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
+#                                                                      weights=weights_group,
+#                                                                      axis=1)
+#                             belief_post_mat[i, j, n, mm] = np.average(
+#                                 Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
+#                                 weights=weights_group,
+#                                 axis=1)
+#                             if mode_trade == 'w_constraint':
+#                                 parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
+#                                                                       weights=weights_group, axis=1)
+#                                 parti_rate_post_mat[i, n, mm] = np.average(
+#                                     invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
+#                                     weights=weights_group, axis=1)
+#                     if phi_try == 0:
+#                         # save results for fig 11
+#                         invest = pi > 0
+#                         if j == 0 and k == 0:
+#                             belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
+#                                                               axis=1)  # same average belief bc phi == 0
+#                             belief_popu_old_compare_fig11[i] = np.average(
+#                                 Delta[:, :cutoff_age_old_below_fig11],
+#                                 weights=cohort_size[:cutoff_age_old_below_fig11],
+#                                 axis=1)
+#                             belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
+#                                                                             weights=cohort_size[
+#                                                                                     cutoff_age_young_fig11:],
+#                                                                             axis=1)
+#                         P_old_compare[i, j, k] = np.sum(
+#                             invest[:, :cutoff_age_old_below_fig11] *
+#                             cohort_size_mat[:, :cutoff_age_old_below_fig11],
+#                             axis=1) / popu_fig11
+#                         P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
+#                                                           cohort_size_mat[:, cutoff_age_young_fig11:],
+#                                                           axis=1) / popu_fig11
+#                         Wealthshare_old_compare[i, j, k] = np.sum(
+#                             f[:, :cutoff_age_old_below_fig11] * dt,
+#                             axis=1)
+#                         Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
+#                                                                     axis=1)
 #
-#             # bivariate regressions
-#             x2_lag = path_x2[start_t: -1 - horizon]  # average perceived risk premia at time t
+#             elif need_fig11 == 'false':
+#                 tax_try = tax
+#                 beta_try = beta
+#                 (
+#                     r,
+#                     theta,
+#                     f,
+#                     Delta,
+#                     pi,
+#                     popu_parti,
+#                     f_parti,
+#                     Delta_bar_parti,
+#                     dR,
+#                     invest_tracker,
+#                     popu_can_short,
+#                     popu_short,
+#                     Phi_can_short,
+#                     Phi_short,
+#                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+#                                 Vhat,
+#                                 mu_Y, sigma_Y, sigma_S,
+#                                 tax_try,
+#                                 beta_try,
+#                                 phi_try,
+#                                 Npre, Ninit,
+#                                 T_hat,
+#                                 dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                                 need_f='False',
+#                                 need_Delta='True',
+#                                 need_pi='True',
+#                                 )
 #
-#             x_lag = np.append(x1_lag, x2_lag)
-#             x_lag = np.transpose(x_lag.reshape(2, -1))
-#             x_lag = sm.add_constant(x_lag)
+#                 for mm in range(n_age_cutoffs):
+#                     age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
+#                     age_top = cutoffs_age[mm]
+#                     weights_group = cohort_size[age_bottom:age_top]
+#                     belief_pre_mat[i, j, n, mm] = np.average(Delta[:-t_gap, age_bottom:age_top],
+#                                                              weights=weights_group,
+#                                                              axis=1)
+#                     belief_post_mat[i, j, n, mm] = np.average(
+#                         Delta[t_gap:, age_bottom - t_gap:age_top - t_gap],
+#                         weights=weights_group,
+#                         axis=1)
+#                     if mode_trade == 'w_constraint':
+#                         parti_rate_mat[i, n, mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
+#                                                               weights=weights_group, axis=1)
+#                         parti_rate_post_mat[i, n, mm] = np.average(
+#                             invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
+#                             weights=weights_group, axis=1)
+#             else:
+#                 if phi_try == 0:
+#                     for k, tax_try in enumerate(tax_short):
+#                         beta_try = rho + nu - tax_try
+#                         (
+#                             r,
+#                             theta,
+#                             f,
+#                             Delta,
+#                             pi,
+#                             popu_parti,
+#                             f_parti,
+#                             Delta_bar_parti,
+#                             dR,
+#                             invest_tracker,
+#                             popu_can_short,
+#                             popu_short,
+#                             Phi_can_short,
+#                             Phi_short,
+#                         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+#                                         Vhat,
+#                                         mu_Y, sigma_Y, sigma_S,
+#                                         tax_try,
+#                                         beta_try,
+#                                         phi_try,
+#                                         Npre, Ninit,
+#                                         T_hat,
+#                                         dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                                         need_f='True',
+#                                         need_Delta='True',
+#                                         need_pi='True',
+#                                         )
 #
-#             y_predict = y_raw.reshape(-1, 1)
+#                         # save results for fig 11
+#                         invest = pi > 0
+#                         if j == 0 and k == 0:
+#                             belief_popu_fig11[i] = np.average(Delta, weights=cohort_size,
+#                                                               axis=1)  # same average belief bc phi == 0
+#                             belief_popu_old_compare_fig11[i] = np.average(
+#                                 Delta[:, :cutoff_age_old_below_fig11],
+#                                 weights=cohort_size[:cutoff_age_old_below_fig11],
+#                                 axis=1)
+#                             belief_popu_young_compare_fig11[i] = np.average(Delta[:, cutoff_age_young_fig11:],
+#                                                                             weights=cohort_size[
+#                                                                                     cutoff_age_young_fig11:],
+#                                                                             axis=1)
+#                         P_old_compare[i, j, k] = np.sum(
+#                             invest[:, :cutoff_age_old_below_fig11] *
+#                             cohort_size_mat[:, :cutoff_age_old_below_fig11],
+#                             axis=1) / popu_fig11
+#                         P_young_compare[i, j, k] = np.sum(invest[:, cutoff_age_young_fig11:] *
+#                                                           cohort_size_mat[:, cutoff_age_young_fig11:],
+#                                                           axis=1) / popu_fig11
+#                         Wealthshare_old_compare[i, j, k] = np.sum(
+#                             f[:, :cutoff_age_old_below_fig11] * dt,
+#                             axis=1)
+#                         Wealthshare_young_compare[i, j, k] = np.sum(f[:, cutoff_age_young_fig11:] * dt,
+#                                                                     axis=1)
+#                 else:
+#                     pass
 #
-#             model = sm.OLS(y_predict, x_lag)
-#             est = model.fit()
-#             coeff_matrix2[i, j, k, 1] = est.params[1]
-#             coeff_matrix2[i, j, k, 2] = est.params[2]
-#             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
-#             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
-#             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
-#             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
-#             rsqrd_matrix2[i, j, k, 1] = est.rsquared
+# # figure 11
+# for i in range(Mpath):
+#     print(i)
+#     dZ = dZ_matrix[i]
+#     dZ_build = dZ_build_matrix[i]
+#     dZ_SI = dZ_SI_matrix[i]
+#     dZ_SI_build = dZ_SI_build_matrix[i]
+#     (
+#         r,
+#         theta,
+#         f,
+#         Delta,
+#         pi,
+#         popu_parti,
+#         f_parti,
+#         Delta_bar_parti,
+#         dR,
+#         invest_tracker,
+#         popu_can_short,
+#         popu_short,
+#         Phi_can_short,
+#         Phi_short,
+#     ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu, Vhat, mu_Y, sigma_Y, sigma_S, tax, beta,
+#                     phi_fix,
+#                     Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                     need_f='True',
+#                     need_Delta='True',
+#                     need_pi='False',
+#                     )
+#     theta_compare[i] = theta
+#     Phi_compare[i] = f_parti
+#     Delta_bar_compare[i] = Delta_bar_parti
+#     for j, popu in enumerate(popus):
+#         # cutoff_age_old = np.searchsorted(cummu_popu, popu)
+#         cutoff_age_old_top = np.searchsorted(cummu_popu, popu * 2)
+#         cutoff_age_old_below = np.searchsorted(cummu_popu, popu)
+#         cutoff_age_young = np.searchsorted(cummu_popu, 1 - popu)
+#         total_popu_old = np.sum(cohort_size[cutoff_age_old_below:cutoff_age_old_top])
+#         total_popu_young = np.sum(cohort_size[cutoff_age_young:])
+#         P_old_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] *
+#                                      cohort_size_mat[:, cutoff_age_old_below:cutoff_age_old_top],
+#                                      axis=1) / total_popu_old
+#         P_young_compare[i, j] = np.sum(invest_tracker[:, cutoff_age_young:] *
+#                                        cohort_size_mat[:, cutoff_age_young:],
+#                                        axis=1) / total_popu_young
+#         Phi_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] *
+#                                        invest_tracker[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
+#         Phi_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * invest_tracker[:, cutoff_age_young:] * dt, axis=1)
+#         Wealthshare_old_compare[i, j] = np.sum(f[:, cutoff_age_old_below:cutoff_age_old_top] * dt, axis=1)
+#         Wealthshare_young_compare[i, j] = np.sum(f[:, cutoff_age_young:] * dt, axis=1)
+#         belief_f_old_compare[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+#                                                 weights=f[:, cutoff_age_old_below:cutoff_age_old_top] * dt,
+#                                                 axis=1)
+#         belief_f_young_compare[i, j] = np.average(Delta[:, cutoff_age_young:],
+#                                                   weights=f[:, cutoff_age_young:] * dt,
+#                                                   axis=1)
+#         belief_popu_old_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_old_below:cutoff_age_old_top],
+#                                                          weights=cohort_size_mat[:,
+#                                                                  cutoff_age_old_below:cutoff_age_old_top],
+#                                                          axis=1)
+#         belief_popu_young_compare_fig11[i, j] = np.average(Delta[:, cutoff_age_young:],
+#                                                            weights=cohort_size_mat[:, cutoff_age_young:],
+#                                                            axis=1)
 #
-# reg_coeffs2 = np.average(coeff_matrix2, axis=0)
-# reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
-# reg_tstats2 = np.average(tstats_matrix2, axis=0)
-# reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+# # construct the condition:
+# n_tiles = 4
+# n_bins = 30
+# popu_index = 0
+# belief_f_gap_compare = belief_f_old_compare - belief_f_young_compare
+# belief_popu_gap_compare = belief_popu_old_compare_fig11 - belief_popu_young_compare_fig11
+# cutoff_belief = -theta_compare
+# belief_f_distance_young = belief_f_young_compare - cutoff_belief
+# belief_f_distance_old = belief_f_old_compare - cutoff_belief
+# belief_popu_distance_young = belief_popu_young_compare_fig11 - cutoff_belief
+# belief_popu_distance_old = belief_popu_old_compare_fig11 - cutoff_belief
+# parti_gap = P_old_compare - P_young_compare
+# Phi_gap = Phi_old_compare - Phi_young_compare
+# wealth_gap = Wealthshare_old_compare - Wealthshare_young_compare
+# # y_variables = [parti_gap[:, popu_index, :], belief_f_distance_young[:, popu_index, :], belief_f_distance_old[:, popu_index, :]
+# # y_complete_variables = [theta_complete, Phi_complete, Delta_bar_complete]
+# # x_mat = belief_f_gap_compare[:, popu_index, :]
+# # x_varname = r'Wealth weighted $\Delta_{s,t}$, old minus young'
+# x_mat = belief_popu_gap_compare[:, popu_index, :]
+# x_varname = r'Average estimation error $\Delta_{s,t}$, old minus young'
+# x_range = 0.25
+# x_range_left = np.percentile(x_mat, 5)
+# x_range_right = np.percentile(x_mat, 95)
+# width_bins = (x_range_right - x_range_left) / n_bins
+# a = x_range_left <= x_mat
+# b = x_mat <= x_range_right
+# where_within = np.where(a * b == 1)  # winsorize
+# x_mat_within = x_mat[where_within]
+# total_count = np.shape(where_within)[1]
+# condition_var = wealth_gap
+# condition_label = r'Wealth share, old minus young'
+# condition_var_within = condition_var[where_within]
+# condition = np.percentile(condition_var_within, np.arange(0, 101, (100 / n_tiles)))
+# y = np.empty((n_tiles, n_bins, 3))
+# x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
+# X_ = np.linspace(x_range_left, x_range_right, 50)
+# y_mat_within = parti_gap[where_within]
+# y_varname = 'Participation rate, old minus young'
+# fig, ax = plt.subplots(figsize=(10, 8))
+# for i in range(n_tiles):
+#     below = condition[i]
+#     above = condition[i + 1]
+#     a = below < condition_var_within
+#     b = condition_var_within < above
+#     data_where = np.where(a * b == 1)
+#     x_var = x_mat_within[data_where]
+#     y_var = y_mat_within[data_where]
+#     for n in range(n_bins):
+#         bin_left = x_range_left + n * width_bins
+#         bin_right = bin_left + width_bins
+#         bin_1 = x_var <= bin_right
+#         bin_2 = x_var >= bin_left
+#         bin_where = np.where(bin_1 * bin_2 == 1)
+#         y[i, n, 0] = np.median(y_var[bin_where])
+#         y[i, n, 1] = np.percentile(y_var[bin_where], 25)
+#         y[i, n, 2] = np.percentile(y_var[bin_where], 75)
+#     Y_ = np.empty((3, 50))
+#     for m in range(3):
+#         y_i = y[i, :, m]
+#         X_Y_Spline = make_interp_spline(x, y_i)
+#         Y_[m] = X_Y_Spline(X_)
+#     # ax.plot(x, y[i, :, 0], linewidth=0.6, color=colors[i], label=condition_label + str(i + 1))
+#     # ax.fill_between(x, y[i, :, 1], y[i, :, 2], color=colors[i], linewidth=0., alpha=0.3)
+#     ax.plot(X_, Y_[0], linewidth=0.6, color=colors[i], label=condition_label + ', Quartile ' + str(i + 1))
+#     ax.fill_between(X_, Y_[1], Y_[2], color=colors[i], linewidth=0., alpha=0.3)
+# ax.axvline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+# ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray', linewidth=0.8)
+# ax.legend(loc='upper left')
+# ax.set_xlabel(x_varname)
+# ax.set_ylabel(y_varname)
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# scenario_label = 'Complete' if scenario_index == 0 else scenarios_short[scenario_index][1]
+# plt.savefig(scenario_label + str(tax_index) + 'belief two sorts.png', dpi=100)
+# plt.savefig(scenario_label + str(tax_index) + 'belief two sorts HD.png', dpi=200)
+# # plt.savefig('85-115old'+str(tax)+'Intuition'+ x_varname[:4] + 'belief two sorts.png', dpi=200)
+# plt.show()
+# # plt.close()
 #
-# for j in range(n):
-#     horizon = horizons[j]
-#     reg_data = np.empty((5, 8))
-#     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
-#               '(8)']
-#     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-#     for i in range(4):
-#         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
-#         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
-#         reg_data[2, i * 2] = np.nan
-#         reg_data[3, i * 2] = np.nan
-#         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
 #
-#         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
-#         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
-#         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
-#         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
-#         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+# # distribution of wealth gap given the belief gap in [-x_range, x_range]:
+# n_bins = 30
+# fig, axes = plt.subplots(ncols=2, sharey='all', figsize=(10, 4))
+# for j, ax in enumerate(axes):
+#     if j == 0:
+#         condition_var_density = np.empty(n_bins)
+#         min_condition = np.min(condition_var_within)
+#         max_condition = np.max(condition_var_within)
+#         width_bins = (max_condition - min_condition) / n_bins
+#         condition_var_x = np.linspace(min_condition + width_bins / 2, max_condition - width_bins / 2, n_bins)
+#         for i in range(n_bins):
+#             bin_left = min_condition + i * width_bins
+#             bin_right = bin_left + width_bins
+#             bin_1 = condition_var_within <= bin_right
+#             bin_2 = condition_var_within >= bin_left
+#             bin_where = np.where(bin_1 * bin_2 == 1)
+#             condition_var_density[i] = np.shape(bin_where)[1] / total_count
+#         X_Y_Spline = make_interp_spline(condition_var_x, condition_var_density)
+#         X_ = np.linspace(min_condition, max_condition, 1000)
+#         Y_ = X_Y_Spline(X_)
+#         for i in range(n_tiles):
+#             if i > 0:
+#                 ax.axvline(condition[i], 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
+#             left_x = min_condition if i == 0 else condition[i]
+#             right_x = max_condition if i == n_tiles - 1 else condition[i + 1]
+#             a = X_ >= left_x
+#             b = right_x >= X_
+#             bin_where = np.where(a * b == 1)
+#             x = X_[bin_where]
+#             y = Y_[bin_where]
+#             ax.fill_between(x, 0, y, color=colors[i], linewidth=0., alpha=0.3, label='Quartile ' + str(i + 1))
+#         ax.legend(loc='upper left')
+#         ax.set_xlim(0, 0.45) if tax > 0.01 else ax.set_xlim(0, max_condition)
+#         ax.set_xlabel(condition_label)
+#         ax.set_ylabel('Density')
+#     else:
+#         width_bins = (x_range_right - x_range_left) / n_bins
+#         y = np.empty((n_tiles, n_bins))
+#         x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n_bins)
+#         y_bottom = 0
+#         for i in range(n_tiles):
+#             below = condition[i]
+#             above = condition[i + 1]
+#             a = below < condition_var_within
+#             b = condition_var_within < above
+#             data_where = np.where(a * b == 1)
+#             x_var = x_mat_within[data_where]
+#             # min_gap = np.min(x_var)
+#             # max_gap = np.max(x_var)
+#             # width_bins = (max_gap - min_gap) / n_bins
+#             for n in range(n_bins):
+#                 # bin_left = min_gap + n * width_bins
+#                 # bin_right = bin_left + width_bins
+#                 bin_left = x_range_left + n * width_bins
+#                 bin_right = bin_left + width_bins
+#                 bin_1 = x_var <= bin_right
+#                 bin_2 = x_var >= bin_left
+#                 bin_where = np.where(bin_1 * bin_2 == 1)
+#                 y[i, n] = np.shape(bin_where)[1] / total_count
+#             X_ = np.linspace(x_range_left, x_range_right, 100)
+#             X_Y_Spline = make_interp_spline(x, y[i])
+#             Y_ = X_Y_Spline(X_)
+#             y_top = y_bottom + Y_
+#             ax.fill_between(X_, y_top, y_bottom, linewidth=0., color=colors[i],
+#                             alpha=0.3)
+#             y_bottom = y_top
+#         # ax.legend(loc='upper right')
+#         ax.axvline(0, 0.05, 0.95, linestyle='dashed', linewidth=0.8, color='gray')
+#         # ax.set_ylim(top = 0.08)
+#         ax.set_xlabel(x_varname)
+#         # ax.set_ylabel('Density')
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# scenario_label = 'Complete' if scenario_index == 0 else scenarios_short[scenario_index][1]
+# plt.savefig(scenario_label + str(tax_index) + 'Intuition wealth distribution.png', dpi=100)
+# # plt.savefig('85-115old'+str(tax)+'Intuition wealth distribution.png', dpi=200)
+# plt.show()
+# # plt.close()
 #
-#     print(str(horizon) + '-month')
-#     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
 #
-# ####
-# horizons = [1, 3, 6, 12, 36, 60, 120]
-# x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # figure 15
+# ######################################################################
+# #### why is Delta_bar more volatile with the shorting constraint? ####
+# ######################################################################
+# # scenarios: complete, reentry, & disappointment
+# # phi = 0
+# # Npres: 60 & 240
+# Npres_short = [60, 240]
+# n_Npres_short = len(Npres_short)
+# popu_fig15 = 0.5
+# n_scenarios_short = 3
+# phi_try = 0.0
+# scenarios_short = scenarios[:n_scenarios_short]
+# cutoff_age_old_below_fig15 = np.searchsorted(cummu_popu, popu_fig15)
+# cutoff_age_young_fig15 = np.searchsorted(cummu_popu, 1 - popu_fig15)
+# Phi_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# Delta_bar_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# belief_popu_fig15 = np.empty((Mpath, n_Npres_short, Nt), dtype=np.float32)
+# Phi_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# Phi_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)
+# belief_f_old_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
+# belief_f_young_compare = np.empty((Mpath, n_scenarios_short, n_Npres_short, Nt), dtype=np.float32)  # of participants
+# for i in range(Mpath):
+#     # for i in range(Mpath):
+#     print(i)
+#     ii = i if i < 1000 else i + 4000
+#     dZ = dZ_matrix[ii]
+#     dZ_build = dZ_build_matrix[ii]
+#     dZ_SI = dZ_SI_matrix[ii]
+#     dZ_SI_build = dZ_SI_build_matrix[ii]
+#     for j, scenario in enumerate(scenarios_short):
+#         mode_trade = scenario[0]
+#         mode_learn = scenario[1]
+#         for m, Npre_try in enumerate(Npres_short):
+#             T_hat_try = Npre_try * dt
+#             Vhat_try = (sigma_Y ** 2) / T_hat_try  # prior variance
+#             (
+#                 r,
+#                 theta,
+#                 f,
+#                 Delta,
+#                 pi,
+#                 popu_parti,
+#                 f_parti,
+#                 Delta_bar_parti,
+#                 dR,
+#                 invest_tracker,
+#                 popu_can_short,
+#                 popu_short,
+#                 Phi_can_short,
+#                 Phi_short,
+#             ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, rho, nu,
+#                             Vhat_try,
+#                             mu_Y, sigma_Y, sigma_S,
+#                             tax,
+#                             beta,
+#                             phi_try,
+#                             Npre_try, Ninit,
+#                             T_hat_try,
+#                             dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cohort_size,
+#                             need_f='True',
+#                             need_Delta='True',
+#                             need_pi='True',
+#                             )
+#             # save results for fig 15
+#             Phi_compare[i, j, m] = f_parti
+#             Delta_bar_compare[i, j, m] = Delta_bar_parti
+#             if j == 0:
+#                 belief_popu_fig15[i, m] = np.average(Delta, weights=cohort_size,
+#                                                      axis=1)  # same average belief as phi == 0
+#                 belief_f_old_compare[i, j, m] = np.average(Delta[:, :cutoff_age_old_below_fig15],
+#                                                            weights=f[:, :cutoff_age_old_below_fig15] * dt,
+#                                                            axis=1)
+#                 belief_f_young_compare[i, j, m] = np.average(Delta[:, cutoff_age_young_fig15:],
+#                                                              weights=f[:, cutoff_age_young_fig15:] * dt,
+#                                                              axis=1)
+#                 Phi_old_compare[i, j, m] = np.sum(f[:, :cutoff_age_old_below_fig15] * dt, axis=1)
+#                 Phi_young_compare[i, j, m] = np.sum(f[:, cutoff_age_young_fig15:] * dt, axis=1)
+#             else:
+#                 parti = pi > 0
+#                 belief_f_old_compare[i, j, m] = np.ma.average(Delta[:, :cutoff_age_old_below_fig15],
+#                                                               weights=f[:, : cutoff_age_old_below_fig15] *
+#                                                                       parti[:, : cutoff_age_old_below_fig15] * dt,
+#                                                               axis=1)
+#                 belief_f_young_compare[i, j, m] = np.ma.average(Delta[:, cutoff_age_young_fig15:],
+#                                                                 weights=f[:, cutoff_age_young_fig15:] *
+#                                                                         parti[:, cutoff_age_young_fig15:] * dt,
+#                                                                 axis=1)
+#                 Phi_old_compare[i, j, m] = np.sum(parti[:, :cutoff_age_old_below_fig15]
+#                                                   * f[:, :cutoff_age_old_below_fig15] * dt,
+#                                                   axis=1)
+#                 Phi_young_compare[i, j, m] = np.sum(parti[:, cutoff_age_young_fig15:]
+#                                                     * f[:, cutoff_age_young_fig15:] * dt,
+#                                                     axis=1)
+#
+# # winsorize extreme shocks
+# Npre_index = 0
+# average_Delta_bar = np.mean(np.mean(Delta_bar_compare[:, :, Npre_index], axis=0), axis=1)
+# x_index = belief_popu_fig15[:, Npre_index]
+# x_label = 'Average estimation error'
+# below_dz = np.percentile(x_index, 10)
+# below_data = x_index >= below_dz
+# above_dz = np.percentile(x_index, 90)
+# above_data = above_dz >= x_index
+# data_where = np.where(below_data * above_data == 1)
+#
+# # prepare data for the figure:
+# n_bins = 10
+# bins = np.linspace(below_dz, above_dz, n_bins)
+# # quartile_var = (Wealthshare_old_compare - Wealthshare_young_compare)[:, :, Npre_index]
+# # quartile_var = belief_popu_young_compare[:, Npre_index] - belief_popu_old_compare[:, Npre_index]
+# # quartile_var = parti_young_compare[:, :, Npre_index]
+# y_percentiles = [50, 25, 75]
+# phi_old = Phi_old_compare / Phi_compare
+# phi_young = Phi_young_compare / Phi_compare
+# belief_f_young = np.where(belief_f_young_compare == 0, np.nan,
+#                           belief_f_young_compare)  # converting empty cells from 0 to nan
+# belief_f_old = np.where(belief_f_old_compare == 0, np.nan, belief_f_old_compare)
+# data_var = Delta_bar_compare[:, :, Npre_index]
+# data_figure = np.zeros((n_scenarios_short, n_bins - 1, len(y_percentiles)))
+# phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+# belief_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+# belief_phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+# for i in range(n_scenarios_short):
+#     data_focus = data_var[:, i]
+#     phi_var_old = phi_old
+#     phi_var_young = phi_young[:, Npre_index]
+#     for j in range(n_bins - 1):
+#         bin_0 = bins[j]
+#         bin_1 = bins[j + 1]
+#         below_bin = bin_1 >= x_index
+#         above_bin = x_index >= bin_0
+#         bin_where = np.where(below_bin * above_bin == 1)
+#         data_focus_z = data_focus[bin_where]
+#         data_figure[i, j] = np.percentile(data_focus_z, y_percentiles)
+#         for l in range(2):
+#             phi_var = phi_old[:, i, Npre_index] if l == 0 else phi_young[:, i, Npre_index]
+#             belief_var_nan = belief_f_old[:, i, Npre_index] if l == 0 else belief_f_young[:, i, Npre_index]
+#             belief_var = belief_f_old_compare[:, i, Npre_index] if l == 0 else belief_f_young_compare[:, i, Npre_index]
+#             phi_figure[i, l, j] = np.percentile(phi_var[bin_where], y_percentiles)
+#             belief_figure[i, l, j] = np.nanpercentile(belief_var_nan[bin_where], y_percentiles)
+#             belief_phi = phi_var * belief_var
+#             belief_phi_figure[i, l, j] = np.percentile(belief_phi[bin_where], y_percentiles)
+#
+# bin_size = (above_dz - below_dz) / (n_bins - 1)
+# x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
+# labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
+#           [r'$\Phi_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$', r'$\Phi_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$'],
+#           [r'$\Phi_t^{old}\bar{\Delta}_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$',
+#            r'$\Phi_t^{young}\bar{\Delta}_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$']]
+# # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
+# sub_titles = ['Complete market', 'Reentry', 'Disappointment']
+# y_labels = ['Estimation error of the participants',
+#             'Wealth share of the participants',
+#             r'Contribution to $\bar{\Delta}_t$']
+# # X_ = np.linspace(-0.2, 0.2, 100)
+# X_ = np.linspace(below_dz, above_dz, 100)
+# fig, axes = plt.subplots(ncols=3, nrows=3, figsize=(15, 15), sharex='all', sharey='row')
+# for j, rows in enumerate(axes):
+#     for i, ax in enumerate(rows):
+#         if j == 0:
+#             y_focus = belief_figure[i]
+#         elif j == 1:
+#             y_focus = phi_figure[i]
+#         else:
+#             y_focus = belief_phi_figure[i]
+#         for k in range(2):
+#             if j == 2:
+#                 y_i = y_focus[k]
+#                 X_Y_Spline = make_interp_spline(x, y_i)
+#                 Y_ = X_Y_Spline(X_)
+#                 ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+#                 ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+#                 if k == 1:
+#                     y_i = data_figure[i]  # n_bin-1 * 3
+#                     X_Y_Spline = make_interp_spline(x, y_i)
+#                     Y_ = X_Y_Spline(X_)
+#                     ax.plot(X_, Y_[:, 0], color='gray', linewidth=1,
+#                             label=r'$\bar{\Delta}_t$')
+#                     ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color='gray', linewidth=0., alpha=0.2)
+#                     ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8, linestyle='dashed',
+#                                label=r'Unconditional mean $\bar{\Delta}_t$')
+#                     x_mean = [X_[np.searchsorted(Y_[:, 0], average_Delta_bar[i])]]
+#                     ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
+#             else:
+#                 y_i = y_focus[k]
+#                 X_Y_Spline = make_interp_spline(x, y_i)
+#                 Y_ = X_Y_Spline(X_)
+#                 ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+#                 ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+#         if i == 0:
+#             ax.legend(loc='upper left')
+#             ax.set_ylabel(y_labels[j])
+#         if j == 0:
+#             ax.set_title(sub_titles[i])
+#         if j == 2:
+#             ax.set_xlabel(x_label)
+#         else:
+#             ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
+#         # ax.set_xlim(-0.25, 0.25)
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola.png', dpi=100)
+# plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola HD.png', dpi=200)
+# plt.show()
+#
+# # ######################################
+# # ############ Figure 3.2 ##############
+# # ######################################
+#
+#
+# # ######################################
+# # ############ GRAPH TWO ###############
+# # ######################################
+# # regressions
+#
+# horizons = [3, 6, 12, 24]
+# n_horizon = len(horizons)
+# report = ['coef', 't-stats', 'R-sqrd']
+# n_report = len(report)
+# # var_names = ['Participation rate', 'Belief dispersion', 'survey view', 'Participation rate, young', 'Participation rate, old']
+# var_names = ['Participation rate', 'Belief dispersion', 'survey view']
+# phi_indeces = [0, 4, 8]
+# n_phi_short = len(phi_indeces)
+# regression_results_uni = np.empty((N, n_scenarios, n_phi_short, n_horizon, len(var_names), n_report))
+# # var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix, parti_young_matrix, parti_old_matrix]
+# var_list = [popu_parti_matrix, belief_dispersion_matrix, survey_view_matrix]
+#
+# # predictive regression of stock returns on pariticipation rate
+# for i in range(N):
+#     for j in range(n_scenarios):
+#         for k, phi_index in enumerate(phi_indeces):
+#             excess_return_vector = np.cumsum(dR_matrix[i, j, phi_index, 1:] - r_matrix[i, j, phi_index, :-1] * dt)
+#             x_list = []
+#             for var in var_list:
+#                 var_vector = var[i, j, phi_index, :-1]
+#                 x_list.append(var_vector)
+#             for l, horizon in enumerate(horizons):
+#                 y_horizon1 = (excess_return_vector[horizon:] - excess_return_vector[: -horizon]) / (
+#                         dt * horizon)  # make sure the timings allign
+#                 y_horizon = y_horizon1.reshape(-1, 1)
+#                 for m, x_horizon_raw in enumerate(x_list):
+#                     if scenarios[j][0] == 'complete' and var == popu_parti_matrix:
+#                         regression_results_uni[i, j, k, l, m, 0] = est.params[1]
+#                         regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
+#                         regression_results_uni[i, j, k, l, m, 2] = est.rsquared
+#                     x_horizon1 = x_horizon_raw[: -horizon]
+#                     x_horizon1 = x_horizon1 / np.std(x_horizon1)
+#                     x_horizon1 = x_horizon1.reshape(-1, 1)
+#                     x_horizon = sm.add_constant(x_horizon1)
+#
+#                     model = sm.OLS(y_horizon, x_horizon)
+#                     est = model.fit()
+#                     regression_results_uni[i, j, k, l, m, 0] = est.params[1]
+#                     regression_results_uni[i, j, k, l, m, 1] = est.tvalues[1]
+#                     regression_results_uni[i, j, k, l, m, 2] = est.rsquared
+#
+# mean_regression_results = np.mean(regression_results_uni, axis=0)
+# header = ['(1) phi = 0', '(2) phi = 0.4', '(3) phi = 0.8']
+# # present the regression results in tables:
+#
+# for k, scenario in enumerate(scenarios):
+#     label_scenario = scenario[0] if scenario[0] == 'complete' else scenario[0] + scenario[1]
+#     print(label_scenario)
+#     for j, var in enumerate(var_names):
+#         for i, horizon in enumerate(horizons):
+#             reg_data = np.empty((n_report, n_phi))
+#             for l in range(n_phi):
+#                 reg_data[:, l] = mean_regression_results[k, l, i, j]
+#             report1 = [var, 't-stats', 'R-sqrd']
+#             print(var, ', ' + str(horizon) + ' months')
+#             print(tabulate.tabulate(reg_data, headers=header, showindex=report1, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+# # #######################################
+# # ############ GRAPH  FIVE ##############
+# # #######################################
+# # # The rich can short
+# # # compare and plot theta
+# # fig, ax1 = plt.subplots(figsize=(15, 5))
+# # ax1.set_xlabel('Time in simulation, one random path')
+# # ax1.set_ylabel('Zt', color=color5)
+# # ax1.plot(t, y0, color=color5, linewidth=0.5)
+# # ax1.tick_params(axis='y', labelcolor=color5)
+# # ax2 = ax1.twinx()
+# # ax2.set_ylabel('Market price of risk', color=color2)
+# # ax2.set_ylim([-1, 1])
+# # ax2.plot(t, y21, color=color2, linewidth=0.4, label='Complete market')
+# # ax2.plot(t, y22, color=color3, linewidth=0.4, label='Short-sale constraint')
+# # ax2.plot(t, y71, color='magenta', linewidth=0.4, label='Rich can short')
+# # # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+# # ax2.tick_params(axis='y', labelcolor=color2)
+# # plt.legend()
+# # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# # plt.savefig('Zt and market price of risk, rich free' + '.png', dpi=500)
+# # plt.show()
+# #
+# # # Compare the bias between investors having long and short positions
+# # fig, ax1 = plt.subplots(figsize=(15, 5))
+# # ax1.set_xlabel('Time in simulation, one random path')
+# # ax1.set_ylabel('Zt', color=color5)
+# # ax1.plot(t, y0, color=color5, linewidth=0.5)
+# # ax1.tick_params(axis='y', labelcolor=color5)
+# # ax2 = ax1.twinx()
+# # ax2.set_ylabel('Market price of risk', color=color2)
+# # ax2.set_ylim([-0.5, 1])
+# # ax2.plot(t, y72, color='darkblue', linewidth=0.6, label='% investors')
+# # ax2.plot(t, y73, color='darkgreen', linewidth=0.6, label='% Short sellers')
+# # ax2.plot(t, y74, color='blue', linewidth=0.4, label='Average bias long')
+# # ax2.plot(t, y75, color='magenta', linewidth=0.4, label='Average bias short')
+# # # ax2.hlines(sigma_Y, xmin=0, xmax=500, color='purple', linestyles='--', linewidth=0.8, label='Representative agent')
+# # ax2.tick_params(axis='y', labelcolor=color2)
+# # plt.legend()
+# # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# # plt.savefig('Zt and participation, rich free' + '.png', dpi=500)
+# # plt.show()
+# #
+# # #######################################
+# # ############ GRAPH  SIX ###############
+# # #######################################
+# # #
+# # # test if subjective risk premia comove less with shocks / cyclicality of perceived risk premia
+# # # sensitivity of subjective vs. objective risk premia to business cycle indicator (dY/Y)
+# # # x: output growth from time t-T to time t
+# # # y: subjective and objective risk premia at tme t
+# # horizons = [1, 3, 6, 12, 24]
+# # m = len(horizons)
+# # results_obj_matrix = np.empty((Mpaths, m, 3))
+# # results_sub_matrix = np.empty((Mpaths, m, 3))
+# # header = []
+# # for i in range(Mpaths):
+# #     x_path = np.cumsum(dY_Y_matrix[i])
+# #
+# #     for j, horizon in enumerate(horizons):
+# #         if i == 0:
+# #             header_j = str(horizon) + '-month'
+# #             header.append(header_j)
+# #         x = (x_path[horizon:-horizon] - x_path[:-horizon * 2]) / (horizon * dt)
+# #         x = x / np.std(x)
+# #         x = x.reshape(-1, 1)
+# #         x = sm.add_constant(x)
+# #
+# #         y_sub_path = survey_view_parti_matrix[i, horizon:-horizon]
+# #         y_sub = y_sub_path.reshape(-1, 1)
+# #
+# #         y_obj_path = obj_rp_matrix[i, horizon:-horizon]
+# #         y_obj = y_obj_path.reshape(-1, 1)
+# #
+# #         # Objective risk premia:
+# #         model = sm.OLS(y_obj, x)
+# #
+# #         est = model.fit()
+# #         results_obj_matrix[i, j, 0] = est.params[1]
+# #         results_obj_matrix[i, j, 1] = est.tvalues[1]
+# #         results_obj_matrix[i, j, 2] = est.rsquared
+# #
+# #         # Subjective risk premia:
+# #         model = sm.OLS(y_sub, x)
+# #         est = model.fit()
+# #         results_sub_matrix[i, j, 0] = est.params[1]
+# #         results_sub_matrix[i, j, 1] = est.tvalues[1]
+# #         results_sub_matrix[i, j, 2] = est.rsquared
+# #
+# # result_obj = np.mean(results_obj_matrix, axis=0)
+# # result_sub = np.mean(results_sub_matrix, axis=0)
+# #
+# # # to table:
+# # index = ['coef', 't-stats', 'R2']
+# # n = len(index)
+# # for i in range(2):
+# #     reg_data = np.empty((n, m))
+# #     var = result_obj if i == 0 else result_sub
+# #     for j in range(n):
+# #         reg_data[j] = var[:,j]
+# #     print('result_obj' if i == 0 else 'result_sub')
+# #     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# #
+# #
+#
+#
+# #######################################
+# ########### GRAPH  SEVEN ##############
+# #######################################
+#
+# # regressing difference in participarion on difference in experienced stock market returns
+# # over all simulated paths, and take average coefficient across all the paths
+#
+# # young_age_cut = Nt - 20 / dt
+# # old_age_cut = Nt - 40 / dt
+# # young_prior = 20 / dt
+# # old_prior = 50 / dt
+# # diff_exprienced_growth = np.zeros((Mpaths, Nt - old_prior))
+# # diff_participation_rate = np.zeros((Mpaths, Nt - old_prior))
+# # for i in range(Nt - old_prior):
+# #     old_experienced_growth = np.average(dZ_matrix[:, i : i + old_prior])
+# #     young_experienced_growth = np.average(dZ_matrix[:, (i + old_prior - young_prior) : i + old_prior])
+# #     diff_exprienced_growth[:, i] = old_experienced_growth - young_experienced_growth
+# #
+# #     old_participation_rate = np.sum(y5[:, :old_age_cut], axis=1)  # not y5, but participation rate in matrix
+# #     young_participation_rate = np.sum(y5[:, young_age_cut:], axis=1)
+# #     diff_participation_rate[:, i] = old_participation_rate - young_participation_rate
+# #
+# # a = np.zeros(Mpaths)
+# #
+# # for j in range(Mpaths):
+# #     model = LinearRegression().fit(diff_exprienced_growth[j], diff_participation_rate[j])
+# #     a[j] = model.coef_
+#
+# #######################################
+# ########### GRAPH  EIGHT ##############
+# #######################################
+#
+# # describe the mean and variance of beliefs (wealth-weighted) against belief of the marginal investor
+# # specific to one path
+# # relates to the information index. right now beliefs of non-participants make little sense
+#
+# # marginal_belief = (-theta_disappointment) * sigma_Y + mu_Y
+#
+#
+# #######################################
+# ############ GRAPH  NINE ##############
+# #######################################
+#
+# # # describe the predictive power of participation rate
+# #
+# #
+# # start_t = 0
 # # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
-# m = len(x_variables)
-# n = len(horizons)
-# # np.cumsum(dR_matrix[i])
-# coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
-# pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
-# tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
-# rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
-#
-# for i in range(Mpaths):
-#     path_y = np.cumsum(dR_matrix[i])
-#     path_r = np.cumsum(r_matrix[i])
-#     path_x2 = survey_view_parti_matrix[i]
-#     path_x2 = path_x2 / np.std(path_x2)
-#     for j, horizon in enumerate(horizons):
-#         # y_raw = path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]  #dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
-#         y_raw = ((path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) \
-#                  - (path_r[start_t + horizon: -1] - path_r[start_t: -horizon - 1])) / (horizon * dt)
-#         y_predict = y_raw.reshape(-1, 1)
-#         for k, var in enumerate(x_variables):
-#             path_x = var[i]
-#             # univariate regressions
-#             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
-#             x1_raw = x1_raw / np.std(x1_raw)
-#             x1_lag = x1_raw.reshape(-1, 1)
-#             x1_lag2 = sm.add_constant(x1_lag)
-#
-#             model = sm.OLS(y_predict, x1_lag2)
-#             est = model.fit()
-#             coeff_matrix2[i, j, k, 0] = est.params[1]
-#             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
-#             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
-#             rsqrd_matrix2[i, j, k, 0] = est.rsquared
-#
-#             # bivariate regressions
-#             x2_lag = path_x2[start_t: -horizon - 1]
-#
-#             x_lag = np.append(x1_lag, x2_lag)
-#             x_lag = np.transpose(x_lag.reshape(2, -1))
-#             x_lag = sm.add_constant(x_lag)
-#
-#             y_predict = y_raw.reshape(-1, 1)
-#
-#             model = sm.OLS(y_predict, x_lag)
-#             est = model.fit()
-#             coeff_matrix2[i, j, k, 1] = est.params[1]
-#             coeff_matrix2[i, j, k, 2] = est.params[2]
-#             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
-#             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
-#             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
-#             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
-#             rsqrd_matrix2[i, j, k, 1] = est.rsquared
-#
-# reg_coeffs2 = np.average(coeff_matrix2, axis=0)
-# reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
-# reg_tstats2 = np.average(tstats_matrix2, axis=0)
-# reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
-#
-# for j in range(n):
-#     horizon = horizons[j]
-#     reg_data = np.empty((5, 8))
-#     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
-#               '(8)']
-#     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
-#     for i in range(4):
-#         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
-#         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
-#         reg_data[2, i * 2] = np.nan
-#         reg_data[3, i * 2] = np.nan
-#         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
-#
-#         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
-#         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
-#         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
-#         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
-#         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
-#
-#     print(str(horizon) + '-month')
-#     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# # m = len(x_variables)
+# # # np.cumsum(dR_matrix[i])
+# # coeff_matrix1 = np.zeros((Mpaths, m, 3))
+# # pvalue_matrix1 = np.zeros((Mpaths, m, 3))
+# # tstats_matrix1 = np.zeros((Mpaths, m, 3))
+# # rsqrd_matrix1 = np.zeros((Mpaths, m, 2))
+# #
+# # for i in range(Mpaths):
+# #     path_y = erp_S_matrix[i]
+# #     path_x2 = survey_view_parti_matrix[i]
+# #     path_x2 = path_x2 / np.std(path_x2)
+# #     for j, var in enumerate(x_variables):
+# #         path_x = var[i]
+# #         y_raw = path_y[start_t:]  # equity risk premium at time t
+# #
+# #         # univariate regressions
+# #         x1_raw = path_x[start_t:]  # participation rate at time t
+# #         x1_raw = x1_raw / np.std(x1_raw)
+# #         x1_lag = x1_raw.reshape(-1, 1)
+# #         x1_lag2 = sm.add_constant(x1_lag)
+# #         y_predict = y_raw.reshape(-1, 1)
+# #
+# #         model = sm.OLS(y_predict, x1_lag2)
+# #         est = model.fit()
+# #         coeff_matrix1[i, j, 0] = est.params[1]
+# #         pvalue_matrix1[i, j, 0] = est.pvalues[1]
+# #         tstats_matrix1[i, j, 0] = est.tvalues[1]
+# #         rsqrd_matrix1[i, j, 0] = est.rsquared
+# #
+# #         # bivariate regressions
+# #         x2_lag = path_x2[start_t:]
+# #
+# #         x_lag = np.append(x1_lag, x2_lag)
+# #         x_lag = np.transpose(x_lag.reshape(2, -1))
+# #         x_lag = sm.add_constant(x_lag)
+# #
+# #         y_predict = y_raw.reshape(-1, 1)
+# #
+# #         model = sm.OLS(y_predict, x_lag)
+# #         est = model.fit()
+# #         coeff_matrix1[i, j, 1] = est.params[1]
+# #         coeff_matrix1[i, j, 2] = est.params[2]
+# #         pvalue_matrix1[i, j, 1] = est.pvalues[1]
+# #         pvalue_matrix1[i, j, 2] = est.pvalues[2]
+# #         tstats_matrix1[i, j, 1] = est.tvalues[1]
+# #         tstats_matrix1[i, j, 2] = est.tvalues[2]
+# #         rsqrd_matrix1[i, j, 1] = est.rsquared
+# #
+# # reg_coeffs1 = np.average(coeff_matrix1, axis=0)
+# # reg_pvalues1 = np.average(pvalue_matrix1, axis=0)
+# # reg_tstats1 = np.average(tstats_matrix1, axis=0)
+# # reg_rsqrd1 = np.average(rsqrd_matrix1, axis=0)
+# # reg_data = np.empty((5, 8))
+# # header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age', '(8)']
+# # index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+# # for i in range(4):
+# #     reg_data[0, i * 2] = reg_coeffs1[i, 0]
+# #     reg_data[1, i * 2] = reg_tstats1[i, 0]
+# #     reg_data[2, i * 2] = np.nan
+# #     reg_data[3, i * 2] = np.nan
+# #     reg_data[4, i * 2] = reg_rsqrd1[i, 0]
+# #
+# #     reg_data[0, i * 2 + 1] = reg_coeffs1[i, 1]
+# #     reg_data[1, i * 2 + 1] = reg_tstats1[i, 1]
+# #     reg_data[2, i * 2 + 1] = reg_coeffs1[i, 2]
+# #     reg_data[3, i * 2 + 1] = reg_tstats1[i, 2]
+# #     reg_data[4, i * 2 + 1] = reg_rsqrd1[i, 1]
+# #
+# # print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# #
+# # ####
+# # horizons = [1, 3, 6, 12, 36, 60, 120]
+# # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # m = len(x_variables)
+# # n = len(horizons)
+# # # np.cumsum(dR_matrix[i])
+# # coeff_matrix2 = np.zeros((Mpath, n, m, 3))
+# # pvalue_matrix2 = np.zeros((Mpath, n, m, 3))
+# # tstats_matrix2 = np.zeros((Mpath, n, m, 3))
+# # rsqrd_matrix2 = np.zeros((Mpath, n, m, 2))
+# #
+# # for i in range(Mpath):
+# #     path_y = np.cumsum(dR_matrix[i])
+# #     path_r = np.cumsum(r_matrix[i])
+# #     path_x2 = survey_view_parti_matrix[i]
+# #     path_x2 = path_x2 / np.std(path_x2)
+# #     for j, horizon in enumerate(horizons):
+# #         y_raw = (path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) / (horizon * dt)
+# #         # dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
+# #         y_predict = y_raw.reshape(-1, 1)
+# #         for k, var in enumerate(x_variables):
+# #             path_x = var[i]
+# #             # univariate regressions
+# #             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
+# #             x1_raw = x1_raw / np.std(x1_raw)
+# #             x1_lag = x1_raw.reshape(-1, 1)
+# #             x1_lag2 = sm.add_constant(x1_lag)
+# #
+# #             model = sm.OLS(y_predict, x1_lag2)
+# #             est = model.fit()
+# #             coeff_matrix2[i, j, k, 0] = est.params[1]
+# #             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
+# #             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
+# #             rsqrd_matrix2[i, j, k, 0] = est.rsquared
+# #
+# #             # bivariate regressions
+# #             x2_lag = path_x2[start_t: -1 - horizon]  # average perceived risk premia at time t
+# #
+# #             x_lag = np.append(x1_lag, x2_lag)
+# #             x_lag = np.transpose(x_lag.reshape(2, -1))
+# #             x_lag = sm.add_constant(x_lag)
+# #
+# #             y_predict = y_raw.reshape(-1, 1)
+# #
+# #             model = sm.OLS(y_predict, x_lag)
+# #             est = model.fit()
+# #             coeff_matrix2[i, j, k, 1] = est.params[1]
+# #             coeff_matrix2[i, j, k, 2] = est.params[2]
+# #             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
+# #             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
+# #             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
+# #             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
+# #             rsqrd_matrix2[i, j, k, 1] = est.rsquared
+# #
+# # reg_coeffs2 = np.average(coeff_matrix2, axis=0)
+# # reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
+# # reg_tstats2 = np.average(tstats_matrix2, axis=0)
+# # reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+# #
+# # for j in range(n):
+# #     horizon = horizons[j]
+# #     reg_data = np.empty((5, 8))
+# #     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
+# #               '(8)']
+# #     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+# #     for i in range(4):
+# #         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
+# #         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
+# #         reg_data[2, i * 2] = np.nan
+# #         reg_data[3, i * 2] = np.nan
+# #         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
+# #
+# #         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
+# #         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
+# #         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
+# #         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
+# #         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+# #
+# #     print(str(horizon) + '-month')
+# #     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# #
+# # ####
+# # horizons = [1, 3, 6, 12, 36, 60, 120]
+# # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # # x_variables = [popu_parti_matrix, popu_parti_young_matrix, popu_parti_old_matrix, age_parti_matrix]
+# # m = len(x_variables)
+# # n = len(horizons)
+# # # np.cumsum(dR_matrix[i])
+# # coeff_matrix2 = np.zeros((Mpaths, n, m, 3))
+# # pvalue_matrix2 = np.zeros((Mpaths, n, m, 3))
+# # tstats_matrix2 = np.zeros((Mpaths, n, m, 3))
+# # rsqrd_matrix2 = np.zeros((Mpaths, n, m, 2))
+# #
+# # for i in range(Mpaths):
+# #     path_y = np.cumsum(dR_matrix[i])
+# #     path_r = np.cumsum(r_matrix[i])
+# #     path_x2 = survey_view_parti_matrix[i]
+# #     path_x2 = path_x2 / np.std(path_x2)
+# #     for j, horizon in enumerate(horizons):
+# #         # y_raw = path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]  #dR is the return from t-1 to t, and thus have to move 1 to have returns from t to t+1
+# #         y_raw = ((path_y[start_t + horizon + 1:] - path_y[start_t + 1: -horizon]) \
+# #                  - (path_r[start_t + horizon: -1] - path_r[start_t: -horizon - 1])) / (horizon * dt)
+# #         y_predict = y_raw.reshape(-1, 1)
+# #         for k, var in enumerate(x_variables):
+# #             path_x = var[i]
+# #             # univariate regressions
+# #             x1_raw = path_x[start_t: -1 - horizon]  # participation rate at time t
+# #             x1_raw = x1_raw / np.std(x1_raw)
+# #             x1_lag = x1_raw.reshape(-1, 1)
+# #             x1_lag2 = sm.add_constant(x1_lag)
+# #
+# #             model = sm.OLS(y_predict, x1_lag2)
+# #             est = model.fit()
+# #             coeff_matrix2[i, j, k, 0] = est.params[1]
+# #             pvalue_matrix2[i, j, k, 0] = est.pvalues[1]
+# #             tstats_matrix2[i, j, k, 0] = est.tvalues[1]
+# #             rsqrd_matrix2[i, j, k, 0] = est.rsquared
+# #
+# #             # bivariate regressions
+# #             x2_lag = path_x2[start_t: -horizon - 1]
+# #
+# #             x_lag = np.append(x1_lag, x2_lag)
+# #             x_lag = np.transpose(x_lag.reshape(2, -1))
+# #             x_lag = sm.add_constant(x_lag)
+# #
+# #             y_predict = y_raw.reshape(-1, 1)
+# #
+# #             model = sm.OLS(y_predict, x_lag)
+# #             est = model.fit()
+# #             coeff_matrix2[i, j, k, 1] = est.params[1]
+# #             coeff_matrix2[i, j, k, 2] = est.params[2]
+# #             pvalue_matrix2[i, j, k, 1] = est.pvalues[1]
+# #             pvalue_matrix2[i, j, k, 2] = est.pvalues[2]
+# #             tstats_matrix2[i, j, k, 1] = est.tvalues[1]
+# #             tstats_matrix2[i, j, k, 2] = est.tvalues[2]
+# #             rsqrd_matrix2[i, j, k, 1] = est.rsquared
+# #
+# # reg_coeffs2 = np.average(coeff_matrix2, axis=0)
+# # reg_pvalues2 = np.average(pvalue_matrix2, axis=0)
+# # reg_tstats2 = np.average(tstats_matrix2, axis=0)
+# # reg_rsqrd2 = np.average(rsqrd_matrix2, axis=0)
+# #
+# # for j in range(n):
+# #     horizon = horizons[j]
+# #     reg_data = np.empty((5, 8))
+# #     header = ['(1) parti rate', '(2)', '(3) parti rate, young', '(4)', '(5) parti rate, old', '(6)', '(7) parti age',
+# #               '(8)']
+# #     index = ['coef', 't-stats', 'coef_x2', 't-stats_x2', 'R2']
+# #     for i in range(4):
+# #         reg_data[0, i * 2] = reg_coeffs2[j, i, 0]
+# #         reg_data[1, i * 2] = reg_tstats2[j, i, 0]
+# #         reg_data[2, i * 2] = np.nan
+# #         reg_data[3, i * 2] = np.nan
+# #         reg_data[4, i * 2] = reg_rsqrd2[j, i, 0]
+# #
+# #         reg_data[0, i * 2 + 1] = reg_coeffs2[j, i, 1]
+# #         reg_data[1, i * 2 + 1] = reg_tstats2[j, i, 1]
+# #         reg_data[2, i * 2 + 1] = reg_coeffs2[j, i, 2]
+# #         reg_data[3, i * 2 + 1] = reg_tstats2[j, i, 2]
+# #         reg_data[4, i * 2 + 1] = reg_rsqrd2[j, i, 1]
+# #
+# #     print(str(horizon) + '-month')
+# #     print(tabulate.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
