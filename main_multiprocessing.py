@@ -114,9 +114,9 @@ def simulate_path(i: int,
                         need_pi='True',
                         )
 
-        Delta_results[g] = np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:][data_point]
+        Delta_results[g] = np.flip(np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:])[data_point]
         if g == 1:
-            invest_results = np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:][data_point]
+            invest_results = np.flip(np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:])[data_point]
 
             belief_popu_old_results = np.average(
                 Delta[:, 0, :cutoff_age_old_below],
@@ -149,19 +149,13 @@ def simulate_path(i: int,
             age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
             age_top = cutoffs_age[mm]
             weights_group = cohort_type_size[0, age_bottom:age_top]
-            # belief_pre_results[g, mm] = np.average(Delta[:-t_gap, 0, age_bottom:age_top],
-            #                                        weights=weights_group,
-            #                                        axis=1)
-            # belief_post_results[g, mm] = np.average(
-            #     Delta[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
-            #     weights=weights_group,
-            #     axis=1)
             if g == 1:
                 parti_pre_results[mm] = np.average(invest_tracker[:-t_gap, 0, age_bottom:age_top],
                                                     weights=weights_group, axis=1)
                 parti_post_results[mm] = np.average(invest_tracker[t_gap:, 0, age_bottom - t_gap:age_top - t_gap],
                                                     weights=weights_group, axis=1)
                 leverage_condi = np.ma.masked_where(pi == 0, pi)
+                del pi
                 leverage_parti_pre_results[mm] = np.ma.average(
                     leverage_condi[:-t_gap, 0, age_bottom:age_top], weights=weights_group, axis=1)
                 leverage_parti_post_results[mm] = np.ma.average(

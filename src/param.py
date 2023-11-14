@@ -59,7 +59,7 @@ quartiles = np.linspace(1, 0, n_age_cutoffs+1)
 cutoffs_age = np.searchsorted(cummu_popu, quartiles)
 
 
-Mpath = 1000
+Mpath = 2000
 
 # for graphs:
 t = np.arange(0, T_cohort, dt)

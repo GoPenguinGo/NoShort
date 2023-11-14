@@ -391,8 +391,8 @@ def build_cohorts_mix_type(
     """
 
     # size of matrix: type * cohort; or type * 1; or 1 * cohort
-    Delta_s_t = np.zeros((Ntype, Nconstraint, 1))  # belief bias, eq(3)
-    d_eta_st = np.zeros((Ntype, Nconstraint, 1))  # disagreement, eq(11)
+    Delta_s_t = np.zeros((Ntype, Nconstraint, 1), dtype=np.float32)  # belief bias, eq(3)
+    d_eta_st = np.zeros((Ntype, Nconstraint, 1), dtype=np.float32)  # disagreement, eq(11)
     X = np.ones((1, 1, 1))
     eta_st_eta_ss_init = np.ones((Ntype, Nconstraint, 1))
     eta_st_eta_ss = eta_st_eta_ss_init

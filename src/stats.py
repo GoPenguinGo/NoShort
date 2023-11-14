@@ -22,7 +22,7 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
     else:
         print('Error: type not found')
         V = V_hat
-    return V
+    return V.astype(np.float32)
 
 
 # @jit(nopython=True)
@@ -53,7 +53,7 @@ def dDelta_st_calculator(sigma_Y_sq: float,
     else:
         print('Error: type not found')
         dDelta_s_t = 0
-    return dDelta_s_t
+    return dDelta_s_t.astype(np.float32)
 
 
 @jit(nopython=True)
