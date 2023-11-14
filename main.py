@@ -258,7 +258,6 @@ for o in range(n_scenarios_short):
 # ######################################
 # ########### Figure 1 & IA1 #############
 # ######################################
-# Delta (2 phi * 4 cases)
 print('Figure 1')
 upper = 60  # todo: endogenize these parameters
 lower = -60
@@ -343,26 +342,26 @@ y_title_list = [r'Interest rate $r_t$',
                 r'Market price of risk $\theta_t$',
                 r'Stock volatility $\sigma^S_t$']
 labels = scenario_labels
-fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(15, 20))
+fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(15, 20))
 for j, ax in enumerate(axes):
-    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
-    ax.tick_params(axis='both', labelcolor='black')
-    ax.set_xlabel('Time in simulation')
-
-    y_vec = y_list[j]  # n_phi_short, Nt
-    y_title = y_title_list[j]
-    ax2 = ax.twinx()
-    ax2.set_ylabel(y_title, color='black')
-    for i in range(n_scenarios_short):
-        y = y_vec[i]  # Nt
-        color_i = colors_short2[i]
-        ax2.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
-        # ax2.set_ylim(lower, upper)
     if j == 0:
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+        ax.tick_params(axis='both', labelcolor='black')
+    else:
+        y_vec = y_list[j-1]  # n_phi_short, Nt
+        y_title = y_title_list[j-1]
+        ax.set_ylabel(y_title, color='black')
+        for i in range(n_scenarios_short):
+            y = y_vec[i]  # Nt
+            color_i = colors_short[i]
+            ax.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
+            # ax2.set_ylim(lower, upper)
+    if j <= 1:
         ax.legend(loc='upper left')
-    ax2.legend(loc='upper right')
+    if j == 3:
+        ax.set_xlabel('Time in simulation')
     ax.set_title(y_title)
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
@@ -1194,7 +1193,6 @@ cohort_keep = np.arange(-Nc_cut, 1, 60)
 Nc_short = len(cohort_keep)
 data_keep = np.arange(0, Nc, 60)
 Nt_short = len(data_keep)
-
 
 popu_cummu = np.cumsum(cohort_size)
 popus = np.array([0.1, 0.5])
