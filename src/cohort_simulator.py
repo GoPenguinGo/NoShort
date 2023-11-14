@@ -129,18 +129,18 @@ def simulate_cohorts_SI(
         f_c = f_w = w_indiv_mat = 0
 
     if need_Delta == 'True':
-        Delta = np.zeros((Nt, Ntype, Nc), dtype=np.float16)  # stores bias in beliefs
+        Delta = np.zeros((Nt, Nc), dtype=np.float16)  # stores bias in beliefs
     else:
         Delta = 0
 
     if need_pi == 'True':
-        pi = np.zeros((Nt, Ntype, Nc), dtype=np.float16)  # portfolio choices
+        pi = np.zeros((Nt, Nc), dtype=np.float16)  # portfolio choices
     else:
         pi = 0
 
     # quartiles = np.array([1, 0.75, 0.5, 0.25, 0])
     Phi_parti = np.ones((Nt), dtype=np.float16)
-    invest_mat = np.ones((Nt, Ntype, Nc), dtype=np.int8)
+    invest_mat = np.ones((Nt, Nc), dtype=np.int8)
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
     parti_age_group = np.ones((Nt, 4), dtype=np.float16)
 
@@ -383,16 +383,16 @@ def simulate_cohorts_SI(
         # age[i] = age_t
         # n_parti[i] = n_parti_t
         if need_f == 'True':
-            f_c[i, :] = f_c_ist
+            f_c[i] = f_c_ist
             # f_w[i, :] = f_w_ist
         if need_Delta == 'True':
-            Delta[i, :] = Delta_s_t
+            Delta[i] = Delta_s_t[0]
         if need_pi == 'True':
-            pi[i, :] = pi_st
+            pi[i] = pi_st[0]
         if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             Phi_parti[i] = fc_parti_t
             parti[i] = popu_parti_t
-            invest_mat[i] = invest_tracker
+            invest_mat[i] = invest_tracker[0]
             # wealth_cutoffs = find_the_rich_mix(
             #     w_indiv_ist,
             #     cohort_type_size,
