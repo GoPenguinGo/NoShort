@@ -90,9 +90,8 @@ for i in range(Mpath):
 
 
 # Figure 4
-paths = 5 * np.arange(0, 2000, 1)
-Z_mat = np.cumsum(dZ_matrix[paths], axis=1)
-Z_SI_mat = np.cumsum(dZ_SI_matrix[paths], axis=1)
+Z_mat = np.cumsum(dZ_matrix, axis=1)
+Z_SI_mat = np.cumsum(dZ_SI_matrix, axis=1)
 dZ_mat = Z_mat[:, 24+1200:] - Z_mat[:, 1200:-24]
 dZ_SI_mat = Z_SI_mat[:, 24+1200:] - Z_SI_mat[:, 1200:-24]
 # save_var_list = [dZ_mat, dZ_SI_mat, parti_rate_mat, leverage_popu_condi_mat]
