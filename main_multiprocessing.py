@@ -114,9 +114,9 @@ def simulate_path(i: int,
                         need_pi='True',
                         )
 
-        Delta_results[g] = np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:][data_point]
+        Delta_results[g] = np.flip(np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:])[data_point]
         if g == 1:
-            invest_results = np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:][data_point]
+            invest_results = np.flip(np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:])[data_point]
 
             belief_popu_old_results = np.average(
                 Delta[:, 0, :cutoff_age_old_below],

@@ -27,96 +27,134 @@ file_list = results.files
 ######################################
 #############  Table 1  ##############
 ######################################
-# results = np.load('results_mean_vola.npz')
-# file_list = results.files
-# for file in file_list:
-#     print(file)
-#     print(np.average(results[file], axis=0))
+results_mean_vola = np.load('results_mean_vola.npz')
+file_list_mean_vola = results_mean_vola.files
+for file in file_list_mean_vola:
+    print(file)
+    print(np.average(results_mean_vola[file], axis=0))
 
-# Nsce = 3
-# Ncolumn = int(Nsce * 2)
-# # Panel 1: mean vola of asset pricing values
-# table_output = np.zeros((5, Ncolumn))
-# # var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
-# header = np.tile(['Mean', 'Std'], 2)
-# # show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-# for j, file in enumerate(file_list[1:6]):
-#     var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i]
-# print(tab.tabulate(table_output, headers=header, showindex=file_list[1:6], floatfmt=".3f", tablefmt='latex_raw'))
-#
-# # Panel 2: mean vola of theta state variables
-# file = file_list[7]
-# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-# show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-#
-# # Panel 3: mean vola of sigma_S state variables
-# file = file_list[8]
-# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-# show_index = [r'$\tilde{\Phi}_t$',
-#               r'$\tilde{\Phi}_t/\Bar{\Phi}_t$',
-#               r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
-#               r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-#
-# # Panel 4: covariance
-# file = file_list[11]
-# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j]
-# show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
-#               r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
-#               r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
-#               r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
-#               r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
-#               r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
-#               ]
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".3f", tablefmt='latex_raw'))
-#
-# # Panel 5: participation rate in age groups
-# file = file_list[9]
-# var_average = np.average(results[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j]
-# show_index = [r'$0 < \text{Age} \leq 15$',
-#               r'$15 < \text{Age} \leq 35$',
-#               r'$35 < \text{Age} \leq 69$',
-#               r'$\text{Age} > 69$',
-#               ]
-# print(tab.tabulate(table_output,
-#                    showindex=show_index,
-#                    floatfmt=".3f", tablefmt='latex_raw'))
+Nsce = 3
+Ncolumn = int(Nsce * 2)
+# Panel 1: mean vola of asset pricing values
+table_output = np.zeros((5, Ncolumn))
+# var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
+header = np.tile(['Mean', 'Std'], 2)
+# show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+for j, file in enumerate(file_list_mean_vola[1:6]):
+    var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i]
+print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 2: mean vola of theta state variables
+file = file_list_mean_vola[7]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i, j] * sigma_Y if j == 0 else var_average[i, j]/sigma_Y
+show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 3: mean vola of sigma_S state variables
+file = file_list_mean_vola[8]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i, j] * sigma_Y if j == 1 else var_average[i, j]
+show_index = [r'$\tilde{\Phi}_t$',
+              r'$\sigma_Y\tilde{\Phi}_t/\Bar{\Phi}_t$',
+              r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
+              r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 4: covariance
+file = file_list_mean_vola[11]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
+              r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
+              r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
+              r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
+              r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
+              r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
+              ]
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 5: participation rate in age groups
+file = file_list_mean_vola[9]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$0 < \text{Age} \leq 15$',
+              r'$15 < \text{Age} \leq 35$',
+              r'$35 < \text{Age} \leq 69$',
+              r'$\text{Age} > 69$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
 
 
-# save data for the mix scenarios, and compare to complete and reentry
+# Panel 6: participation rate in wealth groups
+file = file_list_mean_vola[10]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$ \text{wealth} \leq 1$',
+              r'$1 <\text{wealth} \leq 10$',
+              r'$10 < \text{wealth} \leq 100$',
+              r'$\text{wealth} > 100$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 7: participation rate covariances
+file = file_list_mean_vola[13]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j, 1]
+show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right) > 100$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+
 
 n_scenarios_short = 2
 scenarios_short = scenarios[:n_scenarios_short]
@@ -1055,8 +1093,8 @@ Delta_matrix[:, 1:] = np.average(results_fig4['fig4_abs_Delta'], axis=0)
 invest_matrix[1:] = np.average(results_fig4['fig4_parti_prob'], axis=0)
 Delta_vector = np.flip(Delta_matrix, axis=2)
 invest_vector = np.flip(invest_matrix, axis=1)
-fig_titles = ['Complete market', 'Reentry', 'Reentry']
-y_titles = [r'Average $\mid\Delta_{s,t}\mid$', r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
+fig_titles = [r'Reentry and complete market, average $\mid\Delta_{s,t}\mid$', 'Reentry, average participation probability']
+y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
 fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7.5))
 for j, ax in enumerate(axes):
     ax.set_xlabel('Age')
@@ -1067,28 +1105,28 @@ for j, ax in enumerate(axes):
             ax.set_ylim(0.04, 0.18)
             y_reentry = y_case[1, i, :N_cut]
             label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_vector[i]))
-            ax.plot(x, y_reentry, color=colors[i+1], linewidth=0.5, label=label_i)
+            ax.plot(x, y_reentry, color=colors[i], linewidth=0.8, label=label_i)
             ax.legend()
             if phi_vector[i] != 0:
                 y_complete = y_case[0, i, :N_cut]
-                ax.plot(x, y_complete, color=colors[i+1], linewidth=0.5, linestyle='dashed')
+                ax.plot(x, y_complete, color=colors[i], linewidth=0.8, linestyle='dashed')
         else:
             y = y_case[i, :N_cut]
-            ax.plot(x, y, color=colors[i], linewidth=0.5)
+            ax.plot(x, y, color=colors[i], linewidth=0.8)
     ax.set_title(fig_titles[j], color='black')
     ax.tick_params(axis='y', labelcolor='black')
+    ax.set_xlim(-1, 100)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 # plt.savefig('Average estimation error and age.png', dpi=60)
-# plt.show()
+plt.show()
 # plt.close()
 
 # Figure 4
-n_bins = 15
 percentiles_x = np.linspace(5, 95, 9)
 n_bins = len(percentiles_x)
-x_var = results['fig4_belief_pre']
-condition_var = results['fig4_parti_pre']
-y_var = results['fig4_belief_post'] - x_var
+x_var = results_fig4['fig4_belief_pre']
+condition_var = results_fig4['fig4_parti_pre']
+y_var = results_fig4['fig4_belief_post'] - x_var
 data_figure_x = np.zeros((n_scenarios_short, n_age_cutoffs, n_bins - 1))
 data_figure_parti = np.zeros((n_age_cutoffs, n_bins - 1))
 data_average_y = np.zeros((n_scenarios_short, n_age_cutoffs, n_bins - 1))
@@ -1179,6 +1217,135 @@ fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
 # plt.savefig('Endogenous_learning2.png', dpi=100)
 plt.show()
 # plt.close()
+
+
+
+
+print('Figure 8')
+######################################
+############  Figure 8  ##############
+######################################
+# winsorize extreme shocks
+Npre_index = 0
+
+Phi_compare = results['fig8_Phi']
+Delta_bar_compare = results['fig8_Delta_bar']
+belief_popu = results['fig8_belief']
+Phi_old_compare = results['fig8_Phi_old']
+Phi_young_compare = results['fig8_Phi_young']
+belief_f_old = results['fig8_old_belief_fc']
+belief_f_young = results['fig8_young_belief_fc']
+belief_f_old_compare = np.copy(belief_f_old)
+belief_f_old_compare[np.isnan(belief_f_old_compare)] = 0
+belief_f_young_compare = np.copy(belief_f_young)
+belief_f_young_compare[np.isnan(belief_f_young_compare)] = 0
+average_Delta_bar = np.mean(np.mean(Delta_bar_compare, axis=2), axis=0)
+x_index = belief_popu
+x_label = 'Average estimation error'
+below_dz = np.percentile(x_index, 10)
+below_data = x_index >= below_dz
+above_dz = np.percentile(x_index, 90)
+above_data = above_dz >= x_index
+data_where = np.where(below_data * above_data == 1)
+
+# prepare data for the figure:
+n_bins = 10
+bins = np.linspace(below_dz, above_dz, n_bins)
+# quartile_var = (Wealthshare_old_compare - Wealthshare_young_compare)[:, :, Npre_index]
+# quartile_var = belief_popu_young_compare[:, Npre_index] - belief_popu_old_compare[:, Npre_index]
+# quartile_var = parti_young_compare[:, :, Npre_index]
+y_percentiles = [50, 25, 75]
+phi_old = Phi_old_compare / Phi_compare
+phi_young = Phi_young_compare / Phi_compare
+data_var = Delta_bar_compare
+data_figure = np.zeros((n_scenarios_short, n_bins - 1, len(y_percentiles)))
+phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+belief_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+belief_phi_figure = np.zeros((n_scenarios_short, 2, n_bins - 1, len(y_percentiles)))
+for i in range(n_scenarios_short):
+    data_focus = data_var[:, i]
+    phi_var_old = phi_old
+    phi_var_young = phi_young
+    for j in range(n_bins - 1):
+        bin_0 = bins[j]
+        bin_1 = bins[j + 1]
+        below_bin = bin_1 >= x_index
+        above_bin = x_index >= bin_0
+        bin_where = np.where(below_bin * above_bin == 1)
+        data_focus_z = data_focus[bin_where]
+        data_figure[i, j] = np.percentile(data_focus_z, y_percentiles)
+        for l in range(2):
+            phi_var = phi_old[:, i] if l == 0 else phi_young[:, i]
+            belief_var_nan = belief_f_old[:, i] if l == 0 else belief_f_young[:, i]
+            belief_var = belief_f_old_compare[:, i] if l == 0 else belief_f_young_compare[:, i]
+            phi_figure[i, l, j] = np.percentile(phi_var[bin_where], y_percentiles)
+            belief_figure[i, l, j] = np.nanpercentile(belief_var_nan[bin_where], y_percentiles)
+            belief_phi = phi_var * belief_var
+            belief_phi_figure[i, l, j] = np.percentile(belief_phi[bin_where], y_percentiles)
+
+bin_size = (above_dz - below_dz) / (n_bins - 1)
+x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
+labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
+          [r'$\Phi_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$', r'$\Phi_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$'],
+          [r'$\Phi_t^{old}\bar{\Delta}_t^{old} / (\Phi_t^{old} + \Phi_t^{young})$',
+           r'$\Phi_t^{young}\bar{\Delta}_t^{young} / (\Phi_t^{old} + \Phi_t^{young})$']]
+# labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
+sub_titles = ['Complete market', 'Reentry', 'Disappointment']
+y_labels = ['Estimation error of the participants',
+            'Wealth share of the participants',
+            r'Contribution to $\bar{\Delta}_t$']
+# X_ = np.linspace(-0.2, 0.2, 100)
+X_ = np.linspace(below_dz, above_dz, 100)
+fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(15, 10), sharex='all', sharey='row')
+for j, rows in enumerate(axes):
+    for i, ax in enumerate(rows):
+        if j == 0:
+            y_focus = belief_figure[i]
+        elif j == 1:
+            y_focus = phi_figure[i]
+        else:
+            y_focus = belief_phi_figure[i]
+        for k in range(2):
+            if j == 2:
+                y_i = y_focus[k]
+                X_Y_Spline = make_interp_spline(x, y_i)
+                Y_ = X_Y_Spline(X_)
+                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+                if k == 1:
+                    y_i = data_figure[i]  # n_bin-1 * 3
+                    X_Y_Spline = make_interp_spline(x, y_i)
+                    Y_ = X_Y_Spline(X_)
+                    ax.plot(X_, Y_[:, 0], color='gray', linewidth=1,
+                            label=r'$\bar{\Delta}_t$')
+                    ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color='gray', linewidth=0., alpha=0.2)
+                    ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8, linestyle='dashed',
+                               label=r'Unconditional mean $\bar{\Delta}_t$')
+                    x_mean = [X_[np.searchsorted(Y_[:, 0], average_Delta_bar[i])]]
+                    ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
+            else:
+                y_i = y_focus[k]
+                X_Y_Spline = make_interp_spline(x, y_i)
+                Y_ = X_Y_Spline(X_)
+                ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+                ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+        if i == 0:
+            ax.legend(loc='upper left')
+            ax.set_ylabel(y_labels[j])
+        if j == 0:
+            ax.set_title(sub_titles[i])
+        if j == 2:
+            ax.set_xlabel(x_label)
+        else:
+            ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
+        # ax.set_xlim(-0.25, 0.25)
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola.png', dpi=100)
+# plt.savefig(str(Npres_short[Npre_index]) + 'DeltaVola HD.png', dpi=200)
+plt.show()
+
+
+
 
 # ######################################
 # ############  Figure 3  ##############

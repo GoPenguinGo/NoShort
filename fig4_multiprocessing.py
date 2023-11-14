@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 10
+# Mpath = 10
 np.seterr(invalid='ignore')
 
 
@@ -74,9 +74,9 @@ def simulate_path_fig4(i: int,
                             need_pi='True',
                             )
 
-            Delta_results[g, h] = np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:][data_point]
+            Delta_results[g, h] = np.flip(np.average(np.abs(Delta[:, 0]), axis=0)[-Nc_cut:])[data_point]
             if g == 1:
-                invest_results[h] = np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:][data_point]
+                invest_results[h] = np.flip(np.average(invest_tracker[:, 0], axis=0)[-Nc_cut:])[data_point]
             if h == 1:
                 for mm in range(n_age_cutoffs):
                     age_bottom = cutoffs_age[mm + 1] if mm <= 2 else -N_cut
