@@ -959,7 +959,7 @@ def simulate_cohorts_mix_type(
         dZ: np.ndarray,
         dZ_SI: np.ndarray,
         Nt: int,
-        # Nc: int,
+        Nc: int,
         tau: np.ndarray,
         dt: float,
         Ntype: int,
@@ -987,7 +987,14 @@ def simulate_cohorts_mix_type(
         can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
+        need_f: str,
+        need_Delta: str,
+        need_pi: str,
 ) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -1002,14 +1009,14 @@ def simulate_cohorts_mix_type(
     np.ndarray,
 ]:
     # Initializing variables
-    invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1))
-    can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
+    invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
-    Phi_parti = np.ones((Nt))  # consumption share of the stock market participants
+    Phi_parti = np.ones((Nt), dtype=np.float16)  # consumption share of the stock market participants
 
-    popu_short = np.zeros((Nt))
-    Phi_can_short = np.zeros((Nt))
+    popu_short = np.zeros((Nt), dtype=np.float16)
+    Phi_can_short = np.zeros((Nt), dtype=np.float16)
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -1018,19 +1025,37 @@ def simulate_cohorts_mix_type(
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
     beta = np.zeros(Nt)
-    Delta_bar_parti = np.zeros((Nt))  # consumption weighted estimation error of the stock market participants
-    Delta_tilde_parti = np.zeros((Nt))  # wealth weighted estimation error of the stock market participants
-    parti = np.ones((Nt))  # participation rate
-    parti_wealth_group = np.zeros((Nt, 4))
-    parti_age_group = np.zeros((Nt, 4))
+    Delta_bar_parti = np.zeros((Nt), dtype=np.float16)  # consumption weighted estimation error of the stock market participants
+    Delta_tilde_parti = np.zeros((Nt), dtype=np.float16)  # wealth weighted estimation error of the stock market participants
+    parti = np.ones((Nt), dtype=np.float16)  # participation rate
+    parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
+    parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
     dR_t = 0
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
-    append_init = np.ones((Ntype, Nconstraint, 1))
+    append_init = np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
+
+    if need_f == 'True':
+        f_c = np.zeros((Nt, Ntype, Nconstraint, Nc), dtype=np.float16)  # evolution of cohort consumption share
+        # f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
+        # w_indiv_mat = np.zeros((Nt, Ntype, Nc))
+    else:
+        f_c = f_w = w_indiv_mat = 0
+
+    if need_Delta == 'True':
+        Delta = np.zeros((Nt, Nconstraint, Nc), dtype=np.float16)  # stores bias in beliefs
+    else:
+        Delta = 0
+
+    if need_pi == 'True':
+        pi = np.zeros((Nt, Nconstraint, Nc), dtype=np.float16)  # portfolio choices
+    else:
+        pi = 0
+    invest_mat = np.zeros((Nt, Nconstraint, Nc), dtype=np.int8)
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -1159,17 +1184,16 @@ def simulate_cohorts_mix_type(
         if sigma_S_t<0:
             print('negative vola')
         beta[i] = beta_t
-        # if need_f == 'True':
-        #     f_c[i, :] = f_c_ist
-        #     f_w[i, :] = f_w_ist
-        # if need_Delta == 'True':
-        #     Delta[i, :] = Delta_s_t
-        # if need_pi == 'True':
-        #     # pi[i, :] = pi_st
+        if need_f == 'True':
+            f_c[i, :] = f_c_ist
+        if need_Delta == 'True':
+            Delta[i, :] = Delta_s_t[0]
+        if need_pi == 'True':
+            pi[i, :] = pi_st[0]
 
         Phi_parti[i] = fc_parti_t
         # parti[i] = popu_parti_t
-        # invest_mat[i] = invest_tracker
+        invest_mat[i] = invest_tracker[0]
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
 
@@ -1187,6 +1211,11 @@ def simulate_cohorts_mix_type(
     return (
         r,
         theta,
+        f_c,
+        # f_w,
+        Delta,
+        # max,
+        pi,
         parti,
         Phi_parti,
         Delta_bar_parti,
@@ -1195,6 +1224,10 @@ def simulate_cohorts_mix_type(
         mu_S,
         sigma_S,
         beta,
+        # w,
+        # age,
+        # n_parti,
+        invest_mat,
         parti_age_group,
         parti_wealth_group,
     )
