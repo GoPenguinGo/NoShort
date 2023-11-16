@@ -437,6 +437,7 @@ def simulate_mix_types(
         dZ,
         dZ_SI,
         Nt,
+        Nc,
         tau,
         dt,
         Ntype,
