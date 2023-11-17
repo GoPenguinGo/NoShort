@@ -8,14 +8,19 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 1000
+Mpath = 400
 
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
+
+# Npre = 240
+# rho_i = np.array([[0.001], [0.010]])
+# tax = 0.012
+
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
-                            Nvar=4,
+                            Nvar=2,
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -35,10 +40,10 @@ def simulate_mean_vola_path(i: int,
     cov_parti_results = np.zeros((Nvar, Nscenario, 4, 3))
     covariance_parti = np.zeros((Nvar, keep_data))
 
-    dZ_build = dZ_build_matrix[i]
-    dZ = dZ_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
+    dZ_build = dZ_build_matrix[i+1200]
+    dZ = dZ_matrix[i+1200]
+    dZ_SI_build = dZ_SI_build_matrix[i+1200]
+    dZ_SI = dZ_SI_matrix[i+1200]
 
     # dZ_build = np.random.randn(Nc) * dt_root
     # dZ = np.random.randn(Nt) * dt_root
@@ -49,6 +54,8 @@ def simulate_mean_vola_path(i: int,
         rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
         phi = 0.8 if h == 2 else 0.4
         tax = 0.012 if h == 3 else 0.008
+
+        # phi = 0.5 if h == 0 else 0.6
 
         T_hat = dt * Npre
         Vhat = (sigma_Y ** 2) / T_hat
@@ -63,6 +70,8 @@ def simulate_mean_vola_path(i: int,
         # generate values that are fixed in the main loop
         beta_cohort_type_mix = alpha_i_mix * np.exp(-beta_i_mix * tau)  # shape(2, 6000)
         for g in range(Nscenario):
+        # for gg in range(Nscenario):
+        #     g = gg + 1
             if g <= 1:
                 scenario = scenarios[g]
                 mode_trade = scenario[0]
@@ -146,7 +155,22 @@ def simulate_mean_vola_path(i: int,
             cov_save_mean_vola_results[h, g] = cov_save_mean_vola
             parti_results[h, g] = parti_mean_vola
             cov_parti_results[h, g] = cov_parti_mean_vola
-        covariance_parti[h] = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
+        covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
+
+        #     dR_mean_vola_results[h, gg] = dR_mean_vola
+        #     theta_mean_vola_results[h, gg] = theta_mean_vola
+        #     r_mean_vola_results[h, gg] = r_mean_vola
+        #     mu_S_mean_vola_results[h, gg] = mu_S_mean_vola
+        #     sigma_S_mean_vola_results[h, gg] = sigma_S_mean_vola
+        #     beta_mean_vola_results[h, gg] = beta_mean_vola
+        #     theta_save_mean_vola_results[h, gg] = theta_save_mean_vola
+        #     sigma_S_save_mean_vola_results[h, gg] = sigma_S_save_mean_vola
+        #     parti_age_group_mean_vola_results[h, gg] = parti_age_group_mean_vola
+        #     parti_wealth_group_mean_vola_results[h, gg] = parti_wealth_group_mean_vola
+        #     cov_save_mean_vola_results[h, gg] = cov_save_mean_vola
+        #     parti_results[h, gg] = parti_mean_vola
+        #     cov_parti_results[h, gg] = cov_parti_mean_vola
+        # covariance_parti[h] = np.corrcoef(parti_results[h, 0], parti_results[h, 1])[0, 1]
 
 
 
@@ -220,7 +244,7 @@ def main():
 
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
-    np.savez("results_mean_vola_alternative.npz", **results_dict)
+    np.savez("results_mean_vola_alternative5.npz", **results_dict)
 
 
 if __name__ == '__main__':
