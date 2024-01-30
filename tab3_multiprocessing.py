@@ -8,14 +8,27 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-# Mpath = 1000
+np.seterr(invalid='ignore')
+
+Mpath = 10
+dt_root = np.sqrt(dt)
+dZ_mat = np.random.randn(int(Mpath / 2 * Nt))
+dZ_mat = np.reshape(np.append(dZ_mat, -dZ_mat), (-1, Nt)) * dt_root
+dZ_SI_mat = np.random.randn(int(Mpath / 2 * Nt))
+dZ_SI_mat = np.reshape(np.append(dZ_SI_mat, -dZ_SI_mat), (-1, Nt)) * dt_root
+dZ_build_mat = np.random.randn(int(Mpath / 2 * Nt))
+dZ_build_mat = np.reshape(np.append(dZ_build_mat, -dZ_build_mat), (-1, Nt)) * dt_root
+dZ_SI_build_mat = np.random.randn(int(Mpath / 2 * Nt))
+dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat, -dZ_SI_build_mat), (-1, Nt)) * dt_root
 
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
-                            Nvar=4,
+                            # Nvar=4,
+                            # Nscenario=2,
+                            Nvar=2,
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -46,7 +59,8 @@ def simulate_mean_vola_path(i: int,
     # dZ_SI = np.random.randn(Nt) * dt_root
     for h in range(Nvar):
         Npre = 60 if h == 0 else 240
-        rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
+        # rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
+        rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
         phi = 0.8 if h == 2 else 0.4
         tax = 0.012 if h == 3 else 0.008
 
@@ -146,7 +160,7 @@ def simulate_mean_vola_path(i: int,
             cov_save_mean_vola_results[h, g] = cov_save_mean_vola
             parti_results[h, g] = parti_mean_vola
             cov_parti_results[h, g] = cov_parti_mean_vola
-        covariance_parti[h] = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
+        covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
 
 
 
@@ -175,7 +189,7 @@ def simulate_mean_vola_path(i: int,
 # Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=None) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
@@ -220,7 +234,7 @@ def main():
 
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
-    np.savez("results_mean_vola_alternative.npz", **results_dict)
+    np.savez("results_mean_vola_alternative_new.npz", **results_dict)
 
 
 if __name__ == '__main__':

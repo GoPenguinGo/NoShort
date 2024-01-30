@@ -274,7 +274,6 @@ def simulate_cohorts_SI(
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         invest_tracker = np.append(invest_tracker[:, 1:], np.ones((Ntype, 1)),
                                    axis=1)  # all cohorts that are still in the market, 1 by default
-
         if mode_trade == 'w_constraint':
             if mode_learn == 'disappointment':
                 possible_cons_share = f_c_ist * dt * invest_tracker

@@ -3,7 +3,8 @@ import numpy as np
 # Parameters
 rho = 0.001  # Time discount factor
 Ntype = 2
-rho_i = np.array([[0.001], [0.005]])
+# rho_i = np.array([[0.001], [0.005]])
+rho_i = np.array([[0.001], [0.05]])
 alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
 # nu = 0.01
