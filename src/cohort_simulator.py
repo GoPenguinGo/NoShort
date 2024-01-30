@@ -375,8 +375,8 @@ def simulate_cohorts_SI(
         Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
         sigma_S[i] = sigma_S_t
-        if sigma_S_t < 0:
-            print('negative vola')
+        # if sigma_S_t < 0:
+        #     print('negative vola')
         beta[i] = beta_t
         # w[i, :] = w_st
         # age[i] = age_t
@@ -782,8 +782,8 @@ def simulate_cohorts_mean_vola(
             sigma_S[ii] = sigma_S_t
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
-            if sigma_S_t < 0:
-                print('negative vola')
+            # if sigma_S_t < 0:
+            #     print('negative vola')
             if mode_trade == 'w_constraint':
                 Phi_bar_parti_1[ii] = 1 / fc_parti_t
                 Phi_tilde_parti[ii] = fw_parti_t
@@ -1180,8 +1180,8 @@ def simulate_cohorts_mix_type(
         Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
         sigma_S[i] = sigma_S_t
-        if sigma_S_t<0:
-            print('negative vola')
+        # if sigma_S_t<0:
+        #     print('negative vola')
         beta[i] = beta_t
         if need_f == 'True':
             f_c[i, :] = f_c_ist
@@ -1443,8 +1443,8 @@ def simulate_mean_vola_mix_type(
             sigma_S[ii] = sigma_S_t
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
-            if sigma_S_t < 0:
-                print('negative vola')
+            # if sigma_S_t < 0:
+            #     print('negative vola')
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
             # wealth_cutoffs = find_the_rich_mix(

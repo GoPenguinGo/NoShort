@@ -10,7 +10,7 @@ import pandas as pd
 # Define the simulate_scenario function as shown in the previous answer
 np.seterr(invalid='ignore')
 
-Mpath = 10
+Mpath = 100
 dt_root = np.sqrt(dt)
 dZ_mat = np.random.randn(int(Mpath / 2 * Nt))
 dZ_mat = np.reshape(np.append(dZ_mat, -dZ_mat), (-1, Nt)) * dt_root

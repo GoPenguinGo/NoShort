@@ -24,6 +24,7 @@ import pandas as pd
 
 np.set_printoptions(precision=4, suppress=True)
 results = np.load('results.npz')
+results = np.load("results_mean_vola_alternative_new.npz")
 file_list = results.files
 #
 # ######################################
