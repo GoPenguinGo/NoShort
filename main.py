@@ -24,8 +24,396 @@ import pandas as pd
 
 np.set_printoptions(precision=4, suppress=True)
 results = np.load('results.npz')
-results = np.load("results_mean_vola_alternative_new.npz")
+# results = np.load("results_mean_vola_alternative_new.npz")
 file_list = results.files
+
+
+from matplotlib import cm # for a scatter plot
+from mpl_toolkits.mplot3d import Axes3D
+
+results_pd = np.load("results_pd_try.npz")
+file_pd_list = results_pd.files
+pd = 1 / results_pd['price_dividend']
+vola = results_pd['stock_vola']
+r = results_pd['interest_rate']
+belief = results_pd['average_belief']
+c_belief = results_pd['average_c_belief']
+parti = results_pd['parti_rate']
+Phi_bar = results_pd['Phi_bar']
+parti_age = results_pd['parti_rate_age']
+data_include = np.arange(0, Nt, 12)
+titles = ['Complete', 'Reentry']
+quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
+for ii, var in enumerate(file_pd_list[3:]):
+    state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(20, 10), )
+    for i, ax in enumerate(axes):
+        ax.set_xlabel('Price dividend ratio')
+        # ax.set_ylabel('Interest rate')
+        # ax.set_ylabel('Average belief')
+        # ax.set_zlabel('Stock volatility')
+        ax.set_ylabel('Stock volatility')
+        state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+        for j in range(4):
+            data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
+            data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
+            data_within = np.where(data_above * data_below == 1)
+            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
+            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
+            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
+            ax.scatter(pd[:, i, data_include][data_within], vola[:, i, data_include][data_within], marker='.', s=5, color=colors[j], alpha=0.2,
+                       label=quartiles[j])
+        title = titles[i]
+        ax.legend()
+        ax.set_title(title, color='black')
+        ax.tick_params(axis='y', labelcolor='black')
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig(var + '_quartile.png', dpi=100)
+    plt.show()
+    plt.close()
+
+
+i = 0
+
+
+x = pd
+y = c_belief
+z = vola
+dixiles = np.linspace(0, 1, 8)
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.set_xlabel('Price dividend ratio')
+# ax.set_ylabel('Interest rate')
+ax.set_ylabel('Average belief')
+ax.set_zlabel('Stock volatility')
+# ax.set_ylabel('Stock volatility')
+# state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# z_cutoffs = np.quantile(z[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# z_cutoffs = np.quantile(z[:, i, data_include], dixiles)
+y_cutoffs = np.quantile(y[:, i, data_include], dixiles)
+for j in range(4):
+    # data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
+    # data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
+    # data_below = z[:, i, data_include] >= z_cutoffs[j*2]
+    # data_above = z[:, i, data_include] < z_cutoffs[j*2 + 1]
+    data_below = y[:, i, data_include] >= y_cutoffs[j*2]
+    data_above = y[:, i, data_include] < y_cutoffs[j*2 + 1]
+    data_within = np.where(data_above * data_below == 1)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
+    ax.scatter(x[:, i, data_include][data_within], y[:, i, data_include][data_within], z[:, i, data_include][data_within], marker='o', s=5, color=colors[j], alpha=0.1,
+               label=quartiles[j])
+title = titles[i]
+ax.set_xlim(45, 70)
+ax.set_ylim(-0.2, 0.2)
+ax.legend()
+ax.set_title(title, color='black')
+ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig(var + 'pd_quartile.png', dpi=100)
+plt.show()
+# plt.close()
+
+
+# univariate
+for i in range(2):
+    sce = scenarios[i]
+    print(sce)
+
+    coeff_matrix = np.zeros((5, 2))
+    pvalue_matrix = np.zeros((5, 2))
+    tstats_matrix = np.zeros((5, 2))
+    rsqrd_matrix = np.zeros((5))
+
+    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+    y = y_raw
+    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+    for j, x_var in enumerate(file_pd_list[1:6]):
+        if j != 1:
+            x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+            x = (x_raw - np.average(x_raw)) / np.std(x_raw)
+            x = sm.add_constant(x)
+            model = sm.OLS(y, x)
+            est = model.fit()
+            coeff_matrix[j] = est.params
+            pvalue_matrix[j] = est.pvalues
+            tstats_matrix[j] = est.tvalues
+            rsqrd_matrix[j] = est.rsquared
+
+    reg_data = np.empty((5, 4))
+    header = ['(1) price_dividend', '(2) average_belief', '(3) average_c_belief', '(4) interest_rate']
+    index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
+    for ii in range(4):
+        k = ii if ii == 0 else ii + 1
+        reg_data[0, ii] = coeff_matrix[k, 0]
+        reg_data[1, ii] = tstats_matrix[k, 0]
+        reg_data[2, ii] = coeff_matrix[k, 1]
+        reg_data[3, ii] = tstats_matrix[k, 1]
+        reg_data[4, ii] = rsqrd_matrix[k]
+    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+# univariate, specific to reentry:
+i = 1
+coeff_matrix = np.zeros((3, 2))
+pvalue_matrix = np.zeros((3, 2))
+tstats_matrix = np.zeros((3, 2))
+rsqrd_matrix = np.zeros((3))
+
+y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+y = y_raw
+# y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+for j, x_var in enumerate(file_pd_list[6:]):
+    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j<2 \
+        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+    x = (x_raw - np.average(x_raw)) / np.std(x_raw)
+    x = sm.add_constant(x)
+    model = sm.OLS(y, x)
+    est = model.fit()
+    coeff_matrix[j] = est.params
+    pvalue_matrix[j] = est.pvalues
+    tstats_matrix[j] = est.tvalues
+    rsqrd_matrix[j] = est.rsquared
+
+reg_data = np.empty((5, 3))
+header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
+for ii in range(3):
+    i = ii
+    reg_data[0, ii] = coeff_matrix[i, 0]
+    reg_data[1, ii] = tstats_matrix[i, 0]
+    reg_data[2, ii] = coeff_matrix[i, 1]
+    reg_data[3, ii] = tstats_matrix[i, 1]
+    reg_data[4, ii] = rsqrd_matrix[i]
+print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+# bivariate
+for i in range(2):
+    sce = scenarios[i]
+    print(sce)
+
+    coeff_matrix = np.zeros((3, 3))
+    pvalue_matrix = np.zeros((3, 3))
+    tstats_matrix = np.zeros((3, 3))
+    rsqrd_matrix = np.zeros((3))
+
+    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+    y = y_raw
+    x2_raw = np.reshape(pd[:, i], (-1, 1))
+    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+    for j, x_var in enumerate(file_pd_list[3:6]):
+        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+        x = np.append(x2, x1, axis=1)
+        x = sm.add_constant(x)
+        model = sm.OLS(y, x)
+        est = model.fit()
+        coeff_matrix[j] = est.params
+        pvalue_matrix[j] = est.pvalues
+        tstats_matrix[j] = est.tvalues
+        rsqrd_matrix[j] = est.rsquared
+
+
+    reg_data = np.empty((7, 3))
+    header = ['(1) average_belief', '(2) average_c_belief', '(3) interest_rate']
+    index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
+    for ii in range(3):
+        k = ii
+        reg_data[0, ii] = coeff_matrix[k, 0]
+        reg_data[1, ii] = tstats_matrix[k, 0]
+        reg_data[2, ii] = coeff_matrix[k, 1]
+        reg_data[3, ii] = tstats_matrix[k, 1]
+        reg_data[4, ii] = coeff_matrix[k, 2]
+        reg_data[5, ii] = tstats_matrix[k, 2]
+        reg_data[6, ii] = rsqrd_matrix[k]
+    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+# bivariate, specific to reentry:
+i = 1
+coeff_matrix = np.zeros((3, 3))
+pvalue_matrix = np.zeros((3, 3))
+tstats_matrix = np.zeros((3, 3))
+rsqrd_matrix = np.zeros((3))
+
+y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+y = y_raw
+x2_raw = np.reshape(pd[:, i], (-1, 1))
+x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+# y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+for j, x_var in enumerate(file_pd_list[6:]):
+    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+    x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+    x = np.append(x2, x1, axis=1)
+    x = sm.add_constant(x)
+    model = sm.OLS(y, x)
+    est = model.fit()
+    coeff_matrix[j] = est.params
+    pvalue_matrix[j] = est.pvalues
+    tstats_matrix[j] = est.tvalues
+    rsqrd_matrix[j] = est.rsquared
+
+reg_data = np.empty((7, 3))
+header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
+for ii in range(3):
+    k = ii
+    reg_data[0, ii] = coeff_matrix[k, 0]
+    reg_data[1, ii] = tstats_matrix[k, 0]
+    reg_data[2, ii] = coeff_matrix[k, 1]
+    reg_data[3, ii] = tstats_matrix[k, 1]
+    reg_data[4, ii] = coeff_matrix[k, 2]
+    reg_data[5, ii] = tstats_matrix[k, 2]
+    reg_data[6, ii] = rsqrd_matrix[k]
+print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+# multivariate
+for i in range(2):
+    sce = scenarios[i]
+    print(sce)
+
+    coeff_matrix = np.zeros((2, 4))
+    pvalue_matrix = np.zeros((2, 4))
+    tstats_matrix = np.zeros((2, 4))
+    rsqrd_matrix = np.zeros((2))
+
+    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+    y = y_raw
+    x2_raw = np.reshape(pd[:, i], (-1, 1))
+    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+    x3_raw = np.reshape(r[:, i], (-1, 1))
+    x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+    for j, x_var in enumerate(file_pd_list[3:5]):
+        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+        x = np.append(x3, x1, axis=1)
+        x = np.append(x2, x, axis=1)
+        x = sm.add_constant(x)
+        model = sm.OLS(y, x)
+        est = model.fit()
+        coeff_matrix[j] = est.params
+        pvalue_matrix[j] = est.pvalues
+        tstats_matrix[j] = est.tvalues
+        rsqrd_matrix[j] = est.rsquared
+
+
+    reg_data = np.empty((9, 2))
+    header = ['(1) average_belief', '(2) average_c_belief']
+    index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
+    for ii in range(2):
+        k = ii
+        reg_data[0, ii] = coeff_matrix[k, 0]
+        reg_data[1, ii] = tstats_matrix[k, 0]
+        reg_data[2, ii] = coeff_matrix[k, 1]
+        reg_data[3, ii] = tstats_matrix[k, 1]
+        reg_data[4, ii] = coeff_matrix[k, 2]
+        reg_data[5, ii] = tstats_matrix[k, 2]
+        reg_data[6, ii] = coeff_matrix[k, 3]
+        reg_data[7, ii] = tstats_matrix[k, 3]
+        reg_data[8, ii] = rsqrd_matrix[k]
+    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+i = 1
+coeff_matrix = np.zeros((3, 4))
+pvalue_matrix = np.zeros((3, 4))
+tstats_matrix = np.zeros((3, 4))
+rsqrd_matrix = np.zeros((3))
+
+y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+y = y_raw
+x2_raw = np.reshape(pd[:, i], (-1, 1))
+x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+x3_raw = np.reshape(r[:, i], (-1, 1))
+x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+for j, x_var in enumerate(file_pd_list[6:]):
+    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+    x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+    x = np.append(x3, x1, axis=1)
+    x = np.append(x2, x, axis=1)
+    x = sm.add_constant(x)
+    model = sm.OLS(y, x)
+    est = model.fit()
+    coeff_matrix[j] = est.params
+    pvalue_matrix[j] = est.pvalues
+    tstats_matrix[j] = est.tvalues
+    rsqrd_matrix[j] = est.rsquared
+
+reg_data = np.empty((9, 3))
+header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
+for ii in range(3):
+    k = ii
+    reg_data[0, ii] = coeff_matrix[k, 0]
+    reg_data[1, ii] = tstats_matrix[k, 0]
+    reg_data[2, ii] = coeff_matrix[k, 1]
+    reg_data[3, ii] = tstats_matrix[k, 1]
+    reg_data[4, ii] = coeff_matrix[k, 2]
+    reg_data[5, ii] = tstats_matrix[k, 2]
+    reg_data[6, ii] = coeff_matrix[k, 3]
+    reg_data[7, ii] = tstats_matrix[k, 3]
+    reg_data[8, ii] = rsqrd_matrix[k]
+print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
+
+# four variables, belief + parti combination, specific to constrained economy
+i = 1
+coeff_matrix = np.zeros((6, 5))
+pvalue_matrix = np.zeros((6, 5))
+tstats_matrix = np.zeros((6, 5))
+rsqrd_matrix = np.zeros((6))
+
+for m in range(2):
+    belief_var = belief if m == 0 else c_belief
+    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+    y = y_raw
+    x2_raw = np.reshape(pd[:, i], (-1, 1))
+    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+    x3_raw = np.reshape(r[:, i], (-1, 1))
+    x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+    x4_raw = np.reshape(belief_var[:, i], (-1, 1))
+    x4 = (x4_raw - np.average(x4_raw)) / np.std(x4_raw)
+    for j, x_var in enumerate(file_pd_list[6:]):
+        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+            else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+        x = np.append(x4, x1, axis=1)
+        x = np.append(x3, x, axis=1)
+        x = np.append(x2, x, axis=1)
+        x = sm.add_constant(x)
+        model = sm.OLS(y, x)
+        est = model.fit()
+        jj = j if m == 0 else j + 3
+        coeff_matrix[jj] = est.params
+        pvalue_matrix[jj] = est.pvalues
+        tstats_matrix[jj] = est.tvalues
+        rsqrd_matrix[jj] = est.rsquared
+
+reg_data = np.empty((11, 6))
+header = ['(1) parti_rate', '(2) Phi_bar', '(3) parti_rate_(old-young)', '(4) parti_rate', '(5) Phi_bar', '(6) parti_rate_(old-young)']
+index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'belief', 't-stats', 'x (participation)', 't-stats', 'R-squared']
+for ii in range(6):
+    k = ii
+    reg_data[0, ii] = coeff_matrix[k, 0]
+    reg_data[1, ii] = tstats_matrix[k, 0]
+    reg_data[2, ii] = coeff_matrix[k, 1]
+    reg_data[3, ii] = tstats_matrix[k, 1]
+    reg_data[4, ii] = coeff_matrix[k, 2]
+    reg_data[5, ii] = tstats_matrix[k, 2]
+    reg_data[6, ii] = coeff_matrix[k, 3]
+    reg_data[7, ii] = tstats_matrix[k, 3]
+    reg_data[8, ii] = coeff_matrix[k, 4]
+    reg_data[9, ii] = tstats_matrix[k, 4]
+    reg_data[10, ii] = rsqrd_matrix[k]
+print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+
 #
 # ######################################
 # #############  Table 1  ##############
@@ -433,7 +821,7 @@ print('Figure 1')
 upper = 60  # todo: endogenize these parameters
 lower = -60
 scenario_index = 1
-fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(15, 9))
+fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(8, 5))
 for j, ax in enumerate(axes):
     red_index = 1
     yellow_index = 0 if j == 0 else 1
@@ -503,7 +891,7 @@ scenario_index = 1
 constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
 colors_short3 = ['mediumblue', 'saddlebrown', 'purple', 'darkgreen']
 color_dot = 'red'
-fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(15, 9))
+fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(8, 5))
 for j, ax in enumerate(axes):
     red_index = 1
     yellow_index = 1
@@ -732,7 +1120,7 @@ y_title_list = [red_labels[1] + yellow_labels[1],
                 r'Market price of risk $\theta_t$',
                 r'Stock volatility $\sigma^S_t$']
 labels = scenario_labels
-fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(15, 20))
+fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(8, 10))
 for j, ax in enumerate(axes):
     y_title = y_title_list[j]
     if j == 0:
@@ -756,7 +1144,7 @@ for j, ax in enumerate(axes):
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
 fig.tight_layout(h_pad=2)
-plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=60)
+plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
 plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
@@ -1361,7 +1749,7 @@ for case_dzY in cases:
             Z = np.cumsum(dZ)[int(left_t / dt):int(right_t / dt)]
             Z_SI = np.cumsum(dZ_SI)[int(left_t / dt):int(right_t / dt)]
             x = t[int(left_t / dt):int(right_t / dt)]
-            fig, axes = plt.subplots(ncols=2, sharex='all', sharey='all', figsize=(15, 7))
+            fig, axes = plt.subplots(ncols=2, sharex='all', sharey='all', figsize=(10, 5))
             y1 = y_overall[int(left_t / dt):int(right_t / dt)]
             y2 = y_P[int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
             y3 = y_N[int(left_t / dt):int(right_t / dt)]  # ((Nt, 5))
@@ -1370,10 +1758,7 @@ for case_dzY in cases:
             belief_cutoff_case = -theta_compare[int(left_t / dt):int(right_t / dt)]
             for jj, ax in enumerate(axes):
                 ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-                if j == 0:
-                    ax.set_title(r'Distribution of estimation error, $5$-year initial window$')
-                else:
-                    ax.set_title('Distribution of estimation error')
+                ax.set_title('Distribution of estimation error')
                 if jj == 0:
                     ax2 = ax.twinx()
                     ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
@@ -1416,14 +1801,14 @@ for case_dzY in cases:
 
             if case_dzY == case_dzSI == 1:
                 if j == 0:
-                    plt.savefig('f13.png', dpi=60)
+                    plt.savefig('f13.png', dpi=100)
                     plt.savefig('f13 HD.png', dpi=200)
                 if j == 1:
-                    plt.savefig('f5.png', dpi=60)
+                    plt.savefig('f5.png', dpi=100)
                     plt.savefig('f5 HD.png', dpi=200)
             else:
                 if j == 1:
-                    plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=60)
+                    plt.savefig('IA ' + str(case_dzY) + str(case_dzSI) + 'Distribution of Delta.png', dpi=100)
             plt.show()
             plt.close()
 
@@ -1589,7 +1974,7 @@ print('Figure 8')
 ######################################
 # winsorize extreme shocks
 Npre_index = 0
-
+n_scenarios_short = 2
 Phi_compare = results['fig8_Phi']
 Delta_bar_compare = results['fig8_Delta_bar']
 belief_popu = results['fig8_belief']
@@ -1652,13 +2037,13 @@ labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
           [r'$\bar{\Phi}_t^{old}\bar{\Delta}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$',
            r'$\bar{\Phi}_t^{young}\bar{\Delta}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$']]
 # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
-sub_titles = ['Complete market', 'Reentry', 'Disappointment']
+sub_titles = ['Complete market', 'Reentry']
 y_labels = ['Estimation error of the participants',
             'Consumption share of the participants',
             r'Contribution to $\bar{\Delta}_t$']
 # X_ = np.linspace(-0.2, 0.2, 100)
 X_ = np.linspace(below_dz, above_dz, 100)
-fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(15, 12), sharex='all', sharey='row')
+fig, axes = plt.subplots(ncols=2, nrows=3, figsize=(10, 13), sharex='all', sharey='row')
 for j, rows in enumerate(axes):
     for i, ax in enumerate(rows):
         if j == 0:
@@ -1702,8 +2087,8 @@ for j, rows in enumerate(axes):
             ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
         # ax.set_xlim(-0.25, 0.25)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slisghtly clipped
-plt.savefig('240DeltaVolaSQ.png', dpi=100)
-plt.savefig('240DeltaVola HDSQ.png', dpi=200)
+plt.savefig('240DeltaVola.png', dpi=100)
+plt.savefig('240DeltaVola HD.png', dpi=200)
 plt.show()
 
 # # ######################################
@@ -1924,7 +2309,7 @@ x = np.linspace(x_range_left + width_bins / 2, x_range_right - width_bins / 2, n
 X_ = np.linspace(x_range_left, x_range_right, 50)
 y_mat_within = parti_gap[where_within]
 y_varname = 'Participation rate, old minus young'
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(8, 6))
 for i in range(n_tiles):
     below = condition[i]
     above = condition[i + 1]
@@ -1967,7 +2352,7 @@ plt.show()
 
 # distribution of wealth gap given the belief gap in [-x_range, x_range]:
 n_bins = 30
-fig, axes = plt.subplots(ncols=2, sharey='all', figsize=(10, 4))
+fig, axes = plt.subplots(ncols=2, sharey='all', figsize=(8, 3.5))
 for j, ax in enumerate(axes):
     if j == 0:
         condition_var_density = np.empty(n_bins)
@@ -2096,7 +2481,7 @@ age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <=
 X_ = np.linspace(-1.5, 1.5, 200)
 plt.rcParams["font.family"] = "serif"
 x = data_figure_x
-fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7.5), sharex='all')
+fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5), sharex='all')
 for i, ax in enumerate(axes):
     y_focus = data_figure_mean_parti if i == 0 else data_figure_mean_lev
     y_overall = data_figure_overall_parti if i == 0 else data_figure_overall_lev
