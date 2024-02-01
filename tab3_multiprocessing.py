@@ -8,7 +8,6 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # Define the simulate_scenario function as shown in the previous answer
-Mpath = 400
 
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
@@ -20,7 +19,7 @@ np.seterr(invalid='ignore')
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
-                            Nvar=2,
+                            Nvar=4,
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -51,7 +50,8 @@ def simulate_mean_vola_path(i: int,
     # dZ_SI = np.random.randn(Nt) * dt_root
     for h in range(Nvar):
         Npre = 60 if h == 0 else 240
-        rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
+        # rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
+        rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
         phi = 0.8 if h == 2 else 0.4
         tax = 0.012 if h == 3 else 0.008
 
@@ -157,22 +157,6 @@ def simulate_mean_vola_path(i: int,
             cov_parti_results[h, g] = cov_parti_mean_vola
         covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
 
-        #     dR_mean_vola_results[h, gg] = dR_mean_vola
-        #     theta_mean_vola_results[h, gg] = theta_mean_vola
-        #     r_mean_vola_results[h, gg] = r_mean_vola
-        #     mu_S_mean_vola_results[h, gg] = mu_S_mean_vola
-        #     sigma_S_mean_vola_results[h, gg] = sigma_S_mean_vola
-        #     beta_mean_vola_results[h, gg] = beta_mean_vola
-        #     theta_save_mean_vola_results[h, gg] = theta_save_mean_vola
-        #     sigma_S_save_mean_vola_results[h, gg] = sigma_S_save_mean_vola
-        #     parti_age_group_mean_vola_results[h, gg] = parti_age_group_mean_vola
-        #     parti_wealth_group_mean_vola_results[h, gg] = parti_wealth_group_mean_vola
-        #     cov_save_mean_vola_results[h, gg] = cov_save_mean_vola
-        #     parti_results[h, gg] = parti_mean_vola
-        #     cov_parti_results[h, gg] = cov_parti_mean_vola
-        # covariance_parti[h] = np.corrcoef(parti_results[h, 0], parti_results[h, 1])[0, 1]
-
-
 
     return (
         i,
@@ -199,7 +183,7 @@ def simulate_mean_vola_path(i: int,
 # Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=None) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
@@ -244,7 +228,7 @@ def main():
 
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
-    np.savez("results_mean_vola_alternative5.npz", **results_dict)
+    np.savez("results_mean_vola_alternative.npz", **results_dict)
 
 
 if __name__ == '__main__':
