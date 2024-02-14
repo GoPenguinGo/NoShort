@@ -1,28 +1,16 @@
-import time
 import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-from scipy import stats
-from typing import Callable, Tuple
-from src.simulation import simulate_SI, simulate_SI_mean_vola
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
-    dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
-    cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
+from src.simulation import simulate_SI
+from src.param import nu, mu_Y, sigma_Y, tax, phi, \
+    dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
+    cutoffs_age, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
-from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
-from numba import jit
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
-import tabulate as tab
-from scipy.interpolate import make_interp_spline
+    Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
-# Define the simulate_scenario function as shown in the previous answer
-Mpath = 100
+
+# # for testing:
+# Mpath = 10
 np.seterr(invalid='ignore')
 
 
@@ -68,10 +56,33 @@ def simulate_path(i: int,
             invest_tracker,
             parti_age_group,
             parti_wealth_group,
-        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+        ) = simulate_SI(mode_trade,
+                        mode_learn,
+                        Nc,
+                        Nt,
+                        dt,
+                        nu,
+                        Vhat,
+                        mu_Y,
+                        sigma_Y,
+                        tax,
+                        beta0,
                         phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
-                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                        Npre,
+                        Ninit,
+                        T_hat,
+                        dZ_build,
+                        dZ,
+                        dZ_SI_build,
+                        dZ_SI,
+                        tau,
+                        cutoffs_age,
+                        Ntype,
+                        rho_i,
+                        alpha_i,
+                        beta_i,
+                        rho_cohort_type,
+                        cohort_type_size,
                         need_f='True',
                         need_Delta='True',
                         need_pi='True',
@@ -100,8 +111,6 @@ def simulate_path(i: int,
     )
 
 
-# Create a Pool of processes for parallel execution
-# Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
     with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed

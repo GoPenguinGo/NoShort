@@ -4,19 +4,20 @@ from src.param import nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    cummu_popu, Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
+    cummu_popu, Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
-# Define the simulate_scenario function as shown in the previous answer
+# # for testing:
 # Mpath = 10
 np.seterr(invalid='ignore')
 
 
 # noinspection PyTypeChecker
-def simulate_path(i: int,
-                  Nscenario=2,
-                  ):
+def simulate_path(
+        i: int,
+        Nscenario=2,
+):
     print(i)
     # Initialize results for the current Mpath
     # for fig 4:
@@ -28,8 +29,6 @@ def simulate_path(i: int,
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
     parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
-    # belief_pre_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
-    # belief_post_results = np.zeros((Nscenario, n_age_cutoffs, N_cut), dtype=np.float32)
 
     # for figure 9
     popu_cummu = np.cumsum(cohort_size)
@@ -92,10 +91,33 @@ def simulate_path(i: int,
             invest_tracker,
             parti_age_group,
             parti_wealth_group,
-        ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+        ) = simulate_SI(mode_trade,
+                        mode_learn,
+                        Nc,
+                        Nt,
+                        dt,
+                        nu,
+                        Vhat,
+                        mu_Y,
+                        sigma_Y,
+                        tax,
+                        beta0,
                         phi,
-                        Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau, cutoffs_age,
-                        Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                        Npre,
+                        Ninit,
+                        T_hat,
+                        dZ_build,
+                        dZ,
+                        dZ_SI_build,
+                        dZ_SI,
+                        tau,
+                        cutoffs_age,
+                        Ntype,
+                        rho_i,
+                        alpha_i,
+                        beta_i,
+                        rho_cohort_type,
+                        cohort_type_size,
                         need_f='True',
                         need_Delta='True',
                         need_pi='True',
@@ -155,14 +177,14 @@ def simulate_path(i: int,
             belief_f_old_results[g] = np.sum(
                 Delta[:, :cutoff_age_old_below_5] * np.sum(
                     f_c[:, :, :cutoff_age_old_below_5], axis=1
-                                                           ), axis=1
+                ), axis=1
             ) / np.sum(
                 np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=2
                        ), axis=1
             )
             belief_f_young_results[g] = np.sum(
                 Delta[:, cutoff_age_young_5:] * np.sum(f_c[:, :, cutoff_age_young_5:], axis=1
-                       ), axis=1
+                                                       ), axis=1
             ) / np.sum(
                 np.sum(f_c[:, :, cutoff_age_young_5:], axis=2
                        ), axis=1
@@ -184,25 +206,25 @@ def simulate_path(i: int,
         else:
             belief_f_old_results[g] = np.sum(
                 Delta[:, :cutoff_age_old_below_5] * invest_tracker[:, :cutoff_age_old_below_5] * np.sum(
-                       f_c[:, :, :cutoff_age_old_below_5],
-                       axis=1
-                       ), axis=1
+                    f_c[:, :, :cutoff_age_old_below_5],
+                    axis=1
+                ), axis=1
             ) / np.sum(
-                 invest_tracker[:, :cutoff_age_old_below_5] * np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=1
-                       ), axis=1
+                invest_tracker[:, :cutoff_age_old_below_5] * np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=1
+                                                                    ), axis=1
             )
             belief_f_young_results[g] = np.sum(
                 Delta[:, cutoff_age_young_5:] * invest_tracker[:, cutoff_age_young_5:] * np.sum(
-                       f_c[:, :, cutoff_age_young_5:],
-                       axis=1
-                       ), axis=1
+                    f_c[:, :, cutoff_age_young_5:],
+                    axis=1
+                ), axis=1
             ) / np.sum(
                 invest_tracker[:, cutoff_age_young_5:] * np.sum(f_c[:, :, cutoff_age_young_5:], axis=1
-                       ), axis=1
+                                                                ), axis=1
             )
             Phi_old_results[g] = np.sum(
                 np.sum(
-                    f_c[:, :, :cutoff_age_old_below_5],  axis=1
+                    f_c[:, :, :cutoff_age_old_below_5], axis=1
                 ) * invest_tracker[:, :cutoff_age_old_below_5] * dt,
                 axis=1
             )
@@ -218,8 +240,6 @@ def simulate_path(i: int,
         i,
         Delta_results,
         invest_results,
-        # belief_pre_results,
-        # belief_post_results,
         parti_pre_results,
         belief_popu_old_results,
         belief_popu_young_results,
@@ -250,25 +270,25 @@ def main():
     # Retrieve results from parallel processes
     for result in results:
         i, \
-            Delta_results, \
-            invest_results, \
-            parti_pre_results, \
-            belief_popu_old_results, \
-            belief_popu_young_results, \
-            P_old_results, \
-            P_young_results, \
-            Wealthshare_old_results, \
-            Wealthshare_young_results, \
-            Phi_results, \
-            Delta_bar_results, \
-            belief_popu_results, \
-            belief_f_old_results, \
-            belief_f_young_results, \
-            Phi_old_results, \
-            Phi_young_results, \
-            parti_post_results, \
-            leverage_parti_pre_results, \
-            leverage_parti_post_results = result.result()
+        Delta_results, \
+        invest_results, \
+        parti_pre_results, \
+        belief_popu_old_results, \
+        belief_popu_young_results, \
+        P_old_results, \
+        P_young_results, \
+        Wealthshare_old_results, \
+        Wealthshare_young_results, \
+        Phi_results, \
+        Delta_bar_results, \
+        belief_popu_results, \
+        belief_f_old_results, \
+        belief_f_young_results, \
+        Phi_old_results, \
+        Phi_young_results, \
+        parti_post_results, \
+        leverage_parti_pre_results, \
+        leverage_parti_post_results = result.result()
 
         data = {
             "i": i,

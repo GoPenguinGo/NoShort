@@ -1,13 +1,11 @@
 import numpy as np
 from src.simulation import simulate_SI_mean_vola, simulate_mix_mean_vola
-from src.param import nu, mu_Y, sigma_Y, dt,  Ninit, Nt, Nc, tau, Mpath, \
+from src.param import nu, mu_Y, sigma_Y, dt, Ninit, Nt, Nc, tau, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Ntype, alpha_i, cohort_type_size
-from src.param_mix import Nconstraint, alpha_i_mix, cohort_type_size_mix
+    Ntype, alpha_i, cohort_type_size, rho_cohort_type
+from src.param_mix import Nconstraint, alpha_i_mix, cohort_type_size_mix, rho_cohort_type_mix
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
-
-# Define the simulate_scenario function as shown in the previous answer
 
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
@@ -33,45 +31,37 @@ def simulate_mean_vola_path(i: int,
     sigma_S_save_mean_vola_results = np.zeros((Nvar, Nscenario, 4, 2))
     parti_age_group_mean_vola_results = np.zeros((Nvar, Nscenario, 4))
     parti_wealth_group_mean_vola_results = np.zeros((Nvar, Nscenario, 4))
-    # parti_age_wealth_group_mean_vola_results = np.zeros((Nscenario, 4, 4))
     cov_save_mean_vola_results = np.zeros((Nvar, Nscenario, 6))
     parti_results = np.zeros((Nvar, Nscenario, keep_data))
     cov_parti_results = np.zeros((Nvar, Nscenario, 4, 3))
     covariance_parti = np.zeros((Nvar, keep_data))
 
-    dZ_build = dZ_build_matrix[i+1200]
-    dZ = dZ_matrix[i+1200]
-    dZ_SI_build = dZ_SI_build_matrix[i+1200]
-    dZ_SI = dZ_SI_matrix[i+1200]
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ_SI_build = dZ_SI_build_matrix[i]
+    dZ_SI = dZ_SI_matrix[i]
 
     # dZ_build = np.random.randn(Nc) * dt_root
     # dZ = np.random.randn(Nt) * dt_root
     # dZ_SI_build = np.random.randn(Nc) * dt_root
     # dZ_SI = np.random.randn(Nt) * dt_root
+
     for h in range(Nvar):
         Npre = 60 if h == 0 else 240
-        # rho_i = np.array([[0.001], [0.01]]) if h == 1 else np.array([[0.001], [0.005]])
         rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
         phi = 0.8 if h == 2 else 0.4
         tax = 0.012 if h == 3 else 0.008
 
-        # phi = 0.5 if h == 0 else 0.6
-
         T_hat = dt * Npre
         Vhat = (sigma_Y ** 2) / T_hat
-        beta_i = rho_i + nu - tax  # marginal propensity to consume
+        beta_i = rho_i + nu - tax  # consumption wealth ratio
         beta0 = np.sum(beta_i * alpha_i)
-        beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
 
         rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
         beta_i_mix = rho_i_mix + nu - tax  # marginal propensity to consume
         beta0_mix = np.sum(beta_i_mix * alpha_i_mix)
 
-        # generate values that are fixed in the main loop
-        beta_cohort_type_mix = alpha_i_mix * np.exp(-beta_i_mix * tau)  # shape(2, 6000)
         for g in range(Nscenario):
-        # for gg in range(Nscenario):
-        #     g = gg + 1
             if g <= 1:
                 scenario = scenarios[g]
                 mode_trade = scenario[0]
@@ -85,17 +75,38 @@ def simulate_mean_vola_path(i: int,
                     beta_mean_vola,
                     theta_save_mean_vola,
                     sigma_S_save_mean_vola,
-                    # parti_group_mean_vola,
                     parti_age_group_mean_vola,
                     parti_wealth_group_mean_vola,
-                    # parti_age_wealth_group_mean_vola,
                     cov_save_mean_vola,
                     parti_mean_vola,
                     cov_parti_mean_vola,
                 ) = simulate_SI_mean_vola(
-                    mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                    phi, Npre, Ninit, T_hat, dZ_build, dZ, dZ_SI_build, dZ_SI, tau,
-                    Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size
+                    mode_trade,
+                    mode_learn,
+                    Nc,
+                    Nt,
+                    dt,
+                    nu,
+                    Vhat,
+                    mu_Y,
+                    sigma_Y,
+                    tax,
+                    beta0,
+                    phi,
+                    Npre,
+                    Ninit,
+                    T_hat,
+                    dZ_build,
+                    dZ,
+                    dZ_SI_build,
+                    dZ_SI,
+                    tau,
+                    Ntype,
+                    rho_i,
+                    alpha_i,
+                    beta_i,
+                    rho_cohort_type,
+                    cohort_type_size
                 )
             else:
                 (
@@ -107,10 +118,8 @@ def simulate_mean_vola_path(i: int,
                     beta_mean_vola,
                     theta_save_mean_vola,
                     sigma_S_save_mean_vola,
-                    # parti_group_mean_vola,
                     parti_age_group_mean_vola,
                     parti_wealth_group_mean_vola,
-                    # parti_age_wealth_group_mean_vola,
                     cov_save_mean_vola,
                     parti_mean_vola,
                     cov_parti_mean_vola
@@ -138,7 +147,7 @@ def simulate_mean_vola_path(i: int,
                     rho_i_mix,
                     alpha_i_mix,
                     beta_i_mix,
-                    beta_cohort_type_mix,
+                    rho_cohort_type_mix,
                     cohort_type_size_mix,
                 )
 
@@ -157,7 +166,6 @@ def simulate_mean_vola_path(i: int,
             cov_parti_results[h, g] = cov_parti_mean_vola
         covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
 
-
     return (
         i,
         dR_mean_vola_results,
@@ -168,19 +176,14 @@ def simulate_mean_vola_path(i: int,
         beta_mean_vola_results,
         theta_save_mean_vola_results,
         sigma_S_save_mean_vola_results,
-        # parti_group_mean_vola_results,
         parti_age_group_mean_vola_results,
         parti_wealth_group_mean_vola_results,
-        # parti_age_wealth_group_mean_vola_results,
         cov_save_mean_vola_results,
         covariance_parti,
-        # parti_results,
         cov_parti_results,
     )
 
 
-# Create a Pool of processes for parallel execution
-# Create a ProcessPoolExecutor for parallel execution
 def main():
     # Create a ProcessPoolExecutor for parallel execution
     with ProcessPoolExecutor(max_workers=None) as executor:  # Adjust the number of workers as needed
@@ -190,7 +193,8 @@ def main():
 
     # Retrieve results from parallel processes
     for result in results:
-        i, dR_mean_vola_results, \
+        i, \
+        dR_mean_vola_results, \
         theta_mean_vola_results, \
         r_mean_vola_results, \
         mu_S_mean_vola_results, \
@@ -216,7 +220,6 @@ def main():
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
             "parti_age_group": parti_age_group_mean_vola_results,
             "parti_wealth_group": parti_wealth_group_mean_vola_results,
-            # "parti_age_wealth_group_mean_vola": parti_age_wealth_group_mean_vola_results,
             "cov_list": cov_save_mean_vola_results,
             "cov_parti_between": covariance_parti,
             "cov_parti": cov_parti_results
