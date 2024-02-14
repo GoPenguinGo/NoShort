@@ -19,13 +19,13 @@ sigma_Y_sqr = sigma_Y ** 2
 sigma_SI = 0.3
 phi = 0.4
 
-v = 0.018  # from Nagel and Xu (2021 RFS)
+# v = 0.018  # from Nagel and Xu (2021 RFS)
 
 # tax = 0.015  # marginal rate of wealth tax
 # tax = 0.02
 tax = 0.008
-# beta = rho + nu - tax  # marginal propensity to consume
-beta_i = rho_i + nu - tax  # marginal propensity to consume
+# beta = rho + nu - tax  # consumption wealth ratio
+beta_i = rho_i + nu - tax  # consumption wealth ratio
 beta0 = np.sum(beta_i * alpha_i)
 
 

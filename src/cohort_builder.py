@@ -35,26 +35,34 @@ def build_cohorts_SI(
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
 
     Args:
-        dZ_build (np.ndarray): random shocks of aggregate output for each period, shape (Nc-1, )
+        dZ_build (np.ndarray): shocks to the output for each period, shape (Nc-1, )
+        dZ_SI_build(np.ndarray): shocks to the signal for each period, shape (Nc-1, )
         Nc (int): number of periods  = number of cohorts in the economy
         dt (float): unit of time
-        rho (float): rho, discount factor
-        nu (float): birth / death rate, each cohort starts at size nu and shrinks at speed of nu
+        tau (np.ndarray): time since birth for each cohort
+        Ntype (int): number of types for time preference
+        beta_i (np.ndarray): consumption wealth ratio of each type
+        alpha_i (np.ndarray): density of each type
+        beta_cohort_type (np.ndarray): alpha_i * exp(beta_i*(t-s))
         Vhat (float): initial variance of beliefs
-        mu_Y (float): mean of aggregate output growth
         sigma_Y (float): sd of aggregate output growth
         tax (float): marginal rate of wealth tax
+        phi (float): correlation between the signal and the output growth rate
         Npre (int): pre-trading periods
-        T_hat (float): pre-trading years
-        mode (str): describes the mode
+        Ninit (int): set-up periods when we treat the market as complete and do not search for theta
+        mode_trade (str): {'complete', 'w_constraint', 'partial_constraint_old'}
+        mode_learn (str): {'reentry', 'disappointment'}
+
 
     Returns:
-        f_st (np.ndarray): consumption shares
-        Delta_s_t (np.ndarray): bias, shape(Nc, )
-        # eta_st_ss (np.ndarray): consumption change process, shape(Nc, )
-        # eta_bar (np.ndarray): consumption weighted disagreement, shape(Nc, )
-        d_eta_st (np.ndarray): max(delta_s_t, -theta_t), shape(Nc, )
-        invest_tracker (np.ndarray): track if a cohort is still in the risky market
+        Delta_s_t (np.ndarray): estimation bias, shape(Nc, )
+        eta_st_eta_ss(np.ndarray): shape(Nc, )
+        X(np.ndarray):W_s * Xi_s, shape(Nc, )
+        d_eta_st (np.ndarray): max(delta_st, -theta_t), shape(Nc, )
+        invest_tracker (np.ndarray): track if a cohort is still in the stock market, shape(Nc, )
+        tau_info (np.ndarray): t', the last time a cohort switch, shape(Nc, )
+        Vhat_vector (np.ndarray): variance at t', shape(Nc, )
+        can_short_tracker (np.ndarray): track if a cohort can short, shape(Nc, )
     """
 
     # size of matrix: type * cohort; or type * 1; or 1 * cohort

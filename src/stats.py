@@ -5,12 +5,14 @@ from typing import Tuple, Callable
 
 @jit(nopython=True)
 def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, type: str) -> np.ndarray:
-    """Calculate the posterior variance, correspond to eq(2)
+    """Calculate the posterior variance, correspond to eq(6)
 
     Args:
-        sigma_Y (float): sigma_Y in eq(1), sd of Yt growth
-        V_hat (float): V_hat in eq(2)
-        tau (np.ndarray): (t - s) in eq(2), shape (T, )
+        sigma_Y_sq (float): sigma_Y squared
+        V_hat (float): initial variance or variance at the last time when switch occurred
+        tau (np.ndarray): (t - t') in eq(2), shape (T, )
+        a_phi (float): (1 - phi^2)
+        type (str): "P" or "N"
 
     Returns:
         np.ndarray: shape (T, )
@@ -35,9 +37,18 @@ def dDelta_st_calculator(sigma_Y_sq: float,
                          dZ_t: float,
                          dZ_SI_t: float,
                          type: str) -> np.ndarray:
-    """Calculate change in beliefs
+    """Calculate change in beliefs, as in eq(9)
 
     Args:
+        sigma_Y_sq (float): sigma_Y squared
+        a1 (float): 1/(1-phi^2)
+        a2 (float): phi/sqrt(1-phi^2)
+        dt (float): dt
+        V_st (np.ndarray): posterior variance
+        Delta_s_t (np.ndarray): prior estimation error
+        dZ_t (float): shocks to the fundamental
+        dZ_SI_t (float): shocks to the signal
+        type (str): "P" or "N"
 
     Returns:
         np.ndarray: shape (T, )
@@ -101,83 +112,83 @@ returns:
     return tau
 
 
-@jit(nopython=True)
-def good_times(
-        dZt_build: np.ndarray,
-        dZt: np.ndarray,
-        dt: float,
-        Nt: int,
-        Nc: int,
-        window: int,
-        z: float,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-]:
-    """
-    returns the indicator for good times when agents previously dropped out from the stock market might return
-    :param dZt_build:
-    :param dZt:
-    :param dt:
-    :param Nt:
-    :param window:
-    :param z:
-    :return:
-    """
-    cummu_dZt_build = np.zeros(Nc)
-    cummu_dZt = np.zeros(Nt)
-    for j in range(Nc):
-        if j < window:
-            cummu_dZt_build[j] = 0
-        else:
-            cummu_dZt_build[j] = np.sum(dZt_build[j + 1 - window: j + 1])
-    for i in range(Nt):
-        if i < window:
-            cummu_dZt[i] = np.sum(dZt_build[i + 1 - window:]) + np.sum(dZt[: i + 1])
-        else:
-            cummu_dZt[i] = np.sum(dZt[i + 1 - window: i + 1])
-    sigma_cummu = (dt * window) ** 0.5
-    good_time_build = cummu_dZt_build >= z * sigma_cummu
-    good_time_simulate = cummu_dZt >= z * sigma_cummu
-    return good_time_build, good_time_simulate
+# @jit(nopython=True)
+# def good_times(
+#         dZt_build: np.ndarray,
+#         dZt: np.ndarray,
+#         dt: float,
+#         Nt: int,
+#         Nc: int,
+#         window: int,
+#         z: float,
+# ) -> Tuple[
+#     np.ndarray,
+#     np.ndarray,
+# ]:
+#     """
+#     returns the indicator for good times when agents previously dropped out from the stock market might return
+#     :param dZt_build:
+#     :param dZt:
+#     :param dt:
+#     :param Nt:
+#     :param window:
+#     :param z:
+#     :return:
+#     """
+#     cummu_dZt_build = np.zeros(Nc)
+#     cummu_dZt = np.zeros(Nt)
+#     for j in range(Nc):
+#         if j < window:
+#             cummu_dZt_build[j] = 0
+#         else:
+#             cummu_dZt_build[j] = np.sum(dZt_build[j + 1 - window: j + 1])
+#     for i in range(Nt):
+#         if i < window:
+#             cummu_dZt[i] = np.sum(dZt_build[i + 1 - window:]) + np.sum(dZt[: i + 1])
+#         else:
+#             cummu_dZt[i] = np.sum(dZt[i + 1 - window: i + 1])
+#     sigma_cummu = (dt * window) ** 0.5
+#     good_time_build = cummu_dZt_build >= z * sigma_cummu
+#     good_time_simulate = cummu_dZt >= z * sigma_cummu
+#     return good_time_build, good_time_simulate
 
 
-def Delta_st_compare(
-        Delta_init: float,
-        Vhat_init: float,
-        tau: float,
-        dt: float,
-        sigma_Y_sq: float,
-        phi: float,
-        n_paths: int,
-) -> Tuple[
-    float,
-    float,
-    float,
-]:
-    length = int(tau / dt)
-    shocks_z_Y = np.random.randn(length, n_paths) * np.sqrt(dt)  # shape: (n_paths)
-    z_Y = np.sum(shocks_z_Y, axis=0)
-    shocks_z_SI = np.random.randn(length, n_paths) * np.sqrt(dt)
-    z_SI = np.sum(shocks_z_SI, axis=0)
-    phi_factor = phi / np.sqrt(1 - phi ** 2)
-    # for N:
-    factor_N = 1 / (sigma_Y_sq + Vhat_init * tau)
-    Delta_N = sigma_Y_sq * factor_N * Delta_init + Vhat_init * factor_N * z_Y  # shape: (n_paths)
-    # for P:
-    factor_P = 1 / (sigma_Y_sq * (1 - phi ** 2) + Vhat_init * tau)
-    Delta_P = sigma_Y_sq * (1 - phi ** 2) * factor_P * Delta_init + Vhat_init * (1 - phi ** 2) * factor_P * (
-                z_Y - phi_factor * z_SI)  # shape: (n_paths)
-    ratio_P_better = np.sum(np.abs(Delta_P) - np.abs(Delta_N) <= 0) / n_paths
-    positive_corr = z_SI * z_Y >= 0
-    condi_positive = np.where(positive_corr > 0)
-    condi_negative = np.where(positive_corr == 0)
-    ratio_P_better_positive = np.sum(np.abs(Delta_P[condi_positive]) - np.abs(Delta_N[condi_positive]) <= 0) / np.sum(
-        positive_corr)
-    ratio_P_better_negative = np.sum(np.abs(Delta_P[condi_negative]) - np.abs(Delta_N[condi_negative]) <= 0) / \
-                              (n_paths - np.sum(
-                                  positive_corr))
-    return ratio_P_better, ratio_P_better_positive, ratio_P_better_negative
+# def Delta_st_compare(
+#         Delta_init: float,
+#         Vhat_init: float,
+#         tau: float,
+#         dt: float,
+#         sigma_Y_sq: float,
+#         phi: float,
+#         n_paths: int,
+# ) -> Tuple[
+#     float,
+#     float,
+#     float,
+# ]:
+#     length = int(tau / dt)
+#     shocks_z_Y = np.random.randn(length, n_paths) * np.sqrt(dt)  # shape: (n_paths)
+#     z_Y = np.sum(shocks_z_Y, axis=0)
+#     shocks_z_SI = np.random.randn(length, n_paths) * np.sqrt(dt)
+#     z_SI = np.sum(shocks_z_SI, axis=0)
+#     phi_factor = phi / np.sqrt(1 - phi ** 2)
+#     # for N:
+#     factor_N = 1 / (sigma_Y_sq + Vhat_init * tau)
+#     Delta_N = sigma_Y_sq * factor_N * Delta_init + Vhat_init * factor_N * z_Y  # shape: (n_paths)
+#     # for P:
+#     factor_P = 1 / (sigma_Y_sq * (1 - phi ** 2) + Vhat_init * tau)
+#     Delta_P = sigma_Y_sq * (1 - phi ** 2) * factor_P * Delta_init + Vhat_init * (1 - phi ** 2) * factor_P * (
+#                 z_Y - phi_factor * z_SI)  # shape: (n_paths)
+#     ratio_P_better = np.sum(np.abs(Delta_P) - np.abs(Delta_N) <= 0) / n_paths
+#     positive_corr = z_SI * z_Y >= 0
+#     condi_positive = np.where(positive_corr > 0)
+#     condi_negative = np.where(positive_corr == 0)
+#     ratio_P_better_positive = np.sum(np.abs(Delta_P[condi_positive]) - np.abs(Delta_N[condi_positive]) <= 0) / np.sum(
+#         positive_corr)
+#     ratio_P_better_negative = np.sum(np.abs(Delta_P[condi_negative]) - np.abs(Delta_N[condi_negative]) <= 0) / \
+#                               (n_paths - np.sum(
+#                                   positive_corr))
+#     return ratio_P_better, ratio_P_better_positive, ratio_P_better_negative
 
 
 
