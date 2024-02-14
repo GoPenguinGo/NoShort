@@ -7,7 +7,6 @@ from tqdm import tqdm
 from numba import jit
 
 
-# todo: use matrix calculation in the functions, calculate multiple paths per run
 def simulate_cohorts_SI(
         biasvec: np.ndarray,
         dZ: np.ndarray,
@@ -82,7 +81,7 @@ def simulate_cohorts_SI(
         Vhat (float): initial variance
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
-        tax (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): marginal rate of wealth tax
         phi (float): correlation between the signal and the output growth rate
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of observations
@@ -433,7 +432,7 @@ def simulate_cohorts_mean_vola(
         Vhat (float): initial variance
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
-        tax (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): marginal rate of wealth tax
         phi (float): correlation between the signal and the output growth rate
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of observations
@@ -859,7 +858,7 @@ def simulate_cohorts_mix_type(
         Vhat (float): initial variance
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
-        tax (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): marginal rate of wealth tax
         phi (float): correlation between the signal and the output growth rate
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of observations
@@ -1178,7 +1177,7 @@ def simulate_mean_vola_mix_type(
         Vhat (float): initial variance
         mu_Y (float): as in eq(1), drift of aggregate output growth
         sigma_Y (float): as in eq(1), diffusion of aggregate output growth
-        tax (float): as in eq(18), consumption share of the newborn cohort
+        tax (float): marginal rate of wealth tax
         phi (float): correlation between the signal and the output growth rate
         T_hat (float): pre-trading years
         Npre (float): pre-trading number of observations
