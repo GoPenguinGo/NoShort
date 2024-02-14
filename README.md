@@ -22,12 +22,12 @@ black main.py
 1. **param.py** defines the parameters used in the simulations, and prepares matrix to store the results:
    1. additionally, **param_mix.py** defines the parameters used for the _mix_ scenario;
 2. **stats.py** defines some base functions used repeatedly throughout the simulations, including:
-   1. post_var(): calculate the posterior variance, correspond to eq(2);
+   1. post_var(): calculate the posterior variance, correspond to eq(6);
    2. shocks(): calculate Zt and Yt from shocks dZt;
    3. tau_calculator(): calculate tau for the cohorts in the economy;
 3. **solver.py** defines some base solver functions used repeatedly throughout the simulations, including:
    1. bisection(): Bisection method to solve for any the solution in any equation;
-   2. solve_theta(): combines with bisection(), contains RHS - LHS of the eq(24), used to iteratively solve market-clearing price of risk, ie. theta;
+   2. solve_theta(): combines with bisection(), contains RHS - LHS of the eq(22), used to iteratively solve market-clearing price of risk, ie. theta;
    3. find_the_rich(): finds the agents that make the top x% the richest population in the economy, and they can short;
    4. bisection_partial_constraint() and solve_theta_partial_constraint() are similar to 3.i and 3.ii, but takes more arguments;
 4. **cohort_builder.py** defines functions that build up an OLG economy:
