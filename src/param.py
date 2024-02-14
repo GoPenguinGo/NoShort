@@ -47,6 +47,7 @@ tau = np.reshape(np.arange(T_cohort, 0, -dt), (1, -1))  # age from 500 to 0; sha
 cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
 cohort_type_size = cohort_size * alpha_i
 beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
+rho_cohort_type = alpha_i * np.exp((-rho_i + nu) * tau)  # shape(2, 6000)
 beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 
