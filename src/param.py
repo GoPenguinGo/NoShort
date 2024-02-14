@@ -29,7 +29,6 @@ beta_i = rho_i + nu - tax  # consumption wealth ratio
 beta0 = np.sum(beta_i * alpha_i)
 
 
-
 # Setting prior variance
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
@@ -55,11 +54,7 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 cummu_popu = np.cumsum(cohort_size)
 n_age_cutoffs = 4
 quartiles = np.linspace(1, 0, n_age_cutoffs+1)
-# tau_cutoff1 = np.searchsorted(cummu_popu, 0.75)
-# tau_cutoff2 = np.searchsorted(cummu_popu, 0.5)
-# tau_cutoff3 = np.searchsorted(cummu_popu, 0.25)
 cutoffs_age = np.searchsorted(cummu_popu, quartiles)
-
 
 Mpath = 2000
 
@@ -120,16 +115,16 @@ age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <=
 # np.save('dZ_build_matrix', dZ_build_mat)
 # np.save('dZ_SI_build_matrix', dZ_SI_build_mat)
 
-dZ_matrix = np.load('dZ_matrix.npy')
-dZ_build_matrix = np.load('dZ_build_matrix.npy')
-dZ_SI_matrix = np.load('dZ_SI_matrix.npy')
-dZ_SI_build_matrix = np.load('dZ_SI_build_matrix.npy')
+dZ_matrix = np.load('shocks/dZ_matrix.npy')
+dZ_build_matrix = np.load('shocks/dZ_build_matrix.npy')
+dZ_SI_matrix = np.load('shocks/dZ_SI_matrix.npy')
+dZ_SI_build_matrix = np.load('shocks/dZ_SI_build_matrix.npy')
 
 # the shocks in the time-series
-dZ_build_case = np.load('dZ_build_case.npy')
-dZ_SI_build_case = np.load('dZ_SI_build_case.npy')
-dZ_Y_cases = np.load('Z_Y_cases.npy')
-dZ_SI_cases = np.load('Z_SI_cases.npy')
+dZ_build_case = np.load('shocks/dZ_build_case.npy')
+dZ_SI_build_case = np.load('shocks/dZ_SI_build_case.npy')
+dZ_Y_cases = np.load('shocks/Z_Y_cases.npy')
+dZ_SI_cases = np.load('shocks/Z_SI_cases.npy')
 
 top_wealth = 0.05
 old_age_limit = 100
