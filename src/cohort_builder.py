@@ -57,7 +57,7 @@ def build_cohorts_SI(
         Delta_s_t (np.ndarray): estimation bias, shape(Ntype, Nc, )
         eta_st_eta_ss(np.ndarray): shape(Ntype, Nc, )
         X(np.ndarray):W_s * Xi_s, shape(Ntype, Nc, )
-        d_eta_st (np.ndarray): max(delta_st, -theta_t), shape(Ntype, Nc, )
+        d_eta_s t (np.ndarray): max(delta_st, -theta_t), shape(Ntype, Nc, )
         invest_tracker (np.ndarray): track if a cohort is still in the stock market, shape(Ntype, Nc, )
         tau_info (np.ndarray): t-t', time since the last time a cohort switch, shape(Ntype, Nc, )
         Vhat_vector (np.ndarray): variance at t', shape(Ntype, Nc, )
@@ -80,7 +80,6 @@ def build_cohorts_SI(
 
     for i in tqdm(range(1, Nc)):
         # new cohort born (age 0), get wealth transfer, observe, invest
-        tau_short = tau[:, -i:]  # shape(Ntype, i)
         rho_cohort_type_short = rho_cohort_type[:, -i:]
         dZ_build_t = dZ_build[i - 1]
         dZ_SI_build_t = dZ_SI_build[i - 1]
@@ -294,7 +293,7 @@ def build_cohorts_mix_type(
     for i in tqdm(range(1, Nc)):
         # new cohort born (age 0), get wealth transfer, observe, invest
         tau_short = tau[:, -i:]
-        beta_cohort_type_short = beta_cohort_type[:, :, -i:]
+        rho_cohort_type_short = rho_cohort_type[:, :, -i:]
         dZ_build_t = dZ_build[i - 1]
         dZ_SI_build_t = dZ_SI_build[i - 1]
 
