@@ -21,12 +21,10 @@ phi = 0.4
 
 # v = 0.018  # from Nagel and Xu (2021 RFS)
 
-# tax = 0.015  # marginal rate of wealth tax
-# tax = 0.02
-tax = 0.008
-# beta = rho + nu - tax  # consumption wealth ratio
-beta_i = rho_i + nu - tax  # consumption wealth ratio
-beta0 = np.sum(beta_i * alpha_i)
+tax = 0.4    # marginal rate of consumption tax
+# tax = 0.3
+beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+beta0 = np.sum(alpha_i * beta_i)
 
 
 # Setting prior variance
@@ -45,8 +43,7 @@ Nc = int(T_cohort / dt)  # number of cohorts
 tau = np.reshape(np.arange(T_cohort, 0, -dt), (1, -1))  # age from 500 to 0; shape(1, 6000)
 cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
 cohort_type_size = cohort_size * alpha_i
-beta_cohort_type = alpha_i * np.exp(-beta_i * tau)  # shape(2, 6000)
-rho_cohort_type = alpha_i * np.exp((-rho_i + nu) * tau)  # shape(2, 6000)
+rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
 beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 
@@ -72,7 +69,7 @@ n_phi = len(phi_vector)
 phi_5 = [0, 0.2, 0.4, 0.6, 0.8]
 n_phi_5 = len(phi_5)
 
-tax_vector = [0.008, 0.01, 0.012]
+tax_vector = [0.2, 0.3, 0.4]
 n_tax = len(tax_vector)
 
 
