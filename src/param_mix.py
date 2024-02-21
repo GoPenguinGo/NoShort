@@ -6,8 +6,7 @@ Nconstraint = 4
 alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint
 alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
 rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-beta_i_mix = rho_i_mix + nu - tax  # consumption wealth ratio
-beta0_mix = np.sum(beta_i_mix * alpha_i_mix)
+beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
 
 # generate values that are fixed in the main loop
 cohort_type_size_mix = cohort_size * alpha_i_mix

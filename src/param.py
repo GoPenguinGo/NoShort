@@ -21,8 +21,8 @@ phi = 0.4
 
 # v = 0.018  # from Nagel and Xu (2021 RFS)
 
-tax = 0.4    # marginal rate of consumption tax
-# tax = 0.3
+# tax = 0.4    # marginal rate of consumption tax
+tax = 0.3
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i)
 

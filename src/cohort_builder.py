@@ -12,6 +12,7 @@ def build_cohorts_SI(
     tau: np.ndarray,
     Ntype: int,
     beta_i: np.ndarray,
+    beta0: float,
     alpha_i: np.ndarray,
     rho_cohort_type: np.ndarray,
     Vhat: float,
@@ -41,6 +42,7 @@ def build_cohorts_SI(
         tau (np.ndarray): time since birth for each cohort
         Ntype (int): number of types for time preference
         beta_i (np.ndarray): consumption wealth ratio of each type
+        beta0 (float): consumption wealth ratio of new born cohort
         alpha_i (np.ndarray): density of each type
         rho_cohort_type (np.ndarray): alpha_i * exp(-(rho_i + nu)*(t-s))
         Vhat (float): initial variance of beliefs
@@ -93,7 +95,7 @@ def build_cohorts_SI(
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
         X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
-        X_t = np.sum(X_parts) / (1 - tax * dt)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
+        X_t = np.sum(X_parts) / (1 - tax * beta0 * dt)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=1)
         X = np.append(X, np.ones((1, 1)) * X_t, axis=1)
@@ -102,14 +104,13 @@ def build_cohorts_SI(
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
-        f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist, tax * alpha_i, axis=1)
+        f_c_ist = X_parts / X_t / dt
+        f_c_ist = np.append(f_c_ist, tax * alpha_i * beta_i, axis=1)
 
-        beta_t = np.sum(f_w_ist * beta_i) * dt
-        f_c_ist = f_w_ist * beta_i / beta_t
+        beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
+        f_w_ist = f_c_ist / beta_i * beta_t
 
         # update beliefs
-        # todo: rewrite the functions to allow matrix calculation
         if mode_trade == 'complete':
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
             dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
@@ -215,10 +216,10 @@ def build_cohorts_mix_type(
     dZ_SI_build: np.ndarray,
     Nc: int,
     dt: float,
-    tau: np.ndarray,
     Ntype: int,
     Nconstraint: int,
     beta_i: np.ndarray,
+    beta0: float,
     alpha_i: np.ndarray,
     rho_cohort_type: np.ndarray,
     Vhat: float,
@@ -253,6 +254,7 @@ def build_cohorts_mix_type(
         Ntype (int): number of types for time preference
         Nconstraint (int): number of types for trading (mix)
         beta_i (np.ndarray): consumption wealth ratio of each type
+        beta0 (float): consumption wealth ratio of the new born cohort
         alpha_i (np.ndarray): density of each type
         rho_cohort_type (np.ndarray): alpha_i * exp(-(rho_i + nu)*(t-s))
         Vhat (float): initial variance of beliefs
@@ -292,7 +294,6 @@ def build_cohorts_mix_type(
 
     for i in tqdm(range(1, Nc)):
         # new cohort born (age 0), get wealth transfer, observe, invest
-        tau_short = tau[:, -i:]
         rho_cohort_type_short = rho_cohort_type[:, :, -i:]
         dZ_build_t = dZ_build[i - 1]
         dZ_SI_build_t = dZ_SI_build[i - 1]
@@ -306,7 +307,7 @@ def build_cohorts_mix_type(
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
         X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
-        X_t = np.sum(X_parts) / (1 - tax * dt)
+        X_t = np.sum(X_parts) / (1 - tax * beta0 * dt)  # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
 
         eta_st_eta_ss = np.append(eta_st_eta_ss, eta_st_eta_ss_init, axis=2)
         X = np.append(X, np.ones((1, 1, 1)) * X_t, axis=2)
@@ -315,11 +316,11 @@ def build_cohorts_mix_type(
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
-        f_w_ist = X_parts / X_t / dt
-        f_w_ist = np.append(f_w_ist, tax * eta_st_eta_ss_init * alpha_i, axis=2)
+        f_c_ist = X_parts / X_t / dt
+        f_c_ist = np.append(f_c_ist, tax * alpha_i * beta_i, axis=1)
 
-        beta_t = np.sum(f_w_ist * beta_i) * dt
-        f_c_ist = f_w_ist * beta_i / beta_t
+        # beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
+        # f_w_ist = f_c_ist / beta_i * beta_t
 
         # update beliefs
         if i < Ninit:
