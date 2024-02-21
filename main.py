@@ -677,7 +677,7 @@ print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1
 
 
 # Additional parameters for the figures
-n_scenarios_short = 3
+n_scenarios_short = 2
 scenarios_short = scenarios[:n_scenarios_short]
 
 phi_vector = np.arange(0, 1, 0.1)
@@ -729,6 +729,8 @@ invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, Nt, Nconstraint, Nc)
 Delta_mix = np.empty((n_scenarios_short, 2, 2, Nt, Nconstraint, Nc), dtype=np.float16)
 cohort_type_size_mix_mat = np.tile(cohort_type_size_mix, (Nt, 1, 1, 1))
 cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
+beta_beta_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+rho_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 for g, scenario in enumerate(scenarios_short):
     for i in range(2):
         dZ = dZ_Y_cases[i]
@@ -756,6 +758,8 @@ for g, scenario in enumerate(scenarios_short):
                     invest_tracker,
                     parti_age_group,
                     parti_wealth_group,
+                    beta_beta_bar,
+                    rho_bar,
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cutoffs_age,
@@ -780,6 +784,9 @@ for g, scenario in enumerate(scenarios_short):
                 mu_S_compare[g, i, j] = mu_S
                 sigma_S_compare[g, i, j] = sigma_S
                 beta_compare[g, i, j] = beta
+
+                beta_beta_bar_compare[g, i, j] = beta_beta_bar
+                rho_bar_compare[g, i, j] = rho_bar
             else:
                 (
                     r,
@@ -799,6 +806,8 @@ for g, scenario in enumerate(scenarios_short):
                     invest_tracker,
                     parti_age_group,
                     parti_wealth_group,
+                    beta_beta_bar,
+                    rho_bar,
                 ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                        beta0_mix,
                                        phi, Npre, Ninit, T_hat,
@@ -825,6 +834,9 @@ for g, scenario in enumerate(scenarios_short):
                 mu_S_compare[g, i, j] = mu_S
                 sigma_S_compare[g, i, j] = sigma_S
                 beta_compare[g, i, j] = beta
+
+                beta_beta_bar_compare[g, i, j] = beta_beta_bar
+                rho_bar_compare[g, i, j] = rho_bar
 
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 nn = 3  # number of cohorts illustrated
@@ -1225,7 +1237,7 @@ for j, ax in enumerate(axes):
     else:
         y_vec = y_list[j - 1]  # n_phi_short, Nt
         ax.set_ylabel(y_title, color='black')
-        for i in range(n_scenarios_short-1):
+        for i in range(2):
             y = y_vec[i]  # Nt
             color_i = colors_short[i]
             ax.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
@@ -1246,22 +1258,28 @@ plt.close()
 # comparing Delta bar and tilde
 Delta_bar_mat = Delta_bar_compare[:, red_case, yellow_case]
 Delta_tilde_mat = Delta_tilde_compare[:, red_case, yellow_case]
-belief_compo_mat = Phi_tilde_compare[:, red_case, yellow_case] * (Delta_tilde_mat - Delta_bar_mat)
+belief_gap_mat = Delta_tilde_mat - Delta_bar_mat
+belief_compo_mat = Phi_tilde_compare[:, red_case, yellow_case] * belief_gap_mat
 wealth_compo_mat = Phi_tilde_compare[:, red_case, yellow_case] / Phi_bar_compare[:, red_case, yellow_case] * sigma_Y
 sigma_S_mat = sigma_S_compare[:, red_case, yellow_case]
-y_list = [Delta_bar_mat, Delta_tilde_mat, belief_compo_mat, wealth_compo_mat, sigma_S_mat]
+y_list = [Delta_bar_mat, Delta_tilde_mat, belief_gap_mat, belief_compo_mat, wealth_compo_mat, sigma_S_mat]
 Z = np.cumsum(dZ_Y_cases[red_case])
 Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
 y_title_list = [red_labels[1] + yellow_labels[1],
                 r'Consumption weighted belief $\bar{\Delta}_t$',
                 r'Wealth weighted belief $\tilde{\Delta}_t$',
+                r'Belief gap $\tilde{\Delta}_t - \bar{\Delta}_t$',
                 r'Belief component $\tilde{\Phi}_t(\tilde{\Delta}_t - \bar{\Delta}_t)$',
                 r'Wealth component $\frac{\tilde{\Phi}_t}{\bar{\Phi}_t}\sigma_Y$',
                 r'Stock volatility $\sigma^S_t$']
 labels = scenario_labels
-fig, axes = plt.subplots(nrows=6, ncols=1, sharex='all', figsize=(8, 15))
+fig, axes = plt.subplots(nrows=7, ncols=1, sharex='all', figsize=(8, 18))
 for j, ax in enumerate(axes):
     y_title = y_title_list[j]
+    if j == 2 or j == 3:
+        ax.set_ylim(-0.3, 0.4)
+    if j > 3:
+        ax.set_ylim(-0.06, 0.12)
     if j == 0:
         ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
         ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
@@ -1270,23 +1288,72 @@ for j, ax in enumerate(axes):
     else:
         y_vec = y_list[j - 1]  # n_phi_short, Nt
         ax.set_ylabel(y_title, color='black')
-        for i in range(n_scenarios_short-1):
+        for i in range(2):
             y = y_vec[i]  # Nt
             color_i = colors_short[i]
             ax.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
             # ax2.set_ylim(lower, upper)
     if j <= 1:
         ax.legend(loc='upper left')
-    if j == 3:
+    if j == 6:
         ax.set_xlabel('Time in simulation')
     ax.set_title(y_title)
     # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
 fig.tight_layout(h_pad=2)
-plt.savefig('vola,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
+# plt.savefig('vola,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
 plt.savefig('vola,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
+
+
+# comparing Delta bar and tilde
+r_mat = r_compare[:, red_case, yellow_case]
+beta_beta_bar_mat = beta_beta_bar_compare[:, red_case, yellow_case]
+rho_bar_mat = rho_bar_compare[:, red_case, yellow_case]
+theta_mat = theta_compare[:, red_case, yellow_case]
+
+y_list = [-beta_beta_bar_mat, rho_bar_mat, -beta_beta_bar_mat + rho_bar_mat, -sigma_Y*theta_mat, r_mat-nu-mu_Y]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+y_title_list = [red_labels[1] + yellow_labels[1],
+                r'Initial consumption share $-\tau\frac{\beta}{\tilde{\beta}_t}$',
+                r'Average consumption wealth ratio $\bar{\rho}_t$',
+                r'$-\tau\frac{\beta}{\tilde{\beta}_t} + \bar{\rho}_t$',
+                r'Consumption volatility $-\sigma_Y \theta_t$',
+                r'Interest rate $r_t-\mu_Y - \nu$']
+labels = scenario_labels
+fig, axes = plt.subplots(nrows=6, ncols=1, sharex='all', figsize=(8, 15))
+for j, ax in enumerate(axes):
+    ax.grid(True)
+    y_title = y_title_list[j]
+    if j == 0:
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+        ax.tick_params(axis='both', labelcolor='black')
+    else:
+        ax.set_ylim(-0.022, 0.022)
+        y_vec = y_list[j - 1]  # n_phi_short, Nt
+        ax.set_ylabel(y_title, color='black')
+        for i in range(2):
+            y = y_vec[i]  # Nt
+            color_i = colors_short[i]
+            ax.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
+            # ax2.set_ylim(lower, upper)
+    if j <= 1:
+        ax.legend(loc='upper left')
+    if j == 5:
+        ax.set_xlabel('Time in simulation')
+    ax.set_title(y_title)
+    # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
+fig.tight_layout(h_pad=2)
+# plt.savefig('vola,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
+plt.savefig('r_components,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
+plt.show()
+plt.close()
+
 
 ############ IA other cases
 # red_cases = [0, 0, 1]
