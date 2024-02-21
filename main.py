@@ -20,489 +20,489 @@ results = np.load('results.npz')
 file_list = results.files
 
 
-from matplotlib import cm # for a scatter plot
-from mpl_toolkits.mplot3d import Axes3D
-
-results_pd = np.load("results_pd_try.npz")
-file_pd_list = results_pd.files
-pd = 1 / results_pd['price_dividend']
-vola = results_pd['stock_vola']
-r = results_pd['interest_rate']
-belief = results_pd['average_belief']
-c_belief = results_pd['average_c_belief']
-parti = results_pd['parti_rate']
-Phi_bar = results_pd['Phi_bar']
-parti_age = results_pd['parti_rate_age']
-data_include = np.arange(0, Nt, 12)
-titles = ['Complete', 'Reentry']
-quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
-for ii, var in enumerate(file_pd_list[3:]):
-    state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
-    fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(20, 10), )
-    for i, ax in enumerate(axes):
-        ax.set_xlabel('Price dividend ratio')
-        # ax.set_ylabel('Interest rate')
-        # ax.set_ylabel('Average belief')
-        # ax.set_zlabel('Stock volatility')
-        ax.set_ylabel('Stock volatility')
-        state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-        for j in range(4):
-            data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
-            data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
-            data_within = np.where(data_above * data_below == 1)
-            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
-            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
-            # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
-            ax.scatter(pd[:, i, data_include][data_within], vola[:, i, data_include][data_within], marker='.', s=5, color=colors[j], alpha=0.2,
-                       label=quartiles[j])
-        title = titles[i]
-        ax.legend()
-        ax.set_title(title, color='black')
-        ax.tick_params(axis='y', labelcolor='black')
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig(var + '_quartile.png', dpi=100)
-    plt.show()
-    plt.close()
-
-
-i = 0
-
-
-x = pd
-y = c_belief
-z = vola
-dixiles = np.linspace(0, 1, 8)
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.set_xlabel('Price dividend ratio')
-# ax.set_ylabel('Interest rate')
-ax.set_ylabel('Average belief')
-ax.set_zlabel('Stock volatility')
-# ax.set_ylabel('Stock volatility')
-# state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-# z_cutoffs = np.quantile(z[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-# z_cutoffs = np.quantile(z[:, i, data_include], dixiles)
-y_cutoffs = np.quantile(y[:, i, data_include], dixiles)
-for j in range(4):
-    # data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
-    # data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
-    # data_below = z[:, i, data_include] >= z_cutoffs[j*2]
-    # data_above = z[:, i, data_include] < z_cutoffs[j*2 + 1]
-    data_below = y[:, i, data_include] >= y_cutoffs[j*2]
-    data_above = y[:, i, data_include] < y_cutoffs[j*2 + 1]
-    data_within = np.where(data_above * data_below == 1)
-    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
-    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
-    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
-    ax.scatter(x[:, i, data_include][data_within], y[:, i, data_include][data_within], z[:, i, data_include][data_within], marker='o', s=5, color=colors[j], alpha=0.1,
-               label=quartiles[j])
-title = titles[i]
-ax.set_xlim(45, 70)
-ax.set_ylim(-0.2, 0.2)
-ax.legend()
-ax.set_title(title, color='black')
-ax.tick_params(axis='y', labelcolor='black')
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig(var + 'pd_quartile.png', dpi=100)
-plt.show()
-# plt.close()
-
-
-# univariate
-for i in range(2):
-    sce = scenarios[i]
-    print(sce)
-
-    coeff_matrix = np.zeros((5, 2))
-    pvalue_matrix = np.zeros((5, 2))
-    tstats_matrix = np.zeros((5, 2))
-    rsqrd_matrix = np.zeros((5))
-
-    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-    y = y_raw
-    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-    for j, x_var in enumerate(file_pd_list[1:6]):
-        if j != 1:
-            x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
-            x = (x_raw - np.average(x_raw)) / np.std(x_raw)
-            x = sm.add_constant(x)
-            model = sm.OLS(y, x)
-            est = model.fit()
-            coeff_matrix[j] = est.params
-            pvalue_matrix[j] = est.pvalues
-            tstats_matrix[j] = est.tvalues
-            rsqrd_matrix[j] = est.rsquared
-
-    reg_data = np.empty((5, 4))
-    header = ['(1) price_dividend', '(2) average_belief', '(3) average_c_belief', '(4) interest_rate']
-    index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
-    for ii in range(4):
-        k = ii if ii == 0 else ii + 1
-        reg_data[0, ii] = coeff_matrix[k, 0]
-        reg_data[1, ii] = tstats_matrix[k, 0]
-        reg_data[2, ii] = coeff_matrix[k, 1]
-        reg_data[3, ii] = tstats_matrix[k, 1]
-        reg_data[4, ii] = rsqrd_matrix[k]
-    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-# univariate, specific to reentry:
-i = 1
-coeff_matrix = np.zeros((3, 2))
-pvalue_matrix = np.zeros((3, 2))
-tstats_matrix = np.zeros((3, 2))
-rsqrd_matrix = np.zeros((3))
-
-y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-y = y_raw
-# y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-for j, x_var in enumerate(file_pd_list[6:]):
-    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j<2 \
-        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
-    x = (x_raw - np.average(x_raw)) / np.std(x_raw)
-    x = sm.add_constant(x)
-    model = sm.OLS(y, x)
-    est = model.fit()
-    coeff_matrix[j] = est.params
-    pvalue_matrix[j] = est.pvalues
-    tstats_matrix[j] = est.tvalues
-    rsqrd_matrix[j] = est.rsquared
-
-reg_data = np.empty((5, 3))
-header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
-index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
-for ii in range(3):
-    i = ii
-    reg_data[0, ii] = coeff_matrix[i, 0]
-    reg_data[1, ii] = tstats_matrix[i, 0]
-    reg_data[2, ii] = coeff_matrix[i, 1]
-    reg_data[3, ii] = tstats_matrix[i, 1]
-    reg_data[4, ii] = rsqrd_matrix[i]
-print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-# bivariate
-for i in range(2):
-    sce = scenarios[i]
-    print(sce)
-
-    coeff_matrix = np.zeros((3, 3))
-    pvalue_matrix = np.zeros((3, 3))
-    tstats_matrix = np.zeros((3, 3))
-    rsqrd_matrix = np.zeros((3))
-
-    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-    y = y_raw
-    x2_raw = np.reshape(pd[:, i], (-1, 1))
-    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-    for j, x_var in enumerate(file_pd_list[3:6]):
-        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
-        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-        x = np.append(x2, x1, axis=1)
-        x = sm.add_constant(x)
-        model = sm.OLS(y, x)
-        est = model.fit()
-        coeff_matrix[j] = est.params
-        pvalue_matrix[j] = est.pvalues
-        tstats_matrix[j] = est.tvalues
-        rsqrd_matrix[j] = est.rsquared
-
-
-    reg_data = np.empty((7, 3))
-    header = ['(1) average_belief', '(2) average_c_belief', '(3) interest_rate']
-    index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
-    for ii in range(3):
-        k = ii
-        reg_data[0, ii] = coeff_matrix[k, 0]
-        reg_data[1, ii] = tstats_matrix[k, 0]
-        reg_data[2, ii] = coeff_matrix[k, 1]
-        reg_data[3, ii] = tstats_matrix[k, 1]
-        reg_data[4, ii] = coeff_matrix[k, 2]
-        reg_data[5, ii] = tstats_matrix[k, 2]
-        reg_data[6, ii] = rsqrd_matrix[k]
-    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-# bivariate, specific to reentry:
-i = 1
-coeff_matrix = np.zeros((3, 3))
-pvalue_matrix = np.zeros((3, 3))
-tstats_matrix = np.zeros((3, 3))
-rsqrd_matrix = np.zeros((3))
-
-y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-y = y_raw
-x2_raw = np.reshape(pd[:, i], (-1, 1))
-x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-# y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-for j, x_var in enumerate(file_pd_list[6:]):
-    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
-        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
-    x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-    x = np.append(x2, x1, axis=1)
-    x = sm.add_constant(x)
-    model = sm.OLS(y, x)
-    est = model.fit()
-    coeff_matrix[j] = est.params
-    pvalue_matrix[j] = est.pvalues
-    tstats_matrix[j] = est.tvalues
-    rsqrd_matrix[j] = est.rsquared
-
-reg_data = np.empty((7, 3))
-header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
-index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
-for ii in range(3):
-    k = ii
-    reg_data[0, ii] = coeff_matrix[k, 0]
-    reg_data[1, ii] = tstats_matrix[k, 0]
-    reg_data[2, ii] = coeff_matrix[k, 1]
-    reg_data[3, ii] = tstats_matrix[k, 1]
-    reg_data[4, ii] = coeff_matrix[k, 2]
-    reg_data[5, ii] = tstats_matrix[k, 2]
-    reg_data[6, ii] = rsqrd_matrix[k]
-print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-# multivariate
-for i in range(2):
-    sce = scenarios[i]
-    print(sce)
-
-    coeff_matrix = np.zeros((2, 4))
-    pvalue_matrix = np.zeros((2, 4))
-    tstats_matrix = np.zeros((2, 4))
-    rsqrd_matrix = np.zeros((2))
-
-    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-    y = y_raw
-    x2_raw = np.reshape(pd[:, i], (-1, 1))
-    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-    x3_raw = np.reshape(r[:, i], (-1, 1))
-    x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-    for j, x_var in enumerate(file_pd_list[3:5]):
-        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
-        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-        x = np.append(x3, x1, axis=1)
-        x = np.append(x2, x, axis=1)
-        x = sm.add_constant(x)
-        model = sm.OLS(y, x)
-        est = model.fit()
-        coeff_matrix[j] = est.params
-        pvalue_matrix[j] = est.pvalues
-        tstats_matrix[j] = est.tvalues
-        rsqrd_matrix[j] = est.rsquared
-
-
-    reg_data = np.empty((9, 2))
-    header = ['(1) average_belief', '(2) average_c_belief']
-    index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
-    for ii in range(2):
-        k = ii
-        reg_data[0, ii] = coeff_matrix[k, 0]
-        reg_data[1, ii] = tstats_matrix[k, 0]
-        reg_data[2, ii] = coeff_matrix[k, 1]
-        reg_data[3, ii] = tstats_matrix[k, 1]
-        reg_data[4, ii] = coeff_matrix[k, 2]
-        reg_data[5, ii] = tstats_matrix[k, 2]
-        reg_data[6, ii] = coeff_matrix[k, 3]
-        reg_data[7, ii] = tstats_matrix[k, 3]
-        reg_data[8, ii] = rsqrd_matrix[k]
-    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-i = 1
-coeff_matrix = np.zeros((3, 4))
-pvalue_matrix = np.zeros((3, 4))
-tstats_matrix = np.zeros((3, 4))
-rsqrd_matrix = np.zeros((3))
-
-y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-y = y_raw
-x2_raw = np.reshape(pd[:, i], (-1, 1))
-x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-x3_raw = np.reshape(r[:, i], (-1, 1))
-x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-for j, x_var in enumerate(file_pd_list[6:]):
-    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
-        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
-    x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-    x = np.append(x3, x1, axis=1)
-    x = np.append(x2, x, axis=1)
-    x = sm.add_constant(x)
-    model = sm.OLS(y, x)
-    est = model.fit()
-    coeff_matrix[j] = est.params
-    pvalue_matrix[j] = est.pvalues
-    tstats_matrix[j] = est.tvalues
-    rsqrd_matrix[j] = est.rsquared
-
-reg_data = np.empty((9, 3))
-header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
-index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
-for ii in range(3):
-    k = ii
-    reg_data[0, ii] = coeff_matrix[k, 0]
-    reg_data[1, ii] = tstats_matrix[k, 0]
-    reg_data[2, ii] = coeff_matrix[k, 1]
-    reg_data[3, ii] = tstats_matrix[k, 1]
-    reg_data[4, ii] = coeff_matrix[k, 2]
-    reg_data[5, ii] = tstats_matrix[k, 2]
-    reg_data[6, ii] = coeff_matrix[k, 3]
-    reg_data[7, ii] = tstats_matrix[k, 3]
-    reg_data[8, ii] = rsqrd_matrix[k]
-print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-
-# multivariate, interaction terms
-for i in range(2):
-    sce = scenarios[i]
-    print(sce)
-
-    coeff_matrix = np.zeros((2, 4))
-    pvalue_matrix = np.zeros((2, 4))
-    tstats_matrix = np.zeros((2, 4))
-    rsqrd_matrix = np.zeros((2))
-
-    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-    y = y_raw
-    x2_raw = np.reshape(pd[:, i], (-1, 1))
-    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-    # x3_raw = np.reshape(r[:, i], (-1, 1))
-    # x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-    # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
-    for j, x_var in enumerate(file_pd_list[3:5]):
-        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
-        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-        x3_raw = x_raw * x2_raw
-        x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-        x = np.append(x1, x3, axis=1)
-        x = np.append(x2, x, axis=1)
-        x = sm.add_constant(x)  # x2, x1, x3
-        model = sm.OLS(y, x)
-        est = model.fit()
-        coeff_matrix[j] = est.params
-        pvalue_matrix[j] = est.pvalues
-        tstats_matrix[j] = est.tvalues
-        rsqrd_matrix[j] = est.rsquared
-
-
-    reg_data = np.empty((9, 2))
-    header = ['(1) average_belief', '(2) average_c_belief']
-    index = ['cons', 't-stats', 'pd ratio', 't-stats', 'x', 't-stats', 'x*pd ratio', 't-stats', 'R-squared']
-    for ii in range(2):
-        k = ii
-        reg_data[0, ii] = coeff_matrix[k, 0]
-        reg_data[1, ii] = tstats_matrix[k, 0]
-        reg_data[2, ii] = coeff_matrix[k, 1]
-        reg_data[3, ii] = tstats_matrix[k, 1]
-        reg_data[4, ii] = coeff_matrix[k, 2]
-        reg_data[5, ii] = tstats_matrix[k, 2]
-        reg_data[6, ii] = coeff_matrix[k, 3]
-        reg_data[7, ii] = tstats_matrix[k, 3]
-        reg_data[8, ii] = rsqrd_matrix[k]
-    print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-i = 1
-coeff_matrix = np.zeros((3, 4))
-pvalue_matrix = np.zeros((3, 4))
-tstats_matrix = np.zeros((3, 4))
-rsqrd_matrix = np.zeros((3))
-
-y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-y = y_raw
-x2_raw = np.reshape(pd[:, i], (-1, 1))
-x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+# from matplotlib import cm # for a scatter plot
+# from mpl_toolkits.mplot3d import Axes3D
+#
+# results_pd = np.load("results_pd_try.npz")
+# file_pd_list = results_pd.files
+# pd = 1 / results_pd['price_dividend']
+# vola = results_pd['stock_vola']
+# r = results_pd['interest_rate']
+# belief = results_pd['average_belief']
+# c_belief = results_pd['average_c_belief']
+# parti = results_pd['parti_rate']
+# Phi_bar = results_pd['Phi_bar']
+# parti_age = results_pd['parti_rate_age']
+# data_include = np.arange(0, Nt, 12)
+# titles = ['Complete', 'Reentry']
+# quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
+# for ii, var in enumerate(file_pd_list[3:]):
+#     state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
+#     fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(20, 10), )
+#     for i, ax in enumerate(axes):
+#         ax.set_xlabel('Price dividend ratio')
+#         # ax.set_ylabel('Interest rate')
+#         # ax.set_ylabel('Average belief')
+#         # ax.set_zlabel('Stock volatility')
+#         ax.set_ylabel('Stock volatility')
+#         state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+#         for j in range(4):
+#             data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
+#             data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
+#             data_within = np.where(data_above * data_below == 1)
+#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
+#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
+#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
+#             ax.scatter(pd[:, i, data_include][data_within], vola[:, i, data_include][data_within], marker='.', s=5, color=colors[j], alpha=0.2,
+#                        label=quartiles[j])
+#         title = titles[i]
+#         ax.legend()
+#         ax.set_title(title, color='black')
+#         ax.tick_params(axis='y', labelcolor='black')
+#     fig.tight_layout()  # otherwise the right y-label is slightly clipped
+#     plt.savefig(var + '_quartile.png', dpi=100)
+#     plt.show()
+#     plt.close()
+#
+#
+# i = 0
+#
+#
+# x = pd
+# y = c_belief
+# z = vola
+# dixiles = np.linspace(0, 1, 8)
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+# ax.set_xlabel('Price dividend ratio')
+# # ax.set_ylabel('Interest rate')
+# ax.set_ylabel('Average belief')
+# ax.set_zlabel('Stock volatility')
+# # ax.set_ylabel('Stock volatility')
+# # state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# # z_cutoffs = np.quantile(z[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# # z_cutoffs = np.quantile(z[:, i, data_include], dixiles)
+# y_cutoffs = np.quantile(y[:, i, data_include], dixiles)
+# for j in range(4):
+#     # data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
+#     # data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
+#     # data_below = z[:, i, data_include] >= z_cutoffs[j*2]
+#     # data_above = z[:, i, data_include] < z_cutoffs[j*2 + 1]
+#     data_below = y[:, i, data_include] >= y_cutoffs[j*2]
+#     data_above = y[:, i, data_include] < y_cutoffs[j*2 + 1]
+#     data_within = np.where(data_above * data_below == 1)
+#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
+#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
+#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
+#     ax.scatter(x[:, i, data_include][data_within], y[:, i, data_include][data_within], z[:, i, data_include][data_within], marker='o', s=5, color=colors[j], alpha=0.1,
+#                label=quartiles[j])
+# title = titles[i]
+# ax.set_xlim(45, 70)
+# ax.set_ylim(-0.2, 0.2)
+# ax.legend()
+# ax.set_title(title, color='black')
+# ax.tick_params(axis='y', labelcolor='black')
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# # plt.savefig(var + 'pd_quartile.png', dpi=100)
+# plt.show()
+# # plt.close()
+#
+#
+# # univariate
+# for i in range(2):
+#     sce = scenarios[i]
+#     print(sce)
+#
+#     coeff_matrix = np.zeros((5, 2))
+#     pvalue_matrix = np.zeros((5, 2))
+#     tstats_matrix = np.zeros((5, 2))
+#     rsqrd_matrix = np.zeros((5))
+#
+#     y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+#     y = y_raw
+#     # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+#     for j, x_var in enumerate(file_pd_list[1:6]):
+#         if j != 1:
+#             x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+#             x = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#             x = sm.add_constant(x)
+#             model = sm.OLS(y, x)
+#             est = model.fit()
+#             coeff_matrix[j] = est.params
+#             pvalue_matrix[j] = est.pvalues
+#             tstats_matrix[j] = est.tvalues
+#             rsqrd_matrix[j] = est.rsquared
+#
+#     reg_data = np.empty((5, 4))
+#     header = ['(1) price_dividend', '(2) average_belief', '(3) average_c_belief', '(4) interest_rate']
+#     index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
+#     for ii in range(4):
+#         k = ii if ii == 0 else ii + 1
+#         reg_data[0, ii] = coeff_matrix[k, 0]
+#         reg_data[1, ii] = tstats_matrix[k, 0]
+#         reg_data[2, ii] = coeff_matrix[k, 1]
+#         reg_data[3, ii] = tstats_matrix[k, 1]
+#         reg_data[4, ii] = rsqrd_matrix[k]
+#     print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# # univariate, specific to reentry:
+# i = 1
+# coeff_matrix = np.zeros((3, 2))
+# pvalue_matrix = np.zeros((3, 2))
+# tstats_matrix = np.zeros((3, 2))
+# rsqrd_matrix = np.zeros((3))
+#
+# y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+# y = y_raw
+# # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+# for j, x_var in enumerate(file_pd_list[6:]):
+#     x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j<2 \
+#         else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+#     x = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#     x = sm.add_constant(x)
+#     model = sm.OLS(y, x)
+#     est = model.fit()
+#     coeff_matrix[j] = est.params
+#     pvalue_matrix[j] = est.pvalues
+#     tstats_matrix[j] = est.tvalues
+#     rsqrd_matrix[j] = est.rsquared
+#
+# reg_data = np.empty((5, 3))
+# header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+# index = ['coef cons', 't-stats', 'coef x', 't-stats', 'R-squared']
+# for ii in range(3):
+#     i = ii
+#     reg_data[0, ii] = coeff_matrix[i, 0]
+#     reg_data[1, ii] = tstats_matrix[i, 0]
+#     reg_data[2, ii] = coeff_matrix[i, 1]
+#     reg_data[3, ii] = tstats_matrix[i, 1]
+#     reg_data[4, ii] = rsqrd_matrix[i]
+# print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# # bivariate
+# for i in range(2):
+#     sce = scenarios[i]
+#     print(sce)
+#
+#     coeff_matrix = np.zeros((3, 3))
+#     pvalue_matrix = np.zeros((3, 3))
+#     tstats_matrix = np.zeros((3, 3))
+#     rsqrd_matrix = np.zeros((3))
+#
+#     y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+#     y = y_raw
+#     x2_raw = np.reshape(pd[:, i], (-1, 1))
+#     x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+#     # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+#     for j, x_var in enumerate(file_pd_list[3:6]):
+#         x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+#         x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#         x = np.append(x2, x1, axis=1)
+#         x = sm.add_constant(x)
+#         model = sm.OLS(y, x)
+#         est = model.fit()
+#         coeff_matrix[j] = est.params
+#         pvalue_matrix[j] = est.pvalues
+#         tstats_matrix[j] = est.tvalues
+#         rsqrd_matrix[j] = est.rsquared
+#
+#
+#     reg_data = np.empty((7, 3))
+#     header = ['(1) average_belief', '(2) average_c_belief', '(3) interest_rate']
+#     index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
+#     for ii in range(3):
+#         k = ii
+#         reg_data[0, ii] = coeff_matrix[k, 0]
+#         reg_data[1, ii] = tstats_matrix[k, 0]
+#         reg_data[2, ii] = coeff_matrix[k, 1]
+#         reg_data[3, ii] = tstats_matrix[k, 1]
+#         reg_data[4, ii] = coeff_matrix[k, 2]
+#         reg_data[5, ii] = tstats_matrix[k, 2]
+#         reg_data[6, ii] = rsqrd_matrix[k]
+#     print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# # bivariate, specific to reentry:
+# i = 1
+# coeff_matrix = np.zeros((3, 3))
+# pvalue_matrix = np.zeros((3, 3))
+# tstats_matrix = np.zeros((3, 3))
+# rsqrd_matrix = np.zeros((3))
+#
+# y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+# y = y_raw
+# x2_raw = np.reshape(pd[:, i], (-1, 1))
+# x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+# # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+# for j, x_var in enumerate(file_pd_list[6:]):
+#     x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+#         else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+#     x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#     x = np.append(x2, x1, axis=1)
+#     x = sm.add_constant(x)
+#     model = sm.OLS(y, x)
+#     est = model.fit()
+#     coeff_matrix[j] = est.params
+#     pvalue_matrix[j] = est.pvalues
+#     tstats_matrix[j] = est.tvalues
+#     rsqrd_matrix[j] = est.rsquared
+#
+# reg_data = np.empty((7, 3))
+# header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+# index = ['coef cons', 't-stats', 'coef pd ratio', 't-stats', 'coef x', 't-stats', 'R-squared']
+# for ii in range(3):
+#     k = ii
+#     reg_data[0, ii] = coeff_matrix[k, 0]
+#     reg_data[1, ii] = tstats_matrix[k, 0]
+#     reg_data[2, ii] = coeff_matrix[k, 1]
+#     reg_data[3, ii] = tstats_matrix[k, 1]
+#     reg_data[4, ii] = coeff_matrix[k, 2]
+#     reg_data[5, ii] = tstats_matrix[k, 2]
+#     reg_data[6, ii] = rsqrd_matrix[k]
+# print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# # multivariate
+# for i in range(2):
+#     sce = scenarios[i]
+#     print(sce)
+#
+#     coeff_matrix = np.zeros((2, 4))
+#     pvalue_matrix = np.zeros((2, 4))
+#     tstats_matrix = np.zeros((2, 4))
+#     rsqrd_matrix = np.zeros((2))
+#
+#     y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+#     y = y_raw
+#     x2_raw = np.reshape(pd[:, i], (-1, 1))
+#     x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+#     x3_raw = np.reshape(r[:, i], (-1, 1))
+#     x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+#     # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+#     for j, x_var in enumerate(file_pd_list[3:5]):
+#         x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+#         x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#         x = np.append(x3, x1, axis=1)
+#         x = np.append(x2, x, axis=1)
+#         x = sm.add_constant(x)
+#         model = sm.OLS(y, x)
+#         est = model.fit()
+#         coeff_matrix[j] = est.params
+#         pvalue_matrix[j] = est.pvalues
+#         tstats_matrix[j] = est.tvalues
+#         rsqrd_matrix[j] = est.rsquared
+#
+#
+#     reg_data = np.empty((9, 2))
+#     header = ['(1) average_belief', '(2) average_c_belief']
+#     index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
+#     for ii in range(2):
+#         k = ii
+#         reg_data[0, ii] = coeff_matrix[k, 0]
+#         reg_data[1, ii] = tstats_matrix[k, 0]
+#         reg_data[2, ii] = coeff_matrix[k, 1]
+#         reg_data[3, ii] = tstats_matrix[k, 1]
+#         reg_data[4, ii] = coeff_matrix[k, 2]
+#         reg_data[5, ii] = tstats_matrix[k, 2]
+#         reg_data[6, ii] = coeff_matrix[k, 3]
+#         reg_data[7, ii] = tstats_matrix[k, 3]
+#         reg_data[8, ii] = rsqrd_matrix[k]
+#     print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# i = 1
+# coeff_matrix = np.zeros((3, 4))
+# pvalue_matrix = np.zeros((3, 4))
+# tstats_matrix = np.zeros((3, 4))
+# rsqrd_matrix = np.zeros((3))
+#
+# y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+# y = y_raw
+# x2_raw = np.reshape(pd[:, i], (-1, 1))
+# x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
 # x3_raw = np.reshape(r[:, i], (-1, 1))
 # x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-for j, x_var in enumerate(file_pd_list[6:]):
-    x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
-        else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
-    x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-    x3_raw = x_raw * x2_raw
-    x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-    x = np.append(x1, x3, axis=1)
-    x = np.append(x2, x, axis=1)
-    x = sm.add_constant(x)  # x2, x1, x3
-    model = sm.OLS(y, x)
-    est = model.fit()
-    coeff_matrix[j] = est.params
-    pvalue_matrix[j] = est.pvalues
-    tstats_matrix[j] = est.tvalues
-    rsqrd_matrix[j] = est.rsquared
-
-reg_data = np.empty((9, 3))
-header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
-index = ['cons', 't-stats', 'pd ratio', 't-stats', 'x', 't-stats', 'x*pd ratio', 't-stats', 'R-squared']
-for ii in range(3):
-    k = ii
-    reg_data[0, ii] = coeff_matrix[k, 0]
-    reg_data[1, ii] = tstats_matrix[k, 0]
-    reg_data[2, ii] = coeff_matrix[k, 1]
-    reg_data[3, ii] = tstats_matrix[k, 1]
-    reg_data[4, ii] = coeff_matrix[k, 2]
-    reg_data[5, ii] = tstats_matrix[k, 2]
-    reg_data[6, ii] = coeff_matrix[k, 3]
-    reg_data[7, ii] = tstats_matrix[k, 3]
-    reg_data[8, ii] = rsqrd_matrix[k]
-print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
-
-
-
-
-# four variables, belief + parti combination, specific to constrained economy
-i = 1
-coeff_matrix = np.zeros((6, 5))
-pvalue_matrix = np.zeros((6, 5))
-tstats_matrix = np.zeros((6, 5))
-rsqrd_matrix = np.zeros((6))
-
-for m in range(2):
-    belief_var = belief if m == 0 else c_belief
-    y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
-    y = y_raw
-    x2_raw = np.reshape(pd[:, i], (-1, 1))
-    x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
-    x3_raw = np.reshape(r[:, i], (-1, 1))
-    x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
-    x4_raw = np.reshape(belief_var[:, i], (-1, 1))
-    x4 = (x4_raw - np.average(x4_raw)) / np.std(x4_raw)
-    for j, x_var in enumerate(file_pd_list[6:]):
-        x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
-            else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
-        x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
-        x = np.append(x4, x1, axis=1)
-        x = np.append(x3, x, axis=1)
-        x = np.append(x2, x, axis=1)
-        x = sm.add_constant(x)
-        model = sm.OLS(y, x)
-        est = model.fit()
-        jj = j if m == 0 else j + 3
-        coeff_matrix[jj] = est.params
-        pvalue_matrix[jj] = est.pvalues
-        tstats_matrix[jj] = est.tvalues
-        rsqrd_matrix[jj] = est.rsquared
-
-reg_data = np.empty((11, 6))
-header = ['(1) parti_rate', '(2) Phi_bar', '(3) parti_rate_(old-young)', '(4) parti_rate', '(5) Phi_bar', '(6) parti_rate_(old-young)']
-index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'belief', 't-stats', 'x (participation)', 't-stats', 'R-squared']
-for ii in range(6):
-    k = ii
-    reg_data[0, ii] = coeff_matrix[k, 0]
-    reg_data[1, ii] = tstats_matrix[k, 0]
-    reg_data[2, ii] = coeff_matrix[k, 1]
-    reg_data[3, ii] = tstats_matrix[k, 1]
-    reg_data[4, ii] = coeff_matrix[k, 2]
-    reg_data[5, ii] = tstats_matrix[k, 2]
-    reg_data[6, ii] = coeff_matrix[k, 3]
-    reg_data[7, ii] = tstats_matrix[k, 3]
-    reg_data[8, ii] = coeff_matrix[k, 4]
-    reg_data[9, ii] = tstats_matrix[k, 4]
-    reg_data[10, ii] = rsqrd_matrix[k]
-print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+# for j, x_var in enumerate(file_pd_list[6:]):
+#     x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+#         else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+#     x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#     x = np.append(x3, x1, axis=1)
+#     x = np.append(x2, x, axis=1)
+#     x = sm.add_constant(x)
+#     model = sm.OLS(y, x)
+#     est = model.fit()
+#     coeff_matrix[j] = est.params
+#     pvalue_matrix[j] = est.pvalues
+#     tstats_matrix[j] = est.tvalues
+#     rsqrd_matrix[j] = est.rsquared
+#
+# reg_data = np.empty((9, 3))
+# header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+# index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'x', 't-stats', 'R-squared']
+# for ii in range(3):
+#     k = ii
+#     reg_data[0, ii] = coeff_matrix[k, 0]
+#     reg_data[1, ii] = tstats_matrix[k, 0]
+#     reg_data[2, ii] = coeff_matrix[k, 1]
+#     reg_data[3, ii] = tstats_matrix[k, 1]
+#     reg_data[4, ii] = coeff_matrix[k, 2]
+#     reg_data[5, ii] = tstats_matrix[k, 2]
+#     reg_data[6, ii] = coeff_matrix[k, 3]
+#     reg_data[7, ii] = tstats_matrix[k, 3]
+#     reg_data[8, ii] = rsqrd_matrix[k]
+# print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+#
+# # multivariate, interaction terms
+# for i in range(2):
+#     sce = scenarios[i]
+#     print(sce)
+#
+#     coeff_matrix = np.zeros((2, 4))
+#     pvalue_matrix = np.zeros((2, 4))
+#     tstats_matrix = np.zeros((2, 4))
+#     rsqrd_matrix = np.zeros((2))
+#
+#     y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+#     y = y_raw
+#     x2_raw = np.reshape(pd[:, i], (-1, 1))
+#     x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+#     # x3_raw = np.reshape(r[:, i], (-1, 1))
+#     # x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+#     # y = (y_raw - np.average(y_raw)) / np.std(y_raw)
+#     for j, x_var in enumerate(file_pd_list[3:5]):
+#         x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1))
+#         x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#         x3_raw = x_raw * x2_raw
+#         x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+#         x = np.append(x1, x3, axis=1)
+#         x = np.append(x2, x, axis=1)
+#         x = sm.add_constant(x)  # x2, x1, x3
+#         model = sm.OLS(y, x)
+#         est = model.fit()
+#         coeff_matrix[j] = est.params
+#         pvalue_matrix[j] = est.pvalues
+#         tstats_matrix[j] = est.tvalues
+#         rsqrd_matrix[j] = est.rsquared
+#
+#
+#     reg_data = np.empty((9, 2))
+#     header = ['(1) average_belief', '(2) average_c_belief']
+#     index = ['cons', 't-stats', 'pd ratio', 't-stats', 'x', 't-stats', 'x*pd ratio', 't-stats', 'R-squared']
+#     for ii in range(2):
+#         k = ii
+#         reg_data[0, ii] = coeff_matrix[k, 0]
+#         reg_data[1, ii] = tstats_matrix[k, 0]
+#         reg_data[2, ii] = coeff_matrix[k, 1]
+#         reg_data[3, ii] = tstats_matrix[k, 1]
+#         reg_data[4, ii] = coeff_matrix[k, 2]
+#         reg_data[5, ii] = tstats_matrix[k, 2]
+#         reg_data[6, ii] = coeff_matrix[k, 3]
+#         reg_data[7, ii] = tstats_matrix[k, 3]
+#         reg_data[8, ii] = rsqrd_matrix[k]
+#     print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+# i = 1
+# coeff_matrix = np.zeros((3, 4))
+# pvalue_matrix = np.zeros((3, 4))
+# tstats_matrix = np.zeros((3, 4))
+# rsqrd_matrix = np.zeros((3))
+#
+# y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+# y = y_raw
+# x2_raw = np.reshape(pd[:, i], (-1, 1))
+# x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+# # x3_raw = np.reshape(r[:, i], (-1, 1))
+# # x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+# for j, x_var in enumerate(file_pd_list[6:]):
+#     x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+#         else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+#     x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#     x3_raw = x_raw * x2_raw
+#     x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+#     x = np.append(x1, x3, axis=1)
+#     x = np.append(x2, x, axis=1)
+#     x = sm.add_constant(x)  # x2, x1, x3
+#     model = sm.OLS(y, x)
+#     est = model.fit()
+#     coeff_matrix[j] = est.params
+#     pvalue_matrix[j] = est.pvalues
+#     tstats_matrix[j] = est.tvalues
+#     rsqrd_matrix[j] = est.rsquared
+#
+# reg_data = np.empty((9, 3))
+# header = ['(5) parti_rate', '(6) Phi_bar', '(7) parti_rate_(old-young)']
+# index = ['cons', 't-stats', 'pd ratio', 't-stats', 'x', 't-stats', 'x*pd ratio', 't-stats', 'R-squared']
+# for ii in range(3):
+#     k = ii
+#     reg_data[0, ii] = coeff_matrix[k, 0]
+#     reg_data[1, ii] = tstats_matrix[k, 0]
+#     reg_data[2, ii] = coeff_matrix[k, 1]
+#     reg_data[3, ii] = tstats_matrix[k, 1]
+#     reg_data[4, ii] = coeff_matrix[k, 2]
+#     reg_data[5, ii] = tstats_matrix[k, 2]
+#     reg_data[6, ii] = coeff_matrix[k, 3]
+#     reg_data[7, ii] = tstats_matrix[k, 3]
+#     reg_data[8, ii] = rsqrd_matrix[k]
+# print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
+#
+#
+#
+#
+# # four variables, belief + parti combination, specific to constrained economy
+# i = 1
+# coeff_matrix = np.zeros((6, 5))
+# pvalue_matrix = np.zeros((6, 5))
+# tstats_matrix = np.zeros((6, 5))
+# rsqrd_matrix = np.zeros((6))
+#
+# for m in range(2):
+#     belief_var = belief if m == 0 else c_belief
+#     y_raw = np.reshape(np.abs(vola[:, i]), (-1, 1))
+#     y = y_raw
+#     x2_raw = np.reshape(pd[:, i], (-1, 1))
+#     x2 = (x2_raw - np.average(x2_raw)) / np.std(x2_raw)
+#     x3_raw = np.reshape(r[:, i], (-1, 1))
+#     x3 = (x3_raw - np.average(x3_raw)) / np.std(x3_raw)
+#     x4_raw = np.reshape(belief_var[:, i], (-1, 1))
+#     x4 = (x4_raw - np.average(x4_raw)) / np.std(x4_raw)
+#     for j, x_var in enumerate(file_pd_list[6:]):
+#         x_raw = np.reshape(results_pd[x_var][:, i], (-1, 1)) if j < 2 \
+#             else np.reshape((results_pd[x_var][:, i, :, 0] - results_pd[x_var][:, i, :, 3]), (-1, 1))
+#         x1 = (x_raw - np.average(x_raw)) / np.std(x_raw)
+#         x = np.append(x4, x1, axis=1)
+#         x = np.append(x3, x, axis=1)
+#         x = np.append(x2, x, axis=1)
+#         x = sm.add_constant(x)
+#         model = sm.OLS(y, x)
+#         est = model.fit()
+#         jj = j if m == 0 else j + 3
+#         coeff_matrix[jj] = est.params
+#         pvalue_matrix[jj] = est.pvalues
+#         tstats_matrix[jj] = est.tvalues
+#         rsqrd_matrix[jj] = est.rsquared
+#
+# reg_data = np.empty((11, 6))
+# header = ['(1) parti_rate', '(2) Phi_bar', '(3) parti_rate_(old-young)', '(4) parti_rate', '(5) Phi_bar', '(6) parti_rate_(old-young)']
+# index = ['cons', 't-stats', 'pd ratio', 't-stats', 'interest rate', 't-stats', 'belief', 't-stats', 'x (participation)', 't-stats', 'R-squared']
+# for ii in range(6):
+#     k = ii
+#     reg_data[0, ii] = coeff_matrix[k, 0]
+#     reg_data[1, ii] = tstats_matrix[k, 0]
+#     reg_data[2, ii] = coeff_matrix[k, 1]
+#     reg_data[3, ii] = tstats_matrix[k, 1]
+#     reg_data[4, ii] = coeff_matrix[k, 2]
+#     reg_data[5, ii] = tstats_matrix[k, 2]
+#     reg_data[6, ii] = coeff_matrix[k, 3]
+#     reg_data[7, ii] = tstats_matrix[k, 3]
+#     reg_data[8, ii] = coeff_matrix[k, 4]
+#     reg_data[9, ii] = tstats_matrix[k, 4]
+#     reg_data[10, ii] = rsqrd_matrix[k]
+# print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
 
 #
 # ######################################
