@@ -60,6 +60,8 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
 
@@ -146,6 +148,8 @@ def simulate_cohorts_SI(
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
     r = np.zeros(Nt)  # interest rate
+    beta_beta_bar = np.zeros(Nt)
+    rho_bar = np.zeros(Nt)
     theta = np.zeros(Nt)  # market price of risk
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
@@ -325,6 +329,8 @@ def simulate_cohorts_SI(
         dR[i] = dR_t  # realized return from t-1 to t
         theta[i] = theta_t
         r[i] = r_t
+        beta_beta_bar[i] = tax * beta0 / beta_t
+        rho_bar[i] = rho_bar_t
         Delta_bar_parti[i] = Delta_bar_parti_t
         Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
@@ -365,6 +371,8 @@ def simulate_cohorts_SI(
         invest_mat,
         parti_age_group,
         parti_wealth_group,
+        beta_beta_bar,
+        rho_bar,
     )
 
 
