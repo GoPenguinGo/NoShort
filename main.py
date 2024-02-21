@@ -5,7 +5,7 @@ from tqdm import tqdm
 from scipy import stats
 from typing import Callable, Tuple
 from src.simulation import simulate_SI, simulate_SI_mean_vola, simulate_mix_types
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
+from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
@@ -14,7 +14,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, v, tax, phi, \
     Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
 from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, beta_cohort_mix, beta_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
-from src.stats import shocks, tau_calculator, good_times, Delta_st_compare, weighted_variance
+from src.stats import shocks, tau_calculator
 from numba import jit
 import statsmodels.api as sm
 import tabulate as tab
@@ -753,7 +753,8 @@ for g, scenario in enumerate(scenarios_short):
                     Delta,
                     pi,
                     parti,
-                    Phi_parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
                     Delta_bar_parti,
                     Delta_tilde_parti,
                     dR,
@@ -779,7 +780,8 @@ for g, scenario in enumerate(scenarios_short):
                 popu_parti_compare[g, i, j] = parti
                 Delta_bar_compare[g, i, j] = Delta_bar_parti
                 Delta_tilde_compare[g, i, j] = Delta_tilde_parti
-                Phi_compare[g, i, j] = Phi_parti
+                Phi_bar_compare[g, i, j] = Phi_bar_parti
+                Phi_tilde_compare[g, i, j] = Phi_tilde_parti
                 cons_compare[g, i, j, :, :, 0] = f_c / cohort_type_size_mat
                 invest_tracker_compare[g, i, j, :, 0] = invest_tracker
                 dR_compare[g, i, j] = dR
@@ -794,7 +796,8 @@ for g, scenario in enumerate(scenarios_short):
                     Delta,
                     pi,
                     parti,
-                    Phi_parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
                     Delta_bar_parti,
                     Delta_tilde_parti,
                     dR,
@@ -822,7 +825,8 @@ for g, scenario in enumerate(scenarios_short):
                 popu_parti_compare[g, i, j] = parti
                 Delta_bar_compare[g, i, j] = Delta_bar_parti
                 Delta_tilde_compare[g, i, j] = Delta_tilde_parti
-                Phi_compare[g, i, j] = Phi_parti
+                Phi_bar_compare[g, i, j] = Phi_bar_parti
+                Phi_tilde_compare[g, i, j] = Phi_tilde_parti
                 cons_compare[g, i, j] = f_c / cohort_type_size_mix_mat
                 invest_tracker_compare[g, i, j] = invest_tracker
                 dR_compare[g, i, j] = dR
@@ -1244,6 +1248,51 @@ for j, ax in enumerate(axes):
 fig.tight_layout(h_pad=2)
 plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
 plt.savefig('r and theta,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
+plt.show()
+plt.close()
+
+# comparing Delta bar and tilde
+Delta_bar_mat = Delta_bar_compare[:, red_case, yellow_case]
+Delta_tilde_mat = Delta_tilde_compare[:, red_case, yellow_case]
+belief_compo_mat = Phi_tilde_compare[:, red_case, yellow_case] * (Delta_tilde_mat - Delta_bar_mat)
+wealth_compo_mat = Phi_tilde_compare[:, red_case, yellow_case] / Phi_bar_compare[:, red_case, yellow_case] * sigma_Y
+sigma_S_mat = sigma_S_compare[:, red_case, yellow_case]
+y_list = [Delta_bar_mat, Delta_tilde_mat, belief_compo_mat, wealth_compo_mat, sigma_S_mat]
+Z = np.cumsum(dZ_Y_cases[red_case])
+Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
+y_title_list = [red_labels[1] + yellow_labels[1],
+                r'Consumption weighted belief $\bar{\Delta}_t$',
+                r'Wealth weighted belief $\tilde{\Delta}_t$',
+                r'Belief component $\tilde{\Phi}_t(\tilde{\Delta}_t - \bar{\Delta}_t)$',
+                r'Wealth component $\frac{\tilde{\Phi}_t}{\bar{\Phi}_t}\sigma_Y$',
+                r'Stock volatility $\sigma^S_t$']
+labels = scenario_labels
+fig, axes = plt.subplots(nrows=6, ncols=1, sharex='all', figsize=(8, 15))
+for j, ax in enumerate(axes):
+    y_title = y_title_list[j]
+    if j == 0:
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(t, Z, color='red', linewidth=0.5, label=r'$z^Y_t$')
+        ax.plot(t, Z_SI, color='gold', linewidth=0.5, label=r'$z^{SI}_t$')
+        ax.tick_params(axis='both', labelcolor='black')
+    else:
+        y_vec = y_list[j - 1]  # n_phi_short, Nt
+        ax.set_ylabel(y_title, color='black')
+        for i in range(n_scenarios_short-1):
+            y = y_vec[i]  # Nt
+            color_i = colors_short[i]
+            ax.plot(t, y, label=labels[i], color=color_i, linewidth=0.4)
+            # ax2.set_ylim(lower, upper)
+    if j <= 1:
+        ax.legend(loc='upper left')
+    if j == 3:
+        ax.set_xlabel('Time in simulation')
+    ax.set_title(y_title)
+    # extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    # fig.savefig('r and theta, subfig ' + str(j + 1) + '.png', bbox_inches=extent.expanded(1.2, 1.3), dpi=200)
+fig.tight_layout(h_pad=2)
+plt.savefig('vola,' + str(red_case) + str(yellow_case) + '.png', dpi=100)
+plt.savefig('vola,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
 

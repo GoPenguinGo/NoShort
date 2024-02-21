@@ -60,6 +60,7 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
 
@@ -137,7 +138,8 @@ def simulate_cohorts_SI(
     else:
         pi = 0
 
-    Phi_parti = np.ones((Nt), dtype=np.float16)
+    Phi_bar_parti = np.ones((Nt), dtype=np.float16)
+    Phi_tilde_parti = np.ones((Nt), dtype=np.float16)
     invest_mat = np.ones((Nt, Nc), dtype=np.int8)
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
     parti_age_group = np.ones((Nt, 4), dtype=np.float16)
@@ -337,7 +339,8 @@ def simulate_cohorts_SI(
         if need_pi == 'True':
             pi[i] = pi_st[0]
         if mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            Phi_parti[i] = fc_parti_t
+            Phi_bar_parti[i] = fc_parti_t
+            Phi_tilde_parti[i] = fw_parti_t
             parti[i] = popu_parti_t
             invest_mat[i] = invest_tracker[0]
             for j in range(4):
@@ -353,7 +356,8 @@ def simulate_cohorts_SI(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,
@@ -832,6 +836,7 @@ def simulate_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
         a mixture of 4 different types of agents in each cohort:
@@ -886,7 +891,8 @@ def simulate_cohorts_mix_type(
         Delta (np.ndarray): standardized estimation error, shape(Nt, Ntype, Nc)
         pi (np.ndarray): portfolio, shape(Nt, Ntype, Nc)
         parti (np.ndarray): participation rate, shape(Nt)
-        Phi_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_bar_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_tilde_parti (np.ndarray): wealth share of participants, shape(Nt)
         Delta_bar_parti (np.ndarray): consumption weighted average estimation error of participants, shape(Nt)
         Delta_tilde_parti (np.ndarray): wealth weighted average estimation error of participants, shape(Nt)
         dR (np.ndarray): realized stock returns, shape(Nt)
@@ -903,7 +909,8 @@ def simulate_cohorts_mix_type(
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
-    Phi_parti = np.ones((Nt), dtype=np.float16)  # consumption share of the stock market participants
+    Phi_bar_parti = np.ones((Nt), dtype=np.float16)  # consumption share of the stock market participants
+    Phi_tilde_parti = np.ones((Nt), dtype=np.float16)
 
     popu_short = np.zeros((Nt), dtype=np.float16)
     Phi_can_short = np.zeros((Nt), dtype=np.float16)
@@ -1074,7 +1081,8 @@ def simulate_cohorts_mix_type(
         if need_pi == 'True':
             pi[i, :] = pi_st[0]
 
-        Phi_parti[i] = fc_parti_t
+        Phi_bar_parti[i] = fc_parti_t
+        Phi_tilde_parti[i] = fw_parti_t
         invest_mat[i] = invest_tracker[0]
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
@@ -1092,7 +1100,8 @@ def simulate_cohorts_mix_type(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,

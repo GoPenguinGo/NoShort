@@ -54,6 +54,7 @@ def simulate_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the cohort_builder function and the cohort_simulator function together
@@ -98,7 +99,8 @@ def simulate_SI(
         Delta (np.ndarray): standardized estimation error, shape(Nt, Ntype, Nc)
         pi (np.ndarray): portfolio, shape(Nt, Ntype, Nc)
         parti (np.ndarray): participation rate, shape(Nt)
-        Phi_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_bar_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_tilde_parti (np.ndarray): wealth share of participants, shape(Nt)
         Delta_bar_parti (np.ndarray): consumption weighted average estimation error of participants, shape(Nt)
         Delta_tilde_parti (np.ndarray): wealth weighted average estimation error of participants, shape(Nt)
         dR (np.ndarray): realized stock returns, shape(Nt)
@@ -148,7 +150,8 @@ def simulate_SI(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,
@@ -203,7 +206,8 @@ def simulate_SI(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,
@@ -452,6 +456,7 @@ def simulate_mix_types(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the build_cohorts_mix_type function and the simulate_cohorts_mix_type function together
@@ -498,7 +503,8 @@ def simulate_mix_types(
         Delta (np.ndarray): standardized estimation error, shape(Nt, Ntype, Nc)
         pi (np.ndarray): portfolio, shape(Nt, Ntype, Nc)
         parti (np.ndarray): participation rate, shape(Nt)
-        Phi_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_bar_parti (np.ndarray): consumption share of participants, shape(Nt)
+        Phi_tilde_parti (np.ndarray): wealth share of participants, shape(Nt)
         Delta_bar_parti (np.ndarray): consumption weighted average estimation error of participants, shape(Nt)
         Delta_tilde_parti (np.ndarray): wealth weighted average estimation error of participants, shape(Nt)
         dR (np.ndarray): realized stock returns, shape(Nt)
@@ -548,7 +554,8 @@ def simulate_mix_types(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,
@@ -603,7 +610,8 @@ def simulate_mix_types(
         Delta,
         pi,
         parti,
-        Phi_parti,
+        Phi_bar_parti,
+        Phi_tilde_parti,
         Delta_bar_parti,
         Delta_tilde_parti,
         dR,
