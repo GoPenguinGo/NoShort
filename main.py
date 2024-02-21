@@ -1,9 +1,5 @@
-import time
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-from scipy import stats
-from typing import Callable, Tuple
 from src.simulation import simulate_SI, simulate_SI_mean_vola, simulate_mix_types
 from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
@@ -14,13 +10,9 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
 from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, beta_cohort_mix, beta_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
-from src.stats import shocks, tau_calculator
-from numba import jit
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
-from multiprocessing import Pool
-import pandas as pd
 
 np.set_printoptions(precision=4, suppress=True)
 results = np.load('results.npz')

@@ -1,10 +1,9 @@
 import numpy as np
-from typing import Tuple, List, Any
-from src.stats import post_var, fadingmemo, dDelta_st_calculator, weighted_variance
-from src.solver import bisection, solve_theta, find_the_rich, bisection_partial_constraint, \
-    solve_theta_partial_constraint, find_the_rich_mix
+from typing import Tuple
+from src.stats import post_var, dDelta_st_calculator
+from src.solver import bisection, solve_theta, bisection_partial_constraint, \
+    solve_theta_partial_constraint
 from tqdm import tqdm
-from numba import jit
 
 
 def simulate_cohorts_SI(
@@ -183,7 +182,7 @@ def simulate_cohorts_SI(
         # from equation (20) and the description below it
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
-        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
+        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
         X_t = np.sum(X_parts) / (1 - tax * dt)    # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
@@ -299,7 +298,6 @@ def simulate_cohorts_SI(
             Delta_bar_parti_t = np.sum(fc_ist_standard * Delta_s_t)
             theta_t = sigma_Y - Delta_bar_parti_t
             d_eta_st = Delta_s_t
-            invest = Delta_s_t >= -theta_t  # long stock
             popu_parti_t = 1
 
             fc_parti_t = fw_parti_t = 1
@@ -513,7 +511,7 @@ def simulate_cohorts_mean_vola(
         # from equation (20) and the description below it
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
-        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
+        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
         X_t = np.sum(X_parts) / (1 - tax * dt)   # dividing by (1-tax*dt) keeps sum(f_st*dt) at 1
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, 1:], np.ones((Ntype, 1)), axis=1)
@@ -968,7 +966,7 @@ def simulate_cohorts_mix_type(
             + d_eta_st * dZ_t
         )  # equation (15)
 
-        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
+        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
         X_t = np.sum(X_parts) / (1 - tax * dt)
         # eta_bar_t = np.sum(eta_bar_parts)
 
@@ -1265,7 +1263,7 @@ def simulate_mean_vola_mix_type(
         # from equation (20) and the description below it
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
-        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type_short * dt
+        X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
         X_t = np.sum(X_parts) / (1 - tax * dt)
 
         eta_st_eta_ss = np.append(eta_st_eta_ss[:, :, 1:], append_init, axis=2)
