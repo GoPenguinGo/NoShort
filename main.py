@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate_SI, simulate_SI_mean_vola, simulate_mix_types
+from src.simulation import simulate_SI, simulate_mix_types
 from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, colors_short2, PN_labels, age_labels, cummu_popu, dt_root, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, beta_cohort_type, cohort_type_size
-from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, beta_cohort_mix, beta_cohort_type_mix, \
+    scenario_labels, colors_short, PN_labels, age_labels, \
+    Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
+from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, rho_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
 import statsmodels.api as sm
 import tabulate as tab
@@ -759,7 +759,7 @@ for g, scenario in enumerate(scenarios_short):
                 ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
                                 phi,
                                 Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cutoffs_age,
-                                Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
+                                Ntype, rho_i, alpha_i, beta_i, rho_cohort_type, cohort_type_size,
                                 need_f='True',
                                 need_Delta='True',
                                 need_pi='True',
@@ -804,7 +804,7 @@ for g, scenario in enumerate(scenarios_short):
                                        phi, Npre, Ninit, T_hat,
                                        dZ_build_case, dZ, dZ_SI_build_case, dZ_SI,
                                        tau, cutoffs_age, Ntype,
-                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix, beta_cohort_type_mix,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix, rho_cohort_type_mix,
                                        cohort_type_size_mix,
                                        need_f='True',
                                        need_Delta='True',
