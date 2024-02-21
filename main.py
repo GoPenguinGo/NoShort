@@ -716,7 +716,8 @@ popu_parti_compare = np.empty((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 r_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 Delta_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 Delta_tilde_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
-Phi_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Phi_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
+Phi_tilde_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 dR_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 mu_S_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 sigma_S_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
@@ -729,15 +730,14 @@ Delta_mix = np.empty((n_scenarios_short, 2, 2, Nt, Nconstraint, Nc), dtype=np.fl
 cohort_type_size_mix_mat = np.tile(cohort_type_size_mix, (Nt, 1, 1, 1))
 cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
 for g, scenario in enumerate(scenarios_short):
-    if g <= 1:
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
     for i in range(2):
         dZ = dZ_Y_cases[i]
         # log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
         for j in range(2):
             dZ_SI = dZ_SI_cases[j]
             if g <= 1:
+                mode_trade = scenario[0]
+                mode_learn = scenario[1]
                 (
                     r,
                     theta,

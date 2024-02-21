@@ -122,7 +122,6 @@ def simulate_SI(
         invest_tracker_build,
         tau_info_build,
         Vhat_vector,
-        can_short_tracker_build,
     ) = build_cohorts_SI(
         dZ_build,
         dZ_SI_build,
@@ -323,7 +322,6 @@ def simulate_SI_mean_vola(
         invest_tracker_build,
         tau_info_build,
         Vhat_vector,
-        can_short_tracker_build,
     ) = build_cohorts_SI(
         dZ_build,
         dZ_SI_build,
