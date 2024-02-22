@@ -979,7 +979,7 @@ def simulate_cohorts_mix_type(
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
         f_c_ist = X_parts / X_t / dt
-        f_c_ist = np.append(f_c_ist[:, 1:], tax * alpha_i * beta_i, axis=1)
+        f_c_ist = np.append(f_c_ist[:, :, 1:], tax * alpha_i * beta_i, axis=2)
 
         beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
         f_w_ist = f_c_ist / beta_i * beta_t
@@ -1277,7 +1277,7 @@ def simulate_mean_vola_mix_type(
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
         f_c_ist = X_parts / X_t / dt
-        f_c_ist = np.append(f_c_ist[:, 1:], tax * alpha_i * beta_i, axis=1)
+        f_c_ist = np.append(f_c_ist[:, :, 1:], tax * alpha_i * beta_i, axis=2)
 
         beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
         f_w_ist = f_c_ist / beta_i * beta_t
