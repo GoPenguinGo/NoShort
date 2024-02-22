@@ -3,8 +3,8 @@ import numpy as np
 # Parameters
 rho = 0.001  # Time discount factor
 Ntype = 2
-# rho_i = np.array([[0.001], [0.005]])
-rho_i = np.array([[0.001], [0.05]])
+rho_i = np.array([[0.001], [0.005]])  # baseline
+# rho_i = np.array([[0.001], [0.05]])
 alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
 # nu = 0.01
@@ -24,7 +24,7 @@ phi = 0.4
 # tax = 0.4    # marginal rate of consumption tax
 tax = 0.3
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-beta0 = np.sum(alpha_i * beta_i)
+beta0 = np.sum(alpha_i * beta_i).astype(float)
 
 
 # Setting prior variance
