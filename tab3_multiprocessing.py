@@ -15,9 +15,12 @@ np.seterr(invalid='ignore')
 # rho_i = np.array([[0.001], [0.010]])
 # tax = 0.012
 
+Mpath = 1000
+
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
-                            Nvar=4,
+                            # Nvar=4,
+                            Nvar = 2
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -47,19 +50,23 @@ def simulate_mean_vola_path(i: int,
     # dZ_SI = np.random.randn(Nt) * dt_root
 
     for h in range(Nvar):
-        Npre = 60 if h == 0 else 240
-        rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
-        phi = 0.8 if h == 2 else 0.4
-        tax = 0.012 if h == 3 else 0.008
+        # Npre = 60 if h == 0 else 240
+        # rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
+        # phi = 0.8 if h == 2 else 0.4
+        # tax = 0.3 if h == 3 else 0.2
+
+        Npre = 240
+        rho_i = np.array([[0.001], [0.05]]) if h == 0 else np.array([[0.001], [0.005]])
+        phi = 0.4
+        tax = 0.4 if h == 1 else 0.2
 
         T_hat = dt * Npre
         Vhat = (sigma_Y ** 2) / T_hat
-        beta_i = rho_i + nu - tax  # consumption wealth ratio
-        beta0 = np.sum(beta_i * alpha_i)
+        beta_i = (nu + rho_i) / (1 + tax)   # consumption wealth ratio
+        beta0 = np.sum(alpha_i * beta_i).astype(float)
 
         rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-        beta_i_mix = rho_i_mix + nu - tax  # marginal propensity to consume
-        beta0_mix = np.sum(beta_i_mix * alpha_i_mix)
+        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
 
         for g in range(Nscenario):
             if g <= 1:
@@ -132,7 +139,7 @@ def simulate_mean_vola_path(i: int,
                     mu_Y,
                     sigma_Y,
                     tax,
-                    beta0_mix,
+                    beta0,
                     phi,
                     Npre,
                     Ninit,
@@ -141,7 +148,6 @@ def simulate_mean_vola_path(i: int,
                     dZ,
                     dZ_SI_build,
                     dZ_SI,
-                    tau,
                     Ntype,
                     Nconstraint,
                     rho_i_mix,
@@ -186,7 +192,7 @@ def simulate_mean_vola_path(i: int,
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=None) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []

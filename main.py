@@ -8,7 +8,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short, PN_labels, age_labels, \
     Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
-from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, beta0_mix, rho_cohort_type_mix, \
+from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
 import statsmodels.api as sm
 import tabulate as tab
@@ -505,166 +505,21 @@ file_list = results.files
 # print(tab.tabulate(reg_data, headers=header, showindex=index, floatfmt=".4f", tablefmt='fancy_grid'))
 
 #
-# ######################################
-# #############  Table 1  ##############
-# ######################################
-# results_mean_vola = np.load('results_mean_vola.npz')
-# file_list_mean_vola = results_mean_vola.files
-# for file in file_list_mean_vola:
-#     print(file)
-#     print(np.average(results_mean_vola[file], axis=0))
-#
-# Nsce = 3
-# Ncolumn = int(Nsce * 2)
-# # Panel 1: mean vola of asset pricing values
-# table_output = np.zeros((5, Ncolumn))
-# # var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
-# header = np.tile(['Mean', 'Std'], 2)
-# # show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-# for j, file in enumerate(file_list_mean_vola[1:6]):
-#     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i]
-# print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".4f",
-#                    tablefmt='latex_raw'))
-#
-# # Panel 2: mean vola of theta state variables
-# file = file_list_mean_vola[7]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-# show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
-#
-# # Panel 3: mean vola of sigma_S state variables
-# file = file_list_mean_vola[8]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index:col_index + 2] = var_average[i, j]
-# show_index = [r'$\tilde{\Phi}_t$',
-#               r'$\sigma_Y\tilde{\Phi}_t/\Bar{\Phi}_t$',
-#               r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
-#               r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
-#
-# # Panel 4: covariance
-# file = file_list_mean_vola[11]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j]
-# show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
-#               r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
-#               r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
-#               r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
-#               r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
-#               r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
-#               ]
-# print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
-#
-# # Panel 5: participation rate in age groups
-# file = file_list_mean_vola[9]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j]
-# show_index = [r'$0 < \text{Age} \leq 15$',
-#               r'$15 < \text{Age} \leq 35$',
-#               r'$35 < \text{Age} \leq 69$',
-#               r'$\text{Age} > 69$',
-#               ]
-# print(tab.tabulate(table_output,
-#                    showindex=show_index,
-#                    floatfmt=".4f", tablefmt='latex_raw'))
-#
-# # Panel 6: participation rate in wealth groups
-# file = file_list_mean_vola[10]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j]
-# show_index = [r'$ \text{wealth} \leq 1$',
-#               r'$1 <\text{wealth} \leq 10$',
-#               r'$10 < \text{wealth} \leq 100$',
-#               r'$\text{wealth} > 100$',
-#               ]
-# print(tab.tabulate(table_output,
-#                    showindex=show_index,
-#                    floatfmt=".4f", tablefmt='latex_raw'))
-#
-# # Panel 7: participation rate covariances
-# file = file_list_mean_vola[13]
-# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# N_row = np.shape(var_average)[1]
-# table_output = np.zeros((N_row, Ncolumn))
-# for j in range(N_row):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = var_average[i, j, 1]
-# show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
-#               r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
-#               r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
-#               r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right) > 100$',
-#               ]
-# print(tab.tabulate(table_output,
-#                    showindex=show_index,
-#                    floatfmt=".4f", tablefmt='latex_raw'))
-#
-
 ######################################
-#############  Table 3  ##############
+#############  Table 1  ##############
 ######################################
-
-
-file_names_alternative = ['results_mean_vola_alternative1.npz',
-                          'results_mean_vola_alternative2.npz',
-                          # 'results_mean_vola_alternative3.npz',
-                          # 'results_mean_vola_alternative4.npz',
-                          'results_mean_vola_alternative5.npz']
-
-files_need1 = ['theta_mean_vola', 'r_mean_vola', 'mu_S_mean_vola', 'sigma_S_mean_vola']
-files_need2 = ['parti_age_group', 'parti_wealth_group']
-alternative_results1 = np.zeros((5, 4, 4, 3, 2), dtype=np.float32)
-alternative_results2 = np.zeros((5, 2, 4, 3, 4), dtype=np.float32)
-for i, file in enumerate(file_names_alternative):
-    results_al = np.load(file)
-    for j, file_need in enumerate(files_need1):
-        alternative_results1[i, j] = np.average(results_al[file_need], axis=0)
-    for j, file_need in enumerate(files_need2):
-        alternative_results2[i, j] = np.average(results_al[file_need], axis=0)
-
+results_mean_vola = np.load('results_mean_vola.npz')
+file_list_mean_vola = results_mean_vola.files
+for file in file_list_mean_vola:
+    print(file)
+    print(np.average(results_mean_vola[file], axis=0))
 
 Nsce = 3
 Ncolumn = int(Nsce * 2)
 # Panel 1: mean vola of asset pricing values
 table_output = np.zeros((5, Ncolumn))
 # var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
-header = np.tile(['Mean', 'Std'], 2)
+header = np.tile(['Mean', 'Std'], Nsce)
 # show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
 for j, file in enumerate(file_list_mean_vola[1:6]):
     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -672,11 +527,146 @@ for j, file in enumerate(file_list_mean_vola[1:6]):
         row_index = j
         col_index = i * 2
         table_output[row_index, col_index:col_index + 2] = var_average[i]
-print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".4f",
+print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".5f",
+                   tablefmt='latex_raw'))
+
+# Panel 2: mean vola of theta state variables
+file = file_list_mean_vola[7]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i, j]
+show_index = [r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 3: mean vola of sigma_S state variables
+file = file_list_mean_vola[8]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i, j]
+show_index = [r'$\tilde{\Phi}_t$',
+              r'$\sigma_Y\tilde{\Phi}_t/\Bar{\Phi}_t$',
+              r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
+              r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 4: covariance
+file = file_list_mean_vola[11]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
+              r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
+              r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
+              r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
+              r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
+              r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
+              ]
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 5: participation rate in age groups
+file = file_list_mean_vola[9]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$0 < \text{Age} \leq 15$',
+              r'$15 < \text{Age} \leq 35$',
+              r'$35 < \text{Age} \leq 69$',
+              r'$\text{Age} > 69$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 6: participation rate in wealth groups
+file = file_list_mean_vola[10]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$ \text{wealth} \leq 1$',
+              r'$1 <\text{wealth} \leq 10$',
+              r'$10 < \text{wealth} \leq 100$',
+              r'$\text{wealth} > 100$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 7: participation rate covariances
+file = file_list_mean_vola[13]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j, 1]
+show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
+              r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right) > 100$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+
+######################################
+#############  Table 3  ##############
+######################################
+
+results_al = np.load('results_mean_vola_alternative.npz')
+Nsce = 3
+Ncolumn = int(Nsce * 2)
+file_list_mean_vola = results_al.files
+header = np.tile(['Mean', 'Std'], Nsce)
+alternative_var_list = [r'5-year time-series for pre-entry learning',
+                        r'$\rho={0.1%, 5%}$',
+                        r'Information quality $\phi=0.8$',
+                        r'Tax rate $\tau = 0.4$']
+alternative_var_index = [1, 3]
+show_index = [r'$\theta_t$', r'$r_t$', r'$\sigma_t^S$', r'$\mu_t^S$']
+for jj, index in enumerate(alternative_var_index):
+    print(alternative_var_list[index])
+    table_output = np.zeros((5, Ncolumn))
+    for j, file in enumerate(file_list_mean_vola[1:6]):
+        var_average = np.average(results_al[file][:, jj], axis=0)  # shape (n_scenarios, 2)
+        for i in range(Nsce):
+            row_index = j
+            col_index = i * 2
+            table_output[row_index, col_index:col_index + 2] = var_average[i]
+    print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".5f",
                    tablefmt='latex_raw'))
 
 
-# Additional parameters for the figures
+#############################################
+### Additional parameters for the figures ###
+#############################################
 n_scenarios_short = 2
 scenarios_short = scenarios[:n_scenarios_short]
 
@@ -809,7 +799,7 @@ for g, scenario in enumerate(scenarios_short):
                     beta_beta_bar,
                     rho_bar,
                 ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                       beta0_mix,
+                                       beta0,
                                        phi, Npre, Ninit, T_hat,
                                        dZ_build_case, dZ, dZ_SI_build_case, dZ_SI,
                                        tau, cutoffs_age, Ntype,

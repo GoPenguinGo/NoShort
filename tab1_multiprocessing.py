@@ -12,7 +12,7 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-Mpath = 10
+# Mpath = 1000
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
