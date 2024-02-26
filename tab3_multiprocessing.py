@@ -15,7 +15,7 @@ np.seterr(invalid='ignore')
 # rho_i = np.array([[0.001], [0.010]])
 # tax = 0.012
 
-Mpath = 1000
+# Mpath = 1000
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
