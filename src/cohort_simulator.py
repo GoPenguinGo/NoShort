@@ -330,7 +330,7 @@ def simulate_cohorts_SI(
         Delta_bar_parti[i] = Delta_bar_parti_t
         Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
-        sigma_S[i] = sigma_S_t
+        sigma_S[i] = np.abs(sigma_S_t)
         beta[i] = beta_t
         if need_f == 'True':
             f_c[i] = f_c_ist
@@ -660,7 +660,7 @@ def simulate_cohorts_mean_vola(
             Delta_bar_parti[ii] = Delta_bar_parti_t
             Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
-            sigma_S[ii] = sigma_S_t
+            sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
             if mode_trade == 'w_constraint':
@@ -1073,7 +1073,7 @@ def simulate_cohorts_mix_type(
         Delta_bar_parti[i] = Delta_bar_parti_t
         Delta_tilde_parti[i] = Delta_tilde_parti_t
         mu_S[i] = mu_S_t
-        sigma_S[i] = sigma_S_t
+        sigma_S[i] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
         beta[i] = beta_t
         if need_f == 'True':
             f_c[i, :] = f_c_ist
@@ -1368,7 +1368,7 @@ def simulate_mean_vola_mix_type(
             Delta_bar_parti[ii] = Delta_bar_parti_t
             Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
-            sigma_S[ii] = sigma_S_t
+            sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
