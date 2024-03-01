@@ -3,7 +3,8 @@ from src.param import Ntype, rho_i, alpha_i, nu, tax, cohort_size, tau
 
 # Parameters
 Nconstraint = 4
-alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint
+# alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint
+alpha_constraint = np.ones((1, Nconstraint)) * (0.5, 0.5, 0, 0)
 alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
 rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
 beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
