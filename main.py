@@ -13,6 +13,8 @@ from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
+from matplotlib import cm  # for a scatter plot
+from mpl_toolkits.mplot3d import Axes3D
 
 np.set_printoptions(precision=4, suppress=True)
 results = np.load('results.npz')
@@ -20,92 +22,98 @@ results = np.load('results.npz')
 file_list = results.files
 
 
-# from matplotlib import cm # for a scatter plot
-# from mpl_toolkits.mplot3d import Axes3D
-#
-# results_pd = np.load("results_pd_try.npz")
-# file_pd_list = results_pd.files
-# pd = 1 / results_pd['price_dividend']
-# vola = results_pd['stock_vola']
-# r = results_pd['interest_rate']
-# belief = results_pd['average_belief']
-# c_belief = results_pd['average_c_belief']
-# parti = results_pd['parti_rate']
-# Phi_bar = results_pd['Phi_bar']
-# parti_age = results_pd['parti_rate_age']
-# data_include = np.arange(0, Nt, 12)
-# titles = ['Complete', 'Reentry']
-# quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
-# for ii, var in enumerate(file_pd_list[3:]):
-#     state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
-#     fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(20, 10), )
-#     for i, ax in enumerate(axes):
-#         ax.set_xlabel('Price dividend ratio')
-#         # ax.set_ylabel('Interest rate')
-#         # ax.set_ylabel('Average belief')
-#         # ax.set_zlabel('Stock volatility')
-#         ax.set_ylabel('Stock volatility')
-#         state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-#         for j in range(4):
-#             data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
-#             data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
-#             data_within = np.where(data_above * data_below == 1)
-#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
-#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
-#             # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
-#             ax.scatter(pd[:, i, data_include][data_within], vola[:, i, data_include][data_within], marker='.', s=5, color=colors[j], alpha=0.2,
-#                        label=quartiles[j])
-#         title = titles[i]
-#         ax.legend()
-#         ax.set_title(title, color='black')
-#         ax.tick_params(axis='y', labelcolor='black')
-#     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-#     plt.savefig(var + '_quartile.png', dpi=100)
-#     plt.show()
-#     plt.close()
-#
-#
-# i = 0
-#
-#
-# x = pd
-# y = c_belief
-# z = vola
-# dixiles = np.linspace(0, 1, 8)
-# fig = plt.figure()
-# ax = fig.add_subplot(projection='3d')
-# ax.set_xlabel('Price dividend ratio')
-# # ax.set_ylabel('Interest rate')
-# ax.set_ylabel('Average belief')
-# ax.set_zlabel('Stock volatility')
-# # ax.set_ylabel('Stock volatility')
-# # state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-# # z_cutoffs = np.quantile(z[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-# # z_cutoffs = np.quantile(z[:, i, data_include], dixiles)
-# y_cutoffs = np.quantile(y[:, i, data_include], dixiles)
-# for j in range(4):
-#     # data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
-#     # data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
-#     # data_below = z[:, i, data_include] >= z_cutoffs[j*2]
-#     # data_above = z[:, i, data_include] < z_cutoffs[j*2 + 1]
-#     data_below = y[:, i, data_include] >= y_cutoffs[j*2]
-#     data_above = y[:, i, data_include] < y_cutoffs[j*2 + 1]
-#     data_within = np.where(data_above * data_below == 1)
-#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
-#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
-#     # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
-#     ax.scatter(x[:, i, data_include][data_within], y[:, i, data_include][data_within], z[:, i, data_include][data_within], marker='o', s=5, color=colors[j], alpha=0.1,
-#                label=quartiles[j])
-# title = titles[i]
-# ax.set_xlim(45, 70)
-# ax.set_ylim(-0.2, 0.2)
-# ax.legend()
-# ax.set_title(title, color='black')
-# ax.tick_params(axis='y', labelcolor='black')
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# # plt.savefig(var + 'pd_quartile.png', dpi=100)
-# plt.show()
-# # plt.close()
+
+results_pd = np.load("results_pd_try.npz")
+file_pd_list = results_pd.files
+pd = 1 / results_pd['price_dividend']
+vola = results_pd['stock_vola']
+r = results_pd['interest_rate']
+belief = results_pd['average_belief']
+c_belief = results_pd['average_c_belief']
+parti = results_pd['parti_rate']
+Phi_bar = results_pd['Phi_bar']
+parti_age = results_pd['parti_rate_age']
+data_include = np.arange(0, Nt, 12)
+titles = ['Complete', 'Reentry']
+quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
+
+for ii, var in enumerate(file_pd_list[3:]):
+    state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
+    for jj in range(2):
+        fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(10, 10))
+        state_var_cutoffs = np.quantile(state_var[:, jj, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+        counter = 0
+        title = titles[jj]
+        for i, rows in enumerate(axes):
+            for j, ax in enumerate(rows):
+                ax.set_xlabel('Price dividend ratio')
+                # ax.set_ylabel('Interest rate')
+                # ax.set_ylabel('Average belief')
+                # ax.set_zlabel('Stock volatility')
+                ax.set_ylabel('Stock volatility')
+                data_below = state_var[:, jj, data_include] >= state_var_cutoffs[counter]
+                data_above = state_var[:, jj, data_include] < state_var_cutoffs[counter + 1]
+                data_within = np.where(data_above * data_below == 1)
+                color_use = colors[0] if jj == 0 else colors[2]
+                ax.scatter(pd[:, jj, data_include][data_within], vola[:, jj, data_include][data_within], marker='.', s=5,
+                           color=color_use, alpha=0.2,
+                           label=quartiles[counter])
+                ax.legend()
+                # ax.set_xlim(80, 120)
+                if jj == 0:
+                    ax.set_ylim(-0.01, 0.14)
+                else:
+                    ax.set_ylim(0.01, 0.05)
+                ax.set_title(title, color='black')
+                ax.tick_params(axis='y', labelcolor='black')
+                counter += 1
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.savefig(title + '_' + var + '_quartile.png', dpi=100)
+        plt.show()
+        plt.close()
+
+
+i = 0
+
+x = pd
+y = c_belief
+z = vola
+dixiles = np.linspace(0, 1, 8)
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.set_xlabel('Price dividend ratio')
+# ax.set_ylabel('Interest rate')
+ax.set_ylabel('Average belief')
+ax.set_zlabel('Stock volatility')
+# ax.set_ylabel('Stock volatility')
+# state_var_cutoffs = np.quantile(state_var[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# z_cutoffs = np.quantile(z[:, i, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+# z_cutoffs = np.quantile(z[:, i, data_include], dixiles)
+y_cutoffs = np.quantile(y[:, i, data_include], dixiles)
+for j in range(4):
+    # data_below = state_var[:, i, data_include] >= state_var_cutoffs[j]
+    # data_above = state_var[:, i, data_include] < state_var_cutoffs[j + 1]
+    # data_below = z[:, i, data_include] >= z_cutoffs[j*2]
+    # data_above = z[:, i, data_include] < z_cutoffs[j*2 + 1]
+    data_below = y[:, i, data_include] >= y_cutoffs[j * 2]
+    data_above = y[:, i, data_include] < y_cutoffs[j * 2 + 1]
+    data_within = np.where(data_above * data_below == 1)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], r[:, i, data_include], cmap=cm.coolwarm)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], belief[:, i, data_include], cmap=cm.coolwarm)
+    # ax.scatter(pd[:, i, data_include], vola[:, i, data_include], cmap=cm.coolwarm)
+    ax.scatter(x[:, i, data_include][data_within], y[:, i, data_include][data_within],
+               z[:, i, data_include][data_within], marker='o', s=5, color=colors[j], alpha=0.1,
+               label=quartiles[j])
+title = titles[i]
+ax.set_xlim(45, 70)
+ax.set_ylim(-0.2, 0.2)
+ax.legend()
+ax.set_title(title, color='black')
+ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig(var + 'pd_quartile.png', dpi=100)
+plt.show()
+# plt.close()
 #
 #
 # # univariate
@@ -635,34 +643,61 @@ print(tab.tabulate(table_output,
                    showindex=show_index,
                    floatfmt=".4f", tablefmt='latex_raw'))
 
-
 ######################################
 #############  Table 3  ##############
 ######################################
 
-results_al = np.load('results_mean_vola_alternative.npz')
+results_al = np.load('results_mean_vola_alternative_BC.npz')
 Nsce = 3
-Ncolumn = int(Nsce * 2)
+# Ncolumn = int(Nsce * 2)
+Ncolumn = 2
 file_list_mean_vola = results_al.files
 header = np.tile(['Mean', 'Std'], Nsce)
-alternative_var_list = [r'5-year time-series for pre-entry learning',
-                        r'$\rho={0.1%, 5%}$',
-                        r'Information quality $\phi=0.8$',
-                        r'Tax rate $\tau = 0.4$']
-alternative_var_index = [1, 3]
+# alternative_var_list = [r'5-year time-series for pre-entry learning',
+#                         r'$\rho={0.1%, 5%}$',
+#                         r'Information quality $\phi=0.8$',
+#                         r'Tax rate $\tau = 0.4$']
+alternative_var_list = [r'$\rho=\{0.1\%, 0.5\%\}$',
+                        r'$\rho=\{0.1\%, 5\%\}$',
+                        r'$\rho=\{-1.5\%, 3.5\%\}$', ]
+alternative_var_index = [0, 1, 2]
 show_index = [r'$\theta_t$', r'$r_t$', r'$\sigma_t^S$', r'$\mu_t^S$']
 for jj, index in enumerate(alternative_var_index):
     print(alternative_var_list[index])
-    table_output = np.zeros((5, Ncolumn))
-    for j, file in enumerate(file_list_mean_vola[1:6]):
+    table_output = np.zeros((6, Ncolumn))
+    for j, file in enumerate(file_list_mean_vola[1:7]):
         var_average = np.average(results_al[file][:, jj], axis=0)  # shape (n_scenarios, 2)
+        i = 2
+        row_index = j
+        col_index = 0
+        table_output[row_index, col_index:col_index + 2] = var_average[i]
+        # for i in range(Nsce):
+        #     row_index = j
+        #     col_index = i * 2
+        #     table_output[row_index, col_index:col_index + 2] = var_average[i]
+    print(tab.tabulate(table_output,
+                       headers=header,
+                       # showindex=file_list_mean_vola[1:7],
+                       floatfmt=".5f",
+                       tablefmt='latex_raw'))
+
+# Panel 3: mean vola of sigma_S state variables
+show_index = [r'$\tilde{\Phi}_t$',
+              r'$\sigma_Y\tilde{\Phi}_t/\Bar{\Phi}_t$',
+              r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
+              r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
+for jj, index in enumerate(alternative_var_index):
+    print(alternative_var_list[index])
+    table_output = np.zeros((4, Ncolumn))
+    file = file_list_mean_vola[8]
+    var_average = np.average(results_al[file][:, jj], axis=0)  # shape (n_scenarios, 2)
+    for j in range(4):
         for i in range(Nsce):
             row_index = j
             col_index = i * 2
-            table_output[row_index, col_index:col_index + 2] = var_average[i]
-    print(tab.tabulate(table_output, headers=header, showindex=file_list_mean_vola[1:6], floatfmt=".5f",
-                   tablefmt='latex_raw'))
-
+            table_output[row_index, col_index:col_index + 2] = var_average[i, j]
+    print(tab.tabulate(table_output, headers=header, showindex=show_index, floatfmt=".5f",
+                       tablefmt='latex_raw'))
 
 #############################################
 ### Additional parameters for the figures ###
@@ -832,17 +867,17 @@ for g, scenario in enumerate(scenarios_short):
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)
-Delta_time_series = np.zeros((n_scenarios_short-1, 2, 2, nn, length), dtype=np.float32)
-pi_time_series = np.zeros((n_scenarios_short-1, 2, 2, nn, length), dtype=np.float32)
-cons_time_series = np.zeros((n_scenarios_short-1, 2, 2, nn, Ntype, length), dtype=np.float32)
-switch_time_series = np.zeros((n_scenarios_short-1, 2, 2, nn, length), dtype=np.float32)
-parti_time_series = np.zeros((n_scenarios_short-1, 2, 2, nn, length), dtype=np.float32)
+Delta_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
+cons_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, Ntype, length), dtype=np.float32)
+switch_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
 Delta_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 pi_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 cons_time_series_mix = np.zeros((2, 2, nn, Ntype, Nconstraint, length), dtype=np.float32)
 switch_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 parti_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
-for o in range(n_scenarios_short-1):
+for o in range(n_scenarios_short - 1):
     for i in range(2):
         for j in range(2):
             pi = pi_compare[o, i, j, :, 0]
@@ -897,18 +932,16 @@ for i in range(2):
                             switch_time_series_mix[i, j, m, k, n] = 0
                         else:
                             parti_time_series_mix[i, j, m, k, n] = 1 if pi_time_series_mix[i, j, m, k, n] > 0 else 0
-                            switch_PN = 1 if (pi_time_series_mix[i, j, m, k, n-1] > 0) and (
-                                        pi_time_series_mix[i, j, m, k, n] == 0) else 0
+                            switch_PN = 1 if (pi_time_series_mix[i, j, m, k, n - 1] > 0) and (
+                                    pi_time_series_mix[i, j, m, k, n] == 0) else 0
                             switch_NP = 1 if (pi_time_series_mix[i, j, m, k, n] > 0) and (
-                                    pi_time_series_mix[i, j, m, k, n-1] == 0) else 0
+                                    pi_time_series_mix[i, j, m, k, n - 1] == 0) else 0
                             switch_time_series_mix[i, j, m, k, n] = 1 if switch_PN == 1 else 0
                             switch_time_series_mix[i, j, m, k, n] = 1 if switch_NP == 1 else 0
                             if switch_NP == 1:
                                 parti_time_series_mix[i, j, m, k, n] = 0.5
                             if switch_PN == 1:
                                 parti_time_series_mix[i, j, m, k, n - 1] = 0.5
-
-
 
 ######################################
 ########### Figure 1 & IA1 #############
@@ -1012,7 +1045,7 @@ for j, ax in enumerate(axes):
     ax2.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
     ax2.set_ylim([-0.35, 0.4])
     m = 0 if j == 0 else 2
-    for kk in range(Nconstraint-1):
+    for kk in range(Nconstraint - 1):
         # switch[m, starts[m]] = 1
         k = kk + 1 if kk > 0 else kk
         y_cohort = Delta_time_series_mix[red_index, yellow_index, m, k]
@@ -1049,7 +1082,6 @@ plt.savefig(
     dpi=100)
 plt.show()
 # plt.close()
-
 
 
 # IA:
@@ -1296,14 +1328,13 @@ plt.savefig('vola,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
 
-
 # comparing Delta bar and tilde
 r_mat = r_compare[:, red_case, yellow_case]
 beta_beta_bar_mat = beta_beta_bar_compare[:, red_case, yellow_case]
 rho_bar_mat = rho_bar_compare[:, red_case, yellow_case]
 theta_mat = theta_compare[:, red_case, yellow_case]
 
-y_list = [-beta_beta_bar_mat, rho_bar_mat, -beta_beta_bar_mat + rho_bar_mat, -sigma_Y*theta_mat, r_mat-nu-mu_Y]
+y_list = [-beta_beta_bar_mat, rho_bar_mat, -beta_beta_bar_mat + rho_bar_mat, -sigma_Y * theta_mat, r_mat - nu - mu_Y]
 Z = np.cumsum(dZ_Y_cases[red_case])
 Z_SI = np.cumsum(dZ_SI_cases[yellow_case])
 y_title_list = [red_labels[1] + yellow_labels[1],
@@ -1343,7 +1374,6 @@ fig.tight_layout(h_pad=2)
 plt.savefig('r_components,' + str(red_case) + str(yellow_case) + 'HD.png', dpi=200)
 plt.show()
 plt.close()
-
 
 ############ IA other cases
 # red_cases = [0, 0, 1]
@@ -2110,7 +2140,7 @@ X_2 = np.linspace(data_figure_x[:, 0].min(), data_figure_x[:, 0].max(), 200)
 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 7.5))
 labels = scenario_labels
 for j, ax in enumerate(axes):
-    for i in range(n_scenarios_short-1):
+    for i in range(n_scenarios_short - 1):
         if j == 0:
             y = data_all_y[i]  # average updates given prior belief, reentry
             x = data_all_x[i]
@@ -2229,7 +2259,8 @@ for i in range(n_scenarios_short):
 bin_size = (above_dz - below_dz) / (n_bins - 1)
 x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
 labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
-          [r'$\bar{\Phi}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$', r'$\bar{\Phi}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$'],
+          [r'$\bar{\Phi}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$',
+           r'$\bar{\Phi}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$'],
           [r'$\bar{\Phi}_t^{old}\bar{\Delta}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$',
            r'$\bar{\Phi}_t^{young}\bar{\Delta}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$']]
 # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']

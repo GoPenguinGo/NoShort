@@ -15,12 +15,12 @@ np.seterr(invalid='ignore')
 # rho_i = np.array([[0.001], [0.010]])
 # tax = 0.012
 
-# Mpath = 1000
+# Mpath = 500
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
                             # Nvar=4,
-                            Nvar = 2
+                            Nvar=3
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -50,15 +50,20 @@ def simulate_mean_vola_path(i: int,
     # dZ_SI = np.random.randn(Nt) * dt_root
 
     for h in range(Nvar):
-        # Npre = 60 if h == 0 else 240
-        # rho_i = np.array([[0.001], [0.05]]) if h == 1 else np.array([[0.001], [0.005]])
-        # phi = 0.8 if h == 2 else 0.4
-        # tax = 0.3 if h == 3 else 0.2
+        Npre = 60 if h == 0 else 240
+        rho_i = np.array([[0.001], [0.1]]) if h == 1 else np.array([[0.001], [0.01]])
+        phi = 0.8 if h == 2 else 0.4
+        tax = 0.4 if h == 3 else 0.2
 
-        Npre = 240
-        rho_i = np.array([[0.001], [0.05]]) if h == 0 else np.array([[0.001], [0.005]])
-        phi = 0.4
-        tax = 0.4 if h == 1 else 0.2
+        # Npre = 240
+        # phi = 0.4
+        # tax = 0.2
+        # if h == 0:
+        #     rho_i = np.array([[0.001], [0.005]])
+        # elif h == 1:
+        #     rho_i = np.array([[0.001], [0.05]])
+        # else:
+        #     rho_i = np.array([[-0.015], [0.035]])
 
         T_hat = dt * Npre
         Vhat = (sigma_Y ** 2) / T_hat
@@ -67,6 +72,7 @@ def simulate_mean_vola_path(i: int,
 
         rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
         beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+        rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
 
         for g in range(Nscenario):
             if g <= 1:
@@ -237,7 +243,7 @@ def main():
 
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
-    np.savez("results_mean_vola_alternative.npz", **results_dict)
+    np.savez("results_mean_vola_alternative_BC.npz", **results_dict)
 
 
 if __name__ == '__main__':

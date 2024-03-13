@@ -1,18 +1,30 @@
 import numpy as np
 from src.simulation import simulate_SI
-from src.param import nu, mu_Y, sigma_Y, tax, phi, \
-    dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
-    cutoffs_age, Mpath, \
+from src.param import nu, mu_Y, sigma_Y, phi, \
+    dt, \
+    Ninit, Nt, Nc, tau, cohort_size, \
+    cutoffs_age, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
+    Ntype, alpha_i, cohort_type_size
+# from src.param import Mpath
+# from scr.param import T_hat, Npre, Vhat
+# from scr.param import tax, beta_i, beta0, rho_i, rho_cohort_type,
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 
 # # for testing:
-# Mpath = 10
+Mpath = 48
 np.seterr(invalid='ignore')
 
+Npre = 240  # affects volatility
+tax = 0.4  # affects range of PD ratio
+rho_i = np.array([[-0.005], [0.035]])  # affects level of PD ratio
+T_hat = dt * Npre
+Vhat = (sigma_Y ** 2) / T_hat
+beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+beta0 = np.sum(alpha_i * beta_i).astype(float)
+rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
 
 # noinspection PyTypeChecker
 def simulate_path(i: int,
@@ -47,6 +59,7 @@ def simulate_path(i: int,
             pi,
             parti,
             Phi_parti,
+            Phi_tilde_parti,
             Delta_bar_parti,
             Delta_tilde_parti,
             dR,
