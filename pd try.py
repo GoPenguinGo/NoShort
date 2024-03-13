@@ -113,8 +113,6 @@ def simulate_path(i: int,
                 (1, Nconstraint)) * (0.5, 0.5, 0, 0)
             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
             cohort_type_size_mix = cohort_size * alpha_i_mix
-
-            # generate values that are fixed in the main loop
             rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                 -(rho_i_mix + nu) * tau)  # shape(2, 6000)
             (

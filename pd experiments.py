@@ -4,7 +4,8 @@ from src.simulation import simulate_SI, simulate_mix_types
 from src.param import nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, \
     cutoffs_age, scenarios, dZ_Y_cases, dZ_SI_cases, dZ_build_case, \
-    dZ_SI_build_case, t, scenario_labels, colors_short, Ntype, alpha_i, cohort_type_size
+    dZ_SI_build_case, t, scenario_labels, colors_short, Ntype, alpha_i, \
+    cohort_type_size, cohort_size
 from src.param_mix import Nconstraint, cohort_type_size_mix
 
 #############################################
@@ -144,8 +145,7 @@ for g, scenario in enumerate(scenarios_short):
                         alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
                             (1, Nconstraint)) * (0.5, 0.5, 0, 0)
                         alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-
-                        # generate values that are fixed in the main loop
+                        cohort_type_size_mix = cohort_size * alpha_i_mix
                         rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                             -(rho_i_mix + nu) * tau)  # shape(2, 6000)
                         (
