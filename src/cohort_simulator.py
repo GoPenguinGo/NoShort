@@ -1087,6 +1087,7 @@ def simulate_cohorts_mix_type(
         invest_mat[i] = invest_tracker[0]
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
+        parti[i] = popu_parti_t
 
         for j in range(4):
             parti_age_group[i, j] = np.ma.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],

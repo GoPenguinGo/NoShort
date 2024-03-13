@@ -1,11 +1,12 @@
 import numpy as np
-from src.simulation import simulate_SI
+from src.simulation import simulate_SI, simulate_mix_types
 from src.param import nu, mu_Y, sigma_Y, phi, \
     dt, \
     Ninit, Nt, Nc, tau, cohort_size, \
     cutoffs_age, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Ntype, alpha_i, cohort_type_size
+from src.param_mix import Nconstraint, cohort_type_size_mix
 # from src.param import Mpath
 # from scr.param import T_hat, Npre, Vhat
 # from scr.param import tax, beta_i, beta0, rho_i, rho_cohort_type,
@@ -19,16 +20,19 @@ np.seterr(invalid='ignore')
 
 Npre = 240  # affects volatility
 tax = 0.4  # affects range of PD ratio
-rho_i = np.array([[-0.005], [0.035]])  # affects level of PD ratio
+rho_i = np.array([[-0.005], [0.045]])  # affects level of PD ratio
 T_hat = dt * Npre
 Vhat = (sigma_Y ** 2) / T_hat
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
+rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
 rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
+size_weight = cohort_size[0]
 
 # noinspection PyTypeChecker
 def simulate_path(i: int,
-                  Nscenario=2,
+                  Nscenario=4,
                   ):
     print(i)
     # Initialize results for the current Mpath
@@ -49,67 +53,128 @@ def simulate_path(i: int,
     parti_age_path = np.empty((Nscenario, Nt, 4))
 
     for g, scenario in enumerate(scenarios[:Nscenario]):
-        mode_trade = scenario[0]
-        mode_learn = scenario[1]
-        (
-            r,
-            theta,
-            f_c,
-            Delta,
-            pi,
-            parti,
-            Phi_parti,
-            Phi_tilde_parti,
-            Delta_bar_parti,
-            Delta_tilde_parti,
-            dR,
-            mu_S,
-            sigma_S,
-            beta,
-            invest_tracker,
-            parti_age_group,
-            parti_wealth_group,
-        ) = simulate_SI(mode_trade,
-                        mode_learn,
-                        Nc,
-                        Nt,
-                        dt,
-                        nu,
-                        Vhat,
-                        mu_Y,
-                        sigma_Y,
-                        tax,
-                        beta0,
-                        phi,
-                        Npre,
-                        Ninit,
-                        T_hat,
-                        dZ_build,
-                        dZ,
-                        dZ_SI_build,
-                        dZ_SI,
-                        tau,
-                        cutoffs_age,
-                        Ntype,
-                        rho_i,
-                        alpha_i,
-                        beta_i,
-                        rho_cohort_type,
-                        cohort_type_size,
-                        need_f='True',
-                        need_Delta='True',
-                        need_pi='True',
-                        )
+        if g <= 1:
+            mode_trade = scenario[0]
+            mode_learn = scenario[1]
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+            ) = simulate_SI(mode_trade,
+                            mode_learn,
+                            Nc,
+                            Nt,
+                            dt,
+                            nu,
+                            Vhat,
+                            mu_Y,
+                            sigma_Y,
+                            tax,
+                            beta0,
+                            phi,
+                            Npre,
+                            Ninit,
+                            T_hat,
+                            dZ_build,
+                            dZ,
+                            dZ_SI_build,
+                            dZ_SI,
+                            tau,
+                            cutoffs_age,
+                            Ntype,
+                            rho_i,
+                            alpha_i,
+                            beta_i,
+                            rho_cohort_type,
+                            cohort_type_size,
+                            need_f='True',
+                            need_Delta='True',
+                            need_pi='True',
+                            )
+            ave_belief[g] = np.average(Delta, weights=size_weight, axis=1)
+            cons_weights = np.sum(f_c, axis=1)
+            ave_c_belief[g] = np.average(Delta, weights=cons_weights, axis=1)
+        else:
+            alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
+                (1, Nconstraint)) * (0.5, 0.5, 0, 0)
+            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+            cohort_type_size_mix = cohort_size * alpha_i_mix
+
+            # generate values that are fixed in the main loop
+            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+            ) = simulate_mix_types(Nc,
+                                   Nt,
+                                   dt,
+                                   nu,
+                                   Vhat,
+                                   mu_Y,
+                                   sigma_Y,
+                                   tax,
+                                   beta0,
+                                   phi,
+                                   Npre,
+                                   Ninit,
+                                   T_hat,
+                                   dZ_build,
+                                   dZ,
+                                   dZ_SI_build,
+                                   dZ_SI,
+                                   cutoffs_age,
+                                   Ntype,
+                                   Nconstraint,
+                                   rho_i_mix,
+                                   alpha_i_mix,
+                                   beta_i_mix,
+                                   rho_cohort_type_mix,
+                                   cohort_type_size_mix,
+                                   need_f='True',
+                                   need_Delta='True',
+                                   need_pi='True',
+                                   )
+            ave_belief[g] = np.average(np.average(Delta, weights=size_weight, axis=2), weights=alpha_constraint[0], axis=1)
+            cons_weights1 = np.sum(f_c, axis=1)
+            cons_weights2 = np.sum(cons_weights1, axis=1)
+            ave_c_belief[g] = np.average(np.average(Delta, weights=cons_weights1, axis=1), weights=cons_weights2, axis=1)
 
         pd_path[g] = beta
         vola_path[g] = sigma_S
-        ave_belief[g] = np.average(Delta, weights=cohort_size[0], axis=1)
         r_path[g] = r
         parti_path[g] = parti
         Phi_parti_path[g] = Phi_parti
         parti_age_path[g] = parti_age_group
-        cons_weights = np.sum(f_c, axis=1)
-        ave_c_belief[g] = np.average(Delta, weights=cons_weights, axis=1)
 
     return (
         i,

@@ -13,6 +13,7 @@ from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_
 import statsmodels.api as sm
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
+import seaborn as sns
 from matplotlib import cm  # for a scatter plot
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -34,43 +35,58 @@ parti = results_pd['parti_rate']
 Phi_bar = results_pd['Phi_bar']
 parti_age = results_pd['parti_rate_age']
 data_include = np.arange(0, Nt, 12)
-titles = ['Complete', 'Reentry']
+titles = ['Complete', 'Reentry', 'Mix-4', 'Mix-BC']
 quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
 
-for ii, var in enumerate(file_pd_list[3:]):
-    state_var = results_pd[var] if ii < 5 else results_pd[var][:, :, :, 0] - results_pd[var][:, :, :, 3]
-    for jj in range(2):
-        fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(10, 10))
-        state_var_cutoffs = np.quantile(state_var[:, jj, data_include], ([0, 0.25, 0.5, 0.75, 1]))
-        counter = 0
-        title = titles[jj]
-        for i, rows in enumerate(axes):
-            for j, ax in enumerate(rows):
-                ax.set_xlabel('Price dividend ratio')
-                # ax.set_ylabel('Interest rate')
-                # ax.set_ylabel('Average belief')
-                # ax.set_zlabel('Stock volatility')
-                ax.set_ylabel('Stock volatility')
-                data_below = state_var[:, jj, data_include] >= state_var_cutoffs[counter]
-                data_above = state_var[:, jj, data_include] < state_var_cutoffs[counter + 1]
-                data_within = np.where(data_above * data_below == 1)
-                color_use = colors[0] if jj == 0 else colors[2]
-                ax.scatter(pd[:, jj, data_include][data_within], vola[:, jj, data_include][data_within], marker='.', s=5,
-                           color=color_use, alpha=0.2,
-                           label=quartiles[counter])
-                ax.legend()
-                # ax.set_xlim(80, 120)
-                if jj == 0:
-                    ax.set_ylim(-0.01, 0.14)
-                else:
-                    ax.set_ylim(0.01, 0.05)
-                ax.set_title(title, color='black')
-                ax.tick_params(axis='y', labelcolor='black')
-                counter += 1
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.savefig(title + '_' + var + '_quartile.png', dpi=100)
-        plt.show()
-        plt.close()
+for ii, var in enumerate(file_pd_list[3:8]):
+    state_var = results_pd[var]
+    for jj in range(4):
+        if ii > 2 and jj == 0:
+            print('skip')
+        else:
+            fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(10, 10))
+            state_var_cutoffs = np.quantile(state_var[:, jj, data_include], ([0, 0.25, 0.5, 0.75, 1]))
+            counter = 0
+            title = titles[jj]
+            x_range = np.quantile(pd[:, jj, data_include], ([0.01, 0.99]))
+            x_use = np.linspace(x_range[0], x_range[1], 100)
+            for i, rows in enumerate(axes):
+                for j, ax in enumerate(rows):
+                    ax.set_xlabel('Price dividend ratio')
+                    # ax.set_ylabel('Interest rate')
+                    # ax.set_ylabel('Average belief')
+                    # ax.set_zlabel('Stock volatility')
+                    ax.set_ylabel('Stock volatility')
+                    data_below = state_var[:, jj, data_include] >= state_var_cutoffs[counter]
+                    data_above = state_var[:, jj, data_include] < state_var_cutoffs[counter + 1]
+                    data_within = np.where(data_above * data_below == 1)
+                    color_use = colors[jj]
+                    y = vola[:, jj, data_include][data_within]
+                    x = pd[:, jj, data_include][data_within]
+                    x_regress = sm.add_constant(x)
+                    model = sm.OLS(y, x_regress)
+                    est = model.fit()
+                    b0 = est.params[0]
+                    b1 = est.params[1]
+                    y_use = b0 + b1 * x_use
+                    ax.scatter(x, y, marker='.', s=5,
+                               color=color_use, alpha=0.2,
+                               label=quartiles[counter])
+                    ax.plot(x_use, y_use, linestyle='dashed', color='gray')
+                    ax.legend()
+                    # ax.set_xlim(80, 120)
+                    # if jj == 0:
+                    #     ax.set_ylim(-0.01, 0.14)
+                    # else:
+                    #     ax.set_ylim(0.01, 0.05)
+                    ax.set_title(title, color='black')
+                    ax.tick_params(axis='y', labelcolor='black')
+                    counter += 1
+            fig.tight_layout()  # otherwise the right y-label is slightly clipped
+            plt.savefig(title + '_' + var + '_quartile.png', dpi=100)
+            plt.show()
+            plt.close()
+
 
 
 i = 0
