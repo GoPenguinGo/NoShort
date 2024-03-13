@@ -38,7 +38,7 @@ data_include = np.arange(0, Nt, 12)
 titles = ['Complete', 'Reentry', 'Mix-4', 'Mix-BC']
 quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
 
-for ii, var in enumerate(file_pd_list[3:8]):
+for ii, var in enumerate(file_pd_list[3:6]):
     state_var = results_pd[var]
     for jj in range(4):
         if ii > 2 and jj == 0:
@@ -50,6 +50,23 @@ for ii, var in enumerate(file_pd_list[3:8]):
             title = titles[jj]
             x_range = np.quantile(pd[:, jj, data_include], ([0.01, 0.99]))
             x_use = np.linspace(x_range[0], x_range[1], 100)
+            if jj == 0:
+                print(r'Constant ' + r'PD_ratio ' + var + r' interaction')
+            if jj <= 2:
+                y_interact = np.reshape(vola[:, jj, data_include], (-1, 1))
+                x_interact = np.reshape(pd[:, jj, data_include], (-1, 1))
+                interact = np.reshape(state_var[:, jj, data_include], (-1, 1))
+                x_cross = x_interact * interact
+                x_interact = (x_interact - np.average(x_interact)) / np.std(x_interact)
+                interact = (interact - np.average(interact)) / np.std(interact)
+                x_cross = (x_cross - np.average(x_cross)) / np.std(x_cross)
+                x_interact = np.append(x_interact, interact, axis=1)
+                x_interact = np.append(x_interact, x_cross, axis=1)
+                x_interact = sm.add_constant(x_interact)
+                model = sm.OLS(y_interact, x_interact)
+                est = model.fit()
+                print(title)
+                print(est.params)
             for i, rows in enumerate(axes):
                 for j, ax in enumerate(rows):
                     ax.set_xlabel('Price dividend ratio')
@@ -74,7 +91,7 @@ for ii, var in enumerate(file_pd_list[3:8]):
                                label=quartiles[counter])
                     ax.plot(x_use, y_use, linestyle='dashed', color='gray')
                     ax.legend()
-                    # ax.set_xlim(80, 120)
+                    ax.set_xlim(x_range[0] / 1.05, x_range[1] * 1.05)
                     # if jj == 0:
                     #     ax.set_ylim(-0.01, 0.14)
                     # else:

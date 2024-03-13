@@ -12,10 +12,10 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-# Mpath = 1000
+Mpath = 500
 
 def simulate_mean_vola_path(i: int,
-                            Nscenario=3,
+                            Nscenario=4,
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -24,7 +24,7 @@ def simulate_mean_vola_path(i: int,
     r_mean_vola_results = np.zeros((Nscenario, 2))
     mu_S_mean_vola_results = np.zeros((Nscenario, 2))
     sigma_S_mean_vola_results = np.zeros((Nscenario, 2))
-    beta_mean_vola_results = np.zeros((Nscenario, 2))
+    pd_mean_vola_results = np.zeros((Nscenario, 2))
     theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
@@ -54,7 +54,7 @@ def simulate_mean_vola_path(i: int,
                 r_mean_vola,
                 mu_S_mean_vola,
                 sigma_S_mean_vola,
-                beta_mean_vola,
+                pd_mean_vola,
                 theta_save_mean_vola,
                 sigma_S_save_mean_vola,
                 parti_age_group_mean_vola,
@@ -97,7 +97,7 @@ def simulate_mean_vola_path(i: int,
                 r_mean_vola,
                 mu_S_mean_vola,
                 sigma_S_mean_vola,
-                beta_mean_vola,
+                pd_mean_vola,
                 theta_save_mean_vola,
                 sigma_S_save_mean_vola,
                 parti_age_group_mean_vola,
@@ -137,7 +137,7 @@ def simulate_mean_vola_path(i: int,
         r_mean_vola_results[g] = r_mean_vola
         mu_S_mean_vola_results[g] = mu_S_mean_vola
         sigma_S_mean_vola_results[g] = sigma_S_mean_vola
-        beta_mean_vola_results[g] = beta_mean_vola
+        pd_mean_vola_results[g] = pd_mean_vola
         theta_save_mean_vola_results[g] = theta_save_mean_vola
         sigma_S_save_mean_vola_results[g] = sigma_S_save_mean_vola
         parti_age_group_mean_vola_results[g] = parti_age_group_mean_vola
@@ -154,7 +154,7 @@ def simulate_mean_vola_path(i: int,
         r_mean_vola_results,
         mu_S_mean_vola_results,
         sigma_S_mean_vola_results,
-        beta_mean_vola_results,
+        pd_mean_vola_results,
         theta_save_mean_vola_results,
         sigma_S_save_mean_vola_results,
         parti_age_group_mean_vola_results,
@@ -180,7 +180,7 @@ def main():
         r_mean_vola_results, \
         mu_S_mean_vola_results, \
         sigma_S_mean_vola_results, \
-        beta_mean_vola_results, \
+        pd_mean_vola_results, \
         theta_save_mean_vola_results, \
         sigma_S_save_mean_vola_results, \
         parti_age_group_mean_vola_results, \
@@ -196,7 +196,7 @@ def main():
             "r_mean_vola": r_mean_vola_results,
             "mu_S_mean_vola": mu_S_mean_vola_results,
             "sigma_S_mean_vola": sigma_S_mean_vola_results,
-            "beta_mean_vola": beta_mean_vola_results,
+            "pd_mean_vola": pd_mean_vola_results,
             "theta_compo_mean_vola": theta_save_mean_vola_results,
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
             "parti_age_group": parti_age_group_mean_vola_results,

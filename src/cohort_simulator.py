@@ -683,7 +683,7 @@ def simulate_cohorts_mean_vola(
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    beta_matrix = np.array([np.mean(beta), np.std(beta)])
+    pd_matrix = np.array([np.mean(1/beta), np.std(1/beta)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
@@ -772,7 +772,7 @@ def simulate_cohorts_mean_vola(
         r_matrix,
         mu_S_matrix,
         sigma_S_matrix,
-        beta_matrix,
+        pd_matrix,
         theta_save_matrix,
         sigma_S_save_matrix,
         parti_age_group_matrix,
@@ -1387,7 +1387,7 @@ def simulate_mean_vola_mix_type(
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    beta_matrix = np.array([np.mean(beta), np.std(beta)])
+    pd_matrix = np.array([np.mean(1/beta), np.std(1/beta)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
@@ -1470,7 +1470,7 @@ def simulate_mean_vola_mix_type(
         r_matrix,
         mu_S_matrix,
         sigma_S_matrix,
-        beta_matrix,
+        pd_matrix,
         theta_save_matrix,
         sigma_S_save_matrix,
         parti_age_group_matrix,
