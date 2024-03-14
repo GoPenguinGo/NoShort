@@ -4,8 +4,8 @@ from src.param import nu, mu_Y, sigma_Y, dt, \
     Nt, Nc, tau, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Ntype, alpha_i, cohort_type_size, rho_cohort_type, Vhat, tax, beta0, \
-    phi, Npre, Ninit, T_hat, rho_i, beta_i
-from src.param_mix import Nconstraint, alpha_i_mix, rho_i_mix, beta_i_mix, cohort_type_size_mix, rho_cohort_type_mix
+    phi, Npre, Ninit, T_hat, rho_i, beta_i, cohort_size
+from src.param_mix import Nconstraint, rho_i_mix, beta_i_mix
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
@@ -91,6 +91,12 @@ def simulate_mean_vola_path(i: int,
                 cohort_type_size
             )
         else:
+            alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
+                (1, Nconstraint)) * (0.5, 0.5, 0, 0)
+            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+            cohort_type_size_mix = cohort_size * alpha_i_mix
+            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
             (
                 dR_mean_vola,
                 theta_mean_vola,

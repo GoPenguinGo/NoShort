@@ -10,11 +10,6 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-
-# Npre = 240
-# rho_i = np.array([[0.001], [0.010]])
-# tax = 0.012
-
 # Mpath = 500
 
 def simulate_mean_vola_path(i: int,

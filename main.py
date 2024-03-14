@@ -555,7 +555,7 @@ for file in file_list_mean_vola:
     print(file)
     print(np.average(results_mean_vola[file], axis=0))
 
-Nsce = 3
+Nsce = 4
 Ncolumn = int(Nsce * 2)
 # Panel 1: mean vola of asset pricing values
 table_output = np.zeros((5, Ncolumn))
@@ -597,7 +597,7 @@ for j in range(N_row):
 show_index = [r'$\tilde{\Phi}_t$',
               r'$\sigma_Y\tilde{\Phi}_t/\Bar{\Phi}_t$',
               r'$\tilde{\Delta}_t - \Bar{\Delta}_t$',
-              r'$(\tilde{\Phi}_t\tilde{\Delta}_t - \Bar{\Delta}_t) $']
+              r'$\tilde{\Phi}_t(\tilde{\Delta}_t - \Bar{\Delta}_t) $']
 print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
 
 # Panel 4: covariance
@@ -670,7 +670,7 @@ for j in range(N_row):
 show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
-              r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right) > 100$',
+              r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right)$',
               ]
 print(tab.tabulate(table_output,
                    showindex=show_index,
