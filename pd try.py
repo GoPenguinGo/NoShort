@@ -6,33 +6,34 @@ from src.param import nu, mu_Y, sigma_Y, phi, \
     cutoffs_age, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     Ntype, alpha_i, cohort_type_size
+from src.param_mix import rho_i_mix, beta_i_mix
 from src.param_mix import Nconstraint, cohort_type_size_mix
-# from src.param import Mpath
-# from scr.param import T_hat, Npre, Vhat
-# from scr.param import tax, beta_i, beta0, rho_i, rho_cohort_type,
+from src.param import Mpath
+from src.param import T_hat, Npre, Vhat
+from src.param import tax, beta_i, beta0, rho_i, rho_cohort_type
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 
 # # for testing:
-Mpath = 48
+Mpath = 10
 np.seterr(invalid='ignore')
 
-Npre = 240  # affects volatility
-tax = 0.4  # affects range of PD ratio
-rho_i = np.array([[-0.005], [0.045]])  # affects level of PD ratio
-T_hat = dt * Npre
-Vhat = (sigma_Y ** 2) / T_hat
-beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-beta0 = np.sum(alpha_i * beta_i).astype(float)
-rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
+# Npre = 240  # affects volatility
+# tax = 0.4  # affects range of PD ratio
+# rho_i = np.array([[-0.005], [0.045]])  # affects level of PD ratio
+# T_hat = dt * Npre
+# Vhat = (sigma_Y ** 2) / T_hat
+# beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+# beta0 = np.sum(alpha_i * beta_i).astype(float)
+# rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+# beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+# rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
 size_weight = cohort_size[0]
 
 # noinspection PyTypeChecker
 def simulate_path(i: int,
-                  Nscenario=4,
+                  Nscenario=2,
                   ):
     print(i)
     # Initialize results for the current Mpath
@@ -50,7 +51,14 @@ def simulate_path(i: int,
     r_path = np.empty((Nscenario, Nt))
     parti_path = np.empty((Nscenario, Nt))
     Phi_parti_path = np.empty((Nscenario, Nt))
-    parti_age_path = np.empty((Nscenario, Nt, 4))
+    parti_age_path = np.empty((Nscenario, Nt))  # parti rate old - young
+    belief_age_path = np.empty((Nscenario, Nt))  # belief old - young
+    belief_c_age_path = np.empty((Nscenario, Nt))  # belief old - young
+
+    popu_5 = 0.5
+    popu_cummu = np.cumsum(cohort_size)
+    cutoff_age_old_below_5 = np.searchsorted(popu_cummu, popu_5)
+    cutoff_age_young_5 = np.searchsorted(popu_cummu, 1 - popu_5)
 
     for g, scenario in enumerate(scenarios[:Nscenario]):
         if g <= 1:
@@ -108,6 +116,9 @@ def simulate_path(i: int,
             ave_belief[g] = np.average(Delta, weights=size_weight, axis=1)
             cons_weights = np.sum(f_c, axis=1)
             ave_c_belief[g] = np.average(Delta, weights=cons_weights, axis=1)
+
+
+
         else:
             alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
                 (1, Nconstraint)) * (0.5, 0.5, 0, 0)
@@ -167,12 +178,40 @@ def simulate_path(i: int,
             cons_weights2 = np.sum(cons_weights1, axis=1)
             ave_c_belief[g] = np.average(np.average(Delta, weights=cons_weights1, axis=1), weights=cons_weights2, axis=1)
 
+        belief_f_old_results = np.sum(
+            Delta[:, :cutoff_age_old_below_5] * np.sum(
+                f_c[:, :, :cutoff_age_old_below_5], axis=1
+            ), axis=1
+        ) / np.sum(
+            np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=2
+                   ), axis=1
+        )
+        belief_f_young_results = np.sum(
+            Delta[:, cutoff_age_young_5:] * np.sum(f_c[:, :, cutoff_age_young_5:], axis=1
+                                                   ), axis=1
+        ) / np.sum(
+            np.sum(f_c[:, :, cutoff_age_young_5:], axis=2
+                   ), axis=1
+        )
+
+        belief_popu_old_results = np.average(
+            Delta[:, :cutoff_age_old_below_5],
+            weights=size_weight[:cutoff_age_old_below_5],
+            axis=1)
+        belief_popu_young_results = np.average(
+            Delta[:, cutoff_age_young_5:],
+            weights=size_weight[cutoff_age_young_5:],
+            axis=1)
+
+        belief_age_path[g] = belief_popu_old_results - belief_popu_young_results
+        belief_c_age_path[g] = belief_f_old_results - belief_f_young_results
+
         pd_path[g] = beta
         vola_path[g] = sigma_S
         r_path[g] = r
         parti_path[g] = parti
         Phi_parti_path[g] = Phi_parti
-        parti_age_path[g] = parti_age_group
+        parti_age_path[g] = np.average(parti_age_group[:, 2:], axis=1) - np.average(parti_age_group[:, :2], axis=1)
 
     return (
         i,
@@ -183,7 +222,9 @@ def simulate_path(i: int,
         r_path,
         parti_path,
         Phi_parti_path,
-        parti_age_path
+        parti_age_path,
+        belief_age_path,
+        belief_c_age_path
     )
 
 
@@ -204,7 +245,9 @@ def main():
         r_path, \
         parti_path, \
         Phi_parti_path, \
-        parti_age_path = result.result()
+        parti_age_path, \
+        belief_age_path, \
+        belief_c_age_path = result.result()
 
         data = {
             "i": i,
@@ -216,6 +259,8 @@ def main():
             "parti_rate": parti_path,
             "Phi_bar": Phi_parti_path,
             "parti_rate_age": parti_age_path,
+            "belief_gap_old_young": belief_age_path,
+            "belief_c_gap_old_young": belief_c_age_path,
         }
         results_list.append(data)
 

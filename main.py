@@ -38,12 +38,13 @@ data_include = np.arange(0, Nt, 12)
 titles = ['Complete', 'Reentry', 'Mix-4', 'Mix-BC']
 quartiles = ['lowest quartile', '2nd quartile', '3rd quartile', 'highest quartile']
 
-for ii, var in enumerate(file_pd_list[3:6]):
+for ii, var in enumerate(file_pd_list[3:]):
     state_var = results_pd[var]
-    for jj in range(4):
-        if ii > 2 and jj == 0:
+    for jj in range(2):
+        if ii > 2 and ii < 6 and jj == 0:
             print('skip')
         else:
+            print(var, str(jj))
             fig, axes = plt.subplots(nrows=2, ncols=2, sharex='all', sharey='all', figsize=(10, 10))
             state_var_cutoffs = np.quantile(state_var[:, jj, data_include], ([0, 0.25, 0.5, 0.75, 1]))
             counter = 0
@@ -79,6 +80,7 @@ for ii, var in enumerate(file_pd_list[3:6]):
                     data_within = np.where(data_above * data_below == 1)
                     color_use = colors[jj]
                     y = vola[:, jj, data_include][data_within]
+                    print(str(np.average(y)))
                     x = pd[:, jj, data_include][data_within]
                     x_regress = sm.add_constant(x)
                     model = sm.OLS(y, x_regress)
@@ -2260,7 +2262,7 @@ bins = np.linspace(below_dz, above_dz, n_bins)
 # quartile_var = (Wealthshare_old_compare - Wealthshare_young_compare)[:, :, Npre_index]
 # quartile_var = belief_popu_young_compare[:, Npre_index] - belief_popu_old_compare[:, Npre_index]
 # quartile_var = parti_young_compare[:, :, Npre_index]
-y_percentiles = [50, 25, 75]
+y_percentiles = [50, 10, 90]
 phi_old = Phi_old_compare / Phi_compare
 phi_young = Phi_young_compare / Phi_compare
 data_var = Delta_bar_compare
@@ -2347,9 +2349,75 @@ for j, rows in enumerate(axes):
             ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
         # ax.set_xlim(-0.25, 0.25)
 fig.tight_layout(h_pad=2)  # otherwise the right y-label is slisghtly clipped
-plt.savefig('240DeltaVola.png', dpi=100)
-plt.savefig('240DeltaVola HD.png', dpi=200)
+# plt.savefig('240DeltaVola.png', dpi=100)
+# plt.savefig('240DeltaVola HD.png', dpi=200)
 plt.show()
+
+
+# # separate figs:
+# bin_size = (above_dz - below_dz) / (n_bins - 1)
+# x = np.linspace(below_dz + bin_size / 2, above_dz - bin_size / 2, n_bins - 1)
+# labels = [[r'$\bar{\Delta}_t^{old}$', r'$\bar{\Delta}_t^{young}$'],
+#           [r'$\bar{\Phi}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$',
+#            r'$\bar{\Phi}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$'],
+#           [r'$\bar{\Phi}_t^{old}\bar{\Delta}_t^{old} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$',
+#            r'$\bar{\Phi}_t^{young}\bar{\Delta}_t^{young} / (\bar{\Phi}_t^{old} + \bar{\Phi}_t^{young})$']]
+# # labels = [r'Wealth old minus young, ' + 'Lowest quartile', 'Second quartile', 'Third quartile', 'Highest quartile']
+# sub_titles = ['Complete market', 'Reentry']
+# y_labels = ['Estimation error of the participants',
+#             'Consumption share of the participants',
+#             r'Contribution to $\bar{\Delta}_t$']
+# # X_ = np.linspace(-0.2, 0.2, 100)
+# X_ = np.linspace(below_dz, above_dz, 100)
+# for j in range(3):
+#     fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(10, 5), sharex='all', sharey='row')
+#     for i, ax in enumerate(axes):
+#         if j == 0:
+#             y_focus = belief_figure[i]
+#         elif j == 1:
+#             y_focus = phi_figure[i]
+#         else:
+#             y_focus = belief_phi_figure[i]
+#         for k in range(2):
+#             if j == 2:
+#                 y_i = y_focus[k]
+#                 X_Y_Spline = make_interp_spline(x, y_i)
+#                 Y_ = X_Y_Spline(X_)
+#                 ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+#                 ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+#                 if k == 1:
+#                     y_i = data_figure[i]  # n_bin-1 * 3
+#                     X_Y_Spline = make_interp_spline(x, y_i)
+#                     Y_ = X_Y_Spline(X_)
+#                     ax.plot(X_, Y_[:, 0], color='gray', linewidth=1,
+#                             label=r'$\bar{\Delta}_t$')
+#                     ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color='gray', linewidth=0., alpha=0.2)
+#                     ax.axhline(average_Delta_bar[i], 0.05, 0.95, color='saddlebrown', linewidth=0.8,
+#                                linestyle='dashed',
+#                                label=r'Unconditional mean $\bar{\Delta}_t$')
+#                     x_mean = [X_[np.searchsorted(Y_[:, 0], average_Delta_bar[i])]]
+#                     ax.scatter(x_mean, [average_Delta_bar[i]], marker='o', color='saddlebrown')
+#
+#             else:
+#                 y_i = y_focus[k]
+#                 X_Y_Spline = make_interp_spline(x, y_i)
+#                 Y_ = X_Y_Spline(X_)
+#                 ax.plot(X_, Y_[:, 0], color=colors_short[k], linewidth=1, label=labels[j][k])
+#                 ax.fill_between(X_, Y_[:, 2], Y_[:, 1], color=colors_short[k], linewidth=0., alpha=0.4)
+#         if i == 0:
+#             ax.legend(loc='upper left')
+#             ax.set_ylabel(y_labels[j])
+#         if j < 2:
+#             ax.axvline(0, 0.05, 0.95, color='gray', linewidth=0.8, linestyle='dashed')
+#             # ax.set_xlim(-0.25, 0.25)
+#         ax.set_title(sub_titles[i])
+#         ax.set_xlabel(x_label)
+#     fig.tight_layout(h_pad=2)  # otherwise the right y-label is slisghtly clipped
+#     # plt.savefig(str(j)+'240DeltaVola.png', dpi=100)
+#     plt.savefig(str(j)+'240DeltaVola HD.png', dpi=200)
+#     plt.show()
+#     plt.close()
+
 
 # # ######################################
 # # ############  Figure 3  ##############

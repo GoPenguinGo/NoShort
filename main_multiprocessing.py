@@ -44,8 +44,8 @@ def simulate_path(
 
     # for figure 8
     popu_5 = 0.5
-    cutoff_age_old_below_5 = np.searchsorted(cummu_popu, popu_5)
-    cutoff_age_young_5 = np.searchsorted(cummu_popu, 1 - popu_5)
+    cutoff_age_old_below_5 = np.searchsorted(popu_cummu, popu_5)
+    cutoff_age_young_5 = np.searchsorted(popu_cummu, 1 - popu_5)
     Phi_results = np.zeros((Nscenario, Nt), dtype=np.float32)
     Delta_bar_results = np.zeros((Nscenario, Nt), dtype=np.float32)
     belief_popu_results = 0
@@ -81,7 +81,8 @@ def simulate_path(
             Delta,
             pi,
             parti,
-            Phi_parti,
+            Phi_bar_parti,
+            Phi_tilde_parti,
             Delta_bar_parti,
             Delta_tilde_parti,
             dR,
@@ -169,7 +170,7 @@ def simulate_path(
                 leverage_parti_post_results[mm] = np.ma.average(
                     pi[t_gap:, age_bottom - t_gap:age_top - t_gap], weights=weights_group, axis=1)
 
-        Phi_results[g] = Phi_parti
+        Phi_results[g] = Phi_bar_parti
         Delta_bar_results[g] = Delta_bar_parti
         if g == 0:
             belief_popu_results = np.average(Delta, weights=cohort_type_size[0],
@@ -262,7 +263,7 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=32) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
