@@ -46,9 +46,9 @@ def simulate_mean_vola_path(i: int,
 
     for h in range(Nvar):
         Npre = 60 if h == 0 else 240
-        rho_i = np.array([[0.001], [0.1]]) if h == 1 else np.array([[0.001], [0.01]])
+        rho_i = np.array([[0.001], [0.1]]) if h == 1 else np.array([[0.001], [0.005]])
         phi = 0.8 if h == 2 else 0.4
-        tax = 0.4 if h == 3 else 0.2
+        tax = 0.5 if h == 3 else 0.3
 
         # Npre = 240
         # phi = 0.4
