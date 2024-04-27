@@ -660,6 +660,7 @@ print(tab.tabulate(table_output,
                    floatfmt=".4f", tablefmt='latex_raw'))
 
 # Panel 7: participation rate covariances
+# todo: participation rate and vola: conditional on some state variables?
 file = file_list_mean_vola[13]
 var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
@@ -673,7 +674,7 @@ show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right)$',
-              ]
+              r'$ \text{Cov}\left(R_{t,t+2}^2, P_t\right)$']
 print(tab.tabulate(table_output,
                    showindex=show_index,
                    floatfmt=".4f", tablefmt='latex_raw'))

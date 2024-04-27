@@ -14,6 +14,7 @@ np.seterr(invalid='ignore')
 
 Mpath = 500
 
+
 def simulate_mean_vola_path(i: int,
                             Nscenario=4,
                             ):
@@ -31,7 +32,7 @@ def simulate_mean_vola_path(i: int,
     parti_wealth_group_mean_vola_results = np.zeros((Nscenario, 4))
     cov_save_mean_vola_results = np.zeros((Nscenario, 6))
     parti_results = np.zeros((Nscenario, keep_data))
-    cov_parti_results = np.zeros((Nscenario, 4, 3))
+    cov_parti_results = np.zeros((Nscenario, 5, 3))
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -173,7 +174,7 @@ def simulate_mean_vola_path(i: int,
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []

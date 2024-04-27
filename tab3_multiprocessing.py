@@ -10,7 +10,7 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-# Mpath = 500
+Mpath = 500
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=3,
@@ -193,7 +193,7 @@ def simulate_mean_vola_path(i: int,
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
