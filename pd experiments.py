@@ -194,8 +194,7 @@ for g, scenario in enumerate(scenarios_short):
                         sigma_S_compare[g, h, i, j] = sigma_S
                         beta_compare[g, h, i, j] = beta
 
-
-pd_compare = 1/beta_compare
+pd_compare = 1/beta_compare  # I think right now the function returns pd itself
 
 # ######################################
 # ############## Figure ##############

@@ -2,7 +2,7 @@ import numpy as np
 from src.simulation import simulate_SI_mean_vola, simulate_mix_mean_vola
 from src.param import nu, mu_Y, sigma_Y, dt, Ninit, Nt, Nc, tau, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    Ntype, alpha_i, cohort_type_size, rho_cohort_type
+    Ntype, alpha_i, cohort_type_size, rho_cohort_type, cohort_size
 from src.param_mix import Nconstraint, alpha_i_mix, cohort_type_size_mix, rho_cohort_type_mix
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
@@ -10,12 +10,12 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-Mpath = 500
+# Mpath = 500
 
 def simulate_mean_vola_path(i: int,
-                            Nscenario=3,
-                            # Nvar=4,
-                            Nvar=3
+                            Nscenario=4,
+                            Nvar=4,
+                            # Nvar=3
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -24,14 +24,14 @@ def simulate_mean_vola_path(i: int,
     r_mean_vola_results = np.zeros((Nvar, Nscenario, 2))
     mu_S_mean_vola_results = np.zeros((Nvar, Nscenario, 2))
     sigma_S_mean_vola_results = np.zeros((Nvar, Nscenario, 2))
-    beta_mean_vola_results = np.zeros((Nvar, Nscenario, 2))
+    pd_mean_vola_results = np.zeros((Nvar, Nscenario, 2))
     theta_save_mean_vola_results = np.zeros((Nvar, Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nvar, Nscenario, 4, 2))
     parti_age_group_mean_vola_results = np.zeros((Nvar, Nscenario, 4))
     parti_wealth_group_mean_vola_results = np.zeros((Nvar, Nscenario, 4))
     cov_save_mean_vola_results = np.zeros((Nvar, Nscenario, 6))
     parti_results = np.zeros((Nvar, Nscenario, keep_data))
-    cov_parti_results = np.zeros((Nvar, Nscenario, 4, 3))
+    cov_parti_results = np.zeros((Nvar, Nscenario, 5, 3))
     covariance_parti = np.zeros((Nvar, keep_data))
 
     dZ_build = dZ_build_matrix[i]
@@ -80,7 +80,7 @@ def simulate_mean_vola_path(i: int,
                     r_mean_vola,
                     mu_S_mean_vola,
                     sigma_S_mean_vola,
-                    beta_mean_vola,
+                    pd_mean_vola,
                     theta_save_mean_vola,
                     sigma_S_save_mean_vola,
                     parti_age_group_mean_vola,
@@ -117,13 +117,19 @@ def simulate_mean_vola_path(i: int,
                     cohort_type_size
                 )
             else:
+                alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
+                    (1, Nconstraint)) * (0.5, 0.5, 0, 0)
+                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                cohort_type_size_mix = cohort_size * alpha_i_mix
+                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
                 (
                     dR_mean_vola,
                     theta_mean_vola,
                     r_mean_vola,
                     mu_S_mean_vola,
                     sigma_S_mean_vola,
-                    beta_mean_vola,
+                    pd_mean_vola,
                     theta_save_mean_vola,
                     sigma_S_save_mean_vola,
                     parti_age_group_mean_vola,
@@ -163,7 +169,7 @@ def simulate_mean_vola_path(i: int,
             r_mean_vola_results[h, g] = r_mean_vola
             mu_S_mean_vola_results[h, g] = mu_S_mean_vola
             sigma_S_mean_vola_results[h, g] = sigma_S_mean_vola
-            beta_mean_vola_results[h, g] = beta_mean_vola
+            pd_mean_vola_results[h, g] = pd_mean_vola
             theta_save_mean_vola_results[h, g] = theta_save_mean_vola
             sigma_S_save_mean_vola_results[h, g] = sigma_S_save_mean_vola
             parti_age_group_mean_vola_results[h, g] = parti_age_group_mean_vola
@@ -180,7 +186,7 @@ def simulate_mean_vola_path(i: int,
         r_mean_vola_results,
         mu_S_mean_vola_results,
         sigma_S_mean_vola_results,
-        beta_mean_vola_results,
+        pd_mean_vola_results,
         theta_save_mean_vola_results,
         sigma_S_save_mean_vola_results,
         parti_age_group_mean_vola_results,
@@ -206,7 +212,7 @@ def main():
         r_mean_vola_results, \
         mu_S_mean_vola_results, \
         sigma_S_mean_vola_results, \
-        beta_mean_vola_results, \
+        pd_mean_vola_results, \
         theta_save_mean_vola_results, \
         sigma_S_save_mean_vola_results, \
         parti_age_group_mean_vola_results, \
@@ -222,7 +228,7 @@ def main():
             "r_mean_vola": r_mean_vola_results,
             "mu_S_mean_vola": mu_S_mean_vola_results,
             "sigma_S_mean_vola": sigma_S_mean_vola_results,
-            "beta_mean_vola": beta_mean_vola_results,
+            "pd_mean_vola": pd_mean_vola_results,
             "theta_compo_mean_vola": theta_save_mean_vola_results,
             "sigma_S_save_mean_vola": sigma_S_save_mean_vola_results,
             "parti_age_group": parti_age_group_mean_vola_results,

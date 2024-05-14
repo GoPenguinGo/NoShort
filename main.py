@@ -22,8 +22,6 @@ results = np.load('results.npz')
 # results = np.load("results_mean_vola_alternative_new.npz")
 file_list = results.files
 
-
-
 results_pd = np.load("results_pd_try.npz")
 file_pd_list = results_pd.files
 pd = 1 / results_pd['price_dividend']
@@ -625,11 +623,11 @@ print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt=
 file = file_list_mean_vola[9]
 var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
+table_output = np.zeros((N_row, int(Ncolumn/2)))
 for j in range(N_row):
     for i in range(Nsce):
         row_index = j
-        col_index = i * 2
+        col_index = i
         table_output[row_index, col_index] = var_average[i, j]
 show_index = [r'$0 < \text{Age} \leq 15$',
               r'$15 < \text{Age} \leq 35$',
@@ -644,11 +642,11 @@ print(tab.tabulate(table_output,
 file = file_list_mean_vola[10]
 var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
+table_output = np.zeros((N_row, int(Ncolumn/2)))
 for j in range(N_row):
     for i in range(Nsce):
         row_index = j
-        col_index = i * 2
+        col_index = i
         table_output[row_index, col_index] = var_average[i, j]
 show_index = [r'$ \text{wealth} \leq 1$',
               r'$1 <\text{wealth} \leq 10$',
@@ -664,11 +662,11 @@ print(tab.tabulate(table_output,
 file = file_list_mean_vola[13]
 var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 N_row = np.shape(var_average)[1]
-table_output = np.zeros((N_row, Ncolumn))
+table_output = np.zeros((N_row, int(Ncolumn/2)))
 for j in range(N_row):
     for i in range(Nsce):
         row_index = j
-        col_index = i * 2
+        col_index = i
         table_output[row_index, col_index] = var_average[i, j, 1]
 show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
               r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
@@ -684,36 +682,31 @@ print(tab.tabulate(table_output,
 ######################################
 
 results_al = np.load('results_mean_vola_alternative_BC.npz')
-Nsce = 3
-# Ncolumn = int(Nsce * 2)
-Ncolumn = 2
+Nsce = 4
+Ncolumn = int(Nsce * 2)
 file_list_mean_vola = results_al.files
 header = np.tile(['Mean', 'Std'], Nsce)
-# alternative_var_list = [r'5-year time-series for pre-entry learning',
-#                         r'$\rho={0.1%, 5%}$',
-#                         r'Information quality $\phi=0.8$',
-#                         r'Tax rate $\tau = 0.4$']
-alternative_var_list = [r'$\rho=\{0.1\%, 0.5\%\}$',
-                        r'$\rho=\{0.1\%, 5\%\}$',
-                        r'$\rho=\{-1.5\%, 3.5\%\}$', ]
-alternative_var_index = [0, 1, 2]
+alternative_var_list = [r'5-year time-series for pre-entry learning',
+                        r'$\rho=\{0.1\%, 1\%\}$',
+                        r'Information quality $\phi=0.8$',
+                        r'Tax rate $\tau = 0.5$']
+# alternative_var_list = [r'$\rho=\{0.1\%, 0.5\%\}$',
+#                         r'$\rho=\{0.1\%, 5\%\}$',
+#                         r'$\rho=\{-1.5\%, 3.5\%\}$', ]
+alternative_var_index = [0, 1, 2, 3]
 show_index = [r'$\theta_t$', r'$r_t$', r'$\sigma_t^S$', r'$\mu_t^S$']
 for jj, index in enumerate(alternative_var_index):
     print(alternative_var_list[index])
     table_output = np.zeros((6, Ncolumn))
     for j, file in enumerate(file_list_mean_vola[1:7]):
         var_average = np.average(results_al[file][:, jj], axis=0)  # shape (n_scenarios, 2)
-        i = 2
-        row_index = j
-        col_index = 0
-        table_output[row_index, col_index:col_index + 2] = var_average[i]
-        # for i in range(Nsce):
-        #     row_index = j
-        #     col_index = i * 2
-        #     table_output[row_index, col_index:col_index + 2] = var_average[i]
+        for i in range(Nsce):
+            row_index = j
+            col_index = i * 2
+            table_output[row_index, col_index:col_index + 2] = var_average[i]
     print(tab.tabulate(table_output,
                        headers=header,
-                       # showindex=file_list_mean_vola[1:7],
+                       showindex=file_list_mean_vola[1:7],
                        floatfmt=".5f",
                        tablefmt='latex_raw'))
 
@@ -738,7 +731,7 @@ for jj, index in enumerate(alternative_var_index):
 #############################################
 ### Additional parameters for the figures ###
 #############################################
-n_scenarios_short = 2
+n_scenarios_short = 4
 scenarios_short = scenarios[:n_scenarios_short]
 
 phi_vector = np.arange(0, 1, 0.1)
@@ -772,6 +765,8 @@ plt.rcParams["font.family"] = 'serif'
 
 # ONE SPECIFIC PATH:
 print('Generating data for the graphs:')
+dZ_build = dZ_build_matrix[0]
+dZ_SI_build = dZ_SI_build_matrix[0]
 theta_compare = np.empty((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 popu_parti_compare = np.empty((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 r_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
@@ -790,8 +785,6 @@ invest_tracker_compare = np.zeros((n_scenarios_short, 2, 2, Nt, Nconstraint, Nc)
 Delta_mix = np.empty((n_scenarios_short, 2, 2, Nt, Nconstraint, Nc), dtype=np.float16)
 cohort_type_size_mix_mat = np.tile(cohort_type_size_mix, (Nt, 1, 1, 1))
 cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
-beta_beta_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
-rho_bar_compare = np.zeros((n_scenarios_short, 2, 2, Nt), dtype=np.float32)
 for g, scenario in enumerate(scenarios_short):
     for i in range(2):
         dZ = dZ_Y_cases[i]
@@ -819,12 +812,33 @@ for g, scenario in enumerate(scenarios_short):
                     invest_tracker,
                     parti_age_group,
                     parti_wealth_group,
-                    beta_beta_bar,
-                    rho_bar,
-                ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                ) = simulate_SI(mode_trade,
+                                mode_learn,
+                                Nc,
+                                Nt,
+                                dt,
+                                nu,
+                                Vhat,
+                                mu_Y,
+                                sigma_Y,
+                                tax,
+                                beta0,
                                 phi,
-                                Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cutoffs_age,
-                                Ntype, rho_i, alpha_i, beta_i, rho_cohort_type, cohort_type_size,
+                                Npre,
+                                Ninit,
+                                T_hat,
+                                dZ_build,
+                                dZ,
+                                dZ_SI_build,
+                                dZ_SI,
+                                tau,
+                                cutoffs_age,
+                                Ntype,
+                                rho_i,
+                                alpha_i,
+                                beta_i,
+                                rho_cohort_type,
+                                cohort_type_size,
                                 need_f='True',
                                 need_Delta='True',
                                 need_pi='True',
@@ -845,10 +859,13 @@ for g, scenario in enumerate(scenarios_short):
                 mu_S_compare[g, i, j] = mu_S
                 sigma_S_compare[g, i, j] = sigma_S
                 beta_compare[g, i, j] = beta
-
-                beta_beta_bar_compare[g, i, j] = beta_beta_bar
-                rho_bar_compare[g, i, j] = rho_bar
             else:
+                alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
+                    (1, Nconstraint)) * (0.5, 0.5, 0, 0)
+                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                cohort_type_size_mix = cohort_size * alpha_i_mix
+                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
                 (
                     r,
                     theta,
@@ -867,14 +884,13 @@ for g, scenario in enumerate(scenarios_short):
                     invest_tracker,
                     parti_age_group,
                     parti_wealth_group,
-                    beta_beta_bar,
-                    rho_bar,
                 ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                        beta0,
                                        phi, Npre, Ninit, T_hat,
                                        dZ_build_case, dZ, dZ_SI_build_case, dZ_SI,
-                                       tau, cutoffs_age, Ntype,
-                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix, rho_cohort_type_mix,
+                                       cutoffs_age, Ntype,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                       rho_cohort_type_mix,
                                        cohort_type_size_mix,
                                        need_f='True',
                                        need_Delta='True',
@@ -896,24 +912,21 @@ for g, scenario in enumerate(scenarios_short):
                 sigma_S_compare[g, i, j] = sigma_S
                 beta_compare[g, i, j] = beta
 
-                beta_beta_bar_compare[g, i, j] = beta_beta_bar
-                rho_bar_compare[g, i, j] = rho_bar
-
 # cohort_matrix_list = [pi_compare, Delta_compare, cons_compare]
 nn = 3  # number of cohorts illustrated
 length = len(t)
 starts = np.zeros(nn)
-Delta_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
-pi_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
-cons_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, Ntype, length), dtype=np.float32)
-switch_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
-parti_time_series = np.zeros((n_scenarios_short - 1, 2, 2, nn, length), dtype=np.float32)
+Delta_time_series = np.zeros((n_scenarios_short - 2, 2, 2, nn, length), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios_short - 2, 2, 2, nn, length), dtype=np.float32)
+cons_time_series = np.zeros((n_scenarios_short - 2, 2, 2, nn, Ntype, length), dtype=np.float32)
+switch_time_series = np.zeros((n_scenarios_short - 2, 2, 2, nn, length), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios_short - 2, 2, 2, nn, length), dtype=np.float32)
 Delta_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 pi_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 cons_time_series_mix = np.zeros((2, 2, nn, Ntype, Nconstraint, length), dtype=np.float32)
 switch_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
 parti_time_series_mix = np.zeros((2, 2, nn, Nconstraint, length), dtype=np.float32)
-for o in range(n_scenarios_short - 1):
+for o in range(2):
     for i in range(2):
         for j in range(2):
             pi = pi_compare[o, i, j, :, 0]
@@ -983,286 +996,99 @@ for i in range(2):
 ########### Figure 1 & IA1 #############
 ######################################
 print('Figure 1')
-upper = 60  # todo: endogenize these parameters
-lower = -60
 scenario_index = 1
-fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(8, 5))
-for j, ax in enumerate(axes):
-    red_index = 1
-    yellow_index = 0 if j == 0 else 1
-    red_case = red_labels[red_index]
-    yellow_case = yellow_labels[yellow_index]
-    Z = np.cumsum(dZ_Y_cases[red_index])
-    Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
-    # if j == 3:
-    #     ax.set_xlabel('Time in simulation')
-    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.4, label=r'$z^Y_t$')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.4, label=r'$z^{SI}_t$')
-    ax.set_ylim([lower, upper])
-    ax.tick_params(axis='y', labelcolor='black')
-    ax.tick_params(axis='x', labelcolor='black')
-    if j == 0:
-        ax.legend()
-    ax.set_title('Reentry scenario, ' + red_case + yellow_case)
+# todo: change the figures: one reentry + one mix from the negative & negative path,
+#  move the rest to IA
+for red_index, red_case in enumerate(red_labels):
+    for yellow_index, yellow_case in enumerate(yellow_labels):
+        fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(15, 8))
+        for j, ax in enumerate(axes):
+            if j == 0:
+                y_min_raw = np.nanmin(Delta_time_series[scenario_index, red_index, yellow_index])
+                y_max_raw = np.nanmax(Delta_time_series[scenario_index, red_index, yellow_index])
+                y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+                y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+                Z = np.cumsum(dZ_Y_cases[red_index])
+                Z_SI = np.cumsum(
+                    dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
+                upper_raw = np.maximum(np.max(Z), np.max(Z_SI))
+                lower_raw = np.minimum(np.min(Z), np.min(Z_SI))
+                upper = (upper_raw - lower_raw) * 0.8 + (upper_raw + lower_raw) / 2
+                lower = - (upper_raw - lower_raw) * 0.8 + (upper_raw + lower_raw) / 2
+                ax.set_title(r'Reentry scenario, one random joint path of $z^Y$ and $z^{SI}$')
+                ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+                ax.set_ylim([y_min, y_max])
+                # ax.set_ylim([-0.3, 0.4])
+                for m in range(nn):
+                    # switch[m, starts[m]] = 1
+                    y_cohort = Delta_time_series[scenario_index, red_index, yellow_index, m]
+                    y_cohort_N = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, m] == 1,
+                                                    y_cohort)
+                    y_cohort_P = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, m] == 0,
+                                                    y_cohort)
+                    y_cohort_switch = np.ma.masked_where(
+                        switch_time_series[scenario_index, red_index, yellow_index, m] == 0,
+                        y_cohort)
+                    ax.vlines(starts[m], ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.4)
+                    #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+                    if m == 0:
+                        ax.plot(t, y_cohort_P, color=colors_short[m], linewidth=1.2, label=PN_labels[0])
+                        ax.plot(t, y_cohort_N, color=colors_short[m], linewidth=1.2, linestyle='dotted',
+                                label=PN_labels[1])
+                        ax.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
+                    else:
+                        ax.plot(t, y_cohort_P, color=colors_short[m], linewidth=1.2)
+                        ax.plot(t, y_cohort_N, color=colors_short[m], linewidth=1.2, linestyle='dotted')
+                        ax.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
+                ax.tick_params(axis='y', labelcolor='black')
+                ax.legend()
 
-    ax2 = ax.twinx()
-    ax2.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax2.set_ylim([-0.3, 0.4])
-    for m in range(nn):
-        # switch[m, starts[m]] = 1
-        y_cohort = Delta_time_series[scenario_index, red_index, yellow_index, m]
-        y_cohort_N = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, m] == 1,
-                                        y_cohort)
-        y_cohort_P = np.ma.masked_where(parti_time_series[scenario_index, red_index, yellow_index, m] == 0,
-                                        y_cohort)
-        y_cohort_switch = np.ma.masked_where(switch_time_series[scenario_index, red_index, yellow_index, m] == 0,
-                                             y_cohort)
-        plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
-        #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-        if j == 0:
-            ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8, label=cohort_labels[m])
-            ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted')
-            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-        elif j == 1 and m == 0:
-            ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8, label=PN_labels[0])
-            ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted', label=PN_labels[1])
-            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
+                ax2 = ax.twinx()
+                ax2.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+                ax2.plot(t, Z, color='red', linewidth=0.8, label=r'$z^Y_t$')
+                ax2.plot(t, Z_SI, color='orange', linewidth=0.8, label=r'$z^{SI}_t$')
+                ax2.tick_params(axis='y', labelcolor='black')
+                ax2.tick_params(axis='x', labelcolor='black')
+                ax2.legend(loc='upper left')
+            else:
+                constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
+                colors_short3 = ['mediumblue', 'saddlebrown', 'purple', 'darkgreen']
+                color_dot = 'red'
+                ax.set_title(r'Mix scenario, one random joint path of $z^Y$ and $z^{SI}$')
+                ax.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
+                # ax.set_ylim([-0.35, 0.4])
+                # m = 0 if j == 0 else 2
+                m = 0
+                for kk in range(Nconstraint - 1):
+                    # switch[m, starts[m]] = 1
+                    k = kk + 1 if kk > 0 else kk
+                    y_cohort = Delta_time_series_mix[red_index, yellow_index, m, k]
+                    y_cohort_N = np.ma.masked_where(parti_time_series_mix[red_index, yellow_index, m, k] == 1,
+                                                    y_cohort)
+                    y_cohort_P = np.ma.masked_where(parti_time_series_mix[red_index, yellow_index, m, k] == 0,
+                                                    y_cohort)
+                    y_cohort_switch = np.ma.masked_where(switch_time_series_mix[red_index, yellow_index, m, k] == 0,
+                                                         y_cohort)
+                    ax.vlines(starts[m], ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.4)
+                    #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+                    ax.plot(t, y_cohort_P, color=colors_short3[k], linewidth=1.2, label=constraint_labels[k])
+                    ax.plot(t, y_cohort_N, color=colors_short3[k], linewidth=1.2, linestyle='dotted')
+                    ax.scatter(t, y_cohort_switch, color=color_dot, s=10, marker='o')
+                    ax.legend()
+                ax.tick_params(axis='y', labelcolor='black')
+            extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        if red_index == yellow_index == 1:
+            plt.savefig(
+                'f1.png',
+                dpi=100)
         else:
-            ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8)
-            ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted')
-            ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
+            plt.savefig(
+                str(red_index) + str(yellow_index) + 'IA_f1.png',
+                dpi=100)
+        plt.show()
+        plt.close()
 
-    ax2.tick_params(axis='y', labelcolor='black')
-    if j <= 1:
-        ax2.legend()
-    # Save the subfigs for slides, etc.
-    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    # Pad the saved area by 10% in the x-direction and 20% in the y-direction
-    # fig.savefig(' Shocks and Delta time series subfig' + str(i) + str(j + 1) + '.png',
-    #             bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig(
-    'f1.png',
-    dpi=100)
-plt.show()
-# plt.close()
-
-
-print('Figure 1-mix')
-upper = 60  # todo: endogenize these parameters
-lower = -60
-scenario_index = 1
-constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
-colors_short3 = ['mediumblue', 'saddlebrown', 'purple', 'darkgreen']
-color_dot = 'red'
-fig, axes = plt.subplots(nrows=2, ncols=1, sharey='all', sharex='all', figsize=(8, 5))
-for j, ax in enumerate(axes):
-    red_index = 1
-    yellow_index = 1
-    red_case = red_labels[red_index]
-    yellow_case = yellow_labels[yellow_index]
-    Z = np.cumsum(dZ_Y_cases[red_index])
-    Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
-    if j == 1:
-        ax.set_xlabel('Time in simulation')
-
-    ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-    ax.plot(t, Z, color='red', linewidth=0.4, label=r'$z^Y_t$')
-    ax.plot(t, Z_SI, color='gold', linewidth=0.4, label=r'$z^{SI}_t$')
-    ax.set_ylim([lower, upper])
-    ax.tick_params(axis='y', labelcolor='black')
-    ax.tick_params(axis='x', labelcolor='black')
-    if j == 0:
-        ax.legend(loc='upper left')
-    ax.set_title('Mix scenario, ' + red_case + yellow_case)
-
-    ax2 = ax.twinx()
-    ax2.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
-    ax2.set_ylim([-0.35, 0.4])
-    m = 0 if j == 0 else 2
-    for kk in range(Nconstraint - 1):
-        # switch[m, starts[m]] = 1
-        k = kk + 1 if kk > 0 else kk
-        y_cohort = Delta_time_series_mix[red_index, yellow_index, m, k]
-        y_cohort_N = np.ma.masked_where(parti_time_series_mix[red_index, yellow_index, m, k] == 1,
-                                        y_cohort)
-        y_cohort_P = np.ma.masked_where(parti_time_series_mix[red_index, yellow_index, m, k] == 0,
-                                        y_cohort)
-        y_cohort_switch = np.ma.masked_where(switch_time_series_mix[red_index, yellow_index, m, k] == 0,
-                                             y_cohort)
-        plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
-        #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-        if j == 0:
-            ax2.plot(t, y_cohort_P, color=colors_short3[k], linewidth=0.8, label=constraint_labels[k])
-            ax2.plot(t, y_cohort_N, color=colors_short3[k], linewidth=0.8, linestyle='dotted')
-            ax2.scatter(t, y_cohort_switch, color=color_dot, s=10, marker='o')
-            ax2.legend()
-        else:
-            ax2.plot(t, y_cohort_P, color=colors_short3[k], linewidth=0.8, label=PN_labels[0])
-            ax2.plot(t, y_cohort_N, color=colors_short3[k], linewidth=0.8, linestyle='dotted', label=PN_labels[1])
-            ax2.scatter(t, y_cohort_switch, color=color_dot, s=10, marker='o', label='switch')
-            # if kk == 0:
-            #     ax2.legend()
-    ax2.tick_params(axis='y', labelcolor='black')
-    # # if j <= 1:
-    # ax2.legend()
-    # Save the subfigs for slides, etc.
-    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    # Pad the saved area by 10% in the x-direction and 20% in the y-direction
-    # fig.savefig(' Shocks and Delta time series subfig' + str(i) + str(j + 1) + '.png',
-    #             bbox_inches=extent.expanded(1.2, 1.25), dpi=200)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig(
-    'f1_1.png',
-    dpi=100)
-plt.show()
-# plt.close()
-
-
-# IA:
-# ONE SPECIFIC PATH:
-# print('Generating data for the graphs:')
-# phi_8 = 0.8
-# scenario = scenarios[1]
-# mode_trade = scenario[0]
-# mode_learn = scenario[1]
-# Delta_compare = np.empty((2, 2, Nt, Nc), dtype=np.float16)
-# pi_compare = np.empty((2, 2, Nt, Nc), dtype=np.float16)
-# cons_compare = np.zeros((2, 2, Nt, Ntype, Nc), dtype=np.float16)
-# invest_tracker_compare = np.zeros((2, 2, Nt, Nc), dtype=np.float16)
-# cohort_type_size_mat = np.tile(cohort_type_size, (Nt, 1, 1))
-# for i in range(2):
-#     dZ = dZ_Y_cases[i]
-#     # log_Yt = np.cumsum((mu_Y - 0.5 * sigma_Y ** 2) * dt + sigma_Y * dZ)
-#     for j in range(2):
-#         dZ_SI = dZ_SI_cases[j]
-#         (
-#             r,
-#             theta,
-#             f_c,
-#             Delta,
-#             pi,
-#             parti,
-#             Phi_parti,
-#             Delta_bar_parti,
-#             Delta_tilde_parti,
-#             dR,
-#             mu_S,
-#             sigma_S,
-#             beta,
-#             invest_tracker,
-#             parti_age_group,
-#             parti_wealth_group,
-#         ) = simulate_SI(mode_trade, mode_learn, Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-#                         phi_8,
-#                         Npre, Ninit, T_hat, dZ_build_case, dZ, dZ_SI_build_case, dZ_SI, tau, cutoffs_age,
-#                         Ntype, rho_i, alpha_i, beta_i, beta_cohort_type, cohort_type_size,
-#                         need_f='True',
-#                         need_Delta='True',
-#                         need_pi='True',
-#                         )
-#         # invest_tracker = pi > 0
-#         Delta_compare[i, j] = Delta
-#         pi_compare[i, j] = pi
-#         cons_compare[i, j] = f_c / cohort_type_size_mat
-#         invest_tracker_compare[i, j] = invest_tracker
-#
-# nn = 3  # number of cohorts illustrated
-# length = len(t)
-# starts = np.zeros(nn)
-# Delta_time_series = np.zeros((2, 2, nn, length), dtype=np.float32)
-# pi_time_series = np.zeros((2, 2, nn, length), dtype=np.float32)
-# cons_time_series = np.zeros((2, 2, nn, Ntype, length), dtype=np.float32)
-# switch_time_series = np.zeros((2, 2, nn, length), dtype=np.int8)
-# parti_time_series = np.zeros((2, 2, nn, length), dtype=np.int8)
-# for i in range(2):
-#     for j in range(2):
-#         pi = pi_compare[i, j]
-#         cons = cons_compare[i, j]  # shape ((6000 * 2 * 6000))
-#         Delta = Delta_compare[i, j]
-#         for m in range(nn):
-#             start = int((m + 1) * 100 * (1 / dt))
-#             starts[m] = start * dt
-#             for n in range(length):
-#                 if n < start:
-#                     pi_time_series[i, j, m, n] = np.nan
-#                     cons_time_series[i, j, m, :, n] = np.nan
-#                     Delta_time_series[i, j, m, n] = np.nan
-#                 else:
-#                     cohort_rank = length - (n - start) - 1
-#                     Delta_time_series[i, j, m, n] = Delta[n, cohort_rank]
-#                     pi_time_series[i, j, m, n] = pi[n, cohort_rank]
-#                     cons_time_series[i, j, m, :, n] = cons[n, :, cohort_rank]
-#             parti = pi_time_series[i, j, m] > 0
-#             switch = abs(parti[1:] ^ parti[:-1])
-#             sw = np.append(switch, 0)
-#             parti = np.where(sw == 1, 0.5, parti)
-#             switch = np.insert(switch, 0, 0)
-#             parti = np.where(switch == 1, 0.5, parti)
-#             parti_time_series[i, j, m] = parti
-#             switch_time_series[i, j, m] = sw
-# upper = 60  # todo: endogenize these parameters
-# lower = -60
-# scenario_index = 1
-# fig, axes = plt.subplots(nrows=4, ncols=1, sharey='all', sharex='all', figsize=(15, 18))
-# for j, ax in enumerate(axes):
-#     red_index = 0 if j == 0 or j == 1 else 1
-#     yellow_index = 0 if j == 0 or j == 2 else 1
-#     red_case = red_labels[red_index]
-#     yellow_case = yellow_labels[yellow_index]
-#     Z = np.cumsum(dZ_Y_cases[red_index])
-#     Z_SI = np.cumsum(dZ_SI_cases[yellow_index])  # todo: plot SI (combination of Z_Y ad Z_SI) instead of Z_SI
-#     if j == 3:
-#         ax.set_xlabel('Time in simulation')
-#     ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-#     ax.plot(t, Z, color='red', linewidth=0.4, label=r'$z^Y_t$')
-#     ax.plot(t, Z_SI, color='gold', linewidth=0.4, label=r'$z^{SI}_t$')
-#     ax.set_ylim([lower, upper])
-#     ax.tick_params(axis='y', labelcolor='black')
-#     ax.tick_params(axis='x', labelcolor='black')
-#     if j == 0:
-#         ax.legend()
-#     ax.set_title(red_case + yellow_case)
-#
-#     ax2 = ax.twinx()
-#     ax2.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-#     ax2.set_ylim([-0.3, 0.4])
-#     for m in range(nn):
-#         # switch[m, starts[m]] = 1
-#         y_cohort = Delta_time_series[red_index, yellow_index, m]
-#         y_cohort_N = np.ma.masked_where(parti_time_series[red_index, yellow_index, m] == 1,
-#                                         y_cohort)
-#         y_cohort_P = np.ma.masked_where(parti_time_series[red_index, yellow_index, m] == 0,
-#                                         y_cohort)
-#         y_cohort_switch = np.ma.masked_where(switch_time_series[red_index, yellow_index, m] == 0,
-#                                              y_cohort)
-#         plt.vlines(starts[m], ymax=upper, ymin=lower, color='grey', linestyle='--', linewidth=0.4)
-#         #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-#         if j == 0:
-#             ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8, label=cohort_labels[m])
-#             ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted')
-#             ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-#         elif j == 1 and m == 0:
-#             ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8, label=PN_labels[0])
-#             ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted', label=PN_labels[1])
-#             ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o', label='switch')
-#         else:
-#             ax2.plot(t, y_cohort_P, color=colors_short[m], linewidth=0.8)
-#             ax2.plot(t, y_cohort_N, color=colors_short[m], linewidth=0.8, linestyle='dotted')
-#             ax2.scatter(t, y_cohort_switch, color='red', s=10, marker='o')
-#
-#     ax2.tick_params(axis='y', labelcolor='black')
-#     if j <= 1:
-#         ax2.legend()
-#     # Save the subfigs for slides, etc.
-#     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig(
-#     'IA_Shocks and Delta time series.png',
-#     dpi=100)
-# plt.show()
-# # plt.close()
 
 
 print('Figure 5')
