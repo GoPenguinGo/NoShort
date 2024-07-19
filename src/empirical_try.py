@@ -13,42 +13,50 @@ from concurrent.futures import ProcessPoolExecutor
 ## run this on a grid of parameters & type densities & signal
 data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
                             index_col=0)
-dZ = data_shocks.to_numpy()[:, 0]
-dZ_SI = data_shocks.to_numpy()[:, 1]
-Nt = len(dZ)
+dZ_SI_raw = data_shocks.to_numpy()[:, 1]
+Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
+Nall = dZ_SI_raw.size
+dZ_SI = dZ_SI_raw[-Nt:]
+dZ = data_shocks.to_numpy()[:, 0][-Nt:]
 
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_set = [
-    (0.0, 0.0, 0.0, 1.0),
-    (0.0, 0.0, 1.0, 0.0),
+    # (0.0, 0.0, 0.0, 1.0),
+    # (0.0, 0.0, 1.0, 0.0),
     (0.25, 0.25, 0.25, 0.25),
     (0.25, 0.25, 0.0, 0.5),
     (0.25, 0.25, 0.5, 0.0),
-    (0.5, 0.25, 0.0, 0.25),
-    (0.1, 0.1, 0.0, 0.8),
-    (0.1, 0.1, 0.8, 0.0),
+    # (0.5, 0.25, 0.0, 0.25),
+    # (0.1, 0.1, 0.0, 0.8),
+    (0.1, 0.1, 0.4, 0.4),
 ]
 n_scenarios_short = len(density_set)
 scenarios_short = scenarios[1:3]
 
-T_hat_set = [1, 2, 3,
-             5, 10, 20
+# T_hat_set = [1, 2, 3,
+#              5, 10, 20
+#              ]  # Pre-learning window
+T_hat_set = [1, 2, 5, 10
              ]  # Pre-learning window
-phi_set = [0.0, 0.2, 0.4,
-           0.6, 0.8
-           ]
-tax_set = [0.2, 0.3,
-           0.5, 0.6, 0.8
-           ]
+# phi_set = [0.0, 0.2, 0.4,
+#            0.6, 0.8
+#            ]
+# phi_set = [0.0, 0.4, 0.8
+#            ]
+phi_set = [0.0, 0.4]
+tax_set = [0.5]
+# tax_set = [0.2, 0.3,
+#            0.5, 0.6, 0.8
+#            ]
 n_T_hat = len(T_hat_set)
 n_phi = len(phi_set)
 n_tax = len(tax_set)
 
 # # for testing:
-# Mpath = 10
-Mpath = 48
+# Mpath = 160
+Mpath = 32
 np.seterr(invalid='ignore')
 
 
@@ -73,7 +81,7 @@ def simulate_path(
     # pd_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # average_belief_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
 
-    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
+    parti_df = pd.DataFrame(data_shocks.index.astype( str), columns=['yyyymm'])
 
     for a, T_hat in enumerate(T_hat_set):
         Npre = int(T_hat / dt)
@@ -85,7 +93,8 @@ def simulate_path(
                 rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
                 for g in range(n_scenarios_short):
                     col_name = str(T_hat) + '_' + str(phi) + '_' + str(tax) + '_' + str(g)
-                    if g <= 1:
+                    # if g <= 1:
+                    if g < 0:
                         scenario = scenarios_short[g]
                         mode_trade = scenario[0]
                         mode_learn = scenario[1]
@@ -179,8 +188,8 @@ def simulate_path(
                                                need_Delta='True',
                                                need_pi='True',
                                                )
-                        average_belief = np.average(np.average(Delta, axis=2, weights=cohort_size[0]), axis=1,
-                                                    weights=alpha_constraint[0])
+                        # average_belief = np.average(np.average(Delta, axis=2, weights=cohort_size[0]), axis=1,
+                        #                             weights=alpha_constraint[0])
                     # r_compare[g] = r
                     popu_parti_compare[a, b, c, g] = parti
                     # popu_parti_old[g] = parti_age_group[:, 3]
@@ -190,8 +199,10 @@ def simulate_path(
                     # mu_S_compare[g] = mu_S
                     # sigma_S_compare[g] = sigma_S
                     # pd_compare[g] = 1 / beta
+                    parti_all = np.zeros(Nall)
+                    parti_all[-Nt:] = parti
 
-                    parti_df['parti' + col_name] = parti.astype(np.float32)
+                    parti_df['parti' + col_name] = parti_all.astype(np.float32)
 
     parti_df.to_stata('stata_dataset/' + str(i) + 'parti.dta')
 
@@ -211,7 +222,7 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=32) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
