@@ -176,6 +176,8 @@ def simulate_path(
                             invest_tracker,
                             parti_age_group,
                             parti_wealth_group,
+                            entry,
+                            exit
                         ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                                beta0,
                                                phi, Npre, Ninit, T_hat,

@@ -843,6 +843,8 @@ def simulate_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
         a mixture of 4 different types of agents in each cohort:
@@ -931,6 +933,8 @@ def simulate_cohorts_mix_type(
     Delta_tilde_parti = np.zeros(Nt,
                                  dtype=np.float16)  # wealth weighted estimation error of the stock market participants
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
+    entry = np.ones(Nt, dtype=np.float16)
+    exit = np.ones(Nt, dtype=np.float16)
     parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
     parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
     dR_t = 0
@@ -1046,6 +1050,9 @@ def simulate_cohorts_mix_type(
                       Vhat_vector * (1 - switch)  # reset V'
         tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
+        entry_t = np.sum(switch_N_to_P * cohort_type_size)
+        exit_t = np.sum(switch_P_to_N * cohort_type_size)
+
         invest_fc_st = invest_tracker * f_c_ist * dt
         invest_fw_st = invest_tracker * f_w_ist * dt
         popu_parti_t = np.sum(cohort_type_size * invest_tracker)
@@ -1095,6 +1102,8 @@ def simulate_cohorts_mix_type(
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
         parti[i] = popu_parti_t
+        entry[i] = entry_t
+        exit[i] = exit_t
 
         for j in range(4):
             parti_age_group[i, j] = np.ma.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
@@ -1121,6 +1130,8 @@ def simulate_cohorts_mix_type(
         invest_mat,
         parti_age_group,
         parti_wealth_group,
+        entry,
+        exit
     )
 
 

@@ -456,6 +456,8 @@ def simulate_mix_types(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the build_cohorts_mix_type function and the simulate_cohorts_mix_type function together
@@ -564,6 +566,8 @@ def simulate_mix_types(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
+        entry,
+        exit
     ) = simulate_cohorts_mix_type(
         biasvec,
         dZ,
@@ -619,6 +623,8 @@ def simulate_mix_types(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
+        entry,
+        exit
     )
 
 
