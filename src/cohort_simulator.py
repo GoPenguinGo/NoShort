@@ -1050,8 +1050,8 @@ def simulate_cohorts_mix_type(
                       Vhat_vector * (1 - switch)  # reset V'
         tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
-        entry_t = np.sum(switch_N_to_P * cohort_type_size)
-        exit_t = np.sum(switch_P_to_N * cohort_type_size)
+        # entry_t = np.sum(switch_N_to_P * cohort_type_size)
+        # exit_t = np.sum(switch_P_to_N * cohort_type_size)
 
         invest_fc_st = invest_tracker * f_c_ist * dt
         invest_fw_st = invest_tracker * f_w_ist * dt
@@ -1062,14 +1062,14 @@ def simulate_cohorts_mix_type(
         Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
         sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
         pi_st = (d_eta_st + theta_t) / sigma_S_t
-        popu_can_short_t = np.sum(cohort_type_size * can_short_tracker)
+        # popu_can_short_t = np.sum(cohort_type_size * can_short_tracker)
         Phi_can_short_t = np.sum(can_short_tracker * f_c_ist * dt)
         short = pi_st < 0
-        Phi_short_t = np.sum(short * f_c_ist * dt)
+        # Phi_short_t = np.sum(short * f_c_ist * dt)
         popu_short_t = np.sum(cohort_type_size * short)
 
         rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
-        rho_tilde_t = np.sum(rho_i * f_w_ist) / np.sum(f_w_ist)
+        # rho_tilde_t = np.sum(rho_i * f_w_ist) / np.sum(f_w_ist)
 
         r_t = (
                 nu - tax * beta0
@@ -1102,8 +1102,10 @@ def simulate_cohorts_mix_type(
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
         parti[i] = popu_parti_t
-        entry[i] = entry_t
-        exit[i] = exit_t
+
+        turnover = invest_tracker[0, 12:] - invest_mat[i - 12, :-12]
+        entry[i] = np.sum((turnover == 1) * cohort_type_size)
+        exit[i] = np.sum((turnover == -1) * cohort_type_size)
 
         for j in range(4):
             parti_age_group[i, j] = np.ma.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],

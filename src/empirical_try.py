@@ -5,19 +5,24 @@ from src.simulation import simulate_SI, simulate_mix_types
 from src.param import nu, mu_Y, sigma_Y, \
     dt, Ninit, Nc, tau, \
     cutoffs_age, scenarios, Ntype, alpha_i, \
-    dZ_build_matrix, dZ_SI_build_matrix, \
+    dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix,\
     cohort_type_size, cohort_size, rho_i
 from src.param_mix import Nconstraint, rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 
 ## run this on a grid of parameters & type densities & signal
-data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
+# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
+#                             index_col=0)
+# dZ_SI_raw = data_shocks.to_numpy()[:, 1]
+# Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
+# Nall = dZ_SI_raw.size
+# dZ_SI = dZ_SI_raw[-Nt:]
+# dZ = data_shocks.to_numpy()[:, 0][-Nt:]
+data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx', sheet_name='Sheet1',
                             index_col=0)
-dZ_SI_raw = data_shocks.to_numpy()[:, 1]
-Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
-Nall = dZ_SI_raw.size
-dZ_SI = dZ_SI_raw[-Nt:]
-dZ = data_shocks.to_numpy()[:, 0][-Nt:]
+dZ = data_shocks.to_numpy()[:, 0]
+Nt = dZ.size
+Nall = Nt
 
 plt.rcParams["font.family"] = 'serif'
 
@@ -45,8 +50,9 @@ T_hat_set = [1, 2, 5, 10
 #            ]
 # phi_set = [0.0, 0.4, 0.8
 #            ]
-phi_set = [0.0, 0.4]
-tax_set = [0.5]
+# phi_set = [0.0, 0.4]
+phi_set = [0.0]
+tax_set = [0.3, 0.5, 0.7]
 # tax_set = [0.2, 0.3,
 #            0.5, 0.6, 0.8
 #            ]
@@ -56,7 +62,7 @@ n_tax = len(tax_set)
 
 # # for testing:
 # Mpath = 160
-Mpath = 32
+Mpath = 16
 np.seterr(invalid='ignore')
 
 
@@ -69,19 +75,20 @@ def simulate_path(
     dZ_build = dZ_build_matrix[i]
     # dZ = dZ_matrix[i]
     dZ_SI_build = dZ_SI_build_matrix[i]
-    # dZ_SI = dZ_SI_matrix[i][:Nt]
+    dZ_SI = dZ_SI_matrix[i][:Nt]
 
     popu_parti_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
     # popu_parti_old = np.empty((n_scenarios_short, Nt), dtype=np.float32)
     # popu_parti_young = np.empty((n_scenarios_short, Nt), dtype=np.float32)
     # r_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
-    # dR_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
+    dR_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
     # mu_S_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # sigma_S_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # pd_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # average_belief_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
 
-    parti_df = pd.DataFrame(data_shocks.index.astype( str), columns=['yyyymm'])
+    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
+    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
 
     for a, T_hat in enumerate(T_hat_set):
         Npre = int(T_hat / dt)
@@ -95,6 +102,7 @@ def simulate_path(
                     col_name = str(T_hat) + '_' + str(phi) + '_' + str(tax) + '_' + str(g)
                     # if g <= 1:
                     if g < 0:
+                        entry = exit = 0
                         scenario = scenarios_short[g]
                         mode_trade = scenario[0]
                         mode_learn = scenario[1]
@@ -197,16 +205,23 @@ def simulate_path(
                     # popu_parti_old[g] = parti_age_group[:, 3]
                     # popu_parti_young[g] = parti_age_group[:, 0]
                     # average_belief_compare[g] = average_belief
-                    # dR_compare[g] = dR
+                    dR_compare[a, b, c, g] = dR
                     # mu_S_compare[g] = mu_S
                     # sigma_S_compare[g] = sigma_S
                     # pd_compare[g] = 1 / beta
                     parti_all = np.zeros(Nall)
+                    entry_all = np.zeros(Nall)
+                    exit_all = np.zeros(Nall)
+
                     parti_all[-Nt:] = parti
+                    entry_all[-Nt:] = entry
+                    exit_all[-Nt:] = exit
 
                     parti_df['parti' + col_name] = parti_all.astype(np.float32)
+                    parti_df['entry' + col_name] = entry_all.astype(np.float32)
+                    parti_df['exit' + col_name] = exit_all.astype(np.float32)
 
-    parti_df.to_stata('stata_dataset/' + str(i) + 'parti.dta')
+    parti_df.to_stata('stata_dataset/' + str(i) + 'fin_parti.dta')
 
     return (
         i,
@@ -214,7 +229,7 @@ def simulate_path(
         # popu_parti_old,
         # popu_parti_young,
         # r_compare,
-        # dR_compare,
+        dR_compare,
         # mu_S_compare,
         # sigma_S_compare,
         # pd_compare,
@@ -232,7 +247,8 @@ def main():
     # Retrieve results from parallel processes
     for result in results:
         i, \
-        popu_parti_result = result.result()
+        popu_parti_result, \
+        dR_result = result.result()
         # popu_parti_old_result, \
         # popu_parti_young_result, \
         # r_result, \
@@ -248,7 +264,7 @@ def main():
             # "parti rate old": popu_parti_old_result,
             # "parti rate young": popu_parti_young_result,
             # "interest rate": r_result,
-            # "dR": dR_result,
+            "dR": dR_result,
             # "expected return": mu_S_result,
             # "expected vola": sigma_S_result,
             # "price dividend ratio": pd_result,
@@ -337,6 +353,29 @@ def main():
     #     # plt.show()
     #     # plt.close()
 
+# results_df = np.load('parti rate.npz')
+# parti_rate = results_df["parti rate"]
+# dR = results_df["dR"]
+# phi = 0.4
+# dSI = phi * dZ + np.sqrt(1 - phi ** 2) * dZ_SI
+# shocks_list = [dZ, dZ_SI, dSI]
+# corr_matrix_dZ = np.zeros((Mpath, n_T_hat, n_tax, n_scenarios_short, 3))
+# corr_matrix_dZ_SI = np.zeros((Mpath, n_T_hat, n_tax, n_scenarios_short, 3))
+# corr_matrix_dSI = np.zeros((Mpath, n_T_hat, n_tax, n_scenarios_short, 3))
+# corr_list = [corr_matrix_dZ, corr_matrix_dZ_SI, corr_matrix_dSI]
+# for a in range(Mpath):
+#     for b in range(n_T_hat):
+#         for c in range(n_tax):
+#             for d in range(n_scenarios_short):
+#                 for e, shocks in enumerate(shocks_list):
+#                     corr_list[e][a, b, c, d, 1] = np.corrcoef(shocks[:-24], dR[a, b, 1, c, d, 24:])[0, 1]
+#                     corr_list[e][a, b, c, d, 2] = np.corrcoef(shocks[:-60], dR[a, b, 1, c, d, 60:])[0, 1]
+#                     corr_list[e][a, b, c, d, 0] = np.corrcoef(shocks[:-12], dR[a, b, 1, c, d, 12:])[0, 1]
+#                     # corr_matrix1[a, b, c, d] = corr1
+#
+# corr_dZ = np.average(corr_matrix_dZ, axis=0)
+# corr_dZ_SI = np.average(corr_matrix_dZ_SI, axis=0)
+# corr_dSI = np.average(corr_matrix_dSI, axis=0)
 
 if __name__ == '__main__':
     main()
