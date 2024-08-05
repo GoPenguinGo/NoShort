@@ -1106,8 +1106,9 @@ def simulate_cohorts_mix_type(
         parti[i] = popu_parti_t
 
         # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
+        turnover = np.copy(invest_tracker[0])
         turnover[:, :-12] = invest_tracker[0, :, :-12] - invest_mat[i - 12, :, 12:]
-        turnover[:, -12:] = invest_tracker[0, :, -12:]
+
         entry[i] = np.sum((turnover > 0) * cohort_type_size_parti)
         exit[i] = np.sum((turnover < 0) * cohort_type_size_parti)
 
