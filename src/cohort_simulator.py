@@ -946,7 +946,7 @@ def simulate_cohorts_mix_type(
     append_init = np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
-    cohort_type_size_parti = np.sum(cohort_type_size[:, :, :-12], axis=0)
+    cohort_type_size_parti = np.sum(cohort_type_size, axis=0)
 
     if need_f == 'True':
         f_c = np.zeros((Nt, Ntype, Nconstraint, Nc), dtype=np.float16)  # evolution of cohort consumption share
@@ -1106,7 +1106,8 @@ def simulate_cohorts_mix_type(
         parti[i] = popu_parti_t
 
         # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
-        turnover = invest_tracker[0, :, :-12] - invest_mat[i - 12, :, 12:]
+        turnover[:, :-12] = invest_tracker[0, :, :-12] - invest_mat[i - 12, :, 12:]
+        turnover[:, -12:] = invest_tracker[0, :, -12:]
         entry[i] = np.sum((turnover > 0) * cohort_type_size_parti)
         exit[i] = np.sum((turnover < 0) * cohort_type_size_parti)
 
