@@ -10,19 +10,19 @@ from src.param import nu, mu_Y, sigma_Y, \
 from src.param_mix import Nconstraint, rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 
-## run this on a grid of parameters & type densities & signal
-# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
-#                             index_col=0)
-# dZ_SI_raw = data_shocks.to_numpy()[:, 1]
-# Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
-# Nall = dZ_SI_raw.size
-# dZ_SI = dZ_SI_raw[-Nt:]
-# dZ = data_shocks.to_numpy()[:, 0][-Nt:]
-data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx', sheet_name='Sheet1',
+# run this on a grid of parameters & type densities & signal
+data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
                             index_col=0)
-dZ = data_shocks.to_numpy()[:, 0]
-Nt = dZ.size
-Nall = Nt
+dZ_SI_raw = data_shocks.to_numpy()[:, 1]
+Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
+Nall = dZ_SI_raw.size
+dZ_SI = dZ_SI_raw[-Nt:]
+dZ = data_shocks.to_numpy()[:, 0][-Nt:]
+# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx', sheet_name='Sheet1',
+#                             index_col=0)
+# dZ = data_shocks.to_numpy()[:, 0]
+# Nt = dZ.size
+# Nall = Nt
 
 plt.rcParams["font.family"] = 'serif'
 
@@ -50,8 +50,8 @@ T_hat_set = [1, 2, 5, 10
 #            ]
 # phi_set = [0.0, 0.4, 0.8
 #            ]
-# phi_set = [0.0, 0.4]
-phi_set = [0.0]
+phi_set = [0.0, 0.4]
+# phi_set = [0.0]
 tax_set = [0.3, 0.5, 0.7]
 # tax_set = [0.2, 0.3,
 #            0.5, 0.6, 0.8
@@ -62,7 +62,7 @@ n_tax = len(tax_set)
 
 # # for testing:
 # Mpath = 160
-Mpath = 16
+Mpath = 32
 np.seterr(invalid='ignore')
 
 
@@ -75,7 +75,7 @@ def simulate_path(
     dZ_build = dZ_build_matrix[i]
     # dZ = dZ_matrix[i]
     dZ_SI_build = dZ_SI_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i][:Nt]
+    # dZ_SI = dZ_SI_matrix[i][:Nt]
 
     popu_parti_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
     # popu_parti_old = np.empty((n_scenarios_short, Nt), dtype=np.float32)
@@ -87,8 +87,8 @@ def simulate_path(
     # pd_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # average_belief_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
 
-    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
-    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
+    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
+    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
 
     for a, T_hat in enumerate(T_hat_set):
         Npre = int(T_hat / dt)
@@ -209,20 +209,37 @@ def simulate_path(
                     # mu_S_compare[g] = mu_S
                     # sigma_S_compare[g] = sigma_S
                     # pd_compare[g] = 1 / beta
-                    parti_all = np.zeros(Nall)
-                    entry_all = np.zeros(Nall)
-                    exit_all = np.zeros(Nall)
 
-                    parti_all[-Nt:] = parti
-                    entry_all[-Nt:] = entry
-                    exit_all[-Nt:] = exit
+                    # parti_all = np.zeros(Nall)
+                    # entry_all = np.zeros(Nall)
+                    # exit_all = np.zeros(Nall)
 
-                    parti_df['parti' + col_name] = parti_all.astype(np.float32)
-                    parti_df['entry' + col_name] = entry_all.astype(np.float32)
-                    parti_df['exit' + col_name] = exit_all.astype(np.float32)
+                    # parti_all[-Nt:] = parti
+                    # entry_all[-Nt:] = entry
+                    # exit_all[-Nt:] = exit
 
-    parti_df.to_stata('stata_dataset/' + str(i) + 'fin_parti.dta')
+                    # old vs. young: experience gap, belief gap, and participation rate gap
+                    cohort_belief = np.average(Delta, axis=1, weights=alpha_constraint[0])
+                    average_belief_old = np.average(cohort_belief[:, :cutoffs_age[3]], axis=1,
+                                                    weights=cohort_size[0, :cutoffs_age[3]])
+                    average_belief_young = np.average(cohort_belief[:, cutoffs_age[1]:], axis=1,
+                                                      weights=cohort_size[0, cutoffs_age[1]:])
+                    parti_old = parti_age_group[:, 3]
+                    parti_young = parti_age_group[:, 0]
+                    # parti_age_compare = np.zeros((2, N_sample))
 
+                    parti_df['parti' + col_name] = parti.astype(np.float32)
+                    parti_df['belief_old' + col_name] = average_belief_old.astype(np.float32)
+                    parti_df['belief_young' + col_name] = average_belief_young.astype(np.float32)
+                    parti_df['parti_old' + col_name] = parti_old.astype(np.float32)
+                    parti_df['parti_young' + col_name] = parti_young.astype(np.float32)
+
+                    # parti_df['parti' + col_name] = parti_all.astype(np.float32)
+                    # parti_df['entry' + col_name] = entry_all.astype(np.float32)
+                    # parti_df['exit' + col_name] = exit_all.astype(np.float32)
+
+    # parti_df.to_stata('stata_dataset/' + str(i) + 'fin_parti.dta')
+    parti_df.to_stata('stata_dataset/' + str(i) + '_parti.dta')
     return (
         i,
         popu_parti_compare,

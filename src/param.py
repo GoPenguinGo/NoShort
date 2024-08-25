@@ -141,5 +141,3 @@ for mode_trade in modes_trade:
     else:
         for mode_learn in modes_learn:
             scenarios.append([mode_trade, mode_learn])
-
-
