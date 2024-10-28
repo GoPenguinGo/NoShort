@@ -3,26 +3,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
 from src.param import nu, mu_Y, sigma_Y, \
-    dt, Ninit, Nc, tau, \
+    dt, Ninit, Nc, Nt, tau, \
     cutoffs_age, scenarios, Ntype, alpha_i, \
-    dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix,\
+    dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
     cohort_type_size, cohort_size, rho_i
 from src.param_mix import Nconstraint, rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 
 # run this on a grid of parameters & type densities & signal
-data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
-                            index_col=0)
-dZ_SI_raw = data_shocks.to_numpy()[:, 1]
-Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
-Nall = dZ_SI_raw.size
-dZ_SI = dZ_SI_raw[-Nt:]
-dZ = data_shocks.to_numpy()[:, 0][-Nt:]
-# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx', sheet_name='Sheet1',
+# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/realized_shocks.xlsx', sheet_name='Sheet1',
 #                             index_col=0)
-# dZ = data_shocks.to_numpy()[:, 0]
-# Nt = dZ.size
-# Nall = Nt
+# dZ_SI_raw = data_shocks.to_numpy()[:, 1]
+# Nt = dZ_SI_raw.size - np.count_nonzero(np.isnan(dZ_SI_raw))
+# Nall = dZ_SI_raw.size
+# dZ_SI = dZ_SI_raw[-Nt:]
+# dZ = data_shocks.to_numpy()[:, 0][-Nt:]
+data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/germany_realized_shocks.xlsx',
+                            sheet_name='Sheet1',
+                            index_col=0)
+# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx',
+#                             sheet_name='Sheet1',
+#                             index_col=0)
+# data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/norway_realized_shocks.xlsx', sheet_name='Sheet1',
+#                             index_col=0)
+dZ_actual = data_shocks.to_numpy()[:, 0]
+# Nt = dZ_actual.size
+Nt_data = dZ_actual.size
 
 plt.rcParams["font.family"] = 'serif'
 
@@ -31,11 +37,11 @@ density_set = [
     # (0.0, 0.0, 0.0, 1.0),
     # (0.0, 0.0, 1.0, 0.0),
     (0.25, 0.25, 0.25, 0.25),
-    (0.25, 0.25, 0.0, 0.5),
-    (0.25, 0.25, 0.5, 0.0),
+    # (0.25, 0.25, 0.0, 0.5),
+    # (0.25, 0.25, 0.5, 0.0),
     # (0.5, 0.25, 0.0, 0.25),
     # (0.1, 0.1, 0.0, 0.8),
-    (0.1, 0.1, 0.4, 0.4),
+    # (0.1, 0.1, 0.4, 0.4),
 ]
 n_scenarios_short = len(density_set)
 scenarios_short = scenarios[1:3]
@@ -50,8 +56,8 @@ T_hat_set = [1, 2, 5, 10
 #            ]
 # phi_set = [0.0, 0.4, 0.8
 #            ]
-phi_set = [0.0, 0.4]
-# phi_set = [0.0]
+# phi_set = [0.0, 0.4]
+phi_set = [0.0]
 tax_set = [0.3, 0.5, 0.7]
 # tax_set = [0.2, 0.3,
 #            0.5, 0.6, 0.8
@@ -73,9 +79,10 @@ def simulate_path(
     print(i)
     # shocks
     dZ_build = dZ_build_matrix[i]
-    # dZ = dZ_matrix[i]
+    dZ = dZ_matrix[i]
+    dZ[-Nt_data:] = dZ_actual
     dZ_SI_build = dZ_SI_build_matrix[i]
-    # dZ_SI = dZ_SI_matrix[i][:Nt]
+    dZ_SI = dZ_SI_matrix[i]
 
     popu_parti_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
     # popu_parti_old = np.empty((n_scenarios_short, Nt), dtype=np.float32)
@@ -86,11 +93,14 @@ def simulate_path(
     # sigma_S_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # pd_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # average_belief_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
+    popu_reenter_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, 5, Nt), dtype=np.float32)
+    popu_exit_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
 
-    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
-    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
+    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
+    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
 
     for a, T_hat in enumerate(T_hat_set):
+        print(a)
         Npre = int(T_hat / dt)
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
         for b, phi in enumerate(phi_set):
@@ -219,27 +229,47 @@ def simulate_path(
                     # exit_all[-Nt:] = exit
 
                     # old vs. young: experience gap, belief gap, and participation rate gap
-                    cohort_belief = np.average(Delta, axis=1, weights=alpha_constraint[0])
-                    average_belief_old = np.average(cohort_belief[:, :cutoffs_age[3]], axis=1,
-                                                    weights=cohort_size[0, :cutoffs_age[3]])
-                    average_belief_young = np.average(cohort_belief[:, cutoffs_age[1]:], axis=1,
-                                                      weights=cohort_size[0, cutoffs_age[1]:])
+                    # cohort_belief = np.average(Delta, axis=1, weights=alpha_constraint[0])
+                    # average_belief_old = np.average(cohort_belief[:, :cutoffs_age[3]], axis=1,
+                    #                                 weights=cohort_size[0, :cutoffs_age[3]])
+                    # average_belief_young = np.average(cohort_belief[:, cutoffs_age[1]:], axis=1,
+                    #                                   weights=cohort_size[0, cutoffs_age[1]:])
                     parti_old = parti_age_group[:, 3]
                     parti_young = parti_age_group[:, 0]
                     # parti_age_compare = np.zeros((2, N_sample))
 
-                    parti_df['parti' + col_name] = parti.astype(np.float32)
-                    parti_df['belief_old' + col_name] = average_belief_old.astype(np.float32)
-                    parti_df['belief_young' + col_name] = average_belief_young.astype(np.float32)
-                    parti_df['parti_old' + col_name] = parti_old.astype(np.float32)
-                    parti_df['parti_young' + col_name] = parti_young.astype(np.float32)
+                    # Calculate the fraction of investors re-entering stock market
+                    # follow the exiting cohorts for 5 years and calculate the fraction of them re-entering the stock market
+                    # for n in range(12, Nt - 60):
+                    #     following_cohorts = (invest_tracker[n, 3, :-12] - invest_tracker[n - 12, 3, 12:] < 0)[60:]
+                    #     disappointed_cohorts = (invest_tracker[n, 2, :-12] - invest_tracker[n - 12, 2, 12:] < 0)[60:]
+                    #     parti_bell_reenter = np.zeros((5, Nc - 60 - 12))
+                    #     cohorts_in_cumu = np.zeros((Nc - 60 - 12))
+                    #     for nn in range(5):
+                    #         nn_index = int((nn + 1) * 12)
+                    #         cohorts_in = invest_tracker[n + nn_index, 3, 60 - nn_index:-nn_index - 12]
+                    #         cohorts_in_cumu = (cohorts_in_cumu + cohorts_in > 0)
+                    #         parti_bell_reenter[nn] = following_cohorts * cohorts_in_cumu
+                    #     popu_reenter = np.sum(parti_bell_reenter * cohort_size[:, 60 + 12:], axis=1) * density_set[g][3]
+                    #     # popu_exit = (np.sum(following_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][3] +
+                    #     #              np.sum(disappointed_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][2])
+                    #     popu_reenter_compare[a, b, c, g, :, n] = popu_reenter
+                    # popu_exit_compare[a, b, c, g] = exit
+
+                    parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                    # parti_df['belief_old' + col_name] = average_belief_old[-Nt_data:].astype(np.float32)
+                    # parti_df['belief_young' + col_name] = average_belief_young[-Nt_data:].astype(np.float32)
+                    parti_df['parti_old' + col_name] = parti_old[-Nt_data:].astype(np.float32)
+                    parti_df['parti_young' + col_name] = parti_young[-Nt_data:].astype(np.float32)
 
                     # parti_df['parti' + col_name] = parti_all.astype(np.float32)
-                    # parti_df['entry' + col_name] = entry_all.astype(np.float32)
-                    # parti_df['exit' + col_name] = exit_all.astype(np.float32)
+                    parti_df['entry' + col_name] = entry[-Nt_data:].astype(np.float32)
+                    parti_df['exit' + col_name] = exit[-Nt_data:].astype(np.float32)
 
+    parti_df.to_stata('stata_dataset/' + str(i) + 'deu_parti.dta')
     # parti_df.to_stata('stata_dataset/' + str(i) + 'fin_parti.dta')
-    parti_df.to_stata('stata_dataset/' + str(i) + '_parti.dta')
+    # parti_df.to_stata('stata_dataset/' + str(i) + '_parti.dta')
+    # parti_df.to_stata('stata_dataset/' + str(i) + 'nor_parti.dta')
     return (
         i,
         popu_parti_compare,
@@ -251,12 +281,14 @@ def simulate_path(
         # sigma_S_compare,
         # pd_compare,
         # average_belief_compare,
+        # popu_reenter_compare,
+        # popu_exit_compare,
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=32) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=16) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
@@ -264,8 +296,10 @@ def main():
     # Retrieve results from parallel processes
     for result in results:
         i, \
-        popu_parti_result, \
-        dR_result = result.result()
+            popu_parti_result, \
+            dR_result = result.result()
+            # popu_reentry_result, \
+            # popu_exit_result
         # popu_parti_old_result, \
         # popu_parti_young_result, \
         # r_result, \
@@ -286,6 +320,8 @@ def main():
             # "expected vola": sigma_S_result,
             # "price dividend ratio": pd_result,
             # "average belief": average_belief_result,
+            # "popu_reentry": popu_reentry_result,
+            # "popu_exit": popu_exit_result,
         }
         results_list.append(data)
 
@@ -294,7 +330,22 @@ def main():
 
     # Save the DataFrame to a .npz file
     results_dict = results_df.to_dict(orient='list')
-    np.savez("parti rate.npz", **results_dict)
+    np.savez("parti_rate_deu.npz", **results_dict)
+
+    #### Finland: how many re-enter the stock market in a given year
+    results_df = np.load('parti_rate_fin.npz')
+    data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx',
+                                sheet_name='Sheet1',
+                                index_col=0)
+    dZ_actual = data_shocks.to_numpy()[:, 0]
+    Nt_data = dZ_actual.size
+    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
+    reentry_mat = np.average(results_df['popu_reentry'][:, 1, 0, 0, 0], axis=0)
+    exit_mat = np.average(results_df['popu_exit'][:, 1, 0, 0, 0], axis=0)
+    parti_df['exit'] = exit_mat[-Nt_data:].astype(np.float32)
+    for j in range(5):
+        parti_df['reentry'+str(j)] = reentry_mat[j, -Nt_data:].astype(np.float32)
+    parti_df.to_stata('stata_dataset/fin_reentry.dta')
 
     # # plot:
     # results_df = np.load('parti rate real shocks.npz')
@@ -369,6 +420,7 @@ def main():
     #     plt.savefig('1quartiles_' + 'learn' + str(T_hat) + '_tax' + str(tax) + '_scatter.png', dpi=200)
     #     # plt.show()
     #     # plt.close()
+
 
 # results_df = np.load('parti rate.npz')
 # parti_rate = results_df["parti rate"]

@@ -8,7 +8,6 @@ from src.param import nu, mu_Y, sigma_Y, phi, \
     Ntype, alpha_i, cohort_type_size
 from src.param_mix import rho_i_mix, beta_i_mix
 from src.param_mix import Nconstraint, cohort_type_size_mix
-from src.param import Mpath
 from src.param import T_hat, Npre, Vhat
 from src.param import tax, beta_i, beta0, rho_i, rho_cohort_type
 from concurrent.futures import ProcessPoolExecutor
