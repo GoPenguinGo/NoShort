@@ -184,6 +184,25 @@ def simulate_path(
             axis=0)
         entry_cumu_compare[g] = entry_cumu
 
+        # Calculate the fraction of investors re-entering stock market
+        # follow the exiting cohorts for 5 years and calculate the fraction of them re-entering the stock market
+        # compare to Samuli's paper
+        for n in range(12, Nt - 60):
+            following_cohorts = (invest_tracker[n, 3, :-12] - invest_tracker[n - 12, 3, 12:] < 0)[60:]
+            disappointed_cohorts = (invest_tracker[n, 2, :-12] - invest_tracker[n - 12, 2, 12:] < 0)[60:]
+            parti_bell_reenter = np.zeros((5, Nc - 60 - 12))
+            cohorts_in_cumu = np.zeros((Nc - 60 - 12))
+            for nn in range(5):
+                nn_index = int((nn + 1) * 12)
+                cohorts_in = invest_tracker[n + nn_index, 3, 60 - nn_index:-nn_index - 12]
+                cohorts_in_cumu = (cohorts_in_cumu + cohorts_in > 0)
+                parti_bell_reenter[nn] = following_cohorts * cohorts_in_cumu
+            popu_reenter = np.sum(parti_bell_reenter * cohort_size[:, 60 + 12:], axis=1) * density_set[g][3]
+            # popu_exit = (np.sum(following_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][3] +
+            #              np.sum(disappointed_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][2])
+            popu_reenter_compare[a, b, c, g, :, n] = popu_reenter
+        popu_exit_compare[a, b, c, g] = exit
+
 
         # calculate the length of bell:  only look at the re-entry type
         for n, entry_n in enumerate(sample_bell):
@@ -332,6 +351,25 @@ def main():
     results_dict = results_df.to_dict(orient='list')
     np.savez("parti_rate_regressions.npz", **results_dict)
     # np.savez("parti_Ch.npz", **results_dict)
+
+    # Save the DataFrame to a .npz file
+    results_dict = results_df.to_dict(orient='list')
+    np.savez("parti_rate_deu.npz", **results_dict)
+
+    #### Finland: how many re-enter the stock market in a given year
+    results_df = np.load('parti_rate_fin.npz')
+    data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx',
+                                sheet_name='Sheet1',
+                                index_col=0)
+    dZ_actual = data_shocks.to_numpy()[:, 0]
+    Nt_data = dZ_actual.size
+    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
+    reentry_mat = np.average(results_df['popu_reentry'][:, 1, 0, 0, 0], axis=0)
+    exit_mat = np.average(results_df['popu_exit'][:, 1, 0, 0, 0], axis=0)
+    parti_df['exit'] = exit_mat[-Nt_data:].astype(np.float32)
+    for j in range(5):
+        parti_df['reentry' + str(j)] = reentry_mat[j, -Nt_data:].astype(np.float32)
+    parti_df.to_stata('stata_dataset/fin_reentry.dta')
 
     # # Analysis of the bell length: Distribution of participation bells, ignoring 0
     # results_df = np.load('parti_rate_regressions.npz')
