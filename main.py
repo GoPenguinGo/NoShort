@@ -11,7 +11,7 @@ from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
 from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
 import statsmodels.api as sm
-# import tabulate as tab
+import tabulate as tab
 from scipy.interpolate import make_interp_spline
 # import seaborn as sns
 from matplotlib import cm  # for a scatter plot

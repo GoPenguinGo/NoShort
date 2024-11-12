@@ -55,6 +55,8 @@ def simulate_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the cohort_builder function and the cohort_simulator function together
@@ -161,6 +163,8 @@ def simulate_SI(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
+        entry_mat,
+        exit_mat
     ) = simulate_cohorts_SI(
         biasvec,
         dZ,
@@ -217,6 +221,8 @@ def simulate_SI(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
+        entry_mat,
+        exit_mat
     )
 
 

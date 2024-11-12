@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
 from src.param import nu, mu_Y, sigma_Y, phi, \
-    dt, Ninit, Nt, Nc, tau, \
+    dt, Ninit, Nt, Nc, tau, tax, Vhat, T_hat, beta0, Npre, \
     cutoffs_age, scenarios, dZ_Y_cases, dZ_SI_cases, dZ_build_case, \
     dZ_SI_build_case, t, scenario_labels, colors_short, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
@@ -13,49 +13,37 @@ import pandas as pd
 import statsmodels.api as sm
 # import tabulate
 
-## scatter plots for expected returns, vola, excess returns and r as function of participation
-## maybe no linear relation between parti and vola, but parti and r
 
 plt.rcParams["font.family"] = 'serif'
-
-T_hat = 20  # Pre-trading period
-Npre = int(T_hat / dt)
-Vhat = (sigma_Y ** 2) / T_hat  # prior variance
-
 # (complete, excluded, disappointment, reentry)
 density_set = [
     (0.0, 0.0, 0.0, 1.0),
-    # (0.25, 0.25, 0.25, 0.25),
+    (0.25, 0.25, 0.25, 0.25),
     # (0.25, 0.25, 0.0, 0.5),
     # (0.25, 0.25, 0.5, 0.0),
     # (0.5, 0.25, 0.0, 0.25),
     # (0.1, 0.1, 0.0, 0.8),
     # (0.1, 0.1, 0.4, 0.4),
 ]
-n_scenarios_short = len(density_set)
-# scenarios_short = scenarios[1:3]
-tax = 0.3    # marginal rate of consumption tax
-# tax = 0.5
-beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-beta0 = np.sum(alpha_i * beta_i).astype(float)
+n_scenarios = len(density_set)
+phi_set = [0.0, 0.4, 0.8]
+n_phi = len(phi_set)
 
-rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
-beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
-
-Mpath = 1000
+# # for testing:
+Mpath = 10
+# Mpath = 1000
 # print('Generating data for the graphs:')
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
-
 window_bell = 240
 sample_bell = np.arange(600, Nt - 600, window_bell)
 N_sample_bell = len(sample_bell)
-# N_data_point = int(Nt / window - 1)
-
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
-# # for testing:
-# Mpath = 10
+age_cut = 100
+Nc_cut = int(age_cut / dt)
+age_sample = np.arange(0, Nc_cut, 12)
+cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 np.seterr(invalid='ignore')
 
 
@@ -70,197 +58,375 @@ def simulate_path(
     dZ_SI_build = dZ_SI_build_matrix[i]
     dZ_SI = dZ_SI_matrix[i]
 
-    # popu_parti_compare = np.empty((n_scenarios_short, N_data_point), dtype=np.float32)
-    # popu_parti_old = np.empty((n_scenarios_short, N_data_point), dtype=np.float32)
-    # popu_parti_young = np.empty((n_scenarios_short, N_data_point), dtype=np.float32)
-    # r_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # dR_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # mu_S_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # sigma_S_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # vola_S_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # pd_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    # average_belief_compare = np.zeros((n_scenarios_short, N_data_point), dtype=np.float32)
-    parti_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    parti_age_group_compare = np.zeros((n_scenarios_short, 5, N_sample), dtype=np.float32)
-    annual_return_compare = np.zeros((n_scenarios_short, 6, N_sample), dtype=np.float32)
-    pd_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    future_exc_R_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    entry_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    exit_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    # experience_age_compare = np.zeros((n_scenarios_short, 2, N_sample), dtype=np.float32)
-    # average_belief_compare = np.zeros((n_scenarios_short, 2, N_sample), dtype=np.float32)
-    # parti_age_compare = np.zeros((n_scenarios_short, 2, N_sample), dtype=np.float32)
-    bell_length_compare = np.zeros((n_scenarios_short, N_sample_bell, Nc - window_bell), dtype=int)
-    bell_length_reentry_compare = np.zeros((n_scenarios_short, N_sample_bell, Nc - window_bell - 12), dtype=int)
-    # exit_action_compare = np.zeros((n_scenarios_short, N_sample), dtype=np.float32)
-    entry_cumu_compare = np.zeros((n_scenarios_short, 100), dtype=np.float32)
+    # sample: in time-series
+    parti_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    parti_age_group_compare = np.zeros((n_scenarios, n_phi, 4, N_sample), dtype=np.float32)
+    parti_wealth_group_compare = np.zeros((n_scenarios, n_phi, N_sample, 4), dtype=np.float32)
+    annual_return_compare = np.zeros((n_scenarios, n_phi, 6, N_sample), dtype=np.float32)
+    pd_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    future_exc_R_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    entry_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    exit_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    bell_length_compare = np.zeros((n_scenarios, n_phi, N_sample_bell, 4, Nc - window_bell), dtype=int)
+    bell_length_reentry_compare = np.zeros((n_scenarios, n_phi, N_sample_bell, 4, Nc - window_bell - 12), dtype=int)
+    # age_sample: in cross-section
+    entry_cumu_compare = np.zeros((n_scenarios, n_phi, age_cut), dtype=np.float32)
+    Delta_age_compare = np.zeros((n_scenarios, n_phi, 4, len(age_sample)), dtype=np.float32)
+    parti_age_compare = np.zeros((n_scenarios, n_phi, 4, len(age_sample)), dtype=np.float32)
+    mean_vola_compare = np.zeros((n_scenarios, n_phi, 5, 2), dtype=np.float32)
+    coef_age_compare = np.zeros((n_scenarios, n_phi, len(cohort_sample), 4, 2), dtype=np.float32)
+    # average
+    correlation_compare = np.zeros((n_scenarios, n_phi, 6), dtype=np.float32)
 
     for g, density in enumerate(density_set):
-        alpha_constraint = np.ones(
-            (1, Nconstraint)) * density_set[g]
-        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-        cohort_type_size_mix = cohort_size * alpha_i_mix
-        # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
-        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+        if g == 0:
+            for h, phi in enumerate(phi_set):
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    invest_tracker,
+                    parti_age_group,
+                    parti_wealth_group,
+                    entry_mat,
+                    exit_mat,
+                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                       beta0,
+                                       phi, Npre, Ninit, T_hat,
+                                       dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                       cutoffs_age, Ntype,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                       rho_cohort_type_mix,
+                                       cohort_type_size_mix,
+                                       need_f='True',
+                                       need_Delta='True',
+                                       need_pi='True',
+                                       )
 
-        (
-            r,
-            theta,
-            f_c,
-            Delta,
-            pi,
-            parti,
-            Phi_bar_parti,
-            Phi_tilde_parti,
-            Delta_bar_parti,
-            Delta_tilde_parti,
-            dR,
-            mu_S,
-            sigma_S,
-            beta,
-            invest_tracker,
-            parti_age_group,
-            parti_wealth_group,
-            entry,
-            exit,
-        ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                               beta0,
-                               phi, Npre, Ninit, T_hat,
-                               dZ_build, dZ, dZ_SI_build, dZ_SI,
-                               cutoffs_age, Ntype,
-                               Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                               rho_cohort_type_mix,
-                               cohort_type_size_mix,
-                               need_f='True',
-                               need_Delta='True',
-                               need_pi='True',
-                               )
+                # save data relevant for regressions
+                # non-overlapping data, take a sample every 5 years
+                past_annual_return = np.zeros((3, Nt))
+                future_annual_return = np.zeros((3, Nt))
+                for n, gap in enumerate([12, 24, 36]):
+                    past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+                    future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+                annual_return_compare[g, h, :3] = past_annual_return[:, sample]
+                annual_return_compare[g, h, 3:] = future_annual_return[:, sample]
+                pd_compare[g, h] = np.copy(1 / beta)[sample]
+                parti_compare[g, h] = parti[sample]
+                future_exc_R_compare[g, h] = (future_annual_return[0] - r)[sample]
+                entry_compare[g, h] = entry_mat[sample]
+                exit_compare[g, h] = exit_mat[sample]
+                age_parti = np.zeros((4, Nt))
+                for n in range(len(age_cutoffs_SCF) - 1):
+                    age_parti[n] = np.average(
+                        np.average(invest_tracker[:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                   weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
+                        weights=density,
+                        axis=1)
+                parti_age_group_compare[g, h] = age_parti[:, sample]
+                parti_wealth_group_compare[g, h] = parti_wealth_group[sample]
 
-        # save data relevant for regressions
-        # non-overlapping data, take a sample every 5 years
-        average_age_parti = np.zeros(Nt)
-        for n in range(Nt):
-            average_age_parti[n] = np.average(tau[0], weights=cohort_type_size[0] * invest_tracker[n, 3])
+                cohort_actions = np.zeros((1200, Nc - 1200, 4), dtype=int)
+                for n in range(1, 1200 + 1):
+                    cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, :, -n]
 
-        past_annual_return = np.zeros((3, Nt))
-        future_annual_return = np.zeros((3, Nt))
-        for n, gap in enumerate([12, 24, 36]):
-            past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-            past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-            future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-            future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
-        annual_return_compare[g, :3] = past_annual_return[:, sample]
-        annual_return_compare[g, 3:] = future_annual_return[:, sample]
-        pd_compare[g] = np.copy(1 / beta)[sample]
-        parti_compare[g] = parti[sample]
-        future_exc_R_compare[g] = (future_annual_return[0] - r)[sample]
-        entry_compare[g] = entry[sample]
-        exit_compare[g] = exit[sample]
-        age_parti = np.zeros((5, Nt))
-        for n in range(len(age_cutoffs_SCF) - 1):
-            age_parti[n] = np.average(
-                np.average(invest_tracker[:, :, age_cutoffs_SCF[n+1]:age_cutoffs_SCF[n]], weights=cohort_size[0, age_cutoffs_SCF[n+1]:age_cutoffs_SCF[n]], axis=2),
-            weights=density,
-            axis=1)
-        parti_age_group_compare[g] = age_parti[:, sample]
+                annual_sample = np.arange(0, 1200, 12)
+                cohort_invest_annual = np.zeros((101, Nc - 1200, 4), dtype=int)
+                cohort_invest_annual[1:] = cohort_actions[annual_sample]
+                cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
+                entry_cumu = np.average(np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0), weights=density,
+                                        axis=1)
+                entry_cumu_compare[g, h] = entry_cumu
 
-        # exit_action = (invest_tracker[sample, 3, :-12] - invest_tracker[sample-12, 3, 12:]) < 0
-        # exit_action_compare[g] = (np.sum(exit_action, axis=1)) / (Nc - 12)
+                # # Calculate the fraction of investors re-entering stock market
+                # # follow the exiting cohorts for 5 years and calculate the fraction of them re-entering the stock market
+                # # compare to Samuli's paper
+                # for n in range(12, Nt - 60):
+                #     following_cohorts = (invest_tracker[n, 3, :-12] - invest_tracker[n - 12, 3, 12:] < 0)[60:]
+                #     disappointed_cohorts = (invest_tracker[n, 2, :-12] - invest_tracker[n - 12, 2, 12:] < 0)[60:]
+                #     parti_bell_reenter = np.zeros((5, Nc - 60 - 12))
+                #     cohorts_in_cumu = np.zeros((Nc - 60 - 12))
+                #     for nn in range(5):
+                #         nn_index = int((nn + 1) * 12)
+                #         cohorts_in = invest_tracker[n + nn_index, 3, 60 - nn_index:-nn_index - 12]
+                #         cohorts_in_cumu = (cohorts_in_cumu + cohorts_in > 0)
+                #         parti_bell_reenter[nn] = following_cohorts * cohorts_in_cumu
+                #     popu_reenter = np.sum(parti_bell_reenter * cohort_size[:, 60 + 12:], axis=1) * density_set[g][3]
+                #     # popu_exit = (np.sum(following_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][3] +
+                #     #              np.sum(disappointed_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][2])
+                #     popu_reenter_compare[a, b, c, g, :, n] = popu_reenter
+                # popu_exit_compare[a, b, c, g] = exit_mat
 
-        invest_tracker_reentry = invest_tracker[:, 3]
+                # calculate the length of bell:  only look at the re-entry type
+                for n, entry_n in enumerate(sample_bell):  # 20 year non-overlapping windows
+                    following_cohorts = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :, 12:] > 0)[:,
+                                        window_bell:]
+                    following_cohorts = np.append(following_cohorts, invest_tracker[entry_n, :, -12:], axis=1)
 
-        cohort_actions = np.zeros((1200, Nc - 1200), dtype=int)
-        for n in range(1, 1200 + 1):
-            cohort_actions[n - 1] = invest_tracker_reentry[n - 1:Nc - 1200 + n - 1, -n]
+                    following_cohorts_exit = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :,
+                                                                                 12:] < 0)[
+                                             :, window_bell:]  # ignoring the cohorts born during the "year"
 
-        annual_sample = np.arange(0, 1200, 12)
-        cohort_invest_annual = np.zeros((101, Nc - 1200), dtype=int)
-        cohort_invest_annual[1:] = cohort_actions[annual_sample]
-        cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
-        entry_cumu = np.cumsum(
-            np.average(cohort_entry_annual, axis=1),
-            axis=0)
-        entry_cumu_compare[g] = entry_cumu
+                    parti_bell = np.zeros((window_bell, 4, Nc - window_bell))
+                    parti_bell[0] = following_cohorts
+                    exit_bell = np.zeros(
+                        (4, Nc - window_bell))  # following the entering cohorts until they exit the first time
 
-        # Calculate the fraction of investors re-entering stock market
-        # follow the exiting cohorts for 5 years and calculate the fraction of them re-entering the stock market
-        # compare to Samuli's paper
-        for n in range(12, Nt - 60):
-            following_cohorts = (invest_tracker[n, 3, :-12] - invest_tracker[n - 12, 3, 12:] < 0)[60:]
-            disappointed_cohorts = (invest_tracker[n, 2, :-12] - invest_tracker[n - 12, 2, 12:] < 0)[60:]
-            parti_bell_reenter = np.zeros((5, Nc - 60 - 12))
-            cohorts_in_cumu = np.zeros((Nc - 60 - 12))
-            for nn in range(5):
-                nn_index = int((nn + 1) * 12)
-                cohorts_in = invest_tracker[n + nn_index, 3, 60 - nn_index:-nn_index - 12]
-                cohorts_in_cumu = (cohorts_in_cumu + cohorts_in > 0)
-                parti_bell_reenter[nn] = following_cohorts * cohorts_in_cumu
-            popu_reenter = np.sum(parti_bell_reenter * cohort_size[:, 60 + 12:], axis=1) * density_set[g][3]
-            # popu_exit = (np.sum(following_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][3] +
-            #              np.sum(disappointed_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][2])
-            popu_reenter_compare[a, b, c, g, :, n] = popu_reenter
-        popu_exit_compare[a, b, c, g] = exit
+                    parti_bell_exit = np.zeros((window_bell, 4, Nc - window_bell - 12))
+                    parti_bell_exit[0] = following_cohorts_exit
+                    reentry_bell = np.zeros((4, Nc - window_bell - 12))
 
+                    for nn in range(1, window_bell):
+                        cohorts_in = invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                        cohorts_out = (1 - cohorts_in)[:, :-12]
+                        exit_nn = (
+                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] < 0
+                        ) if nn != 1 else (
+                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] < 0
+                        )
+                        reentry_nn = (
+                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] > 0
+                        ) if nn != 1 else (
+                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] > 0
+                        )
+                        exit_bell = exit_bell + exit_nn > 0
+                        reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
+                        parti_bell[nn] = cohorts_in * following_cohorts * (1 - exit_bell)
+                        parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+                    for m in range(4):
+                        bell_length_compare[g, h, n, m] = list(map(int, np.sum(parti_bell[:, m], axis=0) * dt)) + (
+                                np.sum(parti_bell[:, m], axis=0) * dt > 0)
+                        bell_length_reentry_compare[g, h, n, m] = list(
+                            map(int, np.sum(parti_bell_exit[:, m], axis=0) * dt)) + (
+                                                                       np.sum(parti_bell_exit[:, m], axis=0) * dt > 0)
+                    # todo: this is based on the number of cohorts, not affected by the cohort population density;
+                    #  do agents exiting upon more negative shocks take longer to re-enter?
+                    #  reentry vs. disappointment type
 
-        # calculate the length of bell:  only look at the re-entry type
-        for n, entry_n in enumerate(sample_bell):
-            following_cohorts = (invest_tracker_reentry[entry_n, :-12] - invest_tracker_reentry[entry_n - 12, 12:] > 0)[window_bell:]
-            following_cohorts = np.append(following_cohorts, invest_tracker_reentry[entry_n, -12:])
+                # stock return alpha:
+                for n, cohort in enumerate(cohort_sample):
+                    for m in range(4):
+                        R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
+                                                                                                           :-1] * dZ[1:]
+                        x_regress = sm.add_constant(dR[1:])
+                        model = sm.OLS(R_st, x_regress)
+                        est = model.fit()
+                        coef_age_compare[g, h, n, m] = est.params
 
-            following_cohorts_exit = (invest_tracker_reentry[entry_n, :-12] - invest_tracker_reentry[entry_n - 12, 12:] < 0)[window_bell:]   # ignoring the cohorts born during the "year"
+                Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[:, age_sample]
+                parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[:, age_sample]
 
-            parti_bell = np.zeros((window_bell, Nc - window_bell))
-            parti_bell[0] = following_cohorts
-            exit_bell = np.zeros(Nc - window_bell)
+                mean_list = [r, theta, sigma_S, mu_S, parti]
+                for n, mean_var in enumerate(mean_list):
+                    mean_vola_compare[g, h, n, 0] = np.average(mean_var)
+                    mean_vola_compare[g, h, n, 1] = np.std(mean_var)
+                correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)
+                correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)
+                correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)
+                correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)
+                correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)
 
-            parti_bell_exit = np.zeros((window_bell, Nc - window_bell - 12))
-            parti_bell_exit[0] = following_cohorts_exit
-            reentry_bell = np.zeros(Nc - window_bell - 12)
+        else:
+            alpha_constraint = np.ones(
+                (1, Nconstraint)) * density
+            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+            cohort_type_size_mix = cohort_size * alpha_i_mix
+            # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
+            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-            for nn in range(1, window_bell):
-                cohorts_in = invest_tracker_reentry[entry_n+nn, window_bell - nn:-nn]
-                cohorts_out = (1 - cohorts_in)[:-12]
-                exit_nn = (
-                        invest_tracker_reentry[entry_n+nn, window_bell - nn:-nn]
-                        - invest_tracker_reentry[entry_n+nn - 1, window_bell - nn + 1:-nn + 1] < 0
-                ) if nn != 1 else (
-                        invest_tracker_reentry[entry_n + nn, window_bell - nn:-nn]
-                        - invest_tracker_reentry[entry_n + nn - 1, window_bell - nn + 1:] < 0
-                )
-                reentry_nn = (
-                        invest_tracker_reentry[entry_n+nn, window_bell - nn:-nn]
-                        - invest_tracker_reentry[entry_n+nn - 1, window_bell - nn + 1:-nn + 1] > 0
-                ) if nn != 1 else (
-                        invest_tracker_reentry[entry_n + nn, window_bell - nn:-nn]
-                        - invest_tracker_reentry[entry_n + nn - 1, window_bell - nn + 1:] > 0
-                )
-                exit_bell = exit_bell + exit_nn > 0
-                reentry_bell = reentry_bell + reentry_nn[:-12] > 0
-                parti_bell[nn] = cohorts_in * following_cohorts * (1 - exit_bell)
-                parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
-            bell_length_compare[g, n] = list(map(int, np.sum(parti_bell, axis=0) * dt)) + (np.sum(parti_bell, axis=0) * dt > 0)
-            bell_length_reentry_compare[g, n] = list(map(int, np.sum(parti_bell_exit, axis=0) * dt)) + (np.sum(parti_bell_exit, axis=0) * dt > 0)
-            # todo: this is based on the number of cohorts, not affected by the cohort population density;
-            #  do agents exiting upon more negative shocks take longer to re-enter?
-            #  reentry vs. disappointment type
+            phi = 0.4
+            h = 1
 
-        # stock return alpha:
-        cohort_sample = np.arange(Nc, Nc - 2400, -60) - 1
-        coef_age = np.zeros((len(cohort_sample), 2))
-        for n, cohort in enumerate(cohort_sample):
-            R_st = (mu_S[:-1] * pi[:-1, 3, cohort] + (1 - pi[:-1, 3, cohort]) * r[:-1]) * dt + sigma_S[:-1] * dZ[1:]
-            x_regress = sm.add_constant(dR[1:])
-            model = sm.OLS(R_st, x_regress)
-            est = model.fit()
-            coef_age[n] = est.params
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_bar_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+                entry_mat,
+                exit_mat,
+            ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                   beta0,
+                                   phi, Npre, Ninit, T_hat,
+                                   dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                   cutoffs_age, Ntype,
+                                   Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                   rho_cohort_type_mix,
+                                   cohort_type_size_mix,
+                                   need_f='True',
+                                   need_Delta='True',
+                                   need_pi='True',
+                                   )
+
+            # save data relevant for regressions
+            # non-overlapping data, take a sample every 5 years
+            past_annual_return = np.zeros((3, Nt))
+            future_annual_return = np.zeros((3, Nt))
+            for n, gap in enumerate([12, 24, 36]):
+                past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+                future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+            annual_return_compare[g, h, :3] = past_annual_return[:, sample]
+            annual_return_compare[g, h, 3:] = future_annual_return[:, sample]
+            pd_compare[g, h] = np.copy(1 / beta)[sample]
+            parti_compare[g, h] = parti[sample]
+            future_exc_R_compare[g, h] = (future_annual_return[0] - r)[sample]
+            entry_compare[g, h] = entry_mat[sample]
+            exit_compare[g, h] = exit_mat[sample]
+            age_parti = np.zeros((4, Nt))
+            for n in range(len(age_cutoffs_SCF) - 1):
+                age_parti[n] = np.average(
+                    np.average(invest_tracker[:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                               weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
+                    weights=density,
+                    axis=1)
+            parti_age_group_compare[g, h] = age_parti[:, sample]
+            parti_wealth_group_compare[g, h] = parti_wealth_group[sample]
+
+            cohort_actions = np.zeros((1200, Nc - 1200, 4), dtype=int)
+            for n in range(1, 1200 + 1):
+                cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, :, -n]
+
+            annual_sample = np.arange(0, 1200, 12)
+            cohort_invest_annual = np.zeros((101, Nc - 1200, 4), dtype=int)
+            cohort_invest_annual[1:] = cohort_actions[annual_sample]
+            cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
+            entry_cumu = np.average(np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0), weights=density,
+                                    axis=1)
+            entry_cumu_compare[g, h] = entry_cumu
+
+            # # Calculate the fraction of investors re-entering stock market
+            # # follow the exiting cohorts for 5 years and calculate the fraction of them re-entering the stock market
+            # # compare to Samuli's paper
+            # for n in range(12, Nt - 60):
+            #     following_cohorts = (invest_tracker[n, 3, :-12] - invest_tracker[n - 12, 3, 12:] < 0)[60:]
+            #     disappointed_cohorts = (invest_tracker[n, 2, :-12] - invest_tracker[n - 12, 2, 12:] < 0)[60:]
+            #     parti_bell_reenter = np.zeros((5, Nc - 60 - 12))
+            #     cohorts_in_cumu = np.zeros((Nc - 60 - 12))
+            #     for nn in range(5):
+            #         nn_index = int((nn + 1) * 12)
+            #         cohorts_in = invest_tracker[n + nn_index, 3, 60 - nn_index:-nn_index - 12]
+            #         cohorts_in_cumu = (cohorts_in_cumu + cohorts_in > 0)
+            #         parti_bell_reenter[nn] = following_cohorts * cohorts_in_cumu
+            #     popu_reenter = np.sum(parti_bell_reenter * cohort_size[:, 60 + 12:], axis=1) * density_set[g][3]
+            #     # popu_exit = (np.sum(following_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][3] +
+            #     #              np.sum(disappointed_cohorts * cohort_size[0, 60 + 12:]) * density_set[g][2])
+            #     popu_reenter_compare[a, b, c, g, :, n] = popu_reenter
+            # popu_exit_compare[a, b, c, g] = exit_mat
+
+            # calculate the length of bell:  only look at the re-entry type
+            for n, entry_n in enumerate(sample_bell):  # 20 year non-overlapping windows
+                following_cohorts = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :, 12:] > 0)[:,
+                                    window_bell:]
+                following_cohorts = np.append(following_cohorts, invest_tracker[entry_n, :, -12:], axis=1)
+
+                following_cohorts_exit = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :,
+                                                                             12:] < 0)[
+                                         :, window_bell:]  # ignoring the cohorts born during the "year"
+
+                parti_bell = np.zeros((window_bell, 4, Nc - window_bell))
+                parti_bell[0] = following_cohorts
+                exit_bell = np.zeros(
+                    (4, Nc - window_bell))  # following the entering cohorts until they exit the first time
+
+                parti_bell_exit = np.zeros((window_bell, 4, Nc - window_bell - 12))
+                parti_bell_exit[0] = following_cohorts_exit
+                reentry_bell = np.zeros((4, Nc - window_bell - 12))
+
+                for nn in range(1, window_bell):
+                    cohorts_in = invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                    cohorts_out = (1 - cohorts_in)[:, :-12]
+                    exit_nn = (
+                            invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                            - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] < 0
+                    ) if nn != 1 else (
+                            invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                            - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] < 0
+                    )
+                    reentry_nn = (
+                            invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                            - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] > 0
+                    ) if nn != 1 else (
+                            invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
+                            - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] > 0
+                    )
+                    exit_bell = exit_bell + exit_nn > 0
+                    reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
+                    parti_bell[nn] = cohorts_in * following_cohorts * (1 - exit_bell)
+                    parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+                for m in range(4):
+                    bell_length_compare[g, h, n, m] = list(map(int, np.sum(parti_bell[:, m], axis=0) * dt)) + (
+                            np.sum(parti_bell[:, m], axis=0) * dt > 0)
+                    bell_length_reentry_compare[g, h, n, m] = list(
+                        map(int, np.sum(parti_bell_exit[:, m], axis=0) * dt)) + (
+                                                                      np.sum(parti_bell_exit[:, m], axis=0) * dt > 0)
+                # todo: this is based on the number of cohorts, not affected by the cohort population density;
+                #  do agents exiting upon more negative shocks take longer to re-enter?
+                #  reentry vs. disappointment type
+
+            # stock return alpha:
+            for n, cohort in enumerate(cohort_sample):
+                for m in range(4):
+                    R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
+                                                                                                       :-1] * dZ[1:]
+                    x_regress = sm.add_constant(dR[1:])
+                    model = sm.OLS(R_st, x_regress)
+                    est = model.fit()
+                    coef_age_compare[g, h, n, m] = est.params
+
+            Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[:, age_sample]
+            parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[:, age_sample]
+
+            mean_list = [r, theta, sigma_S, mu_S, parti]
+            for n, mean_var in enumerate(mean_list):
+                mean_vola_compare[g, h, n, 0] = np.average(mean_var)
+                mean_vola_compare[g, h, n, 1] = np.std(mean_var)
+            correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)
+            correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)
+            correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)
+            correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)
+            correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)
+
 
 
     return (
         i,
         parti_compare,
         parti_age_group_compare,
+        parti_wealth_group_compare,
         annual_return_compare,
         pd_compare,
         future_exc_R_compare,
@@ -269,13 +435,17 @@ def simulate_path(
         bell_length_compare,
         bell_length_reentry_compare,
         entry_cumu_compare,
-        coef_age,
+        coef_age_compare,
+        Delta_age_compare,
+        parti_age_compare,
+        mean_vola_compare,
+        correlation_compare
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=32) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
@@ -285,36 +455,26 @@ def main():
         i, \
         parti_result, \
         parti_age_group_result, \
+        parti_wealth_group_result, \
         annual_return_result, \
         pd_result, \
         future_exc_R_result, \
         entry_result, \
-        exit_result,\
+        exit_result, \
         bell_length_result, \
         bell_length_reentry_result, \
         entry_cumu_result, \
-        coef_age_result  = result.result()
-        # parti_result, \
-        # annual_return_result, \
-        # monthly_minmax_result, \
-        # pd_result = result.result()
-        # i, \
-        # popu_parti_result, \
-        # popu_parti_old_result, \
-        # popu_parti_young_result, \
-        # r_result, \
-        # dR_result, \
-        # mu_S_result, \
-        # sigma_S_result, \
-        # vola_S_result, \
-        # pd_result, \
-        # average_belief_result, \
-        # recent_shocks_result, = result.result()
+        coef_age_result, \
+        Delta_age_result, \
+        parti_age_result, \
+        mean_vola_result, \
+        correlation_result  = result.result()
 
         data = {
             "i": i,
             "participation rate": parti_result,
             "participation rate in age groups": parti_age_group_result,
+            "participation rate in wealth groups": parti_wealth_group_result,
             "annual stock return": annual_return_result,
             "pd ratio": pd_result,
             "future excess return": future_exc_R_result,
@@ -323,24 +483,11 @@ def main():
             "bell length": bell_length_result,
             "bell length reentry": bell_length_reentry_result,
             "nr of entry": entry_cumu_result,
-            "age alpha": coef_age_result
-
-            # "participation rate": parti_result,
-            # "annual stock return": annual_return_result,
-            # "monthly min max return": monthly_minmax_result,
-            # "pd ratio": pd_result,
-
-            # "parti rate": popu_parti_result,
-            # "parti rate old": popu_parti_old_result,
-            # "parti rate young": popu_parti_young_result,
-            # "interest rate": r_result,
-            # "dR": dR_result,
-            # "expected return": mu_S_result,
-            # "expected vola": sigma_S_result,
-            # "stock vola": vola_S_result,
-            # "price dividend ratio": pd_result,
-            # "average belief": average_belief_result,
-            # "recent shocks": recent_shocks_result,
+            "age alpha": coef_age_result,
+            "age Delta": Delta_age_result,
+            "age parti": parti_age_result,
+            "mean vola": mean_vola_result,
+            "correlations": correlation_result
         }
         results_list.append(data)
 
@@ -352,24 +499,20 @@ def main():
     np.savez("parti_rate_regressions.npz", **results_dict)
     # np.savez("parti_Ch.npz", **results_dict)
 
-    # Save the DataFrame to a .npz file
-    results_dict = results_df.to_dict(orient='list')
-    np.savez("parti_rate_deu.npz", **results_dict)
-
     #### Finland: how many re-enter the stock market in a given year
-    results_df = np.load('parti_rate_fin.npz')
-    data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx',
-                                sheet_name='Sheet1',
-                                index_col=0)
-    dZ_actual = data_shocks.to_numpy()[:, 0]
-    Nt_data = dZ_actual.size
-    parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
-    reentry_mat = np.average(results_df['popu_reentry'][:, 1, 0, 0, 0], axis=0)
-    exit_mat = np.average(results_df['popu_exit'][:, 1, 0, 0, 0], axis=0)
-    parti_df['exit'] = exit_mat[-Nt_data:].astype(np.float32)
-    for j in range(5):
-        parti_df['reentry' + str(j)] = reentry_mat[j, -Nt_data:].astype(np.float32)
-    parti_df.to_stata('stata_dataset/fin_reentry.dta')
+    # results_df = np.load('parti_rate_fin.npz')
+    # data_shocks = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/finland_realized_shocks.xlsx',
+    #                             sheet_name='Sheet1',
+    #                             index_col=0)
+    # dZ_actual = data_shocks.to_numpy()[:, 0]
+    # Nt_data = dZ_actual.size
+    # parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['Yearmon'])
+    # reentry_mat = np.average(results_df['popu_reentry'][:, 1, 0, 0, 0], axis=0)
+    # exit_mat = np.average(results_df['popu_exit'][:, 1, 0, 0, 0], axis=0)
+    # parti_df['exit'] = exit_mat[-Nt_data:].astype(np.float32)
+    # for j in range(5):
+    #     parti_df['reentry' + str(j)] = reentry_mat[j, -Nt_data:].astype(np.float32)
+    # parti_df.to_stata('stata_dataset/fin_reentry.dta')
 
     # # Analysis of the bell length: Distribution of participation bells, ignoring 0
     # results_df = np.load('parti_rate_regressions.npz')
@@ -416,11 +559,6 @@ def main():
     # plt.savefig('Reentry_age_alpha.png', dpi=200)
     # plt.show()
     # plt.close()
-
-
-
-
-
 
     # # # analysis:
     # results_df = np.load('parti_Ch.npz')

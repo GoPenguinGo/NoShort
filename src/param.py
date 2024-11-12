@@ -23,16 +23,19 @@ phi = 0.4
 
 # v = 0.018  # from Nagel and Xu (2021 RFS)
 
-tax = 0.3    # marginal rate of consumption tax
+# tax = 0.3    # marginal rate of consumption tax
 # tax = 0.2
+tax = 0.5
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
 
 
 # Setting prior variance
+
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
-T_hat = 20  # Pre-trading period
+# T_hat = 20  # Pre-trading period
+T_hat = 2  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 Ninit = int(20 / dt)

@@ -60,6 +60,8 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
 
@@ -150,11 +152,11 @@ def simulate_cohorts_SI(
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
     beta = np.zeros(Nt)
-    Delta_bar_parti = np.zeros(Nt,
-                               dtype=np.float16)  # consumption weighted estimation error of the stock market participants
-    Delta_tilde_parti = np.zeros(Nt,
-                                 dtype=np.float16)  # wealth weighted estimation error of the stock market participants
+    Delta_bar_parti = np.zeros(Nt, dtype=np.float16)  # consumption weighted estimation error of the stock market participants
+    Delta_tilde_parti = np.zeros(Nt, dtype=np.float16)  # wealth weighted estimation error of the stock market participants
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
+    entry_mat = np.zeros(Nt, dtype=np.float16)
+    exit_mat = np.zeros(Nt, dtype=np.float16)
 
     dR_t = 0
 
@@ -349,6 +351,14 @@ def simulate_cohorts_SI(
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
                 parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
                                                          weights=cohort_type_size[within_group])
+
+        turnover = np.copy(invest_tracker[0])
+        turnover[:-12] = invest_tracker[0, :-12] - invest_mat[i - 12, 12:]
+
+        entry_mat[i] = np.sum((turnover > 0) * np.sum(cohort_type_size, axis=0))
+        exit_mat[i] = np.sum((turnover < 0) * np.sum(cohort_type_size, axis=0))
+
+
     return (
         r,
         theta,
@@ -367,6 +377,8 @@ def simulate_cohorts_SI(
         invest_mat,
         parti_age_group,
         parti_wealth_group,
+        entry_mat,
+        exit_mat
     )
 
 

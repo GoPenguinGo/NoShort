@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 # country_names = ['US', 'Finland', 'Germany', 'Norway']
-country_names = [ 'Germany']
+country_names = [ 'US']
 folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
@@ -28,18 +28,21 @@ density_set = [
     # (0.1, 0.1, 0.4, 0.4),
 ]
 n_scenarios = len(density_set)
-T_hat_set = [1, 2, 5]  # Pre-learning window
-phi_set = [0.0, 0.2, 0.4]
-tax_set = [0.3, 0.4, 0.5]
+# T_hat_set = [1, 2, 5]  # Pre-learning window
+# phi_set = [0.0, 0.2, 0.4]
+# tax_set = [0.3, 0.4, 0.5]
+T_hat_set = [2]  # Pre-learning window
+phi_set = [0.0, 0.4]
+tax_set = [0.5]
 n_T_hat = len(T_hat_set)
 n_phi = len(phi_set)
 n_tax = len(tax_set)
 
 # # for testing:
-# Mpath = 160
-Mpath = 1
+Mpath = 50
+# Mpath = 1
 np.seterr(invalid='ignore')
-
+age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
 
 # noinspection PyTypeChecker
 def simulate_path(
@@ -82,10 +85,10 @@ def simulate_path(
             for c, tax in enumerate(tax_set):
                 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
                 beta0 = np.sum(alpha_i * beta_i).astype(float)
-                for g in range(n_scenarios):
+                for g, density in enumerate(density_set):
                     col_name = str(T_hat) + '_' + str(phi) + '_' + str(tax) + '_' + str(g)
                     alpha_constraint = np.ones(
-                        (1, Nconstraint)) * density_set[g]
+                        (1, Nconstraint)) * density
                     alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
                     cohort_type_size_mix = cohort_size * alpha_i_mix
                     beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
@@ -109,8 +112,8 @@ def simulate_path(
                         invest_tracker,
                         parti_age_group,
                         parti_wealth_group,
-                        entry,
-                        exit
+                        entry_mat,
+                        exit_mat
                     ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                            beta0,
                                            phi, Npre, Ninit, T_hat,
@@ -123,63 +126,39 @@ def simulate_path(
                                            need_Delta='True',
                                            need_pi='True',
                                            )
-                    # average_belief = np.average(np.average(Delta, axis=2, weights=cohort_size[0]), axis=1,
-                    #                             weights=alpha_constraint[0])
-                    # r_compare[g] = r
                     popu_parti_compare[a, b, c, g] = parti
-                    # popu_parti_old[g] = parti_age_group[:, 3]
-                    # popu_parti_young[g] = parti_age_group[:, 0]
-                    # average_belief_compare[g] = average_belief
                     dR_compare[a, b, c, g] = dR
-                    # mu_S_compare[g] = mu_S
-                    # sigma_S_compare[g] = sigma_S
-                    # pd_compare[g] = 1 / beta
-
-                    # parti_all = np.zeros(Nall)
-                    # entry_all = np.zeros(Nall)
-                    # exit_all = np.zeros(Nall)
-
-                    # parti_all[-Nt:] = parti
-                    # entry_all[-Nt:] = entry
-                    # exit_all[-Nt:] = exit
-
-                    # old vs. young: experience gap, belief gap, and participation rate gap
-                    cohort_belief = np.average(Delta, axis=1, weights=alpha_constraint[0])
-                    average_belief_old = np.average(cohort_belief[:, :cutoffs_age[3]], axis=1,
-                                                    weights=cohort_size[0, :cutoffs_age[3]])
-                    average_belief_young = np.average(cohort_belief[:, cutoffs_age[1]:], axis=1,
-                                                      weights=cohort_size[0, cutoffs_age[1]:])
-                    parti_old = parti_age_group[:, 3]
-                    parti_young = parti_age_group[:, 0]
-                    # parti_age_compare = np.zeros((2, N_sample))
 
                     parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-
                     if country == 'US' or 'Germany' or 'Norway':
-                        parti_df['belief_old' + col_name] = average_belief_old[-Nt_data:].astype(np.float32)
-                        parti_df['belief_young' + col_name] = average_belief_young[-Nt_data:].astype(np.float32)
-                        parti_df['parti_old' + col_name] = parti_old[-Nt_data:].astype(np.float32)
-                        parti_df['parti_young' + col_name] = parti_young[-Nt_data:].astype(np.float32)
+                        age_parti = np.zeros((4, Nt_data))
+                        age_belief = np.zeros((4, Nt_data))
+                        for n in range(len(age_cutoffs_SCF) - 1):
+                            age_parti[n] = np.average(
+                                np.average(invest_tracker[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                           weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
+                                weights=density,
+                                axis=1)
+                            age_belief[n] = np.average(
+                                np.average(Delta[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                           weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
+                                weights=density,
+                                axis=1)
+                        parti_df['belief_old' + col_name] = age_belief[3].astype(np.float32)
+                        parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                        parti_df['parti_old' + col_name] = age_parti[3].astype(np.float32)
+                        parti_df['parti_young' + col_name] = age_parti[0].astype(np.float32)
 
                     # parti_df['parti' + col_name] = parti_all.astype(np.float32)
                     if country == 'Norway' or 'Finland':
-                        parti_df['entry' + col_name] = entry[-Nt_data:].astype(np.float32)
-                        parti_df['exit' + col_name] = exit[-Nt_data:].astype(np.float32)
+                        parti_df['entry' + col_name] = entry_mat[-Nt_data:].astype(np.float32)
+                        parti_df['exit' + col_name] = exit_mat[-Nt_data:].astype(np.float32)
 
     parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + '.dta')
     return (
         i,
         popu_parti_compare,
-        # popu_parti_old,
-        # popu_parti_young,
-        # r_compare,
         dR_compare,
-        # mu_S_compare,
-        # sigma_S_compare,
-        # pd_compare,
-        # average_belief_compare,
-        # popu_reenter_compare,
-        # popu_exit_compare,
     )
 
 
@@ -202,30 +181,11 @@ def main():
             i, \
             popu_parti_result, \
             dR_result = result.result()
-            # popu_reentry_result, \
-            # popu_exit_result
-            # popu_parti_old_result, \
-            # popu_parti_young_result, \
-            # r_result, \
-            # dR_result, \
-            # mu_S_result, \
-            # sigma_S_result, \
-            # pd_result, \
-            # average_belief_result,
 
             data = {
                 "i": i,
                 "parti rate": popu_parti_result,
-                # "parti rate old": popu_parti_old_result,
-                # "parti rate young": popu_parti_young_result,
-                # "interest rate": r_result,
                 "dR": dR_result,
-                # "expected return": mu_S_result,
-                # "expected vola": sigma_S_result,
-                # "price dividend ratio": pd_result,
-                # "average belief": average_belief_result,
-                # "popu_reentry": popu_reentry_result,
-                # "popu_exit": popu_exit_result,
             }
             results_list.append(data)
 
