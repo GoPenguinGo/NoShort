@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 # country_names = ['US', 'Finland', 'Germany', 'Norway']
-country_names = [ 'Norway']
+country_names = [ 'Germany']
 folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
@@ -37,7 +37,7 @@ n_tax = len(tax_set)
 
 # # for testing:
 # Mpath = 160
-Mpath = 50
+Mpath = 1
 np.seterr(invalid='ignore')
 
 

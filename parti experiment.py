@@ -11,7 +11,7 @@ from src.param_mix import Nconstraint, rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 import statsmodels.api as sm
-import tabulate
+# import tabulate
 
 ## scatter plots for expected returns, vola, excess returns and r as function of participation
 ## maybe no linear relation between parti and vola, but parti and r
