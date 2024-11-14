@@ -99,7 +99,8 @@ colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
 # age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
-age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <= 69', 'Age > 69, oldest quartile']
+# age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <= 69', 'Age > 69, oldest quartile']
+age_labels = [r'20 < Age $\leq$ 35, the young', r'35 < Age $\leq$ 55', r'55 < Age $\leq$ 75', 'Age > 75, the old']
 # label_phi = []
 # for i in range(n_phi_short):
 #     label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
