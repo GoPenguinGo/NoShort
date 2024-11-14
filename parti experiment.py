@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
-from src.param import nu, mu_Y, sigma_Y, phi, \
-    dt, Ninit, Nt, Nc, tau, tax, Vhat, T_hat, beta0, Npre, \
-    cutoffs_age, scenarios, dZ_Y_cases, dZ_SI_cases, dZ_build_case, \
-    dZ_SI_build_case, t, scenario_labels, colors_short, Ntype, alpha_i, \
+from src.param import nu, mu_Y, sigma_Y, \
+    dt, Ninit, Nt, Nc, tau, tax, Vhat, T_hat, beta_i, beta0, rho_cohort_type, Npre, \
+    cutoffs_age,  Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_type_size, cohort_size, rho_i
 from src.param_mix import Nconstraint, rho_i_mix
@@ -30,9 +29,8 @@ phi_set = [0.0, 0.4, 0.8]
 n_phi = len(phi_set)
 
 # # for testing:
-Mpath = 10
-# Mpath = 1000
-# print('Generating data for the graphs:')
+# Mpath = 10
+Mpath = 500
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -81,6 +79,8 @@ def simulate_path(
     for g, density in enumerate(density_set):
         if g == 0:
             for h, phi in enumerate(phi_set):
+                mode_trade = "w_constraint"
+                mode_learn = 'reentry'
                 (
                     r,
                     theta,
@@ -100,19 +100,38 @@ def simulate_path(
                     parti_age_group,
                     parti_wealth_group,
                     entry_mat,
-                    exit_mat,
-                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                       beta0,
-                                       phi, Npre, Ninit, T_hat,
-                                       dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                       cutoffs_age, Ntype,
-                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                       rho_cohort_type_mix,
-                                       cohort_type_size_mix,
-                                       need_f='True',
-                                       need_Delta='True',
-                                       need_pi='True',
-                                       )
+                    exit_mat
+                ) = simulate_SI(mode_trade,
+                                mode_learn,
+                                Nc,
+                                Nt,
+                                dt,
+                                nu,
+                                Vhat,
+                                mu_Y,
+                                sigma_Y,
+                                tax,
+                                beta0,
+                                phi,
+                                Npre,
+                                Ninit,
+                                T_hat,
+                                dZ_build,
+                                dZ,
+                                dZ_SI_build,
+                                dZ_SI,
+                                tau,
+                                cutoffs_age,
+                                Ntype,
+                                rho_i,
+                                alpha_i,
+                                beta_i,
+                                rho_cohort_type,
+                                cohort_type_size,
+                                need_f='True',
+                                need_Delta='True',
+                                need_pi='True',
+                                )
 
                 # save data relevant for regressions
                 # non-overlapping data, take a sample every 5 years
@@ -130,26 +149,22 @@ def simulate_path(
                 future_exc_R_compare[g, h] = (future_annual_return[0] - r)[sample]
                 entry_compare[g, h] = entry_mat[sample]
                 exit_compare[g, h] = exit_mat[sample]
-                age_parti = np.zeros((4, Nt))
+                age_parti = np.zeros((4, Nt))  # participation rate in age groups in time-series
                 for n in range(len(age_cutoffs_SCF) - 1):
-                    age_parti[n] = np.average(
-                        np.average(invest_tracker[:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
-                                   weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
-                        weights=density,
-                        axis=1)
+                    age_parti[n] = np.average(invest_tracker[:, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                   weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=1)
                 parti_age_group_compare[g, h] = age_parti[:, sample]
                 parti_wealth_group_compare[g, h] = parti_wealth_group[sample]
 
-                cohort_actions = np.zeros((1200, Nc - 1200, 4), dtype=int)
+                cohort_actions = np.zeros((1200, Nc - 1200), dtype=int)
                 for n in range(1, 1200 + 1):
-                    cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, :, -n]
+                    cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, -n]
 
                 annual_sample = np.arange(0, 1200, 12)
-                cohort_invest_annual = np.zeros((101, Nc - 1200, 4), dtype=int)
+                cohort_invest_annual = np.zeros((101, Nc - 1200), dtype=int)
                 cohort_invest_annual[1:] = cohort_actions[annual_sample]
                 cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
-                entry_cumu = np.average(np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0), weights=density,
-                                        axis=1)
+                entry_cumu = np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0)
                 entry_cumu_compare[g, h] = entry_cumu
 
                 # # Calculate the fraction of investors re-entering stock market
@@ -173,76 +188,71 @@ def simulate_path(
 
                 # calculate the length of bell:  only look at the re-entry type
                 for n, entry_n in enumerate(sample_bell):  # 20 year non-overlapping windows
-                    following_cohorts = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :, 12:] > 0)[:,
-                                        window_bell:]
-                    following_cohorts = np.append(following_cohorts, invest_tracker[entry_n, :, -12:], axis=1)
+                    following_cohorts = (invest_tracker[entry_n, :-12] - invest_tracker[entry_n - 12, 12:] > 0)[window_bell:]
+                    following_cohorts = np.append(following_cohorts, invest_tracker[entry_n, -12:])
 
-                    following_cohorts_exit = (invest_tracker[entry_n, :, :-12] - invest_tracker[entry_n - 12, :,
-                                                                                 12:] < 0)[
-                                             :, window_bell:]  # ignoring the cohorts born during the "year"
+                    following_cohorts_exit = (invest_tracker[entry_n, :-12] - invest_tracker[entry_n - 12,
+                                                                                 12:] < 0)[window_bell:]  # ignoring the cohorts born during the "year"
 
-                    parti_bell = np.zeros((window_bell, 4, Nc - window_bell))
+                    parti_bell = np.zeros((window_bell, Nc - window_bell))
                     parti_bell[0] = following_cohorts
                     exit_bell = np.zeros(
-                        (4, Nc - window_bell))  # following the entering cohorts until they exit the first time
+                        (Nc - window_bell))  # following the entering cohorts until they exit the first time
 
-                    parti_bell_exit = np.zeros((window_bell, 4, Nc - window_bell - 12))
+                    parti_bell_exit = np.zeros((window_bell, Nc - window_bell - 12))
                     parti_bell_exit[0] = following_cohorts_exit
-                    reentry_bell = np.zeros((4, Nc - window_bell - 12))
+                    reentry_bell = np.zeros((Nc - window_bell - 12))
 
                     for nn in range(1, window_bell):
-                        cohorts_in = invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
-                        cohorts_out = (1 - cohorts_in)[:, :-12]
+                        cohorts_in = invest_tracker[entry_n + nn, window_bell - nn:-nn]
+                        cohorts_out = (1 - cohorts_in)[:-12]
                         exit_nn = (
-                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
-                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] < 0
+                                invest_tracker[entry_n + nn, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:-nn + 1] < 0
                         ) if nn != 1 else (
-                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
-                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] < 0
+                                invest_tracker[entry_n + nn, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:] < 0
                         )
                         reentry_nn = (
-                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
-                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:-nn + 1] > 0
+                                invest_tracker[entry_n + nn, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:-nn + 1] > 0
                         ) if nn != 1 else (
-                                invest_tracker[entry_n + nn, :, window_bell - nn:-nn]
-                                - invest_tracker[entry_n + nn - 1, :, window_bell - nn + 1:] > 0
+                                invest_tracker[entry_n + nn, window_bell - nn:-nn]
+                                - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:] > 0
                         )
                         exit_bell = exit_bell + exit_nn > 0
-                        reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
+                        reentry_bell = reentry_bell + reentry_nn[:-12] > 0
                         parti_bell[nn] = cohorts_in * following_cohorts * (1 - exit_bell)
                         parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
-                    for m in range(4):
-                        bell_length_compare[g, h, n, m] = list(map(int, np.sum(parti_bell[:, m], axis=0) * dt)) + (
-                                np.sum(parti_bell[:, m], axis=0) * dt > 0)
-                        bell_length_reentry_compare[g, h, n, m] = list(
-                            map(int, np.sum(parti_bell_exit[:, m], axis=0) * dt)) + (
-                                                                       np.sum(parti_bell_exit[:, m], axis=0) * dt > 0)
-                    # todo: this is based on the number of cohorts, not affected by the cohort population density;
-                    #  do agents exiting upon more negative shocks take longer to re-enter?
+                        bell_length_compare[g, h, n] = list(map(int, np.sum(parti_bell, axis=0) * dt)) + (
+                                np.sum(parti_bell, axis=0) * dt > 0)
+                        bell_length_reentry_compare[g, h, n] = list(
+                            map(int, np.sum(parti_bell_exit, axis=0) * dt)) + (
+                                                                       np.sum(parti_bell_exit, axis=0) * dt > 0)
+                    # todo: do agents exiting upon more negative shocks take longer to re-enter?
                     #  reentry vs. disappointment type
 
                 # stock return alpha:
                 for n, cohort in enumerate(cohort_sample):
-                    for m in range(4):
-                        R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
+                    R_st = (mu_S[:-1] * pi[:-1, cohort] + (1 - pi[:-1, cohort]) * r[:-1]) * dt + sigma_S[
                                                                                                            :-1] * dZ[1:]
-                        x_regress = sm.add_constant(dR[1:])
-                        model = sm.OLS(R_st, x_regress)
-                        est = model.fit()
-                        coef_age_compare[g, h, n, m] = est.params
+                    x_regress = sm.add_constant(dR[1:])
+                    model = sm.OLS(R_st, x_regress)
+                    est = model.fit()
+                    coef_age_compare[g, h, n] = est.params
 
-                Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[:, age_sample]
-                parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[:, age_sample]
+                Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[age_sample]
+                parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[age_sample]
 
                 mean_list = [r, theta, sigma_S, mu_S, parti]
                 for n, mean_var in enumerate(mean_list):
                     mean_vola_compare[g, h, n, 0] = np.average(mean_var)
                     mean_vola_compare[g, h, n, 1] = np.std(mean_var)
-                correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)
-                correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)
-                correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)
-                correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)
-                correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)
+                correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)[0, 1]
+                correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)[0, 1]
+                correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)[0, 1]
+                correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)[0, 1]
+                correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)[0, 1]
 
         else:
             alpha_constraint = np.ones(
@@ -414,13 +424,11 @@ def simulate_path(
             for n, mean_var in enumerate(mean_list):
                 mean_vola_compare[g, h, n, 0] = np.average(mean_var)
                 mean_vola_compare[g, h, n, 1] = np.std(mean_var)
-            correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)
-            correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)
-            correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)
-            correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)
-            correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)
-
-
+            correlation_compare[g, h, 0] = np.corrcoef(dZ, theta)[0, 1]
+            correlation_compare[g, h, 1] = np.corrcoef(dZ, sigma_S)[0, 1]
+            correlation_compare[g, h, 2] = np.corrcoef(dZ_SI, sigma_S)[0, 1]
+            correlation_compare[g, h, 3] = np.corrcoef(Phi_bar_parti, parti)[0, 1]
+            correlation_compare[g, h, 4] = np.corrcoef(Phi_tilde_parti, parti)[0, 1]
 
     return (
         i,

@@ -92,6 +92,8 @@ def simulate_path(
             invest_tracker,
             parti_age_group,
             parti_wealth_group,
+            entry_mat,
+            exit_mat
         ) = simulate_SI(mode_trade,
                         mode_learn,
                         Nc,
