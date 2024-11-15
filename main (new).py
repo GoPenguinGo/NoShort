@@ -343,41 +343,181 @@ plt.close()
 ## Estimation error and participation rate given age
 age_Delta = results_df1['age Delta']  # paths, scenario, phi, type, age
 age_parti = results_df1['age parti']
-ave_age_Delta = np.average(age_Delta, axis=0)
-ave_age_parti = np.average(age_parti, axis=0)
+density_set = [
+    (1.0, 0.0, 0.0, 0.0),
+    (0.0, 0.0, 0.0, 1.0),
+    (0.25, 0.25, 0.25, 0.25),
+]
+ave_age_Delta = np.average(np.average(age_Delta, axis=0), axis=2)
+ave_age_parti = np.average(np.average(age_parti, axis=0), axis=2)
 
 phi_set = [0.0, 0.4, 0.8]
 n_phi = len(phi_set)
 age_cut = 100
-Nc_cut = int(age_cut / dt)
-x_age = np.arange(1, Nc_cut, 12) * dt
-Delta_focus = ave_age_Delta[0, :, 3]
-parti_focus = ave_age_parti[0, :, 3]
+x_age = np.arange(0, age_cut)
 fig_titles = [r'Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
               'Reentry, average participation probability']
 y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
-fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7.5))
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
 for j, ax in enumerate(axes):
     ax.set_xlabel('Age')
-    y_case = Delta_vector if j == 0 else invest_vector
+    y_case = np.copy(ave_age_Delta) if j == 0 else np.copy(ave_age_parti)
     ax.set_ylabel(y_titles[j])
     for i in range(3):
         if j == 0:
-            ax.set_ylim(0.04, 0.18)
-            y_reentry = y_case[1, i, :N_cut]
-            label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_vector[i]))
-            ax.plot(x, y_reentry, color=colors[i], linewidth=0.8, label=label_i)
-            ax.legend()
-            if phi_vector[i] != 0:
-                y_complete = y_case[0, i, :N_cut]
-                ax.plot(x, y_complete, color=colors[i], linewidth=0.8, linestyle='dashed')
+            y_reentry = y_case[1, i, :age_cut]
+            y_complete = y_case[0, i, :age_cut]
+            if phi_set[i] == 0.4:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry")
+                ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed', label="Complete Market")
+                ax.legend()
+            elif phi_set[i] == 0:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+            else:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+                ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed')
         else:
-            y = y_case[i, :N_cut]
-            ax.plot(x, y, color=colors[i], linewidth=0.8)
+            y = y_case[1, i, :age_cut]
+            label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_set[i]))
+            ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
+            ax.legend()
     ax.set_title(fig_titles[j], color='black')
     ax.tick_params(axis='y', labelcolor='black')
-    ax.set_xlim(-1, 100)
+    # ax.set_xlim(-1, 100)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Average estimation error and age.png', dpi=60)
+plt.savefig('f3_1.png', dpi=200)
 plt.show()
-# plt.close()
+plt.close()
+
+ave_age_Delta = np.average(age_Delta[:, 2, 1], axis=0)
+ave_age_parti = np.average(age_parti[:, 2, 1], axis=0)
+fig_titles = [r'Mix, average $\mid\Delta_{s,t}\mid$, $\phi=0.4$',
+              r'Mix, average participation probability, $\phi=0.4$']
+y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
+labels = ['Designated participant', 'Designated non-participant', 'Disappointment', 'Re-entry']
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
+for j, ax in enumerate(axes):
+    ax.set_xlabel('Age')
+    y_case = np.copy(ave_age_Delta) if j == 0 else np.copy(ave_age_parti)
+    ax.set_ylabel(y_titles[j])
+    for i in range(4):
+        y = np.copy(y_case[i])
+        label_i = labels[i]
+        ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
+        if j == 0:
+            ax.legend()
+    ax.set_title(fig_titles[j], color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+    # ax.set_xlim(-1, 100)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('f3_2.png', dpi=200)
+plt.show()
+plt.close()
+
+######################################
+###########   Figure 4   #############
+######################################
+# counts of entry
+entry_counts = np.average(results_df1['nr of entry'], axis=0)
+y_case = np.copy(entry_counts[2][1])
+age_cut = 65
+x_age = np.arange(20, 20+age_cut)
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4))
+ax.set_xlabel('Age')
+ax.set_ylabel('Average counts of entry')
+ax.set_ylim(0, 1.5)
+ax.plot(x_age, y_case[:age_cut], color='navy', linewidth=1.5)
+# ax.set_title(fig_titles[j], color='black')
+ax.tick_params(axis='y', labelcolor='black')
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('f4.png', dpi=100)
+plt.show()
+plt.close()
+
+# how long before exiting upon entry &
+# how long before entering upon exit
+# Analysis of the bell length: Distribution of participation bells, ignoring 0
+bell_length_mat = results_df1['bell length']
+bell_length_reentry_mat = results_df1['bell length reentry']
+
+y_titles = ['Years in the stock market before first exit', 'Years out of the stock market before first re-entry']
+fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 5))
+for i, ax in enumerate(axes):
+    for j in range(2):
+        data_mat = bell_length_mat if i == 0 else bell_length_reentry_mat
+        unique, counts = np.unique(data_mat[:, j+1, 1, :, 2:], return_counts=True)
+        counts_percentage = counts[1:-1] / np.sum(counts[1:-1])
+        # data_inter = np.arange(0, len(counts_percentage), 2)
+        x = np.arange(1, len(counts_percentage)+1)
+        # X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage[data_inter], k=3)
+        # X_ = np.linspace(1, 20, 100)
+        # Y_ = X_Y_Spline(X_)
+        line_style_i = 'solid' if j == 0 else 'dashed'
+        label_i = 'Re-entry' if j == 0 else 'Mix'
+        ax.plot(x, counts_percentage, linewidth=2, linestyle=line_style_i, label=label_i, color='navy')
+        ax.legend()
+    ax.set_title(y_titles[i])
+    ax.set_xlabel('Years')
+    ax.set_ylabel('Proportion of observations')
+plt.savefig('f5_1.png', dpi=200)
+plt.show()
+plt.close()
+
+# conditional on stock returns at the point of exit
+stock_returns_mat = results_df1['annual stock return']    #-1, -2, -3, 1, 2, 3
+stock_sample = np.arange(0, 400, 20)
+stock_returns_focus = stock_returns_mat[:, :, 1, 1, stock_sample]
+y_titles = ['Years in the stock market before first exit', 'Years out of the stock market before first re-entry']
+fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 4.5))
+for i, ax in enumerate(axes):
+    stock_returns_focus_i = stock_returns_focus[:, i+1]
+    cutoffs_return = np.percentile(stock_returns_focus_i, [10])
+    title_i = 'Re-entry scenario' if i == 0 else 'Mix scenario'
+    ax.set_title(title_i)
+    # line_style_i = 'solid' if i == 0 else 'dashed'
+    for j in range(2):
+        data_mat = bell_length_reentry_mat[:, i+1, 1, :, 2:]
+        if j == 0:
+            # unique_mat = np.zeros((5748, 22))
+            counts_mat = np.zeros((5748, 22))
+            for ii in range(5748):
+                unique, counts = np.unique(data_mat[:, :, :, ii], return_counts=True)
+                # unique_mat[ii] = unique
+                for jj, uni_jj in enumerate(unique):
+                    counts_mat[ii, uni_jj] = counts[jj]
+            popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
+            counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
+        else:
+            data_where = np.reshape(
+                (stock_returns_focus_i <= cutoffs_return),
+                (500, 20, 1))
+            # unique, counts = np.unique(data_mat * data_where, axis=3, return_counts=True)
+            counts_mat = np.zeros((5748, 22))
+            for ii in range(5748):
+                unique, counts = np.unique(data_mat[:, :, :, ii] * data_where, return_counts=True)
+                # unique_mat[ii] = unique
+                for jj, uni_jj in enumerate(unique):
+                    counts_mat[ii, uni_jj] = counts[jj]
+            popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
+        counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
+        counts_percentage_cum = np.cumsum(counts_percentage)
+        # data_inter = np.arange(0, len(counts_percentage), 2)
+        x = np.arange(1, 21)
+        # X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage[data_inter], k=3)
+        # X_ = np.linspace(0, 20, 100)
+        # Y_ = X_Y_Spline(X_)
+        color_i = 'red' if j == 1 else 'navy'
+        label_i = '2-year return bottom decile' if j == 1 else 'Unconditional'
+        ax.plot(x, counts_percentage_cum[:20], linewidth=2,
+                # linestyle=line_style_i,
+                label=label_i, color=color_i)
+        ax.legend(loc='lower right')
+    ax.set_ylim(0.2, 1.0)
+    ax.set_xlim(0, 20)
+    ax.set_xlabel('Years since exiting')
+    ax.set_ylabel('Fraction of individuals re-entering')
+plt.savefig('f5_2.png', dpi=200)
+plt.show()
+plt.close()
+
+
