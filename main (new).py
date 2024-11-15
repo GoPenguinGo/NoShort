@@ -248,7 +248,6 @@ y_N = np.empty((Nt_data, 5))  # non-participants / short
 y_min = np.empty((Nt_data, n_age_cutoffs))
 y_max = np.empty((Nt_data, n_age_cutoffs))
 y_cases = [y_overall, y_P, y_N]
-
 alpha_constraint = np.ones(
     (1, Nconstraint)) * density_set[0]
 alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
@@ -256,8 +255,10 @@ cohort_type_size_mix = cohort_size * alpha_i_mix
 Delta_focus = Delta_compare[0, 1, :, 3]
 invest_focus = invest_tracker_compare[0, 1, :, 3]
 cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[3]
+age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
+n_age_cutoffs = len(age_cutoffs_SCF) - 1
 for n in range(n_age_cutoffs):
-    Delta_age_group = Delta_focus[:, cutoffs_age[n + 1]:cutoffs_age[n]]
+    Delta_age_group = Delta_focus[:, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]]
     y_min[:, n] = np.amin(Delta_age_group, axis=1)
     y_max[:, n] = np.amax(Delta_age_group, axis=1)
 for m in range(Nt_data):
@@ -290,6 +291,7 @@ for m in range(Nt_data):
         Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
         y_cases[n][m] = Delta_cutoff
 
+x = 1926 + np.arange(Nt_data) * dt
 y1 = np.copy(y_overall)
 y2 = np.copy(y_P)
 y3 = np.copy(y_N)
@@ -297,12 +299,12 @@ y4 = np.copy(y_min)
 y5 = np.copy(y_max)
 belief_cutoff_case = -theta_compare[0, 1]
 
-fig, axes = plt.subplots(ncols=2, sharex='all', sharey='all', figsize=(10, 5))
+fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
 for jj, ax in enumerate(axes):
     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax.set_title('Distribution of estimation error')
     ax.set_ylim(-5, 3)
     if jj == 0:
+        ax.set_title('Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
         y21 = y2[:, 1]
         y22 = y2[:, 2]
@@ -313,13 +315,14 @@ for jj, ax in enumerate(axes):
         y32 = y3[:, 2]
         y33 = y3[:, 3]
         y34 = y3[:, 4]
-        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.3)
-        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.5, label=PN_labels[0])
-        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.3)
-        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.5, label=PN_labels[1])
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
+        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4)
+        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7, label=PN_labels[0])
+        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4)
+        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7, label=PN_labels[1])
+        ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
     else:
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=0.4, label=r'Cutoff $\Delta_{s,t}$')
+        ax.set_title('Distribution of estimation error, age groups')
+        ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
         for k in range(n_age_cutoffs):
             y40 = y4[:, k]
             y50 = y5[:, k]
