@@ -12,7 +12,7 @@ from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_
     rho_i_mix, cohort_type_size_mix
 import statsmodels.api as sm
 import pandas as pd
-# import tabulate as tab
+import tabulate as tab
 from scipy.interpolate import make_interp_spline
 
 # Fig1: Shocks and beliefs
@@ -24,6 +24,9 @@ data_shocks = pd.read_excel(
     index_col=0
 )
 results_df1 = np.load("parti_rate_regressions.npz")
+file_list_regression = results_df1.files
+results_mean_vola = np.load('results_mean_vola.npz')
+file_list_mean_vola = results_mean_vola.files
 
 plt.rcParams["font.family"] = 'serif'
 
@@ -521,3 +524,213 @@ plt.show()
 plt.close()
 
 
+
+
+######################################
+#############  Table 1  ##############
+######################################
+for file in file_list_mean_vola:
+    print(file)
+    print(np.average(results_mean_vola[file], axis=0))
+
+Nsce = 4
+Ncolumn = int(Nsce * 2)
+# Panel 1: mean vola of asset pricing values
+table_output = np.zeros((5, Ncolumn))
+# var_list = [r_baseline_mat, theta_baseline_mat, Phi1_baseline_mat * sigma_Y, Delta_bar_baseline_mat]
+header = np.tile(['Mean', 'Std'], Nsce)
+# show_index = [r'$r_t$', r'$\theta_t$', r'$\sigma_Y\frac{1}{\Phi_t}$', r'$\bar{\Delta}_t$']
+for j, file in enumerate(file_list_mean_vola[1:6]):
+    var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index:col_index + 2] = var_average[i]
+show_index = [r'$dR_t$',
+              r'$\theta_t$',
+              r'$\r_t$',
+              r'$\mu^S_t$',
+              r'$\sigma^S_t$',
+              ]
+print(tab.tabulate(table_output, headers=header, showindex=show_index, floatfmt=".4f",
+                   tablefmt='latex_raw'))
+
+# Panel 2: covariance
+file = file_list_mean_vola[11]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, Ncolumn))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$\text{Cov}(dz_t^Y, \theta_t)$',
+              r'$\text{Cov}(dz_t^Y, \mu_t^S)$',
+              r'$\text{Cov}(dz_t^Y, \sigma_t^S)$',
+              r'$\text{Cov}(dz_t^{SI}, \theta_t)$',
+              r'$\text{Cov}(\Bar{\Phi}_t, P_t)$',
+              r'$\text{Cov}(\tilde{\Phi}_t, P_t)$',
+              ]
+print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 3: participation rate in age groups
+file = file_list_mean_vola[9]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, int(Ncolumn/2)))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i
+        table_output[row_index, col_index] = var_average[i, j]
+print(tab.tabulate(table_output,
+                   showindex=age_labels,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+# Panel 4: participation rate in wealth groups
+file = file_list_mean_vola[10]
+var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+N_row = np.shape(var_average)[1]
+table_output = np.zeros((N_row, int(Ncolumn/2)))
+for j in range(N_row):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i
+        table_output[row_index, col_index] = var_average[i, j]
+show_index = [r'$ \text{wealth} \leq 1$',
+              r'$1 <\text{wealth} \leq 10$',
+              r'$10 < \text{wealth} \leq 100$',
+              r'$\text{wealth} > 100$',
+              ]
+print(tab.tabulate(table_output,
+                   showindex=show_index,
+                   floatfmt=".4f", tablefmt='latex_raw'))
+
+entry_rate = np.average(np.average(results_df1['entry rate'], axis=3), axis=0)
+exit_rate = np.average(np.average(results_df1['exit rate'], axis=3), axis=0)
+# # Panel 7: participation rate covariances
+# # todo: participation rate and vola: conditional on some state variables?
+# file = file_list_mean_vola[13]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+# table_output = np.zeros((N_row, int(Ncolumn/2)))
+# for j in range(N_row):
+#     for i in range(Nsce):
+#         row_index = j
+#         col_index = i
+#         table_output[row_index, col_index] = var_average[i, j, 1]
+# show_index = [r'$ \text{Cov}\left(R^S_{t,t+2}, P_t\right)$',
+#               r'$ \text{Cov}\left(R_{t,t+2}, P_t\right)$',
+#               r'$ \text{Cov}\left(R^S_{t,t+2}-R_{t,t+2}, P_t\right)$',
+#               r'$ \text{Cov}\left(\text{average}\sigma_S, P_t\right)$',
+#               r'$ \text{Cov}\left(R_{t,t+2}^2, P_t\right)$']
+# print(tab.tabulate(table_output,
+#                    showindex=show_index,
+#                    floatfmt=".4f", tablefmt='latex_raw'))
+
+
+######################################
+##########  Regressions  #############
+######################################
+age_alpha_mat = results_df1['age alpha']
+y = np.average(age_alpha_mat, axis=0)[:, 0] / dt * 100
+x = np.arange(0, len(y) * 5, 5)
+fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(10, 8))
+ax.plot(x, y, linewidth=2)
+ax.set_title(r'Average annual alpha given age, $dR_{s,t} = \alpha_{t-s} + \beta_{t-s} dR_t^S + \epsilon_{t-s, t}$')
+ax.set_xlabel('Age')
+ax.set_ylabel(r'Average annual alpha, $\%$')
+ax.axhline(0, 0.05, 0.95, linestyle='dashed', color='gray')
+plt.savefig('Reentry_age_alpha.png', dpi=200)
+plt.show()
+plt.close()
+
+results_df = np.load('parti_rate_regressions.npz')
+# regression 1: participation rate on returns and pd
+parti = np.copy(results_df["participation rate"])
+annual_return = np.copy(results_df["annual stock return"])
+l_one_year_return = annual_return[:, :, 0]
+l_two_year_return = annual_return[:, :, 1]
+l_thr_year_return = annual_return[:, :, 2]
+min_return = np.copy(results_df["monthly min max return"])[:, :, 0]
+max_return = np.copy(results_df["monthly min max return"])[:, :, 1]
+pd_ratio = np.copy(results_df["pd ratio"])
+x_set = [
+    l_one_year_return,
+    l_two_year_return,
+    l_thr_year_return,
+    # min_return,
+    # max_return,
+    pd_ratio,
+    l_one_year_return,
+]
+# regression_table1_b = np.zeros((n_scenarios_short, len(x_set), Mpath, 2))
+# regression_table1_se = np.zeros((n_scenarios_short, len(x_set), Mpath, 2))
+# for sce in range(n_scenarios_short):
+#     for i, x in enumerate(x_set):
+#         for path in range(Mpath):
+#             if i < len(x_set) - 1:
+#                 x_regress = sm.add_constant(x[path, sce])
+#                 model = sm.OLS(y[path, sce], x_regress)
+#                 est = model.fit()
+#                 # b0 = est.params[0]
+#                 regression_table1_b[sce, i, path, :1] = est.params[1:]
+#                 regression_table1_se[sce, i, path, :1] = est.bse[1:]
+#
+#             else:
+#                 x_multi = np.column_stack((x[path, sce], pd_ratio[path, sce]))
+#                 x_regress = sm.add_constant(x_multi)
+#                 model = sm.OLS(y[path, sce], x_regress)
+#                 est = model.fit()
+#                 # b0 = est.params[0]
+#                 regression_table1_b[sce, i, path] = est.params[1:]
+#                 regression_table1_se[sce, i, path] = est.bse[1:]
+#
+# table1_b = np.average(regression_table1_b, axis=2)
+# table1_se = np.average(regression_table1_se, axis=2)
+#
+# for k in range(n_scenarios_short):
+#     label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
+#     reg_data = np.zeros(((len(x_set) - 1) * 2, len(x_set)))
+#     for i in range(len(x_set) - 1):
+#         reg_data[i * 2, i] = table1_b[k, i, 0]
+#         reg_data[i * 2 + 1, i] = table1_se[k, i, 0]
+#     reg_data[0, len(x_set) - 1] = table1_b[k, len(x_set) - 1, 0]
+#     reg_data[1, len(x_set) - 1] = table1_se[k, len(x_set) - 1, 0]
+#     reg_data[6, len(x_set) - 1] = table1_b[k, len(x_set) - 1, 1]
+#     reg_data[7, len(x_set) - 1] = table1_se[k, len(x_set) - 1, 1]
+#     print(label_scenario)
+#     print(tabulate.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
+#
+# # regression 2: participation rate predicts returns
+# f_one_year_return = annual_return[:, :, 3]
+# f_two_year_return = annual_return[:, :, 4]
+# f_thr_year_return = annual_return[:, :, 5]
+# y_set = [
+#     f_one_year_return,
+#     f_two_year_return,
+#     f_thr_year_return
+# ]
+# x = np.copy(results_df["participation rate"])
+# regression_table2_b = np.zeros((n_scenarios_short, len(y_set), Mpath))
+# regression_table2_se = np.zeros((n_scenarios_short, len(y_set), Mpath))
+# for sce in range(n_scenarios_short):
+#     for i, y in enumerate(y_set):
+#         for path in range(Mpath):
+#             x_regress = sm.add_constant(x[path, sce])
+#             model = sm.OLS(y[path, sce], x_regress)
+#             est = model.fit()
+#             # b0 = est.params[0]
+#             regression_table2_b[sce, i, path] = est.params[1]
+#             regression_table2_se[sce, i, path] = est.bse[1]
+# table2_b = np.average(regression_table2_b, axis=2)
+# table2_se = np.average(regression_table2_se, axis=2)
+# for k in range(n_scenarios_short):
+#     label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
+#     reg_data = np.zeros((2, len(y_set)))
+#     for i in range(len(y_set)):
+#         reg_data[0, i] = table2_b[k, i]
+#         reg_data[1, i] = table2_se[k, i]
+#     print(label_scenario)
+#     print(tabulate.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))

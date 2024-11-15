@@ -1,5 +1,7 @@
 import numpy as np
 from typing import Tuple
+
+from src.param_mix import cohort_type_size_mix
 from src.stats import post_var, dDelta_st_calculator
 from src.solver import bisection, solve_theta, bisection_partial_constraint, \
     solve_theta_partial_constraint
@@ -152,8 +154,10 @@ def simulate_cohorts_SI(
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
     beta = np.zeros(Nt)
-    Delta_bar_parti = np.zeros(Nt, dtype=np.float16)  # consumption weighted estimation error of the stock market participants
-    Delta_tilde_parti = np.zeros(Nt, dtype=np.float16)  # wealth weighted estimation error of the stock market participants
+    Delta_bar_parti = np.zeros(Nt,
+                               dtype=np.float16)  # consumption weighted estimation error of the stock market participants
+    Delta_tilde_parti = np.zeros(Nt,
+                                 dtype=np.float16)  # wealth weighted estimation error of the stock market participants
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
     entry_mat = np.zeros(Nt, dtype=np.float16)
     exit_mat = np.zeros(Nt, dtype=np.float16)
@@ -352,12 +356,11 @@ def simulate_cohorts_SI(
                 parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
                                                          weights=cohort_type_size[within_group])
 
-        turnover = np.copy(invest_tracker[0])
-        turnover[:-12] = invest_tracker[0, :-12] - invest_mat[i - 12, 12:]
-
-        entry_mat[i] = np.sum((turnover > 0) * np.sum(cohort_type_size, axis=0))
-        exit_mat[i] = np.sum((turnover < 0) * np.sum(cohort_type_size, axis=0))
-
+        entry_i = np.copy(invest_tracker[0])
+        entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
+        exit_i = invest_tracker[0, :-12] < invest_mat[i - 12, 12:]
+        entry_mat[i] = np.sum(entry_i * np.sum(cohort_type_size, axis=0))
+        exit_mat[i] = np.sum(exit_i * np.sum(cohort_type_size[:, :-12], axis=0))
 
     return (
         r,
@@ -695,7 +698,7 @@ def simulate_cohorts_mean_vola(
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    pd_matrix = np.array([np.mean(1/beta), np.std(1/beta)])
+    pd_matrix = np.array([np.mean(1 / beta), np.std(1 / beta)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
@@ -945,8 +948,8 @@ def simulate_cohorts_mix_type(
     Delta_tilde_parti = np.zeros(Nt,
                                  dtype=np.float16)  # wealth weighted estimation error of the stock market participants
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
-    entry = np.ones(Nt, dtype=np.float16)
-    exit = np.ones(Nt, dtype=np.float16)
+    entry_mat = np.ones(Nt, dtype=np.float16)
+    exit_mat = np.ones(Nt, dtype=np.float16)
     parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
     parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
     dR_t = 0
@@ -1118,11 +1121,12 @@ def simulate_cohorts_mix_type(
         parti[i] = popu_parti_t
 
         # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
-        turnover = np.copy(invest_tracker[0])
-        turnover[:, :-12] = invest_tracker[0, :, :-12] - invest_mat[i - 12, :, 12:]
-
-        entry[i] = np.sum((turnover > 0) * cohort_type_size_parti)
-        exit[i] = np.sum((turnover < 0) * cohort_type_size_parti)
+        entry_i = np.copy(invest_tracker[0])
+        entry_i[:-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, :,
+                                                     12:]  # entry including the newborns who are in
+        exit_i = invest_tracker[0, :, :-12] < invest_mat[i - 12, :, 12:]  # exit excluding the newborns
+        entry_mat[i] = np.sum(entry_i * np.sum(cohort_type_size_mix, axis=0))
+        exit_mat[i] = np.sum(exit_i * np.sum(cohort_type_size[:, :, :-12], axis=0))
 
         for j in range(4):
             parti_age_group[i, j] = np.ma.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
@@ -1149,8 +1153,8 @@ def simulate_cohorts_mix_type(
         invest_mat,
         parti_age_group,
         parti_wealth_group,
-        entry,
-        exit
+        entry_mat,
+        exit_mat
     )
 
 
@@ -1424,7 +1428,7 @@ def simulate_mean_vola_mix_type(
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    pd_matrix = np.array([np.mean(1/beta), np.std(1/beta)])
+    pd_matrix = np.array([np.mean(1 / beta), np.std(1 / beta)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
