@@ -16,6 +16,7 @@ import statsmodels.api as sm
 plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_set = [
+    (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
     (0.25, 0.25, 0.25, 0.25),
     # (0.25, 0.25, 0.0, 0.5),
@@ -40,7 +41,7 @@ N_sample_bell = len(sample_bell)
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
 age_cut = 100
 Nc_cut = int(age_cut / dt)
-age_sample = np.arange(0, Nc_cut, 12)
+age_sample = np.arange(1, Nc_cut, 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 np.seterr(invalid='ignore')
 
@@ -72,14 +73,14 @@ def simulate_path(
     Delta_age_compare = np.zeros((n_scenarios, n_phi, 4, len(age_sample)), dtype=np.float32)
     parti_age_compare = np.zeros((n_scenarios, n_phi, 4, len(age_sample)), dtype=np.float32)
     mean_vola_compare = np.zeros((n_scenarios, n_phi, 5, 2), dtype=np.float32)
-    coef_age_compare = np.zeros((n_scenarios, n_phi, len(cohort_sample), 4, 2), dtype=np.float32)
+    coef_age_compare = np.zeros((n_scenarios, n_phi, len(cohort_sample), 4), dtype=np.float32)
     # average
     correlation_compare = np.zeros((n_scenarios, n_phi, 6), dtype=np.float32)
 
     for g, density in enumerate(density_set):
-        if g == 0:
+        if g <= 1:
             for h, phi in enumerate(phi_set):
-                mode_trade = "w_constraint"
+                mode_trade = "w_constraint" if g == 1 else "complete"
                 mode_learn = 'reentry'
                 (
                     r,
@@ -239,10 +240,10 @@ def simulate_path(
                     x_regress = sm.add_constant(dR[1:])
                     model = sm.OLS(R_st, x_regress)
                     est = model.fit()
-                    coef_age_compare[g, h, n] = est.params
+                    coef_age_compare[g, h, n] = est.params[0]
 
-                Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[age_sample]
-                parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[age_sample]
+                Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[-age_sample]
+                parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[-age_sample]
 
                 mean_list = [r, theta, sigma_S, mu_S, parti]
                 for n, mean_var in enumerate(mean_list):
@@ -415,10 +416,10 @@ def simulate_path(
                     x_regress = sm.add_constant(dR[1:])
                     model = sm.OLS(R_st, x_regress)
                     est = model.fit()
-                    coef_age_compare[g, h, n, m] = est.params
+                    coef_age_compare[g, h, n, m] = est.params[0]
 
-            Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[:, age_sample]
-            parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[:, age_sample]
+            Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[:, -age_sample]
+            parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[:, -age_sample]
 
             mean_list = [r, theta, sigma_S, mu_S, parti]
             for n, mean_var in enumerate(mean_list):
@@ -453,7 +454,7 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []

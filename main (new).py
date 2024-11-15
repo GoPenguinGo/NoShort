@@ -23,6 +23,8 @@ data_shocks = pd.read_excel(
     sheet_name='Sheet1',
     index_col=0
 )
+results_df1 = np.load("parti_rate_regressions.npz")
+
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
@@ -327,10 +329,52 @@ for jj, ax in enumerate(axes):
     ax.set_xlabel('Time in simulation')
     fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-fig.savefig('f2.png',
-                # bbox_inches=extent.expanded(1.25, 1.3),
-                dpi=200)
+fig.savefig('f2.png', dpi=200)
 plt.show()
 plt.close()
 
 
+######################################
+###########   Figure 3   #############
+######################################
+## Estimation error and participation rate given age
+age_Delta = results_df1['age Delta']  # paths, scenario, phi, type, age
+age_parti = results_df1['age parti']
+ave_age_Delta = np.average(age_Delta, axis=0)
+ave_age_parti = np.average(age_parti, axis=0)
+
+phi_set = [0.0, 0.4, 0.8]
+n_phi = len(phi_set)
+age_cut = 100
+Nc_cut = int(age_cut / dt)
+x_age = np.arange(1, Nc_cut, 12) * dt
+Delta_focus = ave_age_Delta[0, :, 3]
+parti_focus = ave_age_parti[0, :, 3]
+fig_titles = [r'Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
+              'Reentry, average participation probability']
+y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(15, 7.5))
+for j, ax in enumerate(axes):
+    ax.set_xlabel('Age')
+    y_case = Delta_vector if j == 0 else invest_vector
+    ax.set_ylabel(y_titles[j])
+    for i in range(3):
+        if j == 0:
+            ax.set_ylim(0.04, 0.18)
+            y_reentry = y_case[1, i, :N_cut]
+            label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_vector[i]))
+            ax.plot(x, y_reentry, color=colors[i], linewidth=0.8, label=label_i)
+            ax.legend()
+            if phi_vector[i] != 0:
+                y_complete = y_case[0, i, :N_cut]
+                ax.plot(x, y_complete, color=colors[i], linewidth=0.8, linestyle='dashed')
+        else:
+            y = y_case[i, :N_cut]
+            ax.plot(x, y, color=colors[i], linewidth=0.8)
+    ax.set_title(fig_titles[j], color='black')
+    ax.tick_params(axis='y', labelcolor='black')
+    ax.set_xlim(-1, 100)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Average estimation error and age.png', dpi=60)
+plt.show()
+# plt.close()
