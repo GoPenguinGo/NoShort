@@ -56,7 +56,8 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 cummu_popu = np.cumsum(cohort_size)
 n_age_cutoffs = 4
 quartiles = np.linspace(1, 0, n_age_cutoffs+1)
-cutoffs_age = np.searchsorted(cummu_popu, quartiles)
+# cutoffs_age = np.searchsorted(cummu_popu, quartiles)
+cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
 
 Mpath = 2000
 

@@ -289,6 +289,7 @@ for m in range(Nt_data):
         Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
         y_cases[n][m] = Delta_cutoff
 
+x = 1926 + np.arange(Nt_data) * dt
 y1 = np.copy(y_overall)
 y2 = np.copy(y_P)
 y3 = np.copy(y_N)
@@ -299,9 +300,9 @@ belief_cutoff_case = -theta_compare[0, 1]
 fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
 for jj, ax in enumerate(axes):
     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax.set_title('Distribution of estimation error')
     ax.set_ylim(-5, 3)
     if jj == 0:
+        ax.set_title('Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
         y21 = y2[:, 1]
         y22 = y2[:, 2]
@@ -318,6 +319,7 @@ for jj, ax in enumerate(axes):
         ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7, label=PN_labels[1])
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
     else:
+        ax.set_title('Distribution of estimation error, age groups')
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
         for k in range(n_age_cutoffs):
             y40 = y4[:, k]
