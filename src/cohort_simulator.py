@@ -359,8 +359,8 @@ def simulate_cohorts_SI(
         entry_i = np.copy(invest_tracker[0])
         entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
         exit_i = invest_tracker[0, :-12] < invest_mat[i - 12, 12:]
-        entry_mat[i] = np.sum(entry_i * np.sum(cohort_type_size, axis=0))
-        exit_mat[i] = np.sum(exit_i * np.sum(cohort_type_size[:, :-12], axis=0))
+        entry_mat[i] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+        exit_mat[i] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12], axis=0))
 
     return (
         r,
