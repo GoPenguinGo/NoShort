@@ -58,7 +58,7 @@ def simulate_path(
     dZ_SI = dZ_SI_matrix[i]
 
     # sample: in time-series
-    # parti_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
+    parti_compare = np.zeros((n_scenarios, n_phi, N_sample), dtype=np.float32)
     # parti_age_group_compare = np.zeros((n_scenarios, n_phi, 4, N_sample), dtype=np.float32)
     # parti_wealth_group_compare = np.zeros((n_scenarios, n_phi, N_sample, 4), dtype=np.float32)
     annual_return_compare = np.zeros((n_scenarios, n_phi, 6, N_sample), dtype=np.float32)
@@ -143,7 +143,7 @@ def simulate_path(
                 annual_return_compare[g, h, :3] = past_annual_return[:, sample]
                 annual_return_compare[g, h, 3:] = future_annual_return[:, sample]
                 pd_compare[g, h] = np.copy(1 / beta)[sample]
-                # parti_compare[g, h] = parti[sample]
+                parti_compare[g, h] = parti[sample]
                 future_exc_R_compare[g, h] = (future_annual_return[0] - r)[sample]
                 entry_compare[g, h] = entry_mat[sample]
                 exit_compare[g, h] = exit_mat[sample]
@@ -291,7 +291,7 @@ def simulate_path(
             annual_return_compare[g, h, :3] = past_annual_return[:, sample]
             annual_return_compare[g, h, 3:] = future_annual_return[:, sample]
             pd_compare[g, h] = np.copy(1 / beta)[sample]
-            # parti_compare[g, h] = parti[sample]
+            parti_compare[g, h] = parti[sample]
             future_exc_R_compare[g, h] = (future_annual_return[0] - r)[sample]
             entry_compare[g, h] = entry_mat[sample]
             exit_compare[g, h] = exit_mat[sample]
@@ -411,7 +411,7 @@ def simulate_path(
 
     return (
         i,
-        # parti_compare,
+        parti_compare,
         # parti_age_group_compare,
         # parti_wealth_group_compare,
         annual_return_compare,

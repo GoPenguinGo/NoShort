@@ -531,10 +531,10 @@ def simulate_mix_types(
         eta_st_eta_ss,
         X,
         d_eta_st,
-        invest_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        tau_info,
         Vhat_vector,
-        can_short_tracker_build,
+        can_short_tracker,
     ) = build_cohorts_mix_type(
         dZ_build,
         dZ_SI_build,
@@ -572,8 +572,8 @@ def simulate_mix_types(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
-        entry,
-        exit
+        entry_mat,
+        exit_mat
     ) = simulate_cohorts_mix_type(
         biasvec,
         dZ,
@@ -602,9 +602,9 @@ def simulate_mix_types(
         eta_st_eta_ss,
         X,
         d_eta_st,
-        invest_tracker_build,
-        can_short_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        can_short_tracker,
+        tau_info,
         Vhat_vector,
         need_f,
         need_Delta,
@@ -629,8 +629,8 @@ def simulate_mix_types(
         invest_tracker,
         parti_age_group,
         parti_wealth_group,
-        entry,
-        exit
+        entry_mat,
+        exit_mat
     )
 
 
