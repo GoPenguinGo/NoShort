@@ -431,6 +431,7 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward, saving only the mean & std of the results
 
@@ -505,6 +506,10 @@ def simulate_cohorts_mean_vola(
     parti_age_group = np.ones((Nt - keep_when, 4))
     N_wealth_group = 4
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+
+    entry_mat = np.ones((Nt - keep_when))
+    exit_mat = np.ones((Nt - keep_when))
+    invest_mat = np.ones((Nt, Nt))
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -664,6 +669,7 @@ def simulate_cohorts_mean_vola(
         )
 
         mu_S_t = sigma_S_t * theta_t + r_t
+        invest_mat[i] = invest_tracker[0]
 
         # store the results
         if i >= keep_when:  # only keeping the data after 200 years in the simulation
@@ -692,6 +698,12 @@ def simulate_cohorts_mean_vola(
                     parti_age_group[ii, j] = np.ma.average(invest_age,
                                                            weights=cohort_type_age)
 
+            entry_i = np.copy(invest_tracker[0])
+            entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
+            exit_i = invest_tracker[0, :-12] < invest_mat[i - 12, 12:]  # exit excluding the newborns
+            entry_mat[ii] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+            exit_mat[ii] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12], axis=0))
+
     # save the mean and standard deviation
     dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
     theta_matrix = np.array([np.mean(theta), np.std(theta)])
@@ -699,6 +711,7 @@ def simulate_cohorts_mean_vola(
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
     pd_matrix = np.array([np.mean(1 / beta), np.std(1 / beta)])
+    entry_exit_matrix = np.array([np.mean(entry_mat), np.mean(exit_mat)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
@@ -802,6 +815,7 @@ def simulate_cohorts_mean_vola(
         cov_save_matrix,
         parti,
         cov_parti_matrix,
+        entry_exit_matrix
     )
 
 
@@ -1115,11 +1129,11 @@ def simulate_cohorts_mix_type(
 
         Phi_bar_parti[i] = fc_parti_t
         Phi_tilde_parti[i] = fw_parti_t
-        invest_mat[i] = invest_tracker[0]
         popu_short[i] = popu_short_t
         Phi_can_short[i] = Phi_can_short_t
         parti[i] = popu_parti_t
 
+        invest_mat[i] = invest_tracker[0]
         # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
         entry_i = np.copy(invest_tracker[0])
         entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, :, 12:]  # entry including the newborns who are in
@@ -1189,6 +1203,7 @@ def simulate_mean_vola_mix_type(
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
 ) -> Tuple[
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -1283,6 +1298,10 @@ def simulate_mean_vola_mix_type(
     parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
     wealth_groups = np.linspace(1, 0, N_wealth_group + 1)
     parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
+
+    entry_mat = np.ones((Nt - keep_when))
+    exit_mat = np.ones((Nt - keep_when))
+    invest_mat = np.ones((Nt, 4, Nt))
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -1399,6 +1418,8 @@ def simulate_mean_vola_mix_type(
 
         mu_S_t = sigma_S_t * theta_t + r_t
 
+        invest_mat[i] = invest_tracker[0]
+
         # store the results, only the aggregate values
         if i >= keep_when:  # only keeping the data after 200 years in the simulation
             ii = i - keep_when
@@ -1422,12 +1443,20 @@ def simulate_mean_vola_mix_type(
                 invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
                 cohort_type_age = cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
                 parti_age_group[ii, j] = np.ma.average(invest_age, weights=cohort_type_age)
+            # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
+            entry_i = np.copy(invest_tracker[0])
+            entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, :,
+                                                            12:]  # entry including the newborns who are in
+            exit_i = invest_tracker[0, :, :-12] < invest_mat[i - 12, :, 12:]  # exit excluding the newborns
+            entry_mat[ii] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
+            exit_mat[ii] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12], axis=0))
     dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
     theta_matrix = np.array([np.mean(theta), np.std(theta)])
     r_matrix = np.array([np.mean(r), np.std(r)])
     mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
     sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
     pd_matrix = np.array([np.mean(1 / beta), np.std(1 / beta)])
+    entry_exit_matrix = np.array([np.mean(entry_mat), np.mean(exit_mat)])
 
     Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
     Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
@@ -1525,4 +1554,5 @@ def simulate_mean_vola_mix_type(
         cov_save_matrix,
         parti,
         cov_parti_matrix,
+        entry_exit_matrix
     )
