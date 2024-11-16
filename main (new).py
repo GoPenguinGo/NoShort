@@ -634,7 +634,7 @@ exit_rate = np.average(np.average(results_df1['exit rate'], axis=3), axis=0)
 ##########  Regressions  #############
 ######################################
 age_alpha_mat = results_df1['age alpha']
-y = np.average(age_alpha_mat, axis=0)[:, 0] / dt * 100
+y = np.average(age_alpha_mat, axis=0) / dt * 100
 x = np.arange(0, len(y) * 5, 5)
 fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(10, 8))
 ax.plot(x, y, linewidth=2)
@@ -646,91 +646,66 @@ plt.savefig('Reentry_age_alpha.png', dpi=200)
 plt.show()
 plt.close()
 
-results_df = np.load('parti_rate_regressions.npz')
 # regression 1: participation rate on returns and pd
-parti = np.copy(results_df["participation rate"])
-annual_return = np.copy(results_df["annual stock return"])
-l_one_year_return = annual_return[:, :, 0]
-l_two_year_return = annual_return[:, :, 1]
-l_thr_year_return = annual_return[:, :, 2]
-min_return = np.copy(results_df["monthly min max return"])[:, :, 0]
-max_return = np.copy(results_df["monthly min max return"])[:, :, 1]
-pd_ratio = np.copy(results_df["pd ratio"])
+parti = np.copy(results_df1["participation rate"])
+annual_return = np.copy(results_df1["annual stock return"])
+l_one_year_return = annual_return[:, :, :, 0]
+l_two_year_return = annual_return[:, :, :, 1]
+l_thr_year_return = annual_return[:, :, :, 2]
+pd_ratio = np.copy(results_df1["pd ratio"])
 x_set = [
     l_one_year_return,
     l_two_year_return,
     l_thr_year_return,
-    # min_return,
-    # max_return,
     pd_ratio,
-    l_one_year_return,
 ]
-# regression_table1_b = np.zeros((n_scenarios_short, len(x_set), Mpath, 2))
-# regression_table1_se = np.zeros((n_scenarios_short, len(x_set), Mpath, 2))
-# for sce in range(n_scenarios_short):
-#     for i, x in enumerate(x_set):
-#         for path in range(Mpath):
-#             if i < len(x_set) - 1:
-#                 x_regress = sm.add_constant(x[path, sce])
-#                 model = sm.OLS(y[path, sce], x_regress)
-#                 est = model.fit()
-#                 # b0 = est.params[0]
-#                 regression_table1_b[sce, i, path, :1] = est.params[1:]
-#                 regression_table1_se[sce, i, path, :1] = est.bse[1:]
-#
-#             else:
-#                 x_multi = np.column_stack((x[path, sce], pd_ratio[path, sce]))
-#                 x_regress = sm.add_constant(x_multi)
-#                 model = sm.OLS(y[path, sce], x_regress)
-#                 est = model.fit()
-#                 # b0 = est.params[0]
-#                 regression_table1_b[sce, i, path] = est.params[1:]
-#                 regression_table1_se[sce, i, path] = est.bse[1:]
-#
-# table1_b = np.average(regression_table1_b, axis=2)
+Mpath = np.shape(parti)[0]
+regression_table1_b = np.zeros((2, len(x_set), Mpath))
+# regression_table1_se = np.zeros((2, len(x_set), Mpath, 2))
+for sce in range(2):
+    for i, x in enumerate(x_set):
+        for path in range(Mpath):
+            x_regress = sm.add_constant(x[path, sce+1, 1])
+            model = sm.OLS(parti[path, sce+1, 1], x_regress)
+            est = model.fit()
+            # b0 = est.params[0]
+            regression_table1_b[sce, i, path] = est.params[1]
+            # regression_table1_se[sce, i, path, :1] = est.bse[1:]
+table1_b = np.average(regression_table1_b, axis=2)
 # table1_se = np.average(regression_table1_se, axis=2)
-#
-# for k in range(n_scenarios_short):
-#     label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
-#     reg_data = np.zeros(((len(x_set) - 1) * 2, len(x_set)))
-#     for i in range(len(x_set) - 1):
-#         reg_data[i * 2, i] = table1_b[k, i, 0]
-#         reg_data[i * 2 + 1, i] = table1_se[k, i, 0]
-#     reg_data[0, len(x_set) - 1] = table1_b[k, len(x_set) - 1, 0]
-#     reg_data[1, len(x_set) - 1] = table1_se[k, len(x_set) - 1, 0]
-#     reg_data[6, len(x_set) - 1] = table1_b[k, len(x_set) - 1, 1]
-#     reg_data[7, len(x_set) - 1] = table1_se[k, len(x_set) - 1, 1]
-#     print(label_scenario)
-#     print(tabulate.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
-#
-# # regression 2: participation rate predicts returns
-# f_one_year_return = annual_return[:, :, 3]
-# f_two_year_return = annual_return[:, :, 4]
-# f_thr_year_return = annual_return[:, :, 5]
-# y_set = [
-#     f_one_year_return,
-#     f_two_year_return,
-#     f_thr_year_return
-# ]
-# x = np.copy(results_df["participation rate"])
-# regression_table2_b = np.zeros((n_scenarios_short, len(y_set), Mpath))
-# regression_table2_se = np.zeros((n_scenarios_short, len(y_set), Mpath))
-# for sce in range(n_scenarios_short):
-#     for i, y in enumerate(y_set):
-#         for path in range(Mpath):
-#             x_regress = sm.add_constant(x[path, sce])
-#             model = sm.OLS(y[path, sce], x_regress)
-#             est = model.fit()
-#             # b0 = est.params[0]
-#             regression_table2_b[sce, i, path] = est.params[1]
-#             regression_table2_se[sce, i, path] = est.bse[1]
-# table2_b = np.average(regression_table2_b, axis=2)
-# table2_se = np.average(regression_table2_se, axis=2)
-# for k in range(n_scenarios_short):
-#     label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
-#     reg_data = np.zeros((2, len(y_set)))
-#     for i in range(len(y_set)):
-#         reg_data[0, i] = table2_b[k, i]
-#         reg_data[1, i] = table2_se[k, i]
-#     print(label_scenario)
-#     print(tabulate.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
+
+for k in range(2):
+    label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
+    reg_data = np.zeros((len(x_set), len(x_set)))
+    for i in range(len(x_set)):
+        reg_data[i, i] = table1_b[k, i]
+    print(label_scenario)
+    print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
+
+# regression 2: participation rate predicts returns
+f_one_year_return = annual_return[:, :, :, 3]
+f_two_year_return = annual_return[:, :, :, 4]
+f_thr_year_return = annual_return[:, :, :, 5]
+y_set = [
+    f_one_year_return,
+    f_two_year_return,
+    f_thr_year_return
+]
+x = np.copy(parti)
+regression_table2_b = np.zeros((2, len(y_set), Mpath))
+for sce in range(2):
+    for i, y in enumerate(y_set):
+        for path in range(Mpath):
+            x_regress = sm.add_constant(x[path, sce+1, 1])
+            model = sm.OLS(y[path, sce+1, 1], x_regress)
+            est = model.fit()
+            # b0 = est.params[0]
+            regression_table2_b[sce, i, path] = est.params[1]
+table2_b = np.average(regression_table2_b, axis=2)
+for k in range(2):
+    label_scenario = 'Reentry' if k == 0 else 'Mix - 4'
+    reg_data = np.zeros((1, len(y_set)))
+    for i in range(len(y_set)):
+        reg_data[0, i] = table2_b[k, i]
+    print(label_scenario)
+    print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
