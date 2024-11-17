@@ -509,7 +509,7 @@ def simulate_cohorts_mean_vola(
 
     entry_mat = np.ones((Nt - keep_when))
     exit_mat = np.ones((Nt - keep_when))
-    invest_mat = np.ones((Nt, Nt))
+    invest_mat = np.ones((Nt, Nt), dtype=int)
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -699,7 +699,7 @@ def simulate_cohorts_mean_vola(
                                                            weights=cohort_type_age)
 
             entry_i = np.copy(invest_tracker[0])
-            entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
+            entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
             exit_i = invest_tracker[0, :-12] < invest_mat[i - 12, 12:]  # exit excluding the newborns
             entry_mat[ii] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
             exit_mat[ii] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12], axis=0))
@@ -1301,7 +1301,7 @@ def simulate_mean_vola_mix_type(
 
     entry_mat = np.ones((Nt - keep_when))
     exit_mat = np.ones((Nt - keep_when))
-    invest_mat = np.ones((Nt, 4, Nt))
+    invest_mat = np.ones((Nt, 4, Nt), dtype=int)
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)

@@ -12,11 +12,11 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-Mpath = 1000
+Mpath = 500
 
 
 def simulate_mean_vola_path(i: int,
-                            Nscenario=4,
+                            Nscenario=2,
                             ):
     print(i)
     # Initialize results for the current Mpath
@@ -26,6 +26,7 @@ def simulate_mean_vola_path(i: int,
     mu_S_mean_vola_results = np.zeros((Nscenario, 2))
     sigma_S_mean_vola_results = np.zeros((Nscenario, 2))
     pd_mean_vola_results = np.zeros((Nscenario, 2))
+    entry_exit_results = np.zeros((Nscenario, 2))
     theta_save_mean_vola_results = np.zeros((Nscenario, 2, 2))
     sigma_S_save_mean_vola_results = np.zeros((Nscenario, 4, 2))
     parti_age_group_mean_vola_results = np.zeros((Nscenario, 4))
@@ -45,8 +46,9 @@ def simulate_mean_vola_path(i: int,
     # dZ_SI = np.random.randn(Nt) * dt_root
 
     for g in range(Nscenario):
-        if g <= 1:
-            scenario = scenarios[g]
+        # if g <= 1:
+        if g == 0:
+            scenario = scenarios[g+1]
             mode_trade = scenario[0]
             mode_learn = scenario[1]
             (
@@ -63,6 +65,7 @@ def simulate_mean_vola_path(i: int,
                 cov_save_mean_vola,
                 parti_mean_vola,
                 cov_parti_mean_vola,
+                entry_exit,
             ) = simulate_SI_mean_vola(
                 mode_trade,
                 mode_learn,
@@ -92,7 +95,7 @@ def simulate_mean_vola_path(i: int,
                 cohort_type_size
             )
         else:
-            alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
+            alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 1 else np.ones(
                 (1, Nconstraint)) * (0.5, 0.5, 0, 0)
             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
             cohort_type_size_mix = cohort_size * alpha_i_mix
@@ -111,7 +114,8 @@ def simulate_mean_vola_path(i: int,
                 parti_wealth_group_mean_vola,
                 cov_save_mean_vola,
                 parti_mean_vola,
-                cov_parti_mean_vola
+                cov_parti_mean_vola,
+                entry_exit,
             ) = simulate_mix_mean_vola(
                 Nc,
                 Nt,
@@ -152,6 +156,7 @@ def simulate_mean_vola_path(i: int,
         cov_save_mean_vola_results[g] = cov_save_mean_vola
         parti_results[g] = parti_mean_vola
         cov_parti_results[g] = cov_parti_mean_vola
+        entry_exit_results[g] = entry_exit
     covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
 
     return (
@@ -174,7 +179,7 @@ def simulate_mean_vola_path(i: int,
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=30) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_mean_vola_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
