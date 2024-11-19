@@ -157,7 +157,8 @@ def simulate_mean_vola_path(i: int,
         parti_results[g] = parti_mean_vola
         cov_parti_results[g] = cov_parti_mean_vola
         entry_exit_results[g] = entry_exit
-    covariance_parti = np.corrcoef(parti_results[1], parti_results[2])[0, 1]
+    covariance_parti = np.corrcoef(parti_results[0], parti_results[1])[0, 1]
+    np.save(str(i)+'.npy', entry_exit_results)
 
     return (
         i,

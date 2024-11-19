@@ -509,7 +509,7 @@ def simulate_cohorts_mean_vola(
 
     entry_mat = np.ones((Nt - keep_when))
     exit_mat = np.ones((Nt - keep_when))
-    invest_mat = np.ones((Nt, Nt), dtype=int)
+    invest_mat = np.ones((12, Nt), dtype=np.int8)
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -669,7 +669,6 @@ def simulate_cohorts_mean_vola(
         )
 
         mu_S_t = sigma_S_t * theta_t + r_t
-        invest_mat[i] = invest_tracker[0]
 
         # store the results
         if i >= keep_when:  # only keeping the data after 200 years in the simulation
@@ -699,10 +698,11 @@ def simulate_cohorts_mean_vola(
                                                            weights=cohort_type_age)
 
             entry_i = np.copy(invest_tracker[0])
-            entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[i - 12, 12:]  # entry including the newborns who are in
-            exit_i = invest_tracker[0, :-12] < invest_mat[i - 12, 12:]  # exit excluding the newborns
+            entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[0, 12:]  # entry including the newborns who are in
+            exit_i = invest_tracker[0, :-12] < invest_mat[0, 12:]  # exit excluding the newborns
             entry_mat[ii] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
             exit_mat[ii] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12], axis=0))
+        invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0))
 
     # save the mean and standard deviation
     dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
@@ -1301,7 +1301,7 @@ def simulate_mean_vola_mix_type(
 
     entry_mat = np.ones((Nt - keep_when))
     exit_mat = np.ones((Nt - keep_when))
-    invest_mat = np.ones((Nt, 4, Nt), dtype=int)
+    invest_mat = np.ones((12, 4, Nt), dtype=np.int8)
 
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -1418,8 +1418,6 @@ def simulate_mean_vola_mix_type(
 
         mu_S_t = sigma_S_t * theta_t + r_t
 
-        invest_mat[i] = invest_tracker[0]
-
         # store the results, only the aggregate values
         if i >= keep_when:  # only keeping the data after 200 years in the simulation
             ii = i - keep_when
@@ -1445,11 +1443,12 @@ def simulate_mean_vola_mix_type(
                 parti_age_group[ii, j] = np.ma.average(invest_age, weights=cohort_type_age)
             # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
             entry_i = np.copy(invest_tracker[0])
-            entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[i - 12, :,
+            entry_i[:, :-12] = invest_tracker[0, :, :-12] > invest_mat[0, :,
                                                             12:]  # entry including the newborns who are in
-            exit_i = invest_tracker[0, :, :-12] < invest_mat[i - 12, :, 12:]  # exit excluding the newborns
+            exit_i = invest_tracker[0, :, :-12] < invest_mat[0, :, 12:]  # exit excluding the newborns
             entry_mat[ii] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
             exit_mat[ii] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12], axis=0))
+        invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4,-1)), axis=0))
     dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
     theta_matrix = np.array([np.mean(theta), np.std(theta)])
     r_matrix = np.array([np.mean(r), np.std(r)])

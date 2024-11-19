@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_mix_types
-from src.param import nu, mu_Y, sigma_Y, \
+from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
@@ -11,9 +11,9 @@ from src.param_mix import Nconstraint, rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 # from cupyx.scipy.interpolate import RBFInterpolator
 
-# country_names = ['US', 'Finland', 'Germany', 'Norway']
-country_names = [ 'US']
-folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
+country_names = ['US', 'Finland', 'Germany', 'Norway']
+# country_names = ['US']
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
@@ -31,15 +31,16 @@ n_scenarios = len(density_set)
 # T_hat_set = [1, 2, 5]  # Pre-learning window
 # phi_set = [0.0, 0.2, 0.4]
 # tax_set = [0.3, 0.4, 0.5]
-T_hat_set = [2]  # Pre-learning window
+T_hat_set = [2, 5, 10]  # Pre-learning window
 phi_set = [0.0, 0.4]
-tax_set = [0.5]
+tax_set = [0.3, 0.5]
+nu_set = [0.02, 0.03]
 n_T_hat = len(T_hat_set)
 n_phi = len(phi_set)
 n_tax = len(tax_set)
 
 # # for testing:
-Mpath = 50
+Mpath = 100
 # Mpath = 1
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
@@ -64,11 +65,11 @@ def simulate_path(
     dZ_SI = dZ_SI_matrix[i]
     dZ_SI[-Nt_data:] = dZ_SI_actual
 
-    popu_parti_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios, Nt), dtype=np.float32)
+    # popu_parti_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios, Nt), dtype=np.float32)
     # popu_parti_old = np.empty((n_scenarios_short, Nt), dtype=np.float32)
     # popu_parti_young = np.empty((n_scenarios_short, Nt), dtype=np.float32)
     # r_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
-    dR_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios, Nt), dtype=np.float32)
+    # dR_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios, Nt), dtype=np.float32)
     # mu_S_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # sigma_S_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
     # pd_compare = np.zeros((n_scenarios_short, Nt), dtype=np.float32)
@@ -77,88 +78,91 @@ def simulate_path(
     # popu_exit_compare = np.empty((n_T_hat, n_phi, n_tax, n_scenarios_short, Nt), dtype=np.float32)
 
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
-    for a, T_hat in enumerate(T_hat_set):
+    for T_hat in T_hat_set:
         # print(a)
         Npre = int(T_hat / dt)
         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
-        for b, phi in enumerate(phi_set):
-            for c, tax in enumerate(tax_set):
-                beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-                beta0 = np.sum(alpha_i * beta_i).astype(float)
-                for g, density in enumerate(density_set):
-                    col_name = str(T_hat) + '_' + str(phi) + '_' + str(tax) + '_' + str(g)
-                    alpha_constraint = np.ones(
-                        (1, Nconstraint)) * density
-                    alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-                    cohort_type_size_mix = cohort_size * alpha_i_mix
-                    beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                    rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                        -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-                    (
-                        r,
-                        theta,
-                        f_c,
-                        Delta,
-                        pi,
-                        parti,
-                        Phi_bar_parti,
-                        Phi_tilde_parti,
-                        Delta_bar_parti,
-                        Delta_tilde_parti,
-                        dR,
-                        mu_S,
-                        sigma_S,
-                        beta,
-                        invest_tracker,
-                        parti_age_group,
-                        parti_wealth_group,
-                        entry_mat,
-                        exit_mat
-                    ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                           beta0,
-                                           phi, Npre, Ninit, T_hat,
-                                           dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                           cutoffs_age, Ntype,
-                                           Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                           rho_cohort_type_mix,
-                                           cohort_type_size_mix,
-                                           need_f='True',
-                                           need_Delta='True',
-                                           need_pi='True',
-                                           )
-                    popu_parti_compare[a, b, c, g] = parti
-                    dR_compare[a, b, c, g] = dR
+        for phi in phi_set:
+            for nu in nu_set:
+                for tax in tax_set:
+                    beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+                    beta0 = np.sum(alpha_i * beta_i).astype(float)
+                    for g, density in enumerate(density_set):
+                        col_name = str(T_hat) + '_' + str(phi) + '_' + str(nu) + '_' + str(tax) + '_' + str(g)
+                        alpha_constraint = np.ones(
+                            (1, Nconstraint)) * density
+                        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                        cohort_type_size_mix = cohort_size * alpha_i_mix
+                        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+                        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                        (
+                            r,
+                            theta,
+                            f_c,
+                            Delta,
+                            pi,
+                            parti,
+                            Phi_bar_parti,
+                            Phi_tilde_parti,
+                            Delta_bar_parti,
+                            Delta_tilde_parti,
+                            dR,
+                            mu_S,
+                            sigma_S,
+                            beta,
+                            invest_tracker,
+                            parti_age_group,
+                            parti_wealth_group,
+                            entry_mat,
+                            exit_mat
+                        ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                               beta0,
+                                               phi, Npre, Ninit, T_hat,
+                                               dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                               cutoffs_age, Ntype,
+                                               Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                               rho_cohort_type_mix,
+                                               cohort_type_size_mix,
+                                               need_f='False',
+                                               need_Delta='False',
+                                               need_pi='True',
+                                               )
+                        # popu_parti_compare[a, b, c, g] = parti
+                        # dR_compare[a, b, c, g] = dR
 
-                    parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-                    if country == 'US' or 'Germany' or 'Norway':
-                        age_parti = np.zeros((4, Nt_data))
-                        age_belief = np.zeros((4, Nt_data))
-                        for n in range(len(age_cutoffs_SCF) - 1):
-                            age_parti[n] = np.average(
-                                np.average(invest_tracker[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
-                                           weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
-                                weights=density,
-                                axis=1)
-                            age_belief[n] = np.average(
-                                np.average(Delta[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
-                                           weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]], axis=2),
-                                weights=density,
-                                axis=1)
-                        parti_df['belief_old' + col_name] = age_belief[3].astype(np.float32)
-                        parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                        parti_df['parti_old' + col_name] = age_parti[3].astype(np.float32)
-                        parti_df['parti_young' + col_name] = age_parti[0].astype(np.float32)
+                        parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                        if country == 'US' or 'Germany' or 'Norway':
+                            age_parti = np.zeros((4, Nt_data))
+                            age_belief = np.zeros((4, Nt_data))
+                            for n in range(len(age_cutoffs_SCF) - 1):
+                                age_parti[n] = np.average(
+                                    np.average(invest_tracker[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                               weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                               axis=2),
+                                    weights=density,
+                                    axis=1)
+                                age_belief[n] = np.average(
+                                    np.average(Delta[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                               weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                               axis=2),
+                                    weights=density,
+                                    axis=1)
+                            parti_df['belief_old' + col_name] = age_belief[3].astype(np.float32)
+                            parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                            parti_df['parti_old' + col_name] = age_parti[3].astype(np.float32)
+                            parti_df['parti_young' + col_name] = age_parti[0].astype(np.float32)
 
-                    # parti_df['parti' + col_name] = parti_all.astype(np.float32)
-                    if country == 'Norway' or 'Finland':
+                        # parti_df['parti' + col_name] = parti_all.astype(np.float32)
                         parti_df['entry' + col_name] = entry_mat[-Nt_data:].astype(np.float32)
                         parti_df['exit' + col_name] = exit_mat[-Nt_data:].astype(np.float32)
+
 
     parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + '.dta')
     return (
         i,
-        popu_parti_compare,
-        dR_compare,
+        # popu_parti_compare,
+        # dR_compare,
     )
 
 
@@ -171,26 +175,22 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []
 
         # Retrieve results from parallel processes
         for result in results:
-            i, \
-            popu_parti_result, \
-            dR_result = result.result()
+            i = result.result()
 
             data = {
                 "i": i,
-                "parti rate": popu_parti_result,
-                "dR": dR_result,
             }
             results_list.append(data)
 
         # Create a DataFrame from the list of dictionaries
-        results_df = pd.DataFrame(results_list)
+        # results_df = pd.DataFrame(results_list)
 
 if __name__ == '__main__':
     main()
