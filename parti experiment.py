@@ -41,8 +41,8 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
 
 # # for testing:
-# Mpath = 10
-Mpath = 100
+Mpath = 10
+# Mpath = 100
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -169,24 +169,27 @@ def simulate_path(
                 regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
                 for ii in range(3):
                     x = x_set[ii]
-                    for jj, y in enumerate(y_set):
+                    for jj, y_mat in enumerate(y_set):
                         if jj == 1:  # entry on high return
+                            y = y_mat[:, ii]
                             x_condi = (x > np.percentile(x, 75)) + 0
                             x_regress = sm.add_constant(x_condi)
                             model = sm.OLS(y, x_regress)
                         elif jj == 2:  # exit on low return
+                            y = y_mat[:, ii]
                             x_condi = (x < np.percentile(x, 25)) + 0
                             x_regress = sm.add_constant(x_condi)
                             model = sm.OLS(y, x_regress)
                         else:
+                            y = y_mat[ii]
                             x_regress = sm.add_constant(x)
-                            model = sm.OLS(y[ii], x_regress)
+                            model = sm.OLS(y, x_regress)
                         est = model.fit()
                         regression_table1_b[ii, jj] = est.params[1]
 
                 x_set = [parti[sample],
-                         entry_mat[sample],
-                         exit_mat[sample]]
+                         entry_mat[sample, 0],
+                         exit_mat[sample, 0]]
                 y_set = future_annual_return[:, sample]
                 regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
                 for ii in range(3):
@@ -658,7 +661,7 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
