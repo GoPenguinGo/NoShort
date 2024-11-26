@@ -158,8 +158,8 @@ def simulate_cohorts_SI(
     Delta_tilde_parti = np.zeros(Nt,
                                  dtype=np.float16)  # wealth weighted estimation error of the stock market participants
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
-    entry_mat = np.zeros(Nt, dtype=np.float16)
-    exit_mat = np.zeros(Nt, dtype=np.float16)
+    entry_mat = np.zeros((Nt, 3), dtype=np.float16)
+    exit_mat = np.zeros((Nt, 3), dtype=np.float16)
 
     dR_t = 0
 
