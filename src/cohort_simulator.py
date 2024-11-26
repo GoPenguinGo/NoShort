@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Tuple
-
 from src.param_mix import cohort_type_size_mix
 from src.stats import post_var, dDelta_st_calculator
 from src.solver import bisection, solve_theta, bisection_partial_constraint, \
@@ -143,7 +142,7 @@ def simulate_cohorts_SI(
 
     Phi_bar_parti = np.ones(Nt, dtype=np.float16)
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
-    invest_mat = np.ones((12, Nc), dtype=np.int8)
+    invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
     parti_age_group = np.ones((Nt, 4), dtype=np.float16)
 
@@ -354,12 +353,12 @@ def simulate_cohorts_SI(
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
                 parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
                                                          weights=cohort_type_size[within_group])
-
-        entry_i = np.copy(invest_tracker[0])
-        entry_i[:-12] = invest_tracker[0, :-12] > invest_mat[0, 12:]  # entry including the newborns who are in
-        exit_i = invest_tracker[0, :-12] < invest_mat[0, 12:]
-        entry_mat[i] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
-        exit_mat[i] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12], axis=0))
+        for j in range(3):
+            entry_i = np.copy(invest_tracker[0])
+            entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[0, 12 * (j + 1):]  # entry including the newborns who are in
+            exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[0, 12 * (j + 1):]
+            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+            exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0)
 
     return (
