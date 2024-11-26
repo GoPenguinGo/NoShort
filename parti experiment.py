@@ -1,13 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
-from src.param import nu, mu_Y, sigma_Y, \
-    dt, Ninit, Nt, Nc, tau, tax, Vhat, T_hat, beta_i, beta0, rho_cohort_type, Npre, \
+from src.param import mu_Y, sigma_Y, \
+    dt, Ninit, Nt, Nc, tau, tax, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    cohort_type_size, cohort_size, rho_i
+    cohort_type_size, cohort_size
 from src.param import phi
-from src.param_mix import Nconstraint, rho_i_mix
+# from src.param import rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
+from src.param_mix import Nconstraint
+# from src.param_mix import rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 import statsmodels.api as sm
@@ -26,12 +28,21 @@ density_set = [
     # (0.1, 0.1, 0.4, 0.4),
 ]
 n_scenarios = len(density_set)
+T_hat_set = [2, 5]
+n_T_hat = len(T_hat_set)
+rho_i = np.array([[0.001], [-0.005]])
+nu = 0.3
 # phi_set = [0.0, 0.4, 0.8]
 # n_phi = len(phi_set)
+beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+beta0 = np.sum(alpha_i * beta_i).astype(float)
+rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
+beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
+rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
 
 # # for testing:
 # Mpath = 10
-Mpath = 500
+Mpath = 100
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -45,6 +56,7 @@ age_sample = np.arange(1, Nc_cut, 12)
 age_sample2 = np.arange(1, int(200 / dt), 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 np.seterr(invalid='ignore')
+folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
 
 # noinspection PyTypeChecker
@@ -71,243 +83,259 @@ def simulate_path(
     # bell_length_reentry_compare = np.zeros((n_scenarios-1, N_sample_bell, 4, Nc - window_bell - 12), dtype=int)
     # age_sample: in cross-section
     # entry_cumu_compare = np.zeros((n_scenarios-1, age_cut), dtype=np.float32)
-    Delta_age_compare = np.zeros((n_scenarios, 4, len(age_sample2)), dtype=np.float32)
-    parti_age_compare = np.zeros((n_scenarios,  4, len(age_sample2)), dtype=np.float32)
-    coef_age_compare = np.zeros((n_scenarios, len(cohort_sample), 4), dtype=np.float32)
-    regression_table1 = np.zeros((n_scenarios, 3, 3), dtype=np.float32)
-    regression_table2 = np.zeros((n_scenarios, 3, 3), dtype=np.float32)
+    # Delta_age_compare = np.zeros((n_scenarios, n_T_hat, 4, len(age_sample2)), dtype=np.float32)
+    # parti_age_compare = np.zeros((n_scenarios, n_T_hat,  4, len(age_sample2)), dtype=np.float32)
+    # coef_age_compare = np.zeros((n_scenarios, n_T_hat, len(cohort_sample), 4), dtype=np.float32)
+    regression_table1 = np.zeros((n_scenarios, n_T_hat, 3, 3), dtype=np.float32)
+    regression_table2 = np.zeros((n_scenarios, n_T_hat, 3, 3), dtype=np.float32)
 
     for g, density in enumerate(density_set):
-        if g < 1:
-            mode_trade = "w_constraint"
-            mode_learn = 'reentry'
-            (
-                r,
-                theta,
-                f_c,
-                Delta,
-                pi,
-                parti,
-                Phi_bar_parti,
-                Phi_tilde_parti,
-                Delta_bar_parti,
-                Delta_tilde_parti,
-                dR,
-                mu_S,
-                sigma_S,
-                beta,
-                invest_tracker,
-                parti_age_group,
-                parti_wealth_group,
-                entry_mat,
-                exit_mat
-            ) = simulate_SI(mode_trade,
-                            mode_learn,
-                            Nc,
-                            Nt,
-                            dt,
-                            nu,
-                            Vhat,
-                            mu_Y,
-                            sigma_Y,
-                            tax,
-                            beta0,
-                            phi,
-                            Npre,
-                            Ninit,
-                            T_hat,
-                            dZ_build,
-                            dZ,
-                            dZ_SI_build,
-                            dZ_SI,
-                            tau,
-                            cutoffs_age,
-                            Ntype,
-                            rho_i,
-                            alpha_i,
-                            beta_i,
-                            rho_cohort_type,
-                            cohort_type_size,
-                            need_f='False',
-                            need_Delta='True',
-                            need_pi='True',
-                            )
+        for h, T_hat in enumerate(T_hat_set):
+            Npre = int(T_hat / dt)
+            Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+            if g < 1:
+                mode_trade = "w_constraint"
+                mode_learn = 'reentry'
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    invest_tracker,
+                    parti_age_group,
+                    parti_wealth_group,
+                    entry_mat,
+                    exit_mat
+                ) = simulate_SI(mode_trade,
+                                mode_learn,
+                                Nc,
+                                Nt,
+                                dt,
+                                nu,
+                                Vhat,
+                                mu_Y,
+                                sigma_Y,
+                                tax,
+                                beta0,
+                                phi,
+                                Npre,
+                                Ninit,
+                                T_hat,
+                                dZ_build,
+                                dZ,
+                                dZ_SI_build,
+                                dZ_SI,
+                                tau,
+                                cutoffs_age,
+                                Ntype,
+                                rho_i,
+                                alpha_i,
+                                beta_i,
+                                rho_cohort_type,
+                                cohort_type_size,
+                                need_f='False',
+                                need_Delta='False',
+                                need_pi='False',
+                                )
 
-            # save data relevant for regressions
-            # non-overlapping data, take a sample every 5 years
-            past_annual_return = np.zeros((3, Nt), dtype=np.float32)
-            future_annual_return = np.zeros((3, Nt), dtype=np.float32)
-            for n, gap in enumerate([12, 24, 36]):
-                past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-                future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+                # save data relevant for regressions
+                # non-overlapping data, take a sample every 5 years
+                past_annual_return = np.zeros((3, Nt), dtype=np.float32)
+                future_annual_return = np.zeros((3, Nt), dtype=np.float32)
+                change_parti = np.zeros((3, len(sample)), dtype=np.float32)
+                for n, gap in enumerate([12, 24, 36]):
+                    past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+                    change_parti[n] = np.log(parti[sample] / parti[sample - gap])
+                    future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
 
-            # run regressions and save results instead of saving the data:
-            x_set = np.copy(past_annual_return[:, sample])
-            y_set = [parti[sample],
-                     entry_mat[sample],
-                     exit_mat[sample]]
-            regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-            for ii in range(3):
-                x = x_set[ii]
-                for jj, y in enumerate(y_set):
-                    if jj == 1:  # entry on high return
-                        x_condi = (x > np.percentile(x, 75)) + 0
-                        x_regress = sm.add_constant(x_condi)
-                    elif jj == 2:  # exit on low return
-                        x_condi = (x < np.percentile(x, 25)) + 0
-                        x_regress = sm.add_constant(x_condi)
-                    else:
+                # run regressions and save results instead of saving the data:
+                x_set = np.copy(past_annual_return[:, sample])
+
+                y_set = [change_parti,
+                         entry_mat[sample],
+                         exit_mat[sample]]
+                regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+                for ii in range(3):
+                    x = x_set[ii]
+                    for jj, y in enumerate(y_set):
+                        if jj == 1:  # entry on high return
+                            x_condi = (x > np.percentile(x, 75)) + 0
+                            x_regress = sm.add_constant(x_condi)
+                            model = sm.OLS(y, x_regress)
+                        elif jj == 2:  # exit on low return
+                            x_condi = (x < np.percentile(x, 25)) + 0
+                            x_regress = sm.add_constant(x_condi)
+                            model = sm.OLS(y, x_regress)
+                        else:
+                            x_regress = sm.add_constant(x)
+                            model = sm.OLS(y[ii], x_regress)
+                        est = model.fit()
+                        regression_table1_b[ii, jj] = est.params[1]
+
+                x_set = [parti[sample],
+                         entry_mat[sample],
+                         exit_mat[sample]]
+                y_set = future_annual_return[:, sample]
+                regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+                for ii in range(3):
+                    x = x_set[ii]
+                    for jj in range(3):
+                        y = y_set[jj]
                         x_regress = sm.add_constant(x)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    regression_table1_b[ii, jj] = est.params[1]
+                        model = sm.OLS(y, x_regress)
+                        est = model.fit()
+                        regression_table2_b[ii, jj] = est.params[1]
+                regression_table1[g, h] = regression_table1_b
+                regression_table2[g, h] = regression_table2_b
 
-            x_set = [parti[sample],
-                     entry_mat[sample],
-                     exit_mat[sample]]
-            y_set = future_annual_return[:, sample]
-            regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-            for ii in range(3):
-                x = x_set[ii]
-                for jj in range(3):
-                    y = y_set[jj]
-                    x_regress = sm.add_constant(x)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    regression_table2_b[ii, jj] = est.params[1]
-            regression_table1[g] = regression_table1_b
-            regression_table2[g] = regression_table2_b
+                # annual_return_compare[g, :3] = past_annual_return[:, sample]
+                # annual_return_compare[g, 3:] = future_annual_return[:, sample]
+                # pd_compare[g] = np.copy(1 / beta)[sample]
+                # future_exc_R_compare[g] = (future_annual_return[0] - r)[sample]
 
-            # annual_return_compare[g, :3] = past_annual_return[:, sample]
-            # annual_return_compare[g, 3:] = future_annual_return[:, sample]
-            # pd_compare[g] = np.copy(1 / beta)[sample]
-            # future_exc_R_compare[g] = (future_annual_return[0] - r)[sample]
+                # parti_compare[g] = parti[sample]
+                # parti_age_compare[g, h] = np.average(invest_tracker, axis=0)[-age_sample2]
 
-            # parti_compare[g] = parti[sample]
-            parti_age_compare[g] = np.average(invest_tracker, axis=0)[-age_sample2]
+                # cohort_actions = np.zeros((1200, Nc - 1200), dtype=int)
+                # for n in range(1, 1200 + 1):
+                #     cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, -n]
+                #
+                # annual_sample = np.arange(0, 1200, 12)
+                # cohort_invest_annual = np.zeros((101, Nc - 1200), dtype=int)
+                # cohort_invest_annual[1:] = cohort_actions[annual_sample]
+                # cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
+                # entry_cumu = np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0)
+                # entry_cumu_compare[g] = entry_cumu
 
-            # cohort_actions = np.zeros((1200, Nc - 1200), dtype=int)
-            # for n in range(1, 1200 + 1):
-            #     cohort_actions[n - 1] = invest_tracker[n - 1:Nc - 1200 + n - 1, -n]
-            #
-            # annual_sample = np.arange(0, 1200, 12)
-            # cohort_invest_annual = np.zeros((101, Nc - 1200), dtype=int)
-            # cohort_invest_annual[1:] = cohort_actions[annual_sample]
-            # cohort_entry_annual = (cohort_invest_annual[1:] - cohort_invest_annual[:-1]) > 0
-            # entry_cumu = np.cumsum(np.average(cohort_entry_annual, axis=1), axis=0)
-            # entry_cumu_compare[g] = entry_cumu
+                # for n, cohort in enumerate(cohort_sample):
+                #     R_st = (mu_S[:-1] * pi[:-1, cohort] + (1 - pi[:-1, cohort]) * r[:-1]) * dt + sigma_S[
+                #                                                                                  :-1] * dZ[1:]
+                #     x_regress = sm.add_constant(dR[1:])
+                #     model = sm.OLS(R_st, x_regress)
+                #     est = model.fit()
+                #     coef_age_compare[g, h, n] = est.params[0]
+                # Delta_age_compare[g, h] = np.average(np.abs(Delta), axis=0)[-age_sample2]
 
-            for n, cohort in enumerate(cohort_sample):
-                R_st = (mu_S[:-1] * pi[:-1, cohort] + (1 - pi[:-1, cohort]) * r[:-1]) * dt + sigma_S[
-                                                                                             :-1] * dZ[1:]
-                x_regress = sm.add_constant(dR[1:])
-                model = sm.OLS(R_st, x_regress)
-                est = model.fit()
-                coef_age_compare[g, n] = est.params[0]
-            Delta_age_compare[g] = np.average(np.abs(Delta), axis=0)[-age_sample2]
+            else:
+                alpha_constraint = np.ones(
+                    (1, Nconstraint)) * density
+                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                cohort_type_size_mix = cohort_size * alpha_i_mix
+                # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
+                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-        else:
-            alpha_constraint = np.ones(
-                (1, Nconstraint)) * density
-            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-            cohort_type_size_mix = cohort_size * alpha_i_mix
-            # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
-            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    invest_tracker,
+                    parti_age_group,
+                    parti_wealth_group,
+                    entry_mat,
+                    exit_mat,
+                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                       beta0,
+                                       phi, Npre, Ninit, T_hat,
+                                       dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                       cutoffs_age, Ntype,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                       rho_cohort_type_mix,
+                                       cohort_type_size_mix,
+                                       need_f='False',
+                                       need_Delta='False',
+                                       need_pi='False',
+                                       )
 
-            (
-                r,
-                theta,
-                f_c,
-                Delta,
-                pi,
-                parti,
-                Phi_bar_parti,
-                Phi_tilde_parti,
-                Delta_bar_parti,
-                Delta_tilde_parti,
-                dR,
-                mu_S,
-                sigma_S,
-                beta,
-                invest_tracker,
-                parti_age_group,
-                parti_wealth_group,
-                entry_mat,
-                exit_mat,
-            ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                   beta0,
-                                   phi, Npre, Ninit, T_hat,
-                                   dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                   cutoffs_age, Ntype,
-                                   Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                   rho_cohort_type_mix,
-                                   cohort_type_size_mix,
-                                   need_f='True',
-                                   need_Delta='True',
-                                   need_pi='True',
-                                   )
+                # save data relevant for regressions
+                # non-overlapping data, take a sample every 5 years
+                past_annual_return = np.zeros((3, Nt), dtype=np.float32)
+                future_annual_return = np.zeros((3, Nt), dtype=np.float32)
+                change_parti = np.zeros((3, len(sample)), dtype=np.float32)
+                for n, gap in enumerate([12, 24, 36]):
+                    past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+                    future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                    future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+                    change_parti[n] = np.log(parti[sample] / parti[sample - gap])
 
-            # save data relevant for regressions
-            # non-overlapping data, take a sample every 5 years
-            past_annual_return = np.zeros((3, Nt), dtype=np.float32)
-            future_annual_return = np.zeros((3, Nt), dtype=np.float32)
-            for n, gap in enumerate([12, 24, 36]):
-                past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-                future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+                # run regressions and save results instead of saving the data:
+                x_set = np.copy(past_annual_return[:, sample])
+                y_set = [change_parti,
+                         entry_mat[sample],
+                         exit_mat[sample]]
+                regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+                for ii in range(3):
+                    x = x_set[ii]
+                    for jj, y in enumerate(y_set):
+                        if jj == 1:  # entry on high return
+                            x_condi = (x > np.percentile(x, 75)) + 0
+                            x_regress = sm.add_constant(x_condi)
+                            model = sm.OLS(y, x_regress)
+                        elif jj == 2:  # exit on low return
+                            x_condi = (x < np.percentile(x, 25)) + 0
+                            x_regress = sm.add_constant(x_condi)
+                            model = sm.OLS(y, x_regress)
+                        else:
+                            x_regress = sm.add_constant(x)
+                            model = sm.OLS(y[ii], x_regress)
 
-            # run regressions and save results instead of saving the data:
-            x_set = np.copy(past_annual_return[:, sample])
-            y_set = [parti[sample],
-                     entry_mat[sample],
-                     exit_mat[sample]]
-            regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-            for ii in range(3):
-                x = x_set[ii]
-                for jj, y in enumerate(y_set):
-                    if jj == 1:  # entry on high return
-                        x_condi = (x > np.percentile(x, 75)) + 0
-                        x_regress = sm.add_constant(x_condi)
-                    elif jj == 2:  # exit on low return
-                        x_condi = (x < np.percentile(x, 25)) + 0
-                        x_regress = sm.add_constant(x_condi)
-                    else:
+                        est = model.fit()
+                        regression_table1_b[ii, jj] = est.params[1]
+
+                x_set = [parti[sample],
+                         entry_mat[sample],
+                         exit_mat[sample]]
+                y_set = future_annual_return[:, sample]
+                regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+                for ii in range(3):
+                    x = x_set[ii]
+                    for jj in range(3):
+                        y = y_set[jj]
                         x_regress = sm.add_constant(x)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    regression_table1_b[ii, jj] = est.params[1]
+                        model = sm.OLS(y, x_regress)
+                        est = model.fit()
+                        regression_table2_b[ii, jj] = est.params[1]
+                regression_table1[g, h] = regression_table1_b
+                regression_table2[g, h] = regression_table2_b
 
-            x_set = [parti[sample],
-                     entry_mat[sample],
-                     exit_mat[sample]]
-            y_set = future_annual_return[:, sample]
-            regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-            for ii in range(3):
-                x = x_set[ii]
-                for jj in range(3):
-                    y = y_set[jj]
-                    x_regress = sm.add_constant(x)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    regression_table2_b[ii, jj] = est.params[1]
-            regression_table1[g] = regression_table1_b
-            regression_table2[g] = regression_table2_b
+                # for n, cohort in enumerate(cohort_sample):
+                #     for m in range(4):
+                #         R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
+                #                                                                                            :-1] * dZ[1:]
+                #         x_regress = sm.add_constant(dR[1:])
+                #         model = sm.OLS(R_st, x_regress)
+                #         est = model.fit()
+                #         coef_age_compare[g, n, m] = est.params[0]
+                # Delta_age_compare[g] = np.average(np.abs(Delta), axis=0)[:, -age_sample2]
+                # parti_age_compare[g] = np.average(invest_tracker, axis=0)[:, -age_sample2]
 
-            for n, cohort in enumerate(cohort_sample):
-                for m in range(4):
-                    R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
-                                                                                                       :-1] * dZ[1:]
-                    x_regress = sm.add_constant(dR[1:])
-                    model = sm.OLS(R_st, x_regress)
-                    est = model.fit()
-                    coef_age_compare[g, n, m] = est.params[0]
-            Delta_age_compare[g] = np.average(np.abs(Delta), axis=0)[:, -age_sample2]
-            parti_age_compare[g] = np.average(invest_tracker, axis=0)[:, -age_sample2]
+    np.save(folder_address + str(i) + "reg1.npy", regression_table1)
+    np.save(folder_address + str(i) + "reg2.npy", regression_table2)
 
     # parti_compare = np.zeros((n_scenarios-1, n_phi, N_sample), dtype=np.float32)
     # # parti_age_group_compare = np.zeros((n_scenarios, n_phi, 4, N_sample), dtype=np.float32)
@@ -618,9 +646,9 @@ def simulate_path(
         # bell_length_compare,
         # bell_length_reentry_compare,
         # entry_cumu_compare,
-        coef_age_compare,
-        Delta_age_compare,
-        parti_age_compare,
+        # coef_age_compare,
+        # Delta_age_compare,
+        # parti_age_compare,
         regression_table1,
         regression_table2,
         # mean_vola_compare,
@@ -649,9 +677,6 @@ def main():
         # Delta_age_result, \
         # parti_age_result = result.result()
         i, \
-        coef_age_result, \
-        Delta_age_result, \
-        parti_age_result, \
         regression_table1, \
         regression_table2 = result.result()
 
@@ -666,9 +691,9 @@ def main():
             # # "bell length": bell_length_result,
             # # "bell length reentry": bell_length_reentry_result,
             # "nr of entry": entry_cumu_result,
-            "age alpha": coef_age_result,
-            "age Delta": Delta_age_result,
-            "age parti": parti_age_result,
+            # "age alpha": coef_age_result,
+            # "age Delta": Delta_age_result,
+            # "age parti": parti_age_result,
             "return_parti_reg": regression_table1,
             "parti_return_reg": regression_table2,
         }

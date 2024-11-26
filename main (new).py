@@ -729,3 +729,10 @@ reg_table3 = np.average(results_df2['parti_return_reg'], axis=0)
 #         reg_data[0, i] = table2_b[k, i]
 #     print(label_scenario)
 #     print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
+folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results/'
+reg_results1 = np.empty((500, 2, 4, 3, 3))
+reg_results2 = np.empty((500, 2, 4, 3, 3))
+
+for i in range(500):
+    reg_results1[i] = np.load(folder_address + str(i) + "reg1.npy")
+    reg_results2[i] = np.load(folder_address + str(i) + "reg2.npy")
