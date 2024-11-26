@@ -355,9 +355,9 @@ def simulate_cohorts_SI(
                                                          weights=cohort_type_size[within_group])
         for j in range(3):
             entry_i = np.copy(invest_tracker[0])
-            entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[0, 12 * (j + 1):]  # entry including the newborns who are in
-            exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[0, 12 * (j + 1):]
-            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+            entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (j + 1):]  # entry including the newborns who are in
+            exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), 12 * (j + 1):]
+            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
             exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0)
 
@@ -698,10 +698,10 @@ def simulate_cohorts_mean_vola(
 
             for j in range(3):
                 entry_i = np.copy(invest_tracker[0])
-                entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[0, 12 * (
+                entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (
                             j + 1):]  # entry including the newborns who are in
-                exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[0, 12 * (j + 1):]
-                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+                exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), 12 * (j + 1):]
+                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0))
 
@@ -1135,11 +1135,11 @@ def simulate_cohorts_mix_type(
         parti[i] = popu_parti_t
 
         for j in range(3):
-            entry_i = np.copy(invest_tracker[0])
-            entry_i[:, :-12 * (j + 1)] = invest_tracker[0, :, -12 * (j + 1)] > invest_mat[0, :, 12 * (
-                    j + 1):]  # entry including the newborns who are in
-            exit_i = invest_tracker[0, :, -12 * (j + 1)] < invest_mat[0, :, 12 * (j + 1):]
-            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
+            entry_i = np.copy(invest_tracker[0]) * 0
+            entry_i[:, :-12 * (j + 1)] = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
+                    j + 1):]  # entry excluding the newborns
+            exit_i = invest_tracker[0, :, -12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
+            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix[:, :, -12 * (j + 1)], axis=0))
             exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, -12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4,-1)), axis=0))
 
@@ -1445,11 +1445,11 @@ def simulate_mean_vola_mix_type(
                 parti_age_group[ii, j] = np.ma.average(invest_age, weights=cohort_type_age)
             # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
             for j in range(3):
-                entry_i = np.copy(invest_tracker[0])
-                entry_i[:, :-12 * (j + 1)] = invest_tracker[0, :, -12 * (j + 1)] > invest_mat[0, :, 12 * (
-                            j + 1):]  # entry including the newborns who are in
-                exit_i = invest_tracker[0, :, -12 * (j + 1)] < invest_mat[0, :, 12 * (j + 1):]
-                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
+                entry_i = np.copy(invest_tracker[0]) * 0
+                entry_i[:, :-12 * (j + 1)] = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
+                        j + 1):]  # entry excluding the newborns
+                exit_i = invest_tracker[0, :, -12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
+                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix[:, :, -12 * (j + 1)], axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, -12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4,-1)), axis=0))
     dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
