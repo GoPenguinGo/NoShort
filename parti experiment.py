@@ -20,7 +20,7 @@ plt.rcParams["font.family"] = 'serif'
 density_set = [
     # (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
-    (0.25, 0.25, 0.25, 0.25),
+    # (0.25, 0.25, 0.25, 0.25),
     # (0.25, 0.25, 0.0, 0.5),
     # (0.25, 0.25, 0.5, 0.0),
     # (0.5, 0.25, 0.0, 0.25),
@@ -28,10 +28,10 @@ density_set = [
     # (0.1, 0.1, 0.4, 0.4),
 ]
 n_scenarios = len(density_set)
-T_hat_set = [2, 5]
+T_hat_set = [2]
 n_T_hat = len(T_hat_set)
-rho_i = np.array([[0.001], [-0.005]])
-nu = 0.3
+rho_i = np.array([[0.001], [-0.02]])
+nu = 0.03
 # phi_set = [0.0, 0.4, 0.8]
 # n_phi = len(phi_set)
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
@@ -41,8 +41,8 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
 
 # # for testing:
-Mpath = 10
-# Mpath = 100
+# Mpath = 10
+Mpath = 100
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -148,60 +148,6 @@ def simulate_path(
                                 need_pi='False',
                                 )
 
-                # save data relevant for regressions
-                # non-overlapping data, take a sample every 5 years
-                past_annual_return = np.zeros((3, Nt), dtype=np.float32)
-                future_annual_return = np.zeros((3, Nt), dtype=np.float32)
-                change_parti = np.zeros((3, len(sample)), dtype=np.float32)
-                for n, gap in enumerate([12, 24, 36]):
-                    past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-                    change_parti[n] = np.log(parti[sample] / parti[sample - gap])
-                    future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                    future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
-
-                # run regressions and save results instead of saving the data:
-                x_set = np.copy(past_annual_return[:, sample])
-
-                y_set = [change_parti,
-                         entry_mat[sample],
-                         exit_mat[sample]]
-                regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-                for ii in range(3):
-                    x = x_set[ii]
-                    for jj, y_mat in enumerate(y_set):
-                        if jj == 1:  # entry on high return
-                            y = y_mat[:, ii]
-                            x_condi = (x > np.percentile(x, 75)) + 0
-                            x_regress = sm.add_constant(x_condi)
-                            model = sm.OLS(y, x_regress)
-                        elif jj == 2:  # exit on low return
-                            y = y_mat[:, ii]
-                            x_condi = (x < np.percentile(x, 25)) + 0
-                            x_regress = sm.add_constant(x_condi)
-                            model = sm.OLS(y, x_regress)
-                        else:
-                            y = y_mat[ii]
-                            x_regress = sm.add_constant(x)
-                            model = sm.OLS(y, x_regress)
-                        est = model.fit()
-                        regression_table1_b[ii, jj] = est.params[1]
-
-                x_set = [parti[sample],
-                         entry_mat[sample, 0],
-                         exit_mat[sample, 0]]
-                y_set = future_annual_return[:, sample]
-                regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-                for ii in range(3):
-                    x = x_set[ii]
-                    for jj in range(3):
-                        y = y_set[jj]
-                        x_regress = sm.add_constant(x)
-                        model = sm.OLS(y, x_regress)
-                        est = model.fit()
-                        regression_table2_b[ii, jj] = est.params[1]
-                regression_table1[g, h] = regression_table1_b
-                regression_table2[g, h] = regression_table2_b
 
                 # annual_return_compare[g, :3] = past_annual_return[:, sample]
                 # annual_return_compare[g, 3:] = future_annual_return[:, sample]
@@ -274,68 +220,60 @@ def simulate_path(
                                        need_pi='False',
                                        )
 
-                # save data relevant for regressions
-                # non-overlapping data, take a sample every 5 years
-                past_annual_return = np.zeros((3, Nt), dtype=np.float32)
-                future_annual_return = np.zeros((3, Nt), dtype=np.float32)
-                change_parti = np.zeros((3, len(sample)), dtype=np.float32)
-                for n, gap in enumerate([12, 24, 36]):
-                    past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-                    future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-                    future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
-                    change_parti[n] = np.log(parti[sample] / parti[sample - gap])
+            # save data relevant for regressions
+            # non-overlapping data, take a sample every 5 years
+            past_annual_return = np.zeros((3, Nt), dtype=np.float32)
+            future_annual_return = np.zeros((3, Nt), dtype=np.float32)
+            change_parti = np.zeros((3, len(sample)), dtype=np.float32)
+            for n, gap in enumerate([12, 24, 36]):
+                past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+                change_parti[n] = np.log(parti[sample] / parti[sample - gap])
+                future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+                future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
 
-                # run regressions and save results instead of saving the data:
-                x_set = np.copy(past_annual_return[:, sample])
-                y_set = [change_parti,
-                         entry_mat[sample],
-                         exit_mat[sample]]
-                regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-                for ii in range(3):
-                    x = x_set[ii]
-                    for jj, y in enumerate(y_set):
-                        if jj == 1:  # entry on high return
-                            x_condi = (x > np.percentile(x, 75)) + 0
-                            x_regress = sm.add_constant(x_condi)
-                            model = sm.OLS(y, x_regress)
-                        elif jj == 2:  # exit on low return
-                            x_condi = (x < np.percentile(x, 25)) + 0
-                            x_regress = sm.add_constant(x_condi)
-                            model = sm.OLS(y, x_regress)
-                        else:
-                            x_regress = sm.add_constant(x)
-                            model = sm.OLS(y[ii], x_regress)
+            # run regressions and save results instead of saving the data:
+            x_set = np.copy(past_annual_return[:, sample])
 
-                        est = model.fit()
-                        regression_table1_b[ii, jj] = est.params[1]
-
-                x_set = [parti[sample],
-                         entry_mat[sample],
-                         exit_mat[sample]]
-                y_set = future_annual_return[:, sample]
-                regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-                for ii in range(3):
-                    x = x_set[ii]
-                    for jj in range(3):
-                        y = y_set[jj]
+            y_set = [change_parti,
+                     entry_mat[sample],
+                     exit_mat[sample]]
+            regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+            for ii in range(3):
+                x = x_set[ii]
+                for jj, y_mat in enumerate(y_set):
+                    if jj == 1:  # entry on high return
+                        y = y_mat[:, ii]
+                        x_condi = (x > np.percentile(x, 75)) + 0
+                        x_regress = sm.add_constant(x_condi)
+                        model = sm.OLS(y, x_regress)
+                    elif jj == 2:  # exit on low return
+                        y = y_mat[:, ii]
+                        x_condi = (x < np.percentile(x, 25)) + 0
+                        x_regress = sm.add_constant(x_condi)
+                        model = sm.OLS(y, x_regress)
+                    else:
+                        y = y_mat[ii]
                         x_regress = sm.add_constant(x)
                         model = sm.OLS(y, x_regress)
-                        est = model.fit()
-                        regression_table2_b[ii, jj] = est.params[1]
-                regression_table1[g, h] = regression_table1_b
-                regression_table2[g, h] = regression_table2_b
+                    est = model.fit()
+                    regression_table1_b[ii, jj] = est.params[1]
 
-                # for n, cohort in enumerate(cohort_sample):
-                #     for m in range(4):
-                #         R_st = (mu_S[:-1] * pi[:-1, m, cohort] + (1 - pi[:-1, m, cohort]) * r[:-1]) * dt + sigma_S[
-                #                                                                                            :-1] * dZ[1:]
-                #         x_regress = sm.add_constant(dR[1:])
-                #         model = sm.OLS(R_st, x_regress)
-                #         est = model.fit()
-                #         coef_age_compare[g, n, m] = est.params[0]
-                # Delta_age_compare[g] = np.average(np.abs(Delta), axis=0)[:, -age_sample2]
-                # parti_age_compare[g] = np.average(invest_tracker, axis=0)[:, -age_sample2]
+            x_set = [parti[sample],
+                     entry_mat[sample, 0],
+                     exit_mat[sample, 0]]
+            y_set = future_annual_return[:, sample]
+            regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+            for ii in range(3):
+                x = x_set[ii]
+                for jj in range(3):
+                    y = y_set[jj]
+                    x_regress = sm.add_constant(x)
+                    model = sm.OLS(y, x_regress)
+                    est = model.fit()
+                    regression_table2_b[ii, jj] = est.params[1]
+            regression_table1[g, h] = regression_table1_b
+            regression_table2[g, h] = regression_table2_b
 
     np.save(folder_address + str(i) + "reg1.npy", regression_table1)
     np.save(folder_address + str(i) + "reg2.npy", regression_table2)

@@ -43,7 +43,7 @@ n_T_hat = len(T_hat_set)
 n_phi = len(phi_set)
 n_tax = len(tax_set)
 
-rho_i = np.array([[0.001], [-0.01]])
+rho_i = np.array([[0.001], [-0.02]])
 # phi_set = [0.0, 0.4, 0.8]
 # n_phi = len(phi_set)
 
