@@ -355,11 +355,11 @@ def simulate_cohorts_SI(
                 age_bottom = Nc - 1 - int(5 / dt * (mm + 1))
                 age_top = Nc - 1 - int(5 / dt * mm)
                 if mm == 20:
-                    parti_age_group[i, mm] = np.ma.average(invest_tracker[:, :age_top],
-                                                       weights=cohort_type_size[0, :age_top], axis=1)
+                    parti_age_group[i, mm] = np.ma.average(invest_tracker[0, :age_top],
+                                                       weights=cohort_type_size[0, :age_top])
                 else:
-                    parti_age_group[i, mm] = np.ma.average(invest_tracker[:, age_bottom:age_top],
-                                                       weights=cohort_type_size[0, age_bottom:age_top], axis=1)
+                    parti_age_group[i, mm] = np.ma.average(invest_tracker[0, age_bottom:age_top],
+                                                       weights=cohort_type_size[0, age_bottom:age_top])
         for j in range(3):
             # entry_i = np.copy(invest_tracker[0])
             # entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (j + 1):]  # entry including the newborns who are in
