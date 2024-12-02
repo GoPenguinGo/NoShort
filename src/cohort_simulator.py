@@ -144,7 +144,7 @@ def simulate_cohorts_SI(
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
     invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
-    parti_age_group = np.ones((Nt, 4), dtype=np.float16)
+    parti_age_group = np.ones((Nt, 21), dtype=np.float16)
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -348,11 +348,18 @@ def simulate_cohorts_SI(
             Phi_tilde_parti[i] = fw_parti_t
             parti[i] = popu_parti_t
             for j in range(4):
-                parti_age_group[i, j] = np.ma.average(invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]],
-                                                      weights=cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]])
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
                 parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
                                                          weights=cohort_type_size[within_group])
+            for mm in range(21):
+                age_bottom = Nc - 1 - int(5 / dt * (mm + 1))
+                age_top = Nc - 1 - int(5 / dt * mm)
+                if mm == 20:
+                    parti_age_group[i, mm] = np.ma.average(invest_tracker[:, :age_top],
+                                                       weights=cohort_type_size[0, :age_top], axis=1)
+                else:
+                    parti_age_group[i, mm] = np.ma.average(invest_tracker[:, age_bottom:age_top],
+                                                       weights=cohort_type_size[0, age_bottom:age_top], axis=1)
         for j in range(3):
             # entry_i = np.copy(invest_tracker[0])
             # entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (j + 1):]  # entry including the newborns who are in
@@ -361,7 +368,6 @@ def simulate_cohorts_SI(
             entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
             exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0)
-
     return (
         r,
         theta,
