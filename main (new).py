@@ -729,10 +729,89 @@ reg_table3 = np.average(results_df2['parti_return_reg'], axis=0)
 #         reg_data[0, i] = table2_b[k, i]
 #     print(label_scenario)
 #     print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
-folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results/'
-reg_results1 = np.empty((500, 2, 4, 3, 3))
-reg_results2 = np.empty((500, 2, 4, 3, 3))
+# folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+reg_results1 = np.empty((500, 2, 1, 3, 3))
+reg_results2 = np.empty((500, 2, 1, 3, 3))
+f_age_mat = np.empty((500, 2, 1, 400, 4))
+parti_age_mat = np.empty((500, 2, 1, 400, 4))
 
 for i in range(500):
     reg_results1[i] = np.load(folder_address + str(i) + "reg1.npy")
     reg_results2[i] = np.load(folder_address + str(i) + "reg2.npy")
+    parti_age_mat[i] = np.load(folder_address + str(i) + "parti_age.npy")
+    f_age_mat[i] = np.load(folder_address + str(i) + "f_age.npy")
+
+ave_reg1 = np.average(reg_results1, axis=0)
+popu_age = np.cumsum(cohort_size)[age_cutoffs_SCF[:4]] - np.cumsum(cohort_size)[age_cutoffs_SCF[1:]]
+change_parti_age = (parti_age_mat[:, 0, 0, 1:] - parti_age_mat[:, 0, 0, :-1]) * popu_age
+change_parti = np.sum(change_parti_age, axis=2)
+f_age_sample = f_age_mat[:, 0, 0, 1:]
+window = 12  # 1-year non-overlapping windows
+sample = np.arange(600, Nt - 600, window)
+dZ_cummu = np.cumsum(dZ_matrix[:100], axis=1)[:, sample]
+shocks = dZ_cummu[:, 1:] - dZ_cummu[:, :-1]
+
+n_bins = 9
+data_figure_mean_parti = np.zeros(
+    (n_bins - 1, n_age_cutoffs))  # x: dZ^Y & dZ^SI, y: parti_rate & leverage
+data_figure_mean_f = np.zeros(
+    (n_bins - 1, n_age_cutoffs))  # x: dZ^Y & dZ^SI, y: parti_rate & leverage
+data_figure_overall_parti = np.zeros((n_bins - 1))
+x_var = shocks
+x_max = np.percentile(x_var, 90)
+x_min = np.percentile(x_var, 10)
+x_width = (x_max - x_min) / (n_bins - 1)
+x_bins = np.linspace(x_min, x_max, n_bins)
+data_figure_x = (x_bins[1:] + x_bins[:-1]) / 2
+for j in range(n_bins - 1):
+    bin_below = x_var >= x_bins[j]
+    bin_above = x_bins[j + 1] >= x_var
+    data_where = np.where(bin_above * bin_below == 1)
+    for m in range(n_age_cutoffs):
+        if m == 0:
+            data_figure_overall_parti[j] = np.average(change_parti[data_where])
+        y_parti_bin = change_parti_age[:, :, m][data_where]
+        data_figure_mean_parti[j, m] = np.average(y_parti_bin)
+        data_figure_mean_f[j, m] = np.average(f_age_sample[:, :, m][data_where])
+
+label_shock = r'Shocks to the output, $dz^{Y}$'
+label_scenario = r'Reentry'
+label_title = [r'Entry and exit in the stock market', r'Consumption share']
+labels = r'$\phi = 0.4$'
+X_ = np.linspace(-1, 1, 200)
+plt.rcParams["font.family"] = "serif"
+x = data_figure_x
+fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 8), sharex='all')
+for i, ax in enumerate(axes):
+    y_focus = data_figure_mean_parti if i == 0 else data_figure_mean_f
+    y_overall = data_figure_overall_parti
+    ax.set_xlabel(label_shock)
+    ax.set_ylabel(label_title[i])
+    title_i = 'Response to shocks, participation' if i == 0 else 'Consumption share'
+    ax.set_title(title_i)
+    # if i == 0:
+    #     ax.set_ylim(-0.03, 0.03)
+    # else:
+    #     ax.set_ylim(-0.6, 0.6)
+    for age_index in range(n_age_cutoffs):
+        if i == 0 and age_index == 0:
+            y_focus_overall = y_overall
+            X_Y_overall_Spline = make_interp_spline(x, y_focus_overall, k=3)
+            Y_overall = X_Y_overall_Spline(X_)
+            ax.plot(X_, Y_overall, color='black', linewidth=2, linestyle='dashed')
+        y = y_focus[:, age_index]
+        X_Y_Spline = make_interp_spline(x, y, k=5)
+        Y_ = X_Y_Spline(X_)
+        # ax.plot(x, y[:, 1], color=colors_short[age_index], linewidth=0.8, linestyle='solid', label=age_labels[age_index])
+        # ax.fill_between(x, y[:, 0], y[:, 2], color=colors_short[age_index], linewidth=0, alpha=0.25)
+        ax.plot(X_, Y_, color=colors_short[age_index], linewidth=2, linestyle='solid',
+                label=age_labels[age_index])
+        if i == 0:
+            ax.legend()
+        ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dotted', linewidth=0.6, alpha=0.6)
+        ax.axvline(0, 0.05, 0.95, color='gray', linestyle='dotted', linewidth=0.6, alpha=0.6)
+fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+plt.savefig('Reaction to shocks.png', dpi=100)
+plt.show()
+# plt.close()

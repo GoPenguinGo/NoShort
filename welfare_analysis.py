@@ -17,7 +17,8 @@ c_rho_bar = alpha_i[0, 0] * tax * beta_i[0, 0] * (rho_i[0, 0] - rho_i[1, 0]) + r
 rho_bar = (-b_rho_bar - np.sqrt(b_rho_bar ** 2 - 4 * a_rho_bar * c_rho_bar)) / (2 * a_rho_bar)
 T = 500
 N_T = int(T / dt)
-mode_trade = "w_constraint"
+# mode_trade = "w_constraint"
+mode_trade = "complete"
 mode_learn = 'reentry'
 Mpath = 1000
 Nt_long = 8400
@@ -144,7 +145,7 @@ def main():
         # Create a DataFrame from the list of dictionaries
         results_df = pd.DataFrame(results_list)
         results_dict = results_df.to_dict(orient='list')
-        np.savez(folder_address + str(int(T_hat_try)) + "all_runs.npz", **results_dict)
+        np.savez(folder_address + str(int(T_hat_try)) + "complete.npz", **results_dict)
 
 
 if __name__ == '__main__':

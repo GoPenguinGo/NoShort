@@ -21,43 +21,46 @@ density_set = [
     # (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
     # (0.25, 0.25, 0.25, 0.25),
-    # (0.25, 0.25, 0.0, 0.5),
-    # (0.25, 0.25, 0.5, 0.0),
+    # (0.25, 0.25, 0.1, 0.4),
+    # (0.25, 0.25, 0.4, 0.1),
     # (0.5, 0.25, 0.0, 0.25),
     # (0.1, 0.1, 0.0, 0.8),
-    # (0.1, 0.1, 0.4, 0.4),
+    # (0.1, 0.4, 0.3, 0.2),
 ]
 n_scenarios = len(density_set)
-T_hat_set = [2]
-n_T_hat = len(T_hat_set)
-rho_i = np.array([[0.001], [-0.02]])
-nu = 0.03
+T_hat = 2
+Npre = int(T_hat / dt)
+Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+rho_i_set = [
+    # np.array([[0.001], [-0.001]]),
+    np.array([[0.001], [0.005]]),
+    ]
+n_rho = len(rho_i_set)
+nu = 0.02
+tax = 0.5
 # phi_set = [0.0, 0.4, 0.8]
 # n_phi = len(phi_set)
-beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-beta0 = np.sum(alpha_i * beta_i).astype(float)
-rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
-beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
-rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-
 # # for testing:
 # Mpath = 10
-Mpath = 100
+Mpath = 500
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
 window_bell = 240
 sample_bell = np.arange(600, Nt - 600, window_bell)
 N_sample_bell = len(sample_bell)
-age_cutoffs_SCF = [int(Nt - 1), int(Nt - 1 - 12 * 15), int(Nt - 1 - 12 * 35), int(Nt - 1 - 12 * 55), 0]
+# age_cutoffs_SCF = [int(Nt - 1), int(Nt - 1 - 12 * 15), int(Nt - 1 - 12 * 35), int(Nt - 1 - 12 * 55), 0]
 age_cut = 100
 Nc_cut = int(age_cut / dt)
 age_sample = np.arange(1, Nc_cut, 12)
 age_sample2 = np.arange(1, int(200 / dt), 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 np.seterr(invalid='ignore')
-folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+# folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
+n_age_cutoffs = 21
+age_cutoffs_reg = Nt - 1 - np.arange(0, 100, 5) / dt
 
 # noinspection PyTypeChecker
 def simulate_path(
@@ -86,13 +89,20 @@ def simulate_path(
     # Delta_age_compare = np.zeros((n_scenarios, n_T_hat, 4, len(age_sample2)), dtype=np.float32)
     # parti_age_compare = np.zeros((n_scenarios, n_T_hat,  4, len(age_sample2)), dtype=np.float32)
     # coef_age_compare = np.zeros((n_scenarios, n_T_hat, len(cohort_sample), 4), dtype=np.float32)
-    regression_table1 = np.zeros((n_scenarios, n_T_hat, 3, 3), dtype=np.float32)
-    regression_table2 = np.zeros((n_scenarios, n_T_hat, 3, 3), dtype=np.float32)
+    regression_table1 = np.zeros((n_scenarios, n_rho, 3, 3), dtype=np.float32)
+    regression_table2 = np.zeros((n_scenarios, n_rho, 3, 3), dtype=np.float32)
+    regression_table_age = np.zeros((n_scenarios, n_rho, 21), dtype=np.float32)
+    # parti_age_mat = np.zeros((n_scenarios, n_rho, N_sample, 4), dtype=np.float32)
+    # f_age_mat = np.zeros((n_scenarios, n_rho, N_sample, 4), dtype=np.float32)
 
-    for g, density in enumerate(density_set):
-        for h, T_hat in enumerate(T_hat_set):
-            Npre = int(T_hat / dt)
-            Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+    for g, type_density in enumerate(density_set):
+        for h, rho_i in enumerate(rho_i_set):
+            beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+            beta0 = np.sum(alpha_i * beta_i).astype(float)
+            rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
+            # beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
+            rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+
             if g < 1:
                 mode_trade = "w_constraint"
                 mode_learn = 'reentry'
@@ -143,7 +153,7 @@ def simulate_path(
                                 beta_i,
                                 rho_cohort_type,
                                 cohort_type_size,
-                                need_f='False',
+                                need_f='True',
                                 need_Delta='False',
                                 need_pi='False',
                                 )
@@ -179,7 +189,7 @@ def simulate_path(
 
             else:
                 alpha_constraint = np.ones(
-                    (1, Nconstraint)) * density
+                    (1, Nconstraint)) * type_density
                 alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
                 cohort_type_size_mix = cohort_size * alpha_i_mix
                 # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
@@ -222,6 +232,8 @@ def simulate_path(
 
             # save data relevant for regressions
             # non-overlapping data, take a sample every 5 years
+            if np.sum(sigma_S < 0) > 0:
+                print('Warning: negative volatility')
             past_annual_return = np.zeros((3, Nt), dtype=np.float32)
             future_annual_return = np.zeros((3, Nt), dtype=np.float32)
             change_parti = np.zeros((3, len(sample)), dtype=np.float32)
@@ -235,26 +247,35 @@ def simulate_path(
             # run regressions and save results instead of saving the data:
             x_set = np.copy(past_annual_return[:, sample])
 
-            y_set = [change_parti,
-                     entry_mat[sample],
-                     exit_mat[sample]]
+            y_set = [
+                # change_parti,
+                # parti_age_group[:, 2],
+                parti,
+                entry_mat[sample],
+                exit_mat[sample]
+            ]
             regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
             for ii in range(3):
-                x = x_set[ii]
+                x = x_set[ii] / np.std(x_set[ii])
                 for jj, y_mat in enumerate(y_set):
                     if jj == 1:  # entry on high return
-                        y = y_mat[:, ii]
+                        y = y_mat[:, ii] / np.std(y_mat[:, ii])
                         x_condi = (x > np.percentile(x, 75)) + 0
                         x_regress = sm.add_constant(x_condi)
                         model = sm.OLS(y, x_regress)
                     elif jj == 2:  # exit on low return
-                        y = y_mat[:, ii]
+                        y = y_mat[:, ii] / np.std(y_mat[:, ii])
                         x_condi = (x < np.percentile(x, 25)) + 0
                         x_regress = sm.add_constant(x_condi)
                         model = sm.OLS(y, x_regress)
                     else:
-                        y = y_mat[ii]
-                        x_regress = sm.add_constant(x)
+                        # y = y_mat[ii]
+                        # x_regress = sm.add_constant(x)
+
+                        y = y_mat[sample] / np.std(y_mat[sample])
+                        y_lag = np.reshape(y_mat[sample - (ii + 1) * 12] / np.std(y_mat[sample - (ii + 1) * 12]), (-1, 1))
+                        x_two = np.append(np.reshape(x, (-1, 1)), y_lag, axis=1)
+                        x_regress = sm.add_constant(x_two)
                         model = sm.OLS(y, x_regress)
                     est = model.fit()
                     regression_table1_b[ii, jj] = est.params[1]
@@ -262,21 +283,46 @@ def simulate_path(
             x_set = [parti[sample],
                      entry_mat[sample, 0],
                      exit_mat[sample, 0]]
-            y_set = future_annual_return[:, sample]
+            y_set = future_annual_return[:, sample] / np.std(future_annual_return[:, sample])
+            # pd_sample = np.reshape((1/beta)[sample], (-1, 1)) / np.std((1/beta)[sample])
             regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
             for ii in range(3):
-                x = x_set[ii]
+                x = np.reshape(x_set[ii] / np.std(x_set[ii]), (-1, 1))
                 for jj in range(3):
                     y = y_set[jj]
                     x_regress = sm.add_constant(x)
                     model = sm.OLS(y, x_regress)
                     est = model.fit()
                     regression_table2_b[ii, jj] = est.params[1]
+
             regression_table1[g, h] = regression_table1_b
             regression_table2[g, h] = regression_table2_b
 
+            # for mm in range(n_age_cutoffs):
+            #     age_bottom = cutoffs_age[mm + 1]
+            #     age_top = cutoffs_age[mm]
+            #     f_age_mat[g, h, :, mm] = np.sum(np.sum(f_c[sample, :, age_bottom:age_top] * dt, axis=2), axis=1)
+            #
+            # parti_age_mat[g, h] = parti_age_group[sample]
+            x = np.copy(past_annual_return[0, sample])
+            for mm in range(n_age_cutoffs):
+                age_bottom = Nc - 1 - int(5 / dt * (mm + 1))
+                age_top = Nc - 1 - int(5 / dt * mm)
+                if mm == 20:
+                    parti_age_group = np.average(invest_tracker[sample, :age_top],
+                                                       weights=cohort_type_size[0, :age_top], axis=1)
+                else:
+                    parti_age_group = np.average(invest_tracker[sample, age_bottom:age_top],
+                                                       weights=cohort_type_size[0, age_bottom:age_top], axis=1)
+
+
+
+
+
     np.save(folder_address + str(i) + "reg1.npy", regression_table1)
     np.save(folder_address + str(i) + "reg2.npy", regression_table2)
+    np.save(folder_address + str(i) + "f_age.npy", f_age_mat)
+    np.save(folder_address + str(i) + "parti_age.npy", parti_age_mat)
 
     # parti_compare = np.zeros((n_scenarios-1, n_phi, N_sample), dtype=np.float32)
     # # parti_age_group_compare = np.zeros((n_scenarios, n_phi, 4, N_sample), dtype=np.float32)
@@ -592,6 +638,8 @@ def simulate_path(
         # parti_age_compare,
         regression_table1,
         regression_table2,
+        f_age_mat,
+        parti_age_mat
         # mean_vola_compare,
         # correlation_compare
     )
@@ -599,7 +647,7 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
+    with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
         results = [executor.submit(simulate_path, i) for i in range(Mpath)]
     # Initialize a list to store the results
     results_list = []
@@ -618,8 +666,10 @@ def main():
         # Delta_age_result, \
         # parti_age_result = result.result()
         i, \
-        regression_table1, \
-        regression_table2 = result.result()
+            regression_table1, \
+            regression_table2, \
+            f_age_results, \
+            parti_age_results, = result.result()
 
         data = {
             "i": i,
@@ -637,6 +687,8 @@ def main():
             # "age parti": parti_age_result,
             "return_parti_reg": regression_table1,
             "parti_return_reg": regression_table2,
+            "age f": f_age_results,
+            "age parti": parti_age_results,
         }
         results_list.append(data)
 
