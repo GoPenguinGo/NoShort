@@ -4,7 +4,7 @@ import numpy as np
 rho = 0.001  # Time discount factor
 Ntype = 2
 # rho_i = np.array([[0.001], [0.1]])
-rho_i = np.array([[0.001], [0.005]])  # baseline
+rho_i = np.array([[0.001], [-0.001]])  # baseline
 # rho_i = np.array([[-.01], [0.04]])  # baseline
 # rho_i = np.array([[0.001], [0.1]])  # baseline
 alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
