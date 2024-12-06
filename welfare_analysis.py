@@ -154,37 +154,37 @@ def main():
 if __name__ == '__main__':
     main()
 
-    # N_points = 200
-    # mu_vec = np.linspace(0, mu_Y, N_points)
-    # E_util_mu = np.zeros((N_points, 2))
-    # for i, mu_try in enumerate(mu_vec):
-    #     E_util_mu[i] = utility_mu(mu_try)
-    #
-    # t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
-    # rho_i_mat = np.reshape(rho_i, (1, -1))
-    # discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
-    #
-    # equiv_mu = np.zeros((len(T_hat_vec), 2))
-    #
-    # for i, T_hat_try in enumerate(T_hat_vec):
-    #     E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
-    #     E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
-    #     for j in range(2):
-    #         equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4))
-    # ax.set_xlabel('Pre-entry learning window')
-    # ax.set_ylabel(r'Equivalent $\mu^Y$')
-    # ax.set_ylim(0, 0.025)
-    # ax.plot(T_hat_vec, equiv_mu[:, 0], color='navy', linewidth=1.5, label=r'type 1, $\rho=0.001$')
-    # ax.plot(T_hat_vec, equiv_mu[:, 1], color='red', linewidth=1.5, label=r'type 2, $\rho=-0.001$')
-    # plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
-    # plt.legend()
-    # ax.tick_params(axis='y', labelcolor='black')
-    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    # plt.savefig('Welfare.png', dpi=100)
-    # plt.show()
-    # plt.close()
+    N_points = 1000
+    mu_vec = np.linspace(0, mu_Y, N_points)
+    E_util_mu = np.zeros((N_points, 2))
+    for i, mu_try in enumerate(mu_vec):
+        E_util_mu[i] = utility_mu(mu_try)
+
+    t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
+    rho_i_mat = np.reshape(rho_i, (1, -1))
+    discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
+
+    equiv_mu = np.zeros((len(T_hat_vec), 2))
+
+    for i, T_hat_try in enumerate(T_hat_vec):
+        E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
+        E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
+        for j in range(2):
+            equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4))
+    ax.set_xlabel('Pre-entry learning window')
+    ax.set_ylabel(r'Equivalent $\mu^Y$')
+    ax.set_ylim(0, 0.025)
+    ax.plot(T_hat_vec, equiv_mu[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
+    ax.plot(T_hat_vec, equiv_mu[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=-0.1\%$')
+    plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
+    plt.legend(loc='lower right')
+    ax.tick_params(axis='y', labelcolor='black')
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig('Welfare.png', dpi=100)
+    plt.show()
+    plt.close()
 
 
 
