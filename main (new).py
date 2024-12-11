@@ -731,33 +731,37 @@ reg_table3 = np.average(results_df2['parti_return_reg'], axis=0)
 #     print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results/'
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-reg_results1 = np.empty((200, 1, 4, 3, 3))
-reg_results2 = np.empty((200, 1, 4, 3, 3))
-reg_results_age = np.empty((200, 1, 4, 21))
-
-for i in range(200):
+reg_results1 = np.empty((25, 1, 2, 2, 2, 3, 3))
+# reg_results2 = np.empty((100, 1, 1, 3, 3))
+for i in range(25):
     reg_results1[i] = np.load(folder_address + str(i) + "reg1.npy")
-    reg_results2[i] = np.load(folder_address + str(i) + "reg2.npy")
-    reg_results_age[i] = np.load(folder_address + str(i) + "reg_age.npy")
-
+    # reg_results2[i] = np.load(folder_address + str(i) + "reg2.npy")
 ave_reg1 = np.average(reg_results1, axis=0)
-ave_reg_age = np.average(reg_results_age, axis=0)
 
-x = np.arange(0, 100, 5)
-T_hat_set = [2, 5, 10, 20]
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 10), sharex='all')
-ax.set_xlabel('Age')
-ax.set_ylabel('Regression coefficients')
-ax.set_title('Participation response to shocks')
-for learning_window in range(4):
-    y = ave_reg_age[0, learning_window, :-1]
-    ax.plot(x, y, color=colors_short[learning_window], linewidth=2, linestyle='solid',
-            label=str(int(T_hat_set[learning_window])) + '-year learning window')
-    ax.legend()
-    # ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dotted',
-    #            linewidth=2, alpha=0.6)
-    ax.axhline(ave_reg1[0, learning_window, 0, 0], 0.05, 0.95, color=colors_short[learning_window], linestyle='dotted', linewidth=2, alpha=0.6)
-fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
-plt.savefig('Reaction to shocks.png', dpi=100)
-plt.show()
-# plt.close()
+
+# reg_results_age = np.empty((200, 1, 4, 21))
+# for i in range(200):
+#     reg_results1[i] = np.load(folder_address + str(i) + "reg1.npy")
+#     reg_results2[i] = np.load(folder_address + str(i) + "reg2.npy")
+#     reg_results_age[i] = np.load(folder_address + str(i) + "reg_age.npy")
+
+# ave_reg_age = np.average(reg_results_age, axis=0)
+#
+# x = np.arange(0, 100, 5)
+# T_hat_set = [2, 5, 10, 20]
+# fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 10), sharex='all')
+# ax.set_xlabel('Age')
+# ax.set_ylabel('Regression coefficients')
+# ax.set_title('Participation response to shocks')
+# for learning_window in range(4):
+#     y = ave_reg_age[0, learning_window, :-1]
+#     ax.plot(x, y, color=colors_short[learning_window], linewidth=2, linestyle='solid',
+#             label=str(int(T_hat_set[learning_window])) + '-year learning window')
+#     ax.legend()
+#     # ax.axhline(0, 0.05, 0.95, color='gray', linestyle='dotted',
+#     #            linewidth=2, alpha=0.6)
+#     ax.axhline(ave_reg1[0, learning_window, 0, 0], 0.05, 0.95, color=colors_short[learning_window], linestyle='dotted', linewidth=2, alpha=0.6)
+# fig.tight_layout(h_pad=2)  # otherwise the right y-label is slightly clipped
+# plt.savefig('Reaction to shocks.png', dpi=100)
+# plt.show()
+# # plt.close()

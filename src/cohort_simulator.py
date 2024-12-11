@@ -1144,7 +1144,7 @@ def simulate_cohorts_mix_type(
         parti[i] = popu_parti_t
 
         for j in range(3):
-            entry_i = np.copy(invest_tracker[0]) * 0
+            entry_i = np.copy(invest_tracker[0])
             entry_i[:, :-12 * (j + 1)] = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
                     j + 1):]  # entry including the newborns
             # entry_i = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
