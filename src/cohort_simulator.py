@@ -717,7 +717,7 @@ def simulate_cohorts_mean_vola(
                 # entry_i = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (
                 #             j + 1):]  # entry excluding the newborns who are in
                 exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), 12 * (j + 1):]
-                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
+                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0))
 
