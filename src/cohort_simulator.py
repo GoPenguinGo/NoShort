@@ -518,7 +518,6 @@ def simulate_cohorts_mean_vola(
     #     (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
     # Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt - keep_when))  # participation rate
-    parti_age_mat = np.ones((Nt - keep_when, age_sample))
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
 
