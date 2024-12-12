@@ -701,7 +701,7 @@ def simulate_cohorts_mean_vola(
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
                     invest_matrix[int(ii/12)] = invest_tracker[0]
-                    Delta_matrix[int(ii/12)] = Delta_s_t[-age_sample]
+                    Delta_matrix[int(ii/12)] = Delta_s_t[0, -age_sample]
             #     for l in range(N_wealth_group):
             #         within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
             #         parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
