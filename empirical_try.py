@@ -13,24 +13,39 @@ from concurrent.futures import ProcessPoolExecutor
 from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
-country_names = ['US', 'Finland', 'Germany', 'Norway']
-# country_names = ['US']
+country_names = [
+    'US',
+    'Finland',
+    'Germany',
+    'Norway'
+]
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
 # folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_types = (0.25, 0.25, 0.25, 0.25)
-T_hat_set = [2, 3]
+T_hat_set = [
+    # 2,
+    3
+]
 rho_i_set = [
-    np.array([[0.001], [-0.003]]),
-    np.array([[0.001], [-0.001]]),
-    np.array([[0.001], [0.003]]),
+    # np.array([[0.001], [-0.003]]),
+    # np.array([[0.001], [-0.001]]),
+    # np.array([[0.001], [0.003]]),
     np.array([[0.001], [0.005]]),
 
 ]
-nu_set = [0.02, 0.025, 0.03]
-tax_set = [0.3, 0.35, 0.4]
+nu_set = [
+    0.02,
+    # 0.025,
+    # 0.03
+]
+tax_set = [
+    # 0.3,
+    0.35,
+    # 0.4
+]
 phi_set = [0.0, 0.5]
 
 # # for testing:
@@ -84,10 +99,10 @@ def simulate_path(
                             rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                                 -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                            # need_Delta_country = 'True' if country == 'US' else 'False'
-                            need_Delta_country = 'False'
+                            need_Delta_country = 'True' if country == 'US' else 'False'
+                            # need_Delta_country = 'False'
 
-                            col_name = str(T_hat) + '_' + str(h) + '_' + str(
+                            col_name = str(T_hat) + '_' + str(h+3) + '_' + str(
                                 int(nu * 1000)) + '_' + str(int(tax * 100)) + '_' + str(int(phi * 10))
 
                             (
@@ -124,23 +139,23 @@ def simulate_path(
                                                    )
 
                             parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-                            # if country == 'US':
-                            #     age_belief = np.zeros((4, Nt_data))
-                            #     for n in range(len(age_cutoffs_SCF) - 1):
-                            #         age_belief[n] = np.average(
-                            #             np.average(Delta[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
-                            #                        weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
-                            #                        axis=2),
-                            #             weights=density_types,
-                            #             axis=1)
-                            #     parti_df['belief_old' + col_name] = age_belief[3].astype(np.float32)
-                            #     parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                            #     parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, 3].astype(np.float32)
-                            #     parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                            if country == 'US':
+                                age_belief = np.zeros((4, Nt_data))
+                                for n in range(len(age_cutoffs_SCF) - 1):
+                                    age_belief[n] = np.average(
+                                        np.average(Delta[-Nt_data:, :, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                                   weights=cohort_size[0, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]],
+                                                   axis=2),
+                                        weights=density_types,
+                                        axis=1)
+                                parti_df['belief_old' + col_name] = age_belief[3].astype(np.float32)
+                                parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                                parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, 3].astype(np.float32)
+                                parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
                             if country == 'Finland' or country == 'Norway':
                                 parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                                 parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                        parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + '.dta')
+                        parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + 'ee.dta')
     return (
         i,
         # popu_parti_compare,

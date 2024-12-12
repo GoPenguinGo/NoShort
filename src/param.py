@@ -1,12 +1,11 @@
 import numpy as np
 
 # Parameters
-rho = 0.001  # Time discount factor
+# rho = 0.001  # Time discount factor
 Ntype = 2
 # rho_i = np.array([[0.001], [0.1]])
-rho_i = np.array([[0.001], [-0.001]])  # baseline
-# rho_i = np.array([[-.01], [0.04]])  # baseline
-# rho_i = np.array([[0.001], [0.1]])  # baseline
+# rho_i = np.array([[0.001], [-0.001]])  # baseline
+rho_i = np.array([[0.001], [0.005]])  # baseline
 alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
 # nu = 0.01
@@ -19,13 +18,8 @@ sigma_Y_sqr = sigma_Y ** 2
 # )
 # for the SI signal:
 sigma_SI = 0.3
-phi = 0.4
-
-# v = 0.018  # from Nagel and Xu (2021 RFS)
-
-# tax = 0.3    # marginal rate of consumption tax
-# tax = 0.2
-tax = 0.5
+phi = 0.5
+tax = 0.35   # marginal rate of consumption tax
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
 
@@ -35,7 +29,7 @@ beta0 = np.sum(alpha_i * beta_i).astype(float)
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
 # T_hat = 20  # Pre-trading period
-T_hat = 2  # Pre-trading period
+T_hat = 3  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 Ninit = int(20 / dt)
@@ -69,7 +63,7 @@ Tsample = int(T_cohort / 100)
 Nsamples = 500
 stepcorr = int(Tsample / dt)
 
-phi_vector = [0, 0.4, 0.8]
+phi_vector = [0, 0.5, 0.8]
 n_phi = len(phi_vector)
 
 phi_5 = [0, 0.2, 0.4, 0.6, 0.8]

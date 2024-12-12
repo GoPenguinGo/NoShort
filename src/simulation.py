@@ -266,8 +266,6 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
-    np.ndarray,
 ]:
     """
     Bundles the cohort_builder_mean_vola function and the cohort_simulator_mean_vola function together
@@ -352,20 +350,18 @@ def simulate_SI_mean_vola(
     )
 
     (
-        dR_matrix,
-        theta_matrix,
-        r_matrix,
-        mu_S_matrix,
-        sigma_S_matrix,
-        pd_matrix,
-        theta_save_matrix,
-        sigma_S_save_matrix,
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-        cov_save_matrix,
+        theta_ave,
+        r_ave,
+        mu_S_ave,
+        sigma_S_ave,
+        parti_age_ave,
+        invest_matrix,
+        entry_ave,
+        exit_ave,
+        cov_matrix,
         parti,
-        cov_parti_matrix,
-        entry_exit_matrix,
+        regression_table1_b,
+        regression_table2_b
     ) = simulate_cohorts_mean_vola(
         biasvec,
         dZ,
@@ -390,7 +386,6 @@ def simulate_SI_mean_vola(
         mode_trade,
         mode_learn,
         cohort_type_size,
-        cutoffs_age,
         Delta_s_t,
         eta_st_eta_ss,
         X,
@@ -401,20 +396,18 @@ def simulate_SI_mean_vola(
     )
 
     return (
-        dR_matrix,
-        theta_matrix,
-        r_matrix,
-        mu_S_matrix,
-        sigma_S_matrix,
-        pd_matrix,
-        theta_save_matrix,
-        sigma_S_save_matrix,
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-        cov_save_matrix,
+        theta_ave,
+        r_ave,
+        mu_S_ave,
+        sigma_S_ave,
+        parti_age_ave,
+        invest_matrix,
+        entry_ave,
+        exit_ave,
+        cov_matrix,
         parti,
-        cov_parti_matrix,
-        entry_exit_matrix,
+        regression_table1_b,
+        regression_table2_b
     )
 
 
