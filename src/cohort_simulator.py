@@ -502,7 +502,7 @@ def simulate_cohorts_mean_vola(
     sigma_S_t = 0
     window = 12  # 1-year non-overlapping windows
     sample = np.arange(600, Nt - keep_when - 600, window)
-    window_bell = 240
+    # window_bell = 240
     # sample_bell = np.arange(600, Nt - keep_when - 600, window_bell)
     # N_sample_bell = len(sample_bell)
     age_sample = np.arange(1, int(200 / dt), 12)
@@ -530,6 +530,7 @@ def simulate_cohorts_mean_vola(
     exit_mat = np.ones((Nt - keep_when, 3))
     invest_mat = np.ones((36, Nt), dtype=np.int8)
     invest_matrix = np.ones((int((Nt - keep_when)/12), Nt), dtype=np.int8)
+    Delta_matrix = np.empty((int((Nt - keep_when) / 12), len(age_sample)), dtype=np.float16)
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -699,6 +700,7 @@ def simulate_cohorts_mean_vola(
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
                     invest_matrix[int(ii/12)] = invest_tracker[0]
+                    Delta_matrix[int(ii/12)] = Delta_s_t[-age_sample]
             #     for l in range(N_wealth_group):
             #         within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
             #         parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
@@ -728,7 +730,7 @@ def simulate_cohorts_mean_vola(
     sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
-    parti_age_ave = np.average(invest_matrix, axis=0)[age_sample]
+    parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample]
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
