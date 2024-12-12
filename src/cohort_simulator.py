@@ -437,6 +437,7 @@ def simulate_cohorts_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward, saving only the mean & std of the results
 
@@ -731,6 +732,7 @@ def simulate_cohorts_mean_vola(
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
     parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample]
+    Delta_age_ave = np.average(Delta_matrix, axis=0)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
@@ -828,6 +830,7 @@ def simulate_cohorts_mean_vola(
         mu_S_ave,
         sigma_S_ave,
         parti_age_ave,
+        Delta_age_ave,
         invest_matrix,
         entry_ave,
         exit_ave,

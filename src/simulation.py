@@ -266,6 +266,7 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the cohort_builder_mean_vola function and the cohort_simulator_mean_vola function together
@@ -355,6 +356,7 @@ def simulate_SI_mean_vola(
         mu_S_ave,
         sigma_S_ave,
         parti_age_ave,
+        Delta_age_ave,
         invest_matrix,
         entry_ave,
         exit_ave,
@@ -401,6 +403,7 @@ def simulate_SI_mean_vola(
         mu_S_ave,
         sigma_S_ave,
         parti_age_ave,
+        Delta_age_ave,
         invest_matrix,
         entry_ave,
         exit_ave,
