@@ -745,8 +745,8 @@ def simulate_cohorts_mean_vola(
         cov_parti_wealth_share
     ])
 
-    past_annual_return = np.zeros((3, Nt))
-    future_annual_return = np.zeros((3, Nt))
+    past_annual_return = np.zeros((3, Nt - keep_when))
+    future_annual_return = np.zeros((3, Nt - keep_when))
     for n, gap in enumerate([12, 24, 36]):
         past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
         past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
