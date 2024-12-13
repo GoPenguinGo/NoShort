@@ -529,7 +529,10 @@ def simulate_cohorts_mean_vola(
     exit_mat = np.ones((Nt - keep_when, 3))
     invest_mat = np.ones((36, Nt), dtype=np.int8)
     Delta_matrix = np.empty((int((Nt - keep_when) / 12), len(age_sample)), dtype=np.float16)
-    invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8) if need_invest_matrix == 'True' else 0
+    if need_invest_matrix == 'True' and mode_trade == 'w_constraint':
+        invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8)
+    else:
+        invest_matrix = 0
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -736,8 +739,8 @@ def simulate_cohorts_mean_vola(
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
     cov_theta_z_SI = np.corrcoef(dZ_SI[keep_when:], theta)[0, 1]
-    cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1]
-    cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1]
+    cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1] if mode_trade == 'w_constraint' else 0
+    cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1] if mode_trade == 'w_constraint' else 0
 
     # results about covariance
     cov_matrix = np.array([
@@ -748,84 +751,87 @@ def simulate_cohorts_mean_vola(
         cov_parti_wealth_share
     ])
 
-    past_annual_return = np.zeros((3, Nt - keep_when))
-    future_annual_return = np.zeros((3, Nt - keep_when))
-    for n, gap in enumerate([12, 24, 36]):
-        past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-        past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-        future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
-        future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
-    # run regressions and save results instead of saving the data:
-    x_set = np.copy(past_annual_return[:, sample])
-    y_set = [
-        parti,
-        entry_mat[sample],
-        exit_mat[sample]
-    ]
-    regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-    for ii in range(3):
-        x = (x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii])
-        for jj, y_mat in enumerate(y_set):
-            if jj == 1:  # entry on high return
-                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
-                x_condi = (x > np.percentile(x, 75)) + 0
-                x_regress = sm.add_constant(x_condi)
-                model = sm.OLS(y, x_regress)
-            elif jj == 2:  # exit on low return
-                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
-                x_condi = (x < np.percentile(x, 25)) + 0
-                x_regress = sm.add_constant(x_condi)
-                model = sm.OLS(y, x_regress)
-            else:
-                y = (y_mat[sample] - np.average(y_mat[sample])) / np.std(y_mat[sample])
+    if mode_trade == 'w_constraint':
+        past_annual_return = np.zeros((3, Nt - keep_when))
+        future_annual_return = np.zeros((3, Nt - keep_when))
+        for n, gap in enumerate([12, 24, 36]):
+            past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+            past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+            future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+            future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+        # run regressions and save results instead of saving the data:
+        x_set = np.copy(past_annual_return[:, sample])
+        y_set = [
+            parti,
+            entry_mat[sample],
+            exit_mat[sample]
+        ]
+        regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+        for ii in range(3):
+            x = (x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii])
+            for jj, y_mat in enumerate(y_set):
+                if jj == 1:  # entry on high return
+                    y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                    x_condi = (x > np.percentile(x, 75)) + 0
+                    x_regress = sm.add_constant(x_condi)
+                    model = sm.OLS(y, x_regress)
+                elif jj == 2:  # exit on low return
+                    y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                    x_condi = (x < np.percentile(x, 25)) + 0
+                    x_regress = sm.add_constant(x_condi)
+                    model = sm.OLS(y, x_regress)
+                else:
+                    y = (y_mat[sample] - np.average(y_mat[sample])) / np.std(y_mat[sample])
+                    x_regress = sm.add_constant(x)
+                    model = sm.OLS(y, x_regress)
+                est = model.fit()
+                regression_table1_b[ii, jj] = est.params[1]
+
+        x_set = [parti[sample],
+                 entry_mat[sample, 0],
+                 exit_mat[sample, 0]]
+        y_set = future_annual_return[:, sample]
+        regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+        for ii in range(3):
+            x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
+            for jj in range(3):
+                y = (y_set[jj] - np.average(y_set[jj])) / np.std(y_set[jj])
                 x_regress = sm.add_constant(x)
                 model = sm.OLS(y, x_regress)
-            est = model.fit()
-            regression_table1_b[ii, jj] = est.params[1]
+                est = model.fit()
+                regression_table2_b[ii, jj] = est.params[1]
 
-    x_set = [parti[sample],
-             entry_mat[sample, 0],
-             exit_mat[sample, 0]]
-    y_set = future_annual_return[:, sample]
-    regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
-    for ii in range(3):
-        x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
-        for jj in range(3):
-            y = (y_set[jj] - np.average(y_set[jj])) / np.std(y_set[jj])
-            x_regress = sm.add_constant(x)
-            model = sm.OLS(y, x_regress)
-            est = model.fit()
-            regression_table2_b[ii, jj] = est.params[1]
+        # fraction of agents re-entering after exiting the stock market
+        if need_invest_matrix == 'True':
+            window_bell = 20
+            sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
+            reentry_time = np.zeros((len(sample_bell) - 1, Nt - int(window_bell / dt) - 12), dtype=int)
+            for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
+                following_cohorts_exit = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] < 0)[
+                                         int(window_bell / dt):]  # ignoring the cohorts born during the "year"
+                parti_bell_exit = np.zeros((window_bell, Nt - int(window_bell / dt) - 12))
+                parti_bell_exit[0] = following_cohorts_exit
+                reentry_bell = np.zeros((Nt - int(window_bell / dt) - 12))
 
-    # fraction of agents re-entering after exiting the stock market
-    if need_invest_matrix == 'True':
-        window_bell = 20
-        sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
-        reentry_time = np.zeros((len(sample_bell) - 1, Nt - int(window_bell / dt) - 12), dtype=int)
-        for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
-            following_cohorts_exit = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] < 0)[
-                                     int(window_bell / dt):]  # ignoring the cohorts born during the "year"
-            parti_bell_exit = np.zeros((window_bell, Nt - int(window_bell / dt) - 12))
-            parti_bell_exit[0] = following_cohorts_exit
-            reentry_bell = np.zeros((Nt - int(window_bell / dt) - 12))
-
-            for nn in range(1, window_bell):
-                cohorts_in = invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
-                cohorts_out = (1 - cohorts_in)[:-12]
-                reentry_nn = (
-                        invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
-                        - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] > 0
-                ) if nn != 1 else (
-                        invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                        - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] > 0
+                for nn in range(1, window_bell):
+                    cohorts_in = invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
+                    cohorts_out = (1 - cohorts_in)[:-12]
+                    reentry_nn = (
+                            invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
+                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] > 0
+                    ) if nn != 1 else (
+                            invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] > 0
+                    )
+                    reentry_bell = reentry_bell + reentry_nn[:-12] > 0
+                    parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+                reentry_time[n] = list(
+                    map(int, np.sum(parti_bell_exit, axis=0))
                 )
-                reentry_bell = reentry_bell + reentry_nn[:-12] > 0
-                parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
-            reentry_time[n] = list(
-                map(int, np.sum(parti_bell_exit, axis=0))
-            )
     else:
         reentry_time = 0
+        regression_table1_b = 0
+        regression_table2_b = 0
 
     return (
         theta_ave,
