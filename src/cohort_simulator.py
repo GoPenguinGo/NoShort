@@ -733,6 +733,7 @@ def simulate_cohorts_mean_vola(
     sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
+    parti_ave = np.mean(parti)
     parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if (need_invest_matrix == 'True') and (mode_trade == 'w_constraint') else 0
     Delta_age_ave = np.average(np.abs(Delta_matrix), axis=0)
 
@@ -844,7 +845,7 @@ def simulate_cohorts_mean_vola(
         entry_ave,
         exit_ave,
         cov_matrix,
-        parti,
+        parti_ave,
         regression_table1_b,
         regression_table2_b
     )
@@ -1498,6 +1499,7 @@ def simulate_mean_vola_mix_type(
     sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
+    parti_ave = np.mean(parti)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
@@ -1603,7 +1605,7 @@ def simulate_mean_vola_mix_type(
         entry_ave,
         exit_ave,
         cov_matrix,
-        parti,
+        parti_ave,
         regression_table1_b,
         regression_table2_b
     )
