@@ -1580,7 +1580,7 @@ def simulate_mean_vola_mix_type(
                         invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
                         - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] > 0
                 )
-                reentry_bell = reentry_bell + reentry_nn[:-12] > 0
+                reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
                 parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
 
             for m in range(4):
