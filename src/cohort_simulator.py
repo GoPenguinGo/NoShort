@@ -733,7 +733,7 @@ def simulate_cohorts_mean_vola(
     sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
-    parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if need_invest_matrix == 'True' else 0
+    parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if (need_invest_matrix == 'True') and (mode_trade == 'w_constraint') else 0
     Delta_age_ave = np.average(np.abs(Delta_matrix), axis=0)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
