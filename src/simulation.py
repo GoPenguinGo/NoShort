@@ -253,6 +253,7 @@ def simulate_SI_mean_vola(
         beta_i: np.ndarray,
         rho_cohort_type: np.ndarray,
         cohort_type_size: np.ndarray,
+        need_invest_matrix: str
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -357,7 +358,7 @@ def simulate_SI_mean_vola(
         sigma_S_ave,
         parti_age_ave,
         Delta_age_ave,
-        invest_matrix,
+        reentry_time,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -394,7 +395,8 @@ def simulate_SI_mean_vola(
         d_eta_st,
         invest_tracker_build,
         tau_info_build,
-        Vhat_vector
+        Vhat_vector,
+        need_invest_matrix
     )
 
     return (
@@ -404,7 +406,7 @@ def simulate_SI_mean_vola(
         sigma_S_ave,
         parti_age_ave,
         Delta_age_ave,
-        invest_matrix,
+        reentry_time,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -658,10 +660,8 @@ def simulate_mix_mean_vola(
         beta_i: np.ndarray,
         rho_cohort_type: np.ndarray,
         cohort_type_size: np.ndarray,
+        need_invest_matrix: str
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -759,20 +759,17 @@ def simulate_mix_mean_vola(
     )
 
     (
-        dR_matrix,
-        theta_matrix,
-        r_matrix,
-        mu_S_matrix,
-        sigma_S_matrix,
-        pd_matrix,
-        theta_save_matrix,
-        sigma_S_save_matrix,
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-        cov_save_matrix,
+        theta_ave,
+        r_ave,
+        mu_S_ave,
+        sigma_S_ave,
+        reentry_time,
+        entry_ave,
+        exit_ave,
+        cov_matrix,
         parti,
-        cov_parti_matrix,
-        entry_exit_matrix,
+        regression_table1_b,
+        regression_table2_b
     ) = simulate_mean_vola_mix_type(
         biasvec,
         dZ,
@@ -803,22 +800,20 @@ def simulate_mix_mean_vola(
         invest_tracker_build,
         can_short_tracker_build,
         tau_info_build,
-        Vhat_vector
+        Vhat_vector,
+        need_invest_matrix
     )
 
     return (
-        dR_matrix,
-        theta_matrix,
-        r_matrix,
-        mu_S_matrix,
-        sigma_S_matrix,
-        pd_matrix,
-        theta_save_matrix,
-        sigma_S_save_matrix,
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-        cov_save_matrix,
+        theta_ave,
+        r_ave,
+        mu_S_ave,
+        sigma_S_ave,
+        reentry_time,
+        entry_ave,
+        exit_ave,
+        cov_matrix,
         parti,
-        cov_parti_matrix,
-        entry_exit_matrix,
+        regression_table1_b,
+        regression_table2_b
     )

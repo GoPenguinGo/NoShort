@@ -424,6 +424,7 @@ def simulate_cohorts_mean_vola(
         invest_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
+        need_invest_matrix: str,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -503,9 +504,6 @@ def simulate_cohorts_mean_vola(
     sigma_S_t = 0
     window = 12  # 1-year non-overlapping windows
     sample = np.arange(600, Nt - keep_when - 600, window)
-    # window_bell = 240
-    # sample_bell = np.arange(600, Nt - keep_when - 600, window_bell)
-    # N_sample_bell = len(sample_bell)
     age_sample = np.arange(1, int(200 / dt), 12)
 
     dR = np.zeros(Nt - keep_when)  # stores stock returns
@@ -530,8 +528,8 @@ def simulate_cohorts_mean_vola(
     entry_mat = np.ones((Nt - keep_when, 3))
     exit_mat = np.ones((Nt - keep_when, 3))
     invest_mat = np.ones((36, Nt), dtype=np.int8)
-    invest_matrix = np.ones((int((Nt - keep_when)/12), Nt), dtype=np.int8)
     Delta_matrix = np.empty((int((Nt - keep_when) / 12), len(age_sample)), dtype=np.float16)
+    invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8) if need_invest_matrix == 'True' else 0
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -700,7 +698,8 @@ def simulate_cohorts_mean_vola(
                 Phi_bar_parti_1[ii] = 1 / fc_parti_t
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
-                    invest_matrix[int(ii/12)] = invest_tracker[0]
+                    if need_invest_matrix == 'True':
+                        invest_matrix[int(ii/12)] = invest_tracker[0]
                     Delta_matrix[int(ii/12)] = Delta_s_t[0, -age_sample]
             #     for l in range(N_wealth_group):
             #         within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
@@ -731,8 +730,8 @@ def simulate_cohorts_mean_vola(
     sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
     entry_ave = np.mean(entry_mat)
     exit_ave = np.mean(exit_mat)
-    parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample]
-    Delta_age_ave = np.average(Delta_matrix, axis=0)
+    parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if need_invest_matrix == 'True' else 0
+    Delta_age_ave = np.average(np.abs(Delta_matrix), axis=0)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
@@ -798,31 +797,35 @@ def simulate_cohorts_mean_vola(
             est = model.fit()
             regression_table2_b[ii, jj] = est.params[1]
 
-    # # fraction of agents re-entering after exiting the stock market
-    # bell_length_reentry_compare = np.zeros((len(sample_bell), window_bell))
-    # for n, entry_n in enumerate(sample_bell):  # 20 year non-overlapping windows
-    #     following_cohorts_exit = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 12, 12:] < 0)[
-    #                              window_bell:]  # ignoring the cohorts born during the "year"
-    #     parti_bell_exit = np.zeros((window_bell, Nt - window_bell - 12))
-    #     parti_bell_exit[0] = following_cohorts_exit
-    #     reentry_bell = np.zeros((Nt - window_bell - 12))
-    #
-    #     for nn in range(1, window_bell):
-    #         cohorts_in = invest_tracker[entry_n + nn, window_bell - nn:-nn]
-    #         cohorts_out = (1 - cohorts_in)[:-12]
-    #         reentry_nn = (
-    #                 invest_tracker[entry_n + nn, window_bell - nn:-nn]
-    #                 - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:-nn + 1] > 0
-    #         ) if nn != 1 else (
-    #                 invest_tracker[entry_n + nn, window_bell - nn:-nn]
-    #                 - invest_tracker[entry_n + nn - 1, window_bell - nn + 1:] > 0
-    #         )
-    #         reentry_bell = reentry_bell + reentry_nn[:-12] > 0
-    #         parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
-    #     bell_length_reentry_compare[n] = list(
-    #             map(int, np.sum(parti_bell_exit, axis=0) * dt)) + (
-    #                                                         np.sum(parti_bell_exit,
-    #                                                                axis=0) * dt > 0)
+    # fraction of agents re-entering after exiting the stock market
+    if need_invest_matrix == 'True':
+        window_bell = 20
+        sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
+        reentry_time = np.zeros((len(sample_bell) - 1, Nt - int(window_bell / dt) - 12), dtype=int)
+        for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
+            following_cohorts_exit = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] < 0)[
+                                     int(window_bell / dt):]  # ignoring the cohorts born during the "year"
+            parti_bell_exit = np.zeros((window_bell, Nt - int(window_bell / dt) - 12))
+            parti_bell_exit[0] = following_cohorts_exit
+            reentry_bell = np.zeros((Nt - int(window_bell / dt) - 12))
+
+            for nn in range(1, window_bell):
+                cohorts_in = invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
+                cohorts_out = (1 - cohorts_in)[:-12]
+                reentry_nn = (
+                        invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
+                        - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] > 0
+                ) if nn != 1 else (
+                        invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                        - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] > 0
+                )
+                reentry_bell = reentry_bell + reentry_nn[:-12] > 0
+                parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+            reentry_time[n] = list(
+                map(int, np.sum(parti_bell_exit, axis=0))
+            )
+    else:
+        reentry_time = 0
 
     return (
         theta_ave,
@@ -831,7 +834,7 @@ def simulate_cohorts_mean_vola(
         sigma_S_ave,
         parti_age_ave,
         Delta_age_ave,
-        invest_matrix,
+        reentry_time,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -1227,10 +1230,8 @@ def simulate_mean_vola_mix_type(
         can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
+        need_invest_matrix: str
 ) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,
@@ -1305,38 +1306,43 @@ def simulate_mean_vola_mix_type(
     """
     # Initializing variables
     keep_when = int(200 / dt)
+    a_phi = (1 - phi ** 2)
+    phi_sqr_a_phi = phi / np.sqrt(a_phi)
+    a_phi_1 = 1 / a_phi
+    sigma_Y_sq = sigma_Y ** 2
+    mu_S_t = 0
+    sigma_S_t = 0
+    window = 12  # 1-year non-overlapping windows
+    sample = np.arange(600, Nt - keep_when - 600, window)
+
     dR = np.zeros(Nt - keep_when)  # stores stock returns
     r = np.zeros(Nt - keep_when)  # interest rate
     theta = np.zeros(Nt - keep_when)  # market price of risk
     mu_S = np.zeros(Nt - keep_when)
     sigma_S = np.zeros(Nt - keep_when)
     beta = np.zeros(Nt - keep_when)
-    Delta_bar = np.zeros(Nt - keep_when)
-    Delta_bar_parti = np.zeros(
-        (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
-    Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
+    # Delta_bar = np.zeros(Nt - keep_when)
+    # Delta_bar_parti = np.zeros(
+    #     (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
+    # Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt - keep_when))  # participation rate
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
-    parti_age_group = np.ones((Nt - keep_when, 4))
-    N_wealth_group = 4
-    parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
-    # wealth_groups = np.linspace(1, 0, N_wealth_group + 1)
-    # parti_age_wealth_group = np.ones((Nt - keep_when, 4, N_wealth_group))
 
-    entry_mat = np.zeros((Nt, 3), dtype=np.float16)
-    exit_mat = np.zeros((Nt, 3), dtype=np.float16)
+    # parti_age_group = np.ones((Nt - keep_when, 4))
+    # N_wealth_group = 4
+    # wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
+    # parti_wealth_group = np.ones((Nt - keep_when, N_wealth_group))
+
+    entry_mat = np.ones((Nt - keep_when, 3))
+    exit_mat = np.ones((Nt - keep_when, 3))
     invest_mat = np.ones((36, 4, Nt), dtype=np.int8)
-
-    a_phi = (1 - phi ** 2)
-    phi_sqr_a_phi = phi / np.sqrt(a_phi)
-    a_phi_1 = 1 / a_phi
-    sigma_Y_sq = sigma_Y ** 2
+    # Delta_matrix = np.empty((int((Nt - keep_when) / 12), len(age_sample)), dtype=np.float16)
+    invest_matrix = np.ones((int((Nt - keep_when) / 12), 4, Nt), dtype=np.int8) if need_invest_matrix == 'True' else 0
 
     append_init = np.ones((Ntype, Nconstraint, 1))
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1))
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
-    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -1367,7 +1373,7 @@ def simulate_mean_vola_mix_type(
         beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
         f_w_ist = f_c_ist / beta_i * beta_t
 
-        w_indiv_ist = f_w_ist / cohort_type_size * dt
+        # w_indiv_ist = f_w_ist / cohort_type_size * dt
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
         else:
@@ -1449,23 +1455,25 @@ def simulate_mean_vola_mix_type(
             dR[ii] = dR_t  # realized return from t-1 to t
             theta[ii] = theta_t
             r[ii] = r_t
-            Delta_bar[ii] = np.average(Delta_s_t, weights=cohort_type_size)
-            Delta_bar_parti[ii] = Delta_bar_parti_t
-            Delta_tilde_parti[ii] = Delta_tilde_parti_t
+            # Delta_bar[ii] = np.average(Delta_s_t, weights=cohort_type_size)
+            # Delta_bar_parti[ii] = Delta_bar_parti_t
+            # Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
             sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
-            for l in range(N_wealth_group):
-                within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
-                parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
-                                                          weights=cohort_type_size[within_group])
-            for j in range(4):
-                invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
-                cohort_type_age = cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
-                parti_age_group[ii, j] = np.ma.average(invest_age, weights=cohort_type_age)
+            if np.mod(ii, 12) == 0 and need_invest_matrix == 'True':
+                    invest_matrix[int(ii / 12)] = invest_tracker[0]
+            # for l in range(N_wealth_group):
+            #     within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
+            #     parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
+            #                                               weights=cohort_type_size[within_group])
+            # for j in range(4):
+            #     invest_age = invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
+            #     cohort_type_age = cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]]
+            #     parti_age_group[ii, j] = np.ma.average(invest_age, weights=cohort_type_age)
             # turnover = invest_tracker[0, :, 12:] - invest_mat[i - 12, :, :-12]
             for j in range(3):
                 # entry_i = np.copy(invest_tracker[0]) * 0
@@ -1477,109 +1485,120 @@ def simulate_mean_vola_mix_type(
                 entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4,-1)), axis=0))
-    dR_matrix = np.array([np.mean(dR / dt), np.std(dR / dt)])
-    theta_matrix = np.array([np.mean(theta), np.std(theta)])
-    r_matrix = np.array([np.mean(r), np.std(r)])
-    mu_S_matrix = np.array([np.mean(mu_S), np.std(mu_S)])
-    sigma_S_matrix = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    pd_matrix = np.array([np.mean(1 / beta), np.std(1 / beta)])
-    entry_exit_matrix = np.array([np.mean(entry_mat), np.mean(exit_mat)])
 
-    Delta_bar_parti_matrix = np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)])
-    Delta_tilde_bar_parti = Delta_tilde_parti - Delta_bar_parti
-    Delta_tilde_bar_parti_matrix = np.array([np.mean(Delta_tilde_bar_parti), np.std(Delta_tilde_bar_parti)])
-    Phi_tilde_bar_parti = Phi_tilde_parti * Phi_bar_parti_1
-    Phi_bar_parti_1_matrix = np.array([np.mean(Phi_bar_parti_1 * sigma_Y), np.std(Phi_bar_parti_1 * sigma_Y)])
-    Phi_tilde_parti_matrix = np.array([np.mean(Phi_tilde_parti), np.std(Phi_tilde_parti)])
-    Phi_tilde_bar_parti_matrix = np.array(
-        [np.mean(Phi_tilde_bar_parti * sigma_Y), np.std(Phi_tilde_bar_parti * sigma_Y)])
-    Delta_Phi_tilde = Delta_tilde_bar_parti * Phi_tilde_parti
-    Delta_Phi_tilde_matrix = np.array([np.mean(Delta_Phi_tilde), np.std(Delta_Phi_tilde)])
-    parti_age_group_matrix = np.array(np.mean(parti_age_group, axis=0))
-    Delta_bar_mat = np.tile(np.reshape(Delta_bar, (-1, 1)), (1, N_wealth_group))
-    parti_wealth_group_mask = parti_wealth_group
-    parti_wealth_group_matrix = np.array(np.nanmean(parti_wealth_group_mask, axis=0))
+    # save the mean and standard deviation
+    theta_ave = np.array([np.mean(theta), np.std(theta)])
+    r_ave = np.array([np.mean(r), np.std(r)])
+    mu_S_ave = np.array([np.mean(mu_S), np.std(mu_S)])
+    sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
+    entry_ave = np.mean(entry_mat)
+    exit_ave = np.mean(exit_mat)
+
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
-    cov_muS_z_Y = np.corrcoef(dZ[keep_when:], mu_S)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
     cov_theta_z_SI = np.corrcoef(dZ_SI[keep_when:], theta)[0, 1]
     cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1]
     cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1]
 
-    theta_save_matrix = np.array([
-        Phi_bar_parti_1_matrix,
-        Delta_bar_parti_matrix,
-    ])
-
-    sigma_S_save_matrix = np.array([
-        Phi_tilde_parti_matrix,
-        Phi_tilde_bar_parti_matrix,
-        Delta_tilde_bar_parti_matrix,
-        Delta_Phi_tilde_matrix,
-    ])
-
-    cov_save_matrix = np.array([
+    # results about covariance
+    cov_matrix = np.array([
         cov_theta_z_Y,
-        cov_muS_z_Y,
         cov_sigmaS_z_Y,
         cov_theta_z_SI,
         cov_parti_cons_share,
-        cov_parti_wealth_share,
+        cov_parti_wealth_share
     ])
 
-    cov_parti_matrix1 = np.array([])
-    cov_parti_matrix2 = np.array([])
-    cov_parti_matrix3 = np.array([])
-    cov_parti_matrix4 = np.array([])
-    cov_parti_matrix5 = np.array([])
-    windows = np.array([6, 24, 60])
-    R_cumu = np.cumsum(dR)
-    R2_cumu = np.cumsum(dR ** 2)
-    vola_cumu = np.cumsum(sigma_S ** 2)
-    r_cumu = np.cumsum(r)
-    for j, window in enumerate(windows):
-        R_window = R_cumu[window:] - R_cumu[:-window]
-        vola_R_window = R2_cumu[window:] - R2_cumu[:-window]
-        vola_window = np.sqrt((vola_cumu[window:] - vola_cumu[:-window]) / window)
-        r_window = r_cumu[window:] - r_cumu[:-window]
-        R_window_gap = np.reshape(R_window, (-1, window))[:, 0]
-        vola_R_window_gap = np.reshape(vola_R_window, (-1, window))[:, 0]
-        vola_window_gap = np.reshape(vola_window, (-1, window))[:, 0]
-        r_window_gap = np.reshape(r_window, (-1, window))[:, 0]
-        parti_window = np.reshape(parti, (-1, window))[:, 0]
-        r_reshape = np.reshape(r, (-1, window))
-        erp_window_gap = R_window_gap - np.sum(r_reshape, axis=1)[:-1]
-        corr1 = np.corrcoef(R_window_gap, parti_window[:-1])[0, 1]
-        corr2 = np.corrcoef(r_window_gap, parti_window[:-1])[0, 1]
-        corr3 = np.corrcoef(erp_window_gap, parti_window[:-1])[0, 1]
-        corr4 = np.corrcoef(vola_window_gap, parti_window[:-1])[0, 1]
-        corr5 = np.corrcoef(vola_R_window_gap, parti_window[:-1])[0, 1]
-        cov_parti_matrix1 = np.append(cov_parti_matrix1, corr1)
-        cov_parti_matrix2 = np.append(cov_parti_matrix2, corr2)
-        cov_parti_matrix3 = np.append(cov_parti_matrix3, corr3)
-        cov_parti_matrix4 = np.append(cov_parti_matrix4, corr4)
-        cov_parti_matrix5 = np.append(cov_parti_matrix5, corr5)
-    cov_parti_matrix = np.array([
-        cov_parti_matrix1,
-        cov_parti_matrix2,
-        cov_parti_matrix3,
-        cov_parti_matrix4,
-        cov_parti_matrix5,
-    ])
+    past_annual_return = np.zeros((3, Nt - keep_when))
+    future_annual_return = np.zeros((3, Nt - keep_when))
+    for n, gap in enumerate([12, 24, 36]):
+        past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+        future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+    # run regressions and save results instead of saving the data:
+    x_set = np.copy(past_annual_return[:, sample])
+    y_set = [
+        parti,
+        entry_mat[sample],
+        exit_mat[sample]
+    ]
+    regression_table1_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+    for ii in range(3):
+        x = (x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii])
+        for jj, y_mat in enumerate(y_set):
+            if jj == 1:  # entry on high return
+                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                x_condi = (x > np.percentile(x, 75)) + 0
+                x_regress = sm.add_constant(x_condi)
+                model = sm.OLS(y, x_regress)
+            elif jj == 2:  # exit on low return
+                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                x_condi = (x < np.percentile(x, 25)) + 0
+                x_regress = sm.add_constant(x_condi)
+                model = sm.OLS(y, x_regress)
+            else:
+                y = (y_mat[sample] - np.average(y_mat[sample])) / np.std(y_mat[sample])
+                x_regress = sm.add_constant(x)
+                model = sm.OLS(y, x_regress)
+            est = model.fit()
+            regression_table1_b[ii, jj] = est.params[1]
+
+    x_set = [parti[sample],
+             entry_mat[sample, 0],
+             exit_mat[sample, 0]]
+    y_set = future_annual_return[:, sample]
+    regression_table2_b = np.zeros((len(x_set), len(y_set)), dtype=np.float32)
+    for ii in range(3):
+        x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
+        for jj in range(3):
+            y = (y_set[jj] - np.average(y_set[jj])) / np.std(y_set[jj])
+            x_regress = sm.add_constant(x)
+            model = sm.OLS(y, x_regress)
+            est = model.fit()
+            regression_table2_b[ii, jj] = est.params[1]
+
+    # fraction of agents re-entering after exiting the stock market
+    if need_invest_matrix == 'True':
+        window_bell = 20
+        sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
+        reentry_time = np.zeros((len(sample_bell) - 1, 4, Nt - int(window_bell / dt) - 12), dtype=int)
+        for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
+            following_cohorts_exit = (invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] < 0)[
+                                     int(window_bell / dt):]  # ignoring the cohorts born during the "year"
+            parti_bell_exit = np.zeros((window_bell, 4, Nt - int(window_bell / dt) - 12))
+            parti_bell_exit[0] = following_cohorts_exit
+            reentry_bell = np.zeros((4, Nt - int(window_bell / dt) - 12))
+
+            for nn in range(1, window_bell):
+                cohorts_in = invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
+                cohorts_out = (1 - cohorts_in)[:, :-12]
+                reentry_nn = (
+                        invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
+                        - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] > 0
+                ) if nn != 1 else (
+                        invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                        - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] > 0
+                )
+                reentry_bell = reentry_bell + reentry_nn[:-12] > 0
+                parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+
+            for m in range(4):
+                reentry_time[n, m] = list(map(int, np.sum(parti_bell_exit[:, m], axis=0)))
+
+    else:
+        reentry_time = 0
 
     return (
-        dR_matrix,
-        theta_matrix,
-        r_matrix,
-        mu_S_matrix,
-        sigma_S_matrix,
-        pd_matrix,
-        theta_save_matrix,
-        sigma_S_save_matrix,
-        parti_age_group_matrix,
-        parti_wealth_group_matrix,
-        cov_save_matrix,
+        theta_ave,
+        r_ave,
+        mu_S_ave,
+        sigma_S_ave,
+        reentry_time,
+        entry_ave,
+        exit_ave,
+        cov_matrix,
         parti,
-        cov_parti_matrix,
-        entry_exit_matrix
+        regression_table1_b,
+        regression_table2_b
     )
