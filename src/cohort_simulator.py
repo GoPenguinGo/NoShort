@@ -752,6 +752,10 @@ def simulate_cohorts_mean_vola(
         cov_parti_wealth_share
     ])
 
+    reentry_time = 0
+    regression_table1_b = 0
+    regression_table2_b = 0
+
     if mode_trade == 'w_constraint':
         past_annual_return = np.zeros((3, Nt - keep_when))
         future_annual_return = np.zeros((3, Nt - keep_when))
@@ -829,10 +833,6 @@ def simulate_cohorts_mean_vola(
                 reentry_time[n] = list(
                     map(int, np.sum(parti_bell_exit, axis=0))
                 )
-    else:
-        reentry_time = 0
-        regression_table1_b = 0
-        regression_table2_b = 0
 
     return (
         theta_ave,
@@ -847,7 +847,7 @@ def simulate_cohorts_mean_vola(
         cov_matrix,
         parti_ave,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
     )
 
 
