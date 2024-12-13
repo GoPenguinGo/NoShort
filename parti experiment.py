@@ -54,7 +54,7 @@ def simulate_path(
 ):
     print(i)
     # shocks
-    i = 0
+    # i = 0
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -62,11 +62,11 @@ def simulate_path(
     dZ_SI = dZ_SI_matrix[i]
 
     # sample: in time-series
-    theta_compare = np.zeros(n_scenarios, dtype=np.float32)
-    r_compare = np.zeros(n_scenarios, dtype=np.float32)
-    mu_S_compare = np.zeros(n_scenarios, dtype=np.float32)
-    sigma_S_compare = np.zeros(n_scenarios, dtype=np.float32)
-    parti_compare = np.zeros((n_scenarios - 1, N_sample), dtype=np.float32)
+    theta_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
+    r_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
+    mu_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
+    sigma_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
+    parti_compare = np.zeros((n_scenarios - 1), dtype=np.float32)
     entry_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
     exit_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
     Delta_age_compare = np.zeros((2, len(age_sample)), dtype=np.float32)
@@ -96,7 +96,7 @@ def simulate_path(
                 entry_ave,
                 exit_ave,
                 cov_matrix,
-                parti,
+                parti_ave,
                 regression_table1_b,
                 regression_table2_b
             ) = simulate_SI_mean_vola(
@@ -150,7 +150,7 @@ def simulate_path(
                 entry_ave,
                 exit_ave,
                 cov_matrix,
-                parti,
+                parti_ave,
                 regression_table1_b,
                 regression_table2_b
             ) = simulate_SI_mean_vola(
@@ -188,13 +188,13 @@ def simulate_path(
             sigma_S_compare[g] = sigma_S_ave
             Delta_age_compare[g] = Delta_age_ave
             cov_compare[g] = cov_matrix
-            parti_compare[g - 1] = parti
+            parti_compare[g - 1] = parti_ave
             entry_compare[g - 1] = entry_ave
             exit_compare[g - 1] = exit_ave
             parti_age_compare = parti_age_ave
             regression_table1[g - 1] = regression_table1_b
             regression_table2[g - 1] = regression_table2_b
-            reentry_time_compare[g - 1] = reentry_time if need_invest_matrix == 'True' else 0
+            reentry_time_compare[g - 1, :, 1] = reentry_time if need_invest_matrix == 'True' else 0
 
         else:
             alpha_constraint = np.ones(
@@ -215,7 +215,7 @@ def simulate_path(
                 entry_ave,
                 exit_ave,
                 cov_matrix,
-                parti,
+                parti_ave,
                 regression_table1_b,
                 regression_table2_b
             ) = simulate_mix_mean_vola(
@@ -251,7 +251,7 @@ def simulate_path(
             mu_S_compare[g] = mu_S_ave
             sigma_S_compare[g] = sigma_S_ave
             cov_compare[g] = cov_matrix
-            parti_compare[g - 1] = parti
+            parti_compare[g - 1] = parti_ave
             entry_compare[g - 1] = entry_ave
             exit_compare[g - 1] = exit_ave
             regression_table1[g - 1] = regression_table1_b
@@ -321,7 +321,6 @@ def main():
         results_df = pd.DataFrame(results_list)
         results_dict = results_df.to_dict(orient='list')
         np.savez(str(j)+"simulation_new.npz", **results_dict)
-
 
 
 if __name__ == '__main__':
