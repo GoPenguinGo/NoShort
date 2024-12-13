@@ -277,8 +277,8 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(10):
-        per_path = 200
+    for j in range(1):
+        per_path = 20
         paths_j = j * per_path
         with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + per_path)]

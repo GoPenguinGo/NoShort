@@ -1221,7 +1221,6 @@ def simulate_mean_vola_mix_type(
         T_hat: float,
         Npre: float,
         cohort_type_size: np.ndarray,
-        cutoffs_age: np.ndarray,
         Delta_s_t: np.ndarray,
         eta_st_eta_ss: np.ndarray,
         X: np.ndarray,

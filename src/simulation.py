@@ -792,7 +792,6 @@ def simulate_mix_mean_vola(
         T_hat,
         Npre,
         cohort_type_size,
-        cutoffs_age,
         Delta_s_t,
         eta_st_eta_ss,
         X,
