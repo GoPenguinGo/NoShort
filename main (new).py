@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
-from src.param import rho, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
+from src.param import rho_i, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
     scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
     scenario_labels, colors_short, PN_labels, age_labels, \
-    Ntype, rho_i, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size
+    Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size, popu_age_groups
 from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_mix, \
     rho_i_mix, cohort_type_size_mix
 import statsmodels.api as sm
@@ -17,7 +17,8 @@ from scipy.interpolate import make_interp_spline
 
 # Fig1: Shocks and beliefs
 # Fig2: Distribution of beliefs
-folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+# folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
     folder_address + r'realized_shocks_US.xlsx',
     sheet_name='Sheet1',
@@ -35,7 +36,7 @@ density_set = [
     (0.0, 0.0, 0.0, 1.0),
     (0.25, 0.25, 0.25, 0.25),
 ]
-phi_set = [0.0, 0.4]
+phi_set = [0.0, 0.5]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
 dZ_build = dZ_build_matrix[0]
@@ -53,56 +54,117 @@ theta_compare = np.empty((n_scenarios, n_phi, Nt_data), dtype=np.float32)
 Delta_bar_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float32)
 Delta_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
 pi_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
-invest_tracker_compare = np.zeros((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
-for i, phi in enumerate(phi_set):
-    for j in range(n_scenarios):
-        alpha_constraint = np.ones(
-            (1, Nconstraint)) * density_set[j]
-        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-        cohort_type_size_mix = cohort_size * alpha_i_mix
-        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-        (
-            r,
-            theta,
-            f_c,
-            Delta,
-            pi,
-            parti,
-            Phi_bar_parti,
-            Phi_tilde_parti,
-            Delta_bar_parti,
-            Delta_tilde_parti,
-            dR,
-            mu_S,
-            sigma_S,
-            beta,
-            invest_tracker,
-            parti_age_group,
-            parti_wealth_group,
-            entry_mat,
-            exit_mat
-        ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                               beta0,
-                               phi, Npre, Ninit, T_hat,
-                               dZ_build, dZ, dZ_SI_build, dZ_SI,
-                               cutoffs_age, Ntype,
-                               Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                               rho_cohort_type_mix,
-                               cohort_type_size_mix,
-                               need_f='True',
-                               need_Delta='True',
-                               need_pi='True',
-                               )
+invest_tracker_compare = np.zeros((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=int)
+parti_age_group_compare = np.zeros((n_scenarios, n_phi, Nt_data, 4), dtype=np.float16)
+for i in range(n_scenarios):
+    for j, phi in enumerate(phi_set):
+        if i == 0:
+            mode_trade = 'complete'
+            mode_learn = 'reentry'
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_bar_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+                entry_mat,
+                exit_mat
+            ) = simulate_SI(mode_trade,
+                            mode_learn,
+                            Nc,
+                            Nt,
+                            dt,
+                            nu,
+                            Vhat,
+                            mu_Y,
+                            sigma_Y,
+                            tax,
+                            beta0,
+                            phi,
+                            Npre,
+                            Ninit,
+                            T_hat,
+                            dZ_build,
+                            dZ,
+                            dZ_SI_build,
+                            dZ_SI,
+                            tau,
+                            cutoffs_age,
+                            Ntype,
+                            rho_i,
+                            alpha_i,
+                            beta_i,
+                            rho_cohort_type,
+                            cohort_type_size,
+                            need_f='True',
+                            need_Delta='True',
+                            need_pi='True',
+                            )
+            Delta_compare[i, j, :, 3] = Delta[-Nt_data:]
+            pi_compare[i, j, :, 3] = pi[-Nt_data:]
+            invest_tracker_compare[i, j, :, 3] = (pi[-Nt_data:] != 0)
+        else:
+            alpha_constraint = np.ones(
+                (1, Nconstraint)) * density_set[i]
+            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+            cohort_type_size_mix = cohort_size * alpha_i_mix
+            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_bar_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+                entry_mat,
+                exit_mat
+            ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                   beta0,
+                                   phi, Npre, Ninit, T_hat,
+                                   dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                   cutoffs_age, Ntype,
+                                   Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                   rho_cohort_type_mix,
+                                   cohort_type_size_mix,
+                                   need_f='True',
+                                   need_Delta='True',
+                                   need_pi='True',
+                                   )
+            Delta_compare[i, j] = Delta[-Nt_data:]
+            pi_compare[i, j] = pi[-Nt_data:]
+            invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
         theta_compare[i, j] = theta[-Nt_data:]
         Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
-        Delta_compare[i, j] = Delta[-Nt_data:]
-        pi_compare[i, j] = pi[-Nt_data:]
-        invest_tracker_compare[i, j] = invest_tracker[-Nt_data:]
+        parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
+
 
 nn = 3  # number of cohorts illustrated
-starts = np.arange(nn) * 240 + 14 * 12
+starts = np.arange(nn) * 240 + 24 * 12
 Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 switch_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
@@ -157,9 +219,8 @@ for j, ax in enumerate(axes):
         ax.plot(x, Z_SI, color='gray', linewidth=1.2, label=r'$z^{SI}_t$')
         ax.tick_params(axis='y', labelcolor='black')
         ax.tick_params(axis='x', labelcolor='black')
-        ax.legend(loc='upper left')
         ax.set_title(r'Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
-        ax.legend(loc='lower right')
+        ax.legend(loc='lower left')
 
     elif j <= 2:
         Delta_focus = Delta_time_series[0, j - 1, :, 3]
@@ -174,7 +235,7 @@ for j, ax in enumerate(axes):
         if j == 1:
             ax.set_title(r'Re-entry scenario, $\phi=0.0$')
         else:
-            ax.set_title(r'Re-entry scenario, $\phi=0.4$')
+            ax.set_title(r'Re-entry scenario, $\phi=0.5$')
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -202,13 +263,13 @@ for j, ax in enumerate(axes):
                 ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dotted')
                 ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o')
         ax.tick_params(axis='y', labelcolor='black')
-        ax.legend(loc='lower right')
+        ax.legend(loc='lower left')
 
     else:
         constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
         colors_short3 = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
         color_dot = 'red'
-        ax.set_title(r'Mix scenario, $\phi=0.4$')
+        ax.set_title(r'Mix scenario, $\phi=0.5$')
         ax.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
         m = 0
         Delta_focus = Delta_time_series[1, 1, m]
@@ -231,20 +292,20 @@ for j, ax in enumerate(axes):
                 ax.plot(x, y_cohort_P, color=colors_short3[k], linewidth=1.5, label=constraint_labels[k])
                 ax.plot(x, y_cohort_N, color=colors_short3[k], linewidth=1.5, linestyle='dotted')
                 ax.scatter(x, y_cohort_switch, color=color_dot, s=10, marker='o')
-            ax.legend(loc='lower right')
+            ax.legend(loc='lower left')
         ax.tick_params(axis='y', labelcolor='black')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig(
     'f1.png',
-    dpi=100)
+    dpi=200)
 plt.show()
 plt.close()
 
 ######################################
 ###########   Figure 2   #############
 ######################################
-# phi = 0.4, reentry scenario
+# phi = 0.5, reentry scenario
 y_overall = np.empty((Nt_data, 5))  # overall
 y_P = np.empty((Nt_data, 5))  # participants / long
 y_N = np.empty((Nt_data, 5))  # non-participants / short
@@ -305,7 +366,7 @@ belief_cutoff_case = -theta_compare[0, 1]
 fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
 for jj, ax in enumerate(axes):
     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax.set_ylim(-4.3, 2.6)
+    ax.set_ylim(-3.2, 2.0)
     if jj == 0:
         ax.set_title('Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
@@ -340,6 +401,31 @@ for jj, ax in enumerate(axes):
 fig.savefig('f2.png', dpi=200)
 plt.show()
 plt.close()
+
+######################################
+##########   Figure 2.1   ############
+######################################
+for i in range(2):
+    parti_age_group_focus = parti_age_group_compare[i, 1]  # reentry, phi = 0.5
+    y_focus = np.cumsum(parti_age_group_focus * popu_age_groups, axis=1)
+    fig, axes = plt.subplots(nrows=1, sharex='all', sharey='all', figsize=(10, 4))
+    for jj, ax in enumerate(axes):
+        ax.set_ylabel(r'Participation rate', color='black')
+        # ax.set_ylim(-4.3, 2.6)
+        ax.set_title('Participation rate in age groups, Reentry')
+        for ii in range(4):
+            # ax.plot(x, y_focus[ii], color='black', linewidth=2, label=age_labels[ii])
+            y_focus_bottom = y_focus[ii - 1] if ii > 0 else y_focus[ii] * 0.0
+            ax.fill_between(x, y_focus_bottom, y_focus[ii], color=colors_short[ii], linewidth=0., alpha=0.4,
+                            label=age_labels[ii])
+        ax.legend(loc='lower right')
+        ax.set_xlabel('Time in simulation')
+        fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig('f2_1.png', dpi=200)
+    plt.show()
+    plt.close()
+
 
 
 ######################################
