@@ -52,6 +52,7 @@ n_age_cutoffs = 4
 quartiles = np.linspace(1, 0, n_age_cutoffs+1)
 # cutoffs_age = np.searchsorted(cummu_popu, quartiles)
 cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
+popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
 Mpath = 2000
 

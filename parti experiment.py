@@ -6,7 +6,7 @@ from src.param import mu_Y, sigma_Y, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_type_size, cohort_size, T_hat, Npre, Vhat
-from src.param import phi
+# from src.param import phi
 from src.param import nu, rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
 from src.param_mix import Nconstraint
 from src.param_mix import rho_i_mix
@@ -19,9 +19,10 @@ plt.rcParams["font.family"] = 'serif'
 density_set = [
     (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
-    (0.25, 0.25, 0.25, 0.25),
+    # (0.25, 0.25, 0.25, 0.25),
 ]
 n_scenarios = len(density_set)
+phi_set = [0.0, 0.8]
 # T_hat_set = [2, 3]
 # rho_i_set = [
 #     np.array([[0.001], [-0.003]]),
@@ -31,7 +32,6 @@ n_scenarios = len(density_set)
 #
 # ]
 # # for testing:
-# Mpath = 10
 # Mpath = 10
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
@@ -43,14 +43,13 @@ cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 window_bell = 20
 
 np.seterr(invalid='ignore')
-# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-
-
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
 
 def simulate_path(
         i: int,
+        phi: float,
 ):
     print(i)
     # shocks
@@ -70,17 +69,17 @@ def simulate_path(
     entry_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
     exit_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
     Delta_age_compare = np.zeros((2, len(age_sample)), dtype=np.float32)
-    parti_age_compare = 0
     regression_table1 = np.zeros((n_scenarios - 1, 3, 3), dtype=np.float32)
     regression_table2 = np.zeros((n_scenarios - 1, 3, 3), dtype=np.float32)
     cov_compare = np.zeros((n_scenarios, 5), dtype=np.float32)
-    if np.mod(i, 10) == 0:
-        reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-        need_invest_matrix = 'True'
-    else:
-        reentry_time_compare = 0
-        need_invest_matrix = 'False'
-
+    # if np.mod(i, 10) == 0:
+    #     reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+    #     need_invest_matrix = 'True'
+    # else:
+    #     reentry_time_compare = 0
+    #     need_invest_matrix = 'False'
+    need_invest_matrix = 'False'
+    reentry_time_compare = 0
     for g, type_density in enumerate(density_set):
         if type_density[0] == 1:
             mode_trade = 'complete'
@@ -191,10 +190,11 @@ def simulate_path(
             parti_compare[g - 1] = parti_ave
             entry_compare[g - 1] = entry_ave
             exit_compare[g - 1] = exit_ave
-            parti_age_compare = parti_age_ave
             regression_table1[g - 1] = regression_table1_b
             regression_table2[g - 1] = regression_table2_b
-            reentry_time_compare[g - 1, :, 1] = reentry_time if need_invest_matrix == 'True' else 0
+            if need_invest_matrix == 'True':
+                reentry_time_compare[g - 1, :, 1] = reentry_time
+                parti_age_compare = parti_age_ave
 
         else:
             alpha_constraint = np.ones(
@@ -256,9 +256,15 @@ def simulate_path(
             exit_compare[g - 1] = exit_ave
             regression_table1[g - 1] = regression_table1_b
             regression_table2[g - 1] = regression_table2_b
-            reentry_time_compare[g - 1] = reentry_time[:, 2:] if need_invest_matrix == 'True' else 0
+            if need_invest_matrix == 'True':
+                reentry_time_compare[g - 1] = reentry_time[:, 2:]
+
+    if need_invest_matrix == 'True':
+        np.save(folder_address + str(int(i/10)) + 'reentry_time', reentry_time_compare)
+        np.save(folder_address + str(int(i / 10)) + 'parti_age', parti_age_compare)
 
     return (
+        i,
         theta_compare,
         r_compare,
         mu_S_compare,
@@ -267,60 +273,59 @@ def simulate_path(
         entry_compare,
         exit_compare,
         Delta_age_compare,
-        parti_age_compare,
         regression_table1,
         regression_table2,
         cov_compare,
-        reentry_time_compare,
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(1):
-        per_path = 20
+    for j in range(40):
+        per_path = 25
         paths_j = j * per_path
-        with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
-            results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + per_path)]
-        # Initialize a list to store the results
-        results_list = []
-        # Retrieve results from parallel processes
-        for result in results:
-            i, \
-                theta_compare, \
-                r_compare, \
-                mu_S_compare, \
-                sigma_S_compare, \
-                parti_compare, \
-                entry_compare, \
-                exit_compare, \
-                Delta_age_compare, \
-                parti_age_compare, \
-                regression_table1, \
-                regression_table2, \
-                cov_compare, \
-                reentry_time_compare = result.result()
-            data = {
-                "i": i,
-                "theta": theta_compare,
-                "r": r_compare,
-                "mu_S": mu_S_compare,
-                "sigma_S": sigma_S_compare,
-                "parti": parti_compare,
-                "entry": entry_compare,
-                "exit": exit_compare,
-                "Delta_age": Delta_age_compare,
-                "parti_age": parti_age_compare,
-                "reg1": regression_table1,
-                "reg2": regression_table2,
-                "cov_mat": cov_compare,
-                "reentry_time": reentry_time_compare
-            }
-            results_list.append(data)
-        # Create a DataFrame from the list of dictionaries
-        results_df = pd.DataFrame(results_list)
-        results_dict = results_df.to_dict(orient='list')
-        np.savez(str(j)+"simulation_new.npz", **results_dict)
+        for phi in phi_set:
+            with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+                results = [executor.submit(simulate_path, i, phi) for i in range(paths_j, paths_j + per_path)]
+            # Initialize a list to store the results
+            results_list = []
+
+            # Retrieve results from parallel processes
+            for result in results:
+                i, \
+                    theta_compare, \
+                    r_compare, \
+                    mu_S_compare, \
+                    sigma_S_compare, \
+                    parti_compare, \
+                    entry_compare, \
+                    exit_compare, \
+                    Delta_age_compare, \
+                    regression_table1, \
+                    regression_table2, \
+                    cov_compare = result.result()
+
+                data = {
+                    "i": i,
+                    "theta": theta_compare,
+                    "r": r_compare,
+                    "mu_S": mu_S_compare,
+                    "sigma_S": sigma_S_compare,
+                    "parti": parti_compare,
+                    "entry": entry_compare,
+                    "exit": exit_compare,
+                    "Delta_age": Delta_age_compare,
+                    "reg1": regression_table1,
+                    "reg2": regression_table2,
+                    "cov_mat": cov_compare,
+                }
+                results_list.append(data)
+
+            # Create a DataFrame from the list of dictionaries
+            results_df = pd.DataFrame(results_list)
+            results_dict = results_df.to_dict(orient='list')
+            np.savez(folder_address + str(j) + str(phi) + "simulation_new.npz", **results_dict)
+
 
 
 if __name__ == '__main__':

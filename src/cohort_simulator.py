@@ -162,8 +162,6 @@ def simulate_cohorts_SI(
     entry_mat = np.zeros((Nt, 3), dtype=np.float16)
     exit_mat = np.zeros((Nt, 3), dtype=np.float16)
 
-    dR_t = 0
-
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
@@ -171,9 +169,6 @@ def simulate_cohorts_SI(
 
     mu_S_t = 0
     sigma_S_t = 0
-    r_t = 0
-    pi_st = 0
-    w_indiv_ist = 0
 
     wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
@@ -349,18 +344,20 @@ def simulate_cohorts_SI(
             Phi_tilde_parti[i] = fw_parti_t
             parti[i] = popu_parti_t
             for j in range(4):
+                parti_age_group[i, j] = np.ma.average(invest_tracker[0, cutoffs_age[j + 1]:cutoffs_age[j]],
+                                                      weights=cohort_type_size[0, cutoffs_age[j + 1]:cutoffs_age[j]])
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
                 parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
                                                          weights=cohort_type_size[within_group])
-            for mm in range(21):
-                age_bottom = Nc - 1 - int(5 / dt * (mm + 1))
-                age_top = Nc - 1 - int(5 / dt * mm)
-                if mm == 20:
-                    parti_age_group[i, mm] = np.ma.average(invest_tracker[0, :age_top],
-                                                       weights=cohort_type_size[0, :age_top])
-                else:
-                    parti_age_group[i, mm] = np.ma.average(invest_tracker[0, age_bottom:age_top],
-                                                       weights=cohort_type_size[0, age_bottom:age_top])
+            # for mm in range(21):
+            #     age_bottom = Nc - 1 - int(5 / dt * (mm + 1))
+            #     age_top = Nc - 1 - int(5 / dt * mm)
+            #     if mm == 20:
+            #         parti_age_group[i, mm] = np.ma.average(invest_tracker[0, :age_top],
+            #                                            weights=cohort_type_size[0, :age_top])
+            #     else:
+            #         parti_age_group[i, mm] = np.ma.average(invest_tracker[0, age_bottom:age_top],
+            #                                            weights=cohort_type_size[0, age_bottom:age_top])
         for j in range(3):
             entry_i = np.copy(invest_tracker[0])
             entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (j + 1):]  # entry including the newborns who are in
