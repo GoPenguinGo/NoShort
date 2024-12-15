@@ -145,7 +145,7 @@ def simulate_cohorts_SI(
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
     invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
-    parti_age_group = np.ones((Nt, 21), dtype=np.float16)
+    parti_age_group = np.ones((Nt, 4), dtype=np.float16)
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
