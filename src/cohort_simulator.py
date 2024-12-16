@@ -694,13 +694,14 @@ def simulate_cohorts_mean_vola(
             sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
+            if np.mod(ii, 12) == 0:
+                Delta_matrix[int(ii / 12)] = Delta_s_t[0, -age_sample]
             if mode_trade == 'w_constraint':
                 Phi_bar_parti_1[ii] = 1 / fc_parti_t
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
                     if need_invest_matrix == 'True':
                         invest_matrix[int(ii/12)] = invest_tracker[0]
-                    Delta_matrix[int(ii/12)] = Delta_s_t[0, -age_sample]
             #     for l in range(N_wealth_group):
             #         within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
             #         parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
