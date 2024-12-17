@@ -268,6 +268,8 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the cohort_builder_mean_vola function and the cohort_simulator_mean_vola function together
@@ -359,6 +361,8 @@ def simulate_SI_mean_vola(
         parti_age_ave,
         Delta_age_ave,
         reentry_time,
+        exit_time,
+        entry_cumu,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -407,6 +411,8 @@ def simulate_SI_mean_vola(
         parti_age_ave,
         Delta_age_ave,
         reentry_time,
+        exit_time,
+        entry_cumu,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -673,6 +679,8 @@ def simulate_mix_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the build_mean_vola_mix_type function and the simulate_mean_vola_mix_type function together
@@ -764,6 +772,8 @@ def simulate_mix_mean_vola(
         mu_S_ave,
         sigma_S_ave,
         reentry_time,
+        exit_time,
+        entry_cumu,
         entry_ave,
         exit_ave,
         cov_matrix,
@@ -809,6 +819,8 @@ def simulate_mix_mean_vola(
         mu_S_ave,
         sigma_S_ave,
         reentry_time,
+        exit_time,
+        entry_cumu,
         entry_ave,
         exit_ave,
         cov_matrix,
