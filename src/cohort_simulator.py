@@ -1583,16 +1583,15 @@ def simulate_mean_vola_mix_type(
             est = model.fit()
             regression_table1_b[ii, jj] = est.params[1]
 
-    x_set = parti[sample]
+    x = np.reshape((parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1))
     y_set = [
         future_annual_return[:, sample],
         future_annual_return[:, sample] - r[sample]
     ]
     regression_table2_b = np.zeros((3, len(y_set)), dtype=np.float32)
     for ii in range(3):
-        x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
-        for jj in range(2):
-            y = (y_set[jj] - np.average(y_set[jj])) / np.std(y_set[jj])[ii]
+        for jj, y_mat in enumerate(y_set):
+            y = (y_mat[ii] - np.average(y_mat[ii])) / np.std(y_mat[ii])
             x_regress = sm.add_constant(x)
             model = sm.OLS(y, x_regress)
             est = model.fit()
@@ -1660,7 +1659,6 @@ def simulate_mean_vola_mix_type(
     else:
         reentry_time = 0
         exit_time = 0
-
 
     return (
         theta_ave,
