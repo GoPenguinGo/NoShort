@@ -19,10 +19,10 @@ plt.rcParams["font.family"] = 'serif'
 density_set = [
     (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
-    # (0.25, 0.25, 0.25, 0.25),
+    (0.25, 0.25, 0.25, 0.25),
 ]
 n_scenarios = len(density_set)
-phi_set = [0.0, 0.8]
+phi_set = [0.0, 0.5, 0.8]
 # T_hat_set = [2, 3]
 # rho_i_set = [
 #     np.array([[0.001], [-0.003]]),
@@ -44,6 +44,8 @@ window_bell = 20
 
 np.seterr(invalid='ignore')
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+
+
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
 
@@ -78,8 +80,10 @@ def simulate_path(
     # else:
     #     reentry_time_compare = 0
     #     need_invest_matrix = 'False'
-    need_invest_matrix = 'False'
-    reentry_time_compare = 0
+    # need_invest_matrix = 'False'
+    # reentry_time_compare = 0
+    reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+    need_invest_matrix = 'True'
     for g, type_density in enumerate(density_set):
         if type_density[0] == 1:
             mode_trade = 'complete'
@@ -196,7 +200,7 @@ def simulate_path(
                 reentry_time_compare[g - 1, :, 1] = reentry_time
                 parti_age_compare = parti_age_ave
 
-        else:
+        elif phi == 0.5:
             alpha_constraint = np.ones(
                 (1, Nconstraint)) * type_density
             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
@@ -258,10 +262,13 @@ def simulate_path(
             regression_table2[g - 1] = regression_table2_b
             if need_invest_matrix == 'True':
                 reentry_time_compare[g - 1] = reentry_time[:, 2:]
+        else:
+            print('skip')
 
     if need_invest_matrix == 'True':
-        np.save(folder_address + str(int(i/10)) + 'reentry_time', reentry_time_compare)
-        np.save(folder_address + str(int(i / 10)) + 'parti_age', parti_age_compare)
+        if phi == 0.5:
+            np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
+        np.save(folder_address + str(i) + str(phi) + 'parti_age', parti_age_compare)
 
     return (
         i,
@@ -330,7 +337,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 # mode_trade = "w_constraint"
 # mode_learn = 'reentry'
