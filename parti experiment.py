@@ -6,7 +6,7 @@ from src.param import mu_Y, sigma_Y, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_type_size, cohort_size, T_hat, Npre, Vhat
-# from src.param import phi
+from src.param import phi
 from src.param import nu, rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
 from src.param_mix import Nconstraint
 from src.param_mix import rho_i_mix
@@ -51,7 +51,7 @@ folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
 
 def simulate_path(
         i: int,
-        phi: float,
+        phi_i: float,
 ):
     print(i)
     # shocks
@@ -72,18 +72,23 @@ def simulate_path(
     exit_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
     Delta_age_compare = np.zeros((2, len(age_sample)), dtype=np.float32)
     regression_table1 = np.zeros((n_scenarios - 1, 3, 3), dtype=np.float32)
-    regression_table2 = np.zeros((n_scenarios - 1, 3, 3), dtype=np.float32)
+    regression_table2 = np.zeros((n_scenarios - 1, 3, 2), dtype=np.float32)
     cov_compare = np.zeros((n_scenarios, 5), dtype=np.float32)
-    # if np.mod(i, 10) == 0:
-    #     reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-    #     need_invest_matrix = 'True'
-    # else:
-    #     reentry_time_compare = 0
-    #     need_invest_matrix = 'False'
+    parti_age_compare = 0
+    entry_cumu_compare = np.zeros((n_scenarios - 1, 200), dtype=np.float32)
+
+    if np.mod(i, 10) == 0:
+        reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+        exit_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
+        need_invest_matrix = 'True'
+    else:
+        reentry_time_compare = 0
+        exit_time_compare = 0
+        need_invest_matrix = 'False'
     # need_invest_matrix = 'False'
     # reentry_time_compare = 0
-    reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-    need_invest_matrix = 'True'
+    # reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+    # need_invest_matrix = 'True'
     for g, type_density in enumerate(density_set):
         if type_density[0] == 1:
             mode_trade = 'complete'
@@ -96,6 +101,8 @@ def simulate_path(
                 parti_age_ave,
                 Delta_age_ave,
                 reentry_time,
+                exit_time,
+                entry_cumu,
                 entry_ave,
                 exit_ave,
                 cov_matrix,
@@ -114,7 +121,7 @@ def simulate_path(
                 sigma_Y,
                 tax,
                 beta0,
-                phi,
+                phi_i,
                 Npre,
                 Ninit,
                 T_hat,
@@ -150,6 +157,8 @@ def simulate_path(
                 parti_age_ave,
                 Delta_age_ave,
                 reentry_time,
+                exit_time,
+                entry_cumu,
                 entry_ave,
                 exit_ave,
                 cov_matrix,
@@ -168,7 +177,7 @@ def simulate_path(
                 sigma_Y,
                 tax,
                 beta0,
-                phi,
+                phi_i,
                 Npre,
                 Ninit,
                 T_hat,
@@ -196,11 +205,13 @@ def simulate_path(
             exit_compare[g - 1] = exit_ave
             regression_table1[g - 1] = regression_table1_b
             regression_table2[g - 1] = regression_table2_b
+            parti_age_compare = parti_age_ave
+            entry_cumu_compare[g - 1] = entry_cumu
             if need_invest_matrix == 'True':
                 reentry_time_compare[g - 1, :, 1] = reentry_time
-                parti_age_compare = parti_age_ave
+                exit_time_compare[g - 1, :, 1] = exit_time
 
-        elif phi == 0.5:
+        elif phi_i == phi:
             alpha_constraint = np.ones(
                 (1, Nconstraint)) * type_density
             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
@@ -216,6 +227,8 @@ def simulate_path(
                 mu_S_ave,
                 sigma_S_ave,
                 reentry_time,
+                exit_time,
+                entry_cumu,
                 entry_ave,
                 exit_ave,
                 cov_matrix,
@@ -232,7 +245,7 @@ def simulate_path(
                 sigma_Y,
                 tax,
                 beta0,
-                phi,
+                phi_i,
                 Npre,
                 Ninit,
                 T_hat,
@@ -260,15 +273,17 @@ def simulate_path(
             exit_compare[g - 1] = exit_ave
             regression_table1[g - 1] = regression_table1_b
             regression_table2[g - 1] = regression_table2_b
+            entry_cumu_compare[g - 1] = entry_cumu
             if need_invest_matrix == 'True':
                 reentry_time_compare[g - 1] = reentry_time[:, 2:]
+                exit_time_compare[g - 1] = exit_time[:, 2:]
         else:
             print('skip')
 
     if need_invest_matrix == 'True':
-        if phi == 0.5:
+        if phi_i == phi:
             np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
-        np.save(folder_address + str(i) + str(phi) + 'parti_age', parti_age_compare)
+    np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
 
     return (
         i,
@@ -291,9 +306,9 @@ def main():
     for j in range(40):
         per_path = 25
         paths_j = j * per_path
-        for phi in phi_set:
+        for phi_i in phi_set:
             with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
-                results = [executor.submit(simulate_path, i, phi) for i in range(paths_j, paths_j + per_path)]
+                results = [executor.submit(simulate_path, i, phi_i) for i in range(paths_j, paths_j + per_path)]
             # Initialize a list to store the results
             results_list = []
 
@@ -331,8 +346,7 @@ def main():
             # Create a DataFrame from the list of dictionaries
             results_df = pd.DataFrame(results_list)
             results_dict = results_df.to_dict(orient='list')
-            np.savez(folder_address + str(j) + str(phi) + "simulation_new.npz", **results_dict)
-
+            np.savez(folder_address + str(j) + str(phi_i) + "simulation_new.npz", **results_dict)
 
 
 if __name__ == '__main__':
