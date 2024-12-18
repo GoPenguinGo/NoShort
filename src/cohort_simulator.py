@@ -1611,7 +1611,7 @@ def simulate_mean_vola_mix_type(
         reentry_time = np.zeros((len(sample_bell) - 1, 4, Nt - int(window_bell / dt) - 12), dtype=int)
         exit_time = np.zeros((len(sample_bell) - 1, 4, Nt - int(window_bell / dt)), dtype=int)
         for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
-            following_cohorts_entry = (invest_matrix[entry_n, :, -12] - invest_matrix[entry_n - 1, :, 12:] > 0)[
+            following_cohorts_entry = (invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] > 0)[
                                       :, int(window_bell / dt):]
             following_cohorts_entry = np.append(following_cohorts_entry, invest_matrix[entry_n, :, -12:], axis=1)
             parti_bell_entry = np.zeros((window_bell, 4, Nt - int(window_bell / dt)))
