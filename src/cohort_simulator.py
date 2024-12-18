@@ -802,7 +802,7 @@ def simulate_cohorts_mean_vola(
         for ii in range(3):
             x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
             for jj in range(2):
-                y = (y_set[jj] - np.average(y_set[jj])) / np.std(y_set[jj])[ii]
+                y = (y_set[jj][ii] - np.average(y_set[jj][ii])) / np.std(y_set[jj][ii])
                 x_regress = sm.add_constant(x)
                 model = sm.OLS(y, x_regress)
                 est = model.fit()
