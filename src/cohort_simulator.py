@@ -793,23 +793,22 @@ def simulate_cohorts_mean_vola(
                 est = model.fit()
                 regression_table1_b[ii, jj] = est.params[1]
 
-        x_set = parti[sample]
+        x = np.reshape((parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1))
+        x_regress = sm.add_constant(x)
         y_set = [
             future_annual_return[:, sample],
             future_annual_return[:, sample] - r[sample]
             ]
         regression_table2_b = np.zeros((3, len(y_set)), dtype=np.float32)
         for ii in range(3):
-            x = np.reshape((x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii]), (-1, 1))
-            for jj in range(2):
-                y = (y_set[jj][ii] - np.average(y_set[jj][ii])) / np.std(y_set[jj][ii])
-                x_regress = sm.add_constant(x)
+            for jj, y_mat in enumerate(y_set):
+                y = (y_mat[ii] - np.average(y_mat[ii])) / np.std(y_mat[ii])
                 model = sm.OLS(y, x_regress)
                 est = model.fit()
                 regression_table2_b[ii, jj] = est.params[1]
 
         cohort_entry_annual = (invest_matrix[1:, 12:] - invest_matrix[:-1, :-12]) > 0
-        entry_cumu = np.cumsum(np.average(cohort_entry_annual, axis=0)) * dt
+        entry_cumu = np.cumsum(np.flip(np.average(cohort_entry_annual * dt, axis=0)))[age_sample]
 
         # fraction of agents re-entering after exiting the stock market
         if need_invest_matrix == 'True':
@@ -839,8 +838,8 @@ def simulate_cohorts_mean_vola(
                             invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
                             - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] < 0
                     ) if nn != 1 else (
-                            invest_tracker[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                            - invest_tracker[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] < 0
+                            invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] < 0
                     )
 
                     reentry_nn = (
@@ -1352,6 +1351,7 @@ def simulate_mean_vola_mix_type(
     sigma_S_t = 0
     window = 12  # 1-year non-overlapping windows
     sample = np.arange(600, Nt - keep_when - 600, window)
+    age_sample = np.arange(1, int(200 / dt), 12)
 
     dR = np.zeros(Nt - keep_when)  # stores stock returns
     r = np.zeros(Nt - keep_when)  # interest rate
@@ -1600,10 +1600,10 @@ def simulate_mean_vola_mix_type(
 
     cohort_entry_annual = (invest_matrix[1:, :, 12:] - invest_matrix[:-1, :, :-12]) > 0
     entry_cumu = np.cumsum(
-        np.average(
-            np.average(cohort_entry_annual, axis=0), axis=0, weights=alpha_i_mix[0, :, 0]
-        )
-    ) * dt
+        np.flip(np.average(
+            np.average(cohort_entry_annual * dt, axis=0), axis=0, weights=alpha_i_mix[0, :, 0]
+        ))
+    )[age_sample]
 
     # fraction of agents re-entering after exiting the stock market
     if need_invest_matrix == 'True':
@@ -1634,8 +1634,8 @@ def simulate_mean_vola_mix_type(
                         invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
                         - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] < 0
                 ) if nn != 1 else (
-                        invest_tracker[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                        - invest_tracker[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] < 0
+                        invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                        - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] < 0
                 )
 
                 reentry_nn = (
