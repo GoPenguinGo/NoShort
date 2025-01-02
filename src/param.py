@@ -29,7 +29,7 @@ beta0 = np.sum(alpha_i * beta_i).astype(float)
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
 # T_hat = 20  # Pre-trading period
-T_hat = 3  # Pre-trading period
+T_hat = 5  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 Ninit = int(20 / dt)
@@ -66,9 +66,6 @@ stepcorr = int(Tsample / dt)
 
 phi_vector = [0, 0.5, 0.8]
 n_phi = len(phi_vector)
-
-phi_5 = [0, 0.2, 0.4, 0.6, 0.8]
-n_phi_5 = len(phi_5)
 
 tax_vector = [0.2, 0.3, 0.4]
 n_tax = len(tax_vector)

@@ -27,7 +27,7 @@ plt.rcParams["font.family"] = 'serif'
 density_types = (0.25, 0.25, 0.25, 0.25)
 T_hat_set = [
     2,
-    3,
+    # 3,
     5,
     10,
 ]
@@ -42,11 +42,11 @@ nu_set = [
     0.02,
 ]
 tax_set = [
-    0.3,
+    # 0.3,
     0.35,
-    0.4
+    # 0.4
 ]
-phi_set = [0.0, 0.4, 0.5]
+phi_set = [0.0, 0.5]
 
 # # for testing:
 Mpath = 25
