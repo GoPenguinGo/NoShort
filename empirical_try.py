@@ -49,7 +49,7 @@ tax_set = [
 phi_set = [0.0, 0.5]
 
 # # for testing:
-Mpath = 25
+Mpath = 50
 # Mpath = 1
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
@@ -172,7 +172,7 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []
