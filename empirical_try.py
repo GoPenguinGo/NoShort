@@ -48,9 +48,7 @@ tax_set = [
 ]
 phi_set = [0.0, 0.5]
 
-# # for testing:
 Mpath = 50
-# Mpath = 1
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
 correlation_list = pd.read_stata('stata_dataset/all_corr.dta')

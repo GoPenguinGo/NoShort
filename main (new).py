@@ -1,15 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
-from src.param import rho_i, nu, mu_Y, sigma_Y, sigma_Y_sqr, tax, phi, \
-    dt, T_hat, Npre, Vhat, Ninit, T_cohort, Nt, Nc, tau, cohort_size, \
-    cutoffs_age, n_age_cutoffs, colors, modes_trade, modes_learn, Mpath, \
-    scenarios, dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    dZ_Y_cases, dZ_SI_cases, dZ_build_case, dZ_SI_build_case, t, red_labels, yellow_labels, cohort_labels, \
-    scenario_labels, colors_short, PN_labels, age_labels, \
+from src.param import rho_i, nu, mu_Y, sigma_Y, tax, phi, \
+    dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
+    cutoffs_age, n_age_cutoffs, colors, \
+    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
+    cohort_labels, colors_short, PN_labels, age_labels, \
     Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size, popu_age_groups
-from src.param_mix import Nconstraint, alpha_i_mix, beta_i_mix, rho_cohort_type_mix, \
-    rho_i_mix, cohort_type_size_mix
+from src.param_mix import Nconstraint, rho_i_mix
 import statsmodels.api as sm
 import pandas as pd
 import tabulate as tab
@@ -366,7 +364,7 @@ belief_cutoff_case = -theta_compare[0, 1]
 fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
 for jj, ax in enumerate(axes):
     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax.set_ylim(-3.2, 1.8)
+    ax.set_ylim(-1.5, 1.5)
     if jj == 0:
         ax.set_title('Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
@@ -430,14 +428,12 @@ for i in range(2):
     plt.show()
     plt.close()
 
-
-
 ######################################
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-n_files = 40
+n_files = 80
 
 Delta_age_all = np.zeros((3, n_files, 2, 200))
 for i in range(n_files):
@@ -448,27 +444,27 @@ for i in range(n_files):
 Delta_age_ave = np.average(Delta_age_all, axis=1)
 
 phi_set = [0.0, 0.5, 0.8]
-parti_age_all = np.zeros((100, 3, 200))
-for i in range(100):
+parti_age_all = np.zeros((int(n_files * 25), 3, 200))
+for i in range(int(n_files*25)):
     for j, phi_j in enumerate(phi_set):
         parti_age_all[i, j] = np.load(folder_address + str(i) + str(phi_j) + 'parti_age.npy')
 parti_age_ave = np.average(parti_age_all, axis=0)
 
 n_phi = len(phi_set)
 age_cut = 100
-x_age = np.arange(0, age_cut)
+x_age = np.arange(20, age_cut)
 fig_titles = [r'Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
               'Reentry, average participation probability']
 y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
 fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
 for j, ax in enumerate(axes):
-    ax.set_xlabel('Years since entering the economy')
+    ax.set_xlabel('Age')
     y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
     ax.set_ylabel(y_titles[j])
     for i in range(3):
         if j == 0:
-            y_reentry = y_case[i, 1, :age_cut]
-            y_complete = y_case[i, 0, :age_cut]
+            y_reentry = y_case[i, 1, :age_cut - 20]
+            y_complete = y_case[i, 0, :age_cut - 20]
             if phi_set[i] == 0.5:
                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry")
                 ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed', label="Complete Market")
@@ -479,7 +475,7 @@ for j, ax in enumerate(axes):
                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
                 ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed')
         else:
-            y = y_case[i, :age_cut]
+            y = y_case[i, :age_cut - 20]
             label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_set[i]))
             ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
             ax.legend()
@@ -494,7 +490,7 @@ plt.close()
 ######################################
 ###########   Figure 4   #############
 ######################################
-# counts of entry
+# # counts of entry
 # entry_counts = np.average(results_df1['nr of entry'], axis=0)
 # y_case = np.copy(entry_counts[2][1])
 # age_cut = 65
@@ -514,9 +510,20 @@ plt.close()
 # how long before exiting upon entry &
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
-# bell_length_mat = results_df1['bell length']
-# bell_length_reentry_mat = results_df1['bell length reentry']
-#
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+n_files = 80
+sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
+spell_mat = np.zeros((200, 2, len(sample_shocks), 2, 5748), dtype=int)
+stock_returns_mat = np.zeros((200, len(sample_shocks)))
+gap = 12
+cumu_returns = np.zeros(Nt)
+for i in range(n_files * 25):
+    if np.mod(i, 10) == 0:
+        j = int(i / 10)
+        spell_mat[j] = np.load(folder_address + str(i) + "reentry_time.npy")
+        cumu_returns[gap:] = (np.cumsum(dZ_matrix[i])[gap:] - np.cumsum(dZ_matrix[i])[:-gap]) / (gap / 12)
+        stock_returns_mat[j] = cumu_returns[sample_shocks]
+
 # y_titles = ['Years in the stock market before first exit', 'Years out of the stock market before first re-entry']
 # fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 5))
 # for i, ax in enumerate(axes):
@@ -541,55 +548,41 @@ plt.close()
 # plt.close()
 
 # conditional on stock returns at the point of exit
-stock_returns_mat = results_df1['annual stock return']    #-1, -2, -3, 1, 2, 3
-stock_sample = np.arange(0, 400, 20)
-stock_returns_focus = stock_returns_mat[:, :, 1, 1, stock_sample]
-y_titles = ['Years in the stock market before first exit', 'Years out of the stock market before first re-entry']
 fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 4.5))
 for i, ax in enumerate(axes):
-    stock_returns_focus_i = stock_returns_focus[:, i+1]
-    cutoffs_return = np.percentile(stock_returns_focus_i, [10])
+    cutoffs_return = np.percentile(stock_returns_mat, [10])
     title_i = 'Re-entry scenario' if i == 0 else 'Mix scenario'
     ax.set_title(title_i)
-    # line_style_i = 'solid' if i == 0 else 'dashed'
+    data_mat = spell_mat[:, i]
     for j in range(2):
-        data_mat = bell_length_reentry_mat[:, i+1, 1, :, 2:]
         if j == 0:
-            # unique_mat = np.zeros((5748, 22))
-            counts_mat = np.zeros((5748, 22))
+            counts_mat = np.zeros((5748, 21))
             for ii in range(5748):
                 unique, counts = np.unique(data_mat[:, :, :, ii], return_counts=True)
-                # unique_mat[ii] = unique
                 for jj, uni_jj in enumerate(unique):
                     counts_mat[ii, uni_jj] = counts[jj]
-            popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
-            counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
         else:
-            data_where = np.reshape(
-                (stock_returns_focus_i <= cutoffs_return),
-                (500, 20, 1))
-            # unique, counts = np.unique(data_mat * data_where, axis=3, return_counts=True)
-            counts_mat = np.zeros((5748, 22))
+            data_where = np.reshape(stock_returns_mat <= cutoffs_return, (200, -1, 1))
+            counts_mat = np.zeros((5748, 21))
             for ii in range(5748):
                 unique, counts = np.unique(data_mat[:, :, :, ii] * data_where, return_counts=True)
-                # unique_mat[ii] = unique
                 for jj, uni_jj in enumerate(unique):
                     counts_mat[ii, uni_jj] = counts[jj]
-            popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
+        popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
         counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
         counts_percentage_cum = np.cumsum(counts_percentage)
-        # data_inter = np.arange(0, len(counts_percentage), 2)
-        x = np.arange(1, 21)
-        # X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage[data_inter], k=3)
-        # X_ = np.linspace(0, 20, 100)
-        # Y_ = X_Y_Spline(X_)
+        x = np.arange(1, 20)
+        data_inter = np.arange(0, len(counts_percentage) - 1, 2)
+        X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage_cum[data_inter], k=3)
+        X_ = np.linspace(1, 19, 100)
+        Y_ = X_Y_Spline(X_)
         color_i = 'red' if j == 1 else 'navy'
-        label_i = '2-year return bottom decile' if j == 1 else 'Unconditional'
-        ax.plot(x, counts_percentage_cum[:20], linewidth=2,
+        label_i = '1-year return bottom decile' if j == 1 else 'Unconditional'
+        ax.plot(X_, Y_, linewidth=2,
                 # linestyle=line_style_i,
                 label=label_i, color=color_i)
         ax.legend(loc='lower right')
-    ax.set_ylim(0.2, 1.0)
+    ax.set_ylim(0.1, 1.0)
     ax.set_xlim(0, 20)
     ax.set_xlabel('Years since exiting')
     ax.set_ylabel('Fraction of individuals re-entering')
@@ -613,7 +606,7 @@ table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
 #     print(np.average(results_mean_vola[file], axis=0))
 for i, var in enumerate(table1_var):
     for j in range(n_files):
-        table1_mat[i, j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")[var], axis=0)
+        table1_mat[i, j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var], axis=0)
 table1_mat_ave = np.average(table1_mat, axis=1)
 # Panel 1.1: mean vola of asset pricing values
 table_output = np.zeros((Nrow, Ncolumn))
@@ -644,7 +637,7 @@ print(tab.tabulate(table_output, headers=header, showindex=show_index, floatfmt=
 Nrow = 3
 table12_mat = np.zeros((n_files, Nsce, Nrow))
 for j in range(n_files):
-    table12_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['cov_mat'], axis=0)[:, :3]
+    table12_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['cov_mat'], axis=0)[:, :3]
 table12_mat_ave = np.average(table12_mat, axis=0)
 # file = file_list_mean_vola[11]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -668,7 +661,7 @@ Ncolumn = 2
 table21_mat = np.zeros((Nrow, n_files, Ncolumn))
 for i, var in enumerate(table21_var):
     for j in range(n_files):
-        table21_mat[i, j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")[var], axis=0)
+        table21_mat[i, j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var], axis=0)
 table21_mat_ave = np.average(table21_mat, axis=1)
 # file = file_list_mean_vola[9]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -680,7 +673,7 @@ print(tab.tabulate(table21_mat_ave, headers=header,
 Nrow = 2
 table22_mat = np.zeros((n_files, Nsce, Nrow))
 for j in range(n_files):
-    table22_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['cov_mat'], axis=0)[:, 3:]
+    table22_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['cov_mat'], axis=0)[:, 3:]
 table22_mat_ave = np.average(table22_mat, axis=0)
 # file = file_list_mean_vola[11]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -698,7 +691,7 @@ print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt=
 # Panel 3: participation rate, entry and exit on asset returns
 table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
 for j in range(n_files):
-    table3_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['reg1'], axis=0)
+    table3_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['reg1'], axis=0)
 table3_mat_ave = np.average(table3_mat, axis=0)
 table_output = np.zeros((3, 6))
 table_output[:, :3] = table3_mat_ave[0]
@@ -722,22 +715,14 @@ show_index = [
 print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
 
 # Panel 4: future asset returns on participation rate, entry and exit
-table4_mat = np.zeros((n_files, Nsce - 1, 3, 3))
+table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
 for j in range(n_files):
-    table4_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['reg2'], axis=0)
+    table4_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['reg2'], axis=0)
 table4_mat_ave = np.average(table4_mat, axis=0)
-table_output = np.zeros((3, 6))
-table_output[:, :3] = table4_mat_ave[0]
-table_output[:, 3:] = table4_mat_ave[1]
-header = np.tile([
-    r'$R^S_{t-1, t}$',
-    r'$R^S_{t-2, t}$',
-    r'$R^S_{t-3, t}$',
-], 2)
+table_output = np.transpose(table4_mat_ave[:, 1])
 show_index = [
-    'P_t',
-    r'$\text{Entry}_{t-1, t}$',
-    r'$\text{Exit}_{t-1, t}$'
+    r'$R^S_{t-2, t}/2$',
+    r'$R^S_{t-2, t}/2 - r_{t-2}$',
 ]
 print(tab.tabulate(table_output, showindex=show_index, headers=header, floatfmt=".4f", tablefmt='latex_raw'))
 

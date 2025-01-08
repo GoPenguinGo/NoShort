@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate_SI_mean_vola, simulate_mix_mean_vola
 from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nt, Nc, tau, tax, \
-    cutoffs_age, Ntype, alpha_i, \
+    cutoffs_age, Ntype, alpha_i, Mpath, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_type_size, cohort_size, T_hat, Npre, Vhat
 from src.param import phi
@@ -23,16 +23,6 @@ density_set = [
 ]
 n_scenarios = len(density_set)
 phi_set = [0.0, 0.5, 0.8]
-# T_hat_set = [2, 3]
-# rho_i_set = [
-#     np.array([[0.001], [-0.003]]),
-#     np.array([[0.001], [-0.001]]),
-#     np.array([[0.001], [0.003]]),
-#     np.array([[0.001], [0.005]]),
-#
-# ]
-# # for testing:
-# Mpath = 10
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -43,9 +33,7 @@ cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 window_bell = 20
 
 np.seterr(invalid='ignore')
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-
-
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
 
@@ -283,7 +271,7 @@ def simulate_path(
     if need_invest_matrix == 'True':
         if phi_i == phi:
             np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
-    np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
+    # np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
 
     return (
         i,
@@ -298,12 +286,13 @@ def simulate_path(
         regression_table1,
         regression_table2,
         cov_compare,
+        parti_age_compare
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(40):
+    for j in range(int(Mpath / 25)):
         per_path = 25
         paths_j = j * per_path
         for phi_i in phi_set:
@@ -325,7 +314,8 @@ def main():
                     Delta_age_compare, \
                     regression_table1, \
                     regression_table2, \
-                    cov_compare = result.result()
+                    cov_compare, \
+                    parti_age_compare = result.result()
 
                 data = {
                     "i": i,
@@ -340,6 +330,7 @@ def main():
                     "reg1": regression_table1,
                     "reg2": regression_table2,
                     "cov_mat": cov_compare,
+                    "parti_age": parti_age_compare,
                 }
                 results_list.append(data)
 

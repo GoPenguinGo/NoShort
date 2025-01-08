@@ -1,34 +1,22 @@
 import numpy as np
 
 # Parameters
-# rho = 0.001  # Time discount factor
 Ntype = 2
-# rho_i = np.array([[0.001], [0.1]])
-# rho_i = np.array([[0.001], [-0.001]])  # baseline
 rho_i = np.array([[0.001], [0.005]])  # baseline
 alpha_i = np.ones((Ntype, 1)) * 1 / Ntype
 nu = 0.02  # Death rate
-# nu = 0.01
-# nu = 0.03
 mu_Y = 0.02  # Growth rate of output
 sigma_Y = 0.033  # Standard deviation of output
 sigma_Y_sqr = sigma_Y ** 2
-# sigma_S = (
-#     sigma_Y  # In equilibrium the stock price diffusion is the same as output diffusion
-# )
-# for the SI signal:
 sigma_SI = 0.3
 phi = 0.5
 tax = 0.35   # marginal rate of consumption tax
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
 
-
 # Setting prior variance
-
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
-# T_hat = 20  # Pre-trading period
 T_hat = 5  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
@@ -37,7 +25,6 @@ T_cohort = 500  # time horizon to keep track of cohorts
 Nt = int(T_cohort / dt)  # number of periods
 Nc = int(T_cohort / dt)  # number of cohorts
 
-
 # generate values that are fixed in the main loop
 tau = np.reshape(np.arange(T_cohort, 0, -dt), (1, -1))  # age from 500 to 0; shape(1, 6000)
 cohort_size = nu * np.exp(-nu * (tau - dt)) * dt  # cohort size when a new cohort is just born
@@ -45,71 +32,38 @@ cohort_type_size = cohort_size * alpha_i
 rho_cohort_type = alpha_i * beta_i * np.exp(-(rho_i + nu) * tau)  # shape(2, 6000)
 beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
-
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
-n_age_cutoffs = 4
-quartiles = np.linspace(1, 0, n_age_cutoffs+1)
-# cutoffs_age = np.searchsorted(cummu_popu, quartiles)
 cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
+n_age_cutoffs = 4
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 2000
-
-# for graphs:
+Mpath = 10000
 t = np.arange(0, T_cohort, dt)
-Tkeep = 100
-Nkeep = int(Tkeep / dt)
-Tsample = int(T_cohort / 100)
-Nsamples = 500
-stepcorr = int(Tsample / dt)
 
 phi_vector = [0, 0.5, 0.8]
 n_phi = len(phi_vector)
 
-tax_vector = [0.2, 0.3, 0.4]
-n_tax = len(tax_vector)
-
-
-# for V_hat_experiment:
-Npres_a = np.arange(1, 6, 1)
-Npres_b = np.arange(6, 13, 3)
-Npres_c = np.arange(24, 61, 12)
-Npres_d = np.arange(84, 181, 24)
-Npres_e = np.arange(204, 361, 48)
-Npre_list = [Npres_b, Npres_c, Npres_d, Npres_e]
-Npres = Npres_a
-for i in Npre_list:
-    Npres = np.append(Npres, i)
-
-
 # labels:
-red_labels = [r'Positive local trend in $z^Y$, ', r'Negative local trend in $z^Y$, ']
-yellow_labels = [r'Positive local trend in $z^{SI}$ ', r'Negative local trend in $z^{SI}$ ']
 cohort_labels = ['cohort 1', 'cohort 2', 'cohort 3']
 scenario_labels = ['Complete', 'Reentry', 'Mix']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
-# age_labels = ['20 < Age <= 35, youngest quartile', '35 < Age <= 55', '55 < Age <= 89', 'Age > 89, oldest quartile']
-# age_labels = ['0 < Age <= 15, youngest quartile', '15 < Age <= 35', '35 < Age <= 69', 'Age > 69, oldest quartile']
 age_labels = [r'20 < Age $\leq$ 35, the young', r'35 < Age $\leq$ 55', r'55 < Age $\leq$ 75', 'Age > 75, the old']
-# label_phi = []
-# for i in range(n_phi_short):
-#     label_phi.append(r'$\phi$ = ' + str(phi_vector_short[i]))
 
-# dZ_mat = np.random.randn(int(Mpath / 2 * Nt))
-# dZ_mat = np.reshape(np.append(dZ_mat, -dZ_mat), (-1, Nt)) * dt_root
-# dZ_SI_mat = np.random.randn(int(Mpath / 2 * Nt))
-# dZ_SI_mat = np.reshape(np.append(dZ_SI_mat, -dZ_SI_mat), (-1, Nt)) * dt_root
-# dZ_build_mat = np.random.randn(int(Mpath / 2 * Nt))
-# dZ_build_mat = np.reshape(np.append(dZ_build_mat, -dZ_build_mat), (-1, Nt)) * dt_root
-# dZ_SI_build_mat = np.random.randn(int(Mpath / 2 * Nt))
-# dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat, -dZ_SI_build_mat), (-1, Nt)) * dt_root
-# np.save('dZ_matrix', dZ_mat)
-# np.save('dZ_SI_matrix', dZ_SI_mat)
-# np.save('dZ_build_matrix', dZ_build_mat)
-# np.save('dZ_SI_build_matrix', dZ_SI_build_mat)
+# dZ_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
+# dZ_mat = np.reshape(np.append(dZ_mat1, -dZ_mat1), (-1, Nt)) * dt_root
+# dZ_SI_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
+# dZ_SI_mat = np.reshape(np.append(dZ_SI_mat1, -dZ_SI_mat1), (-1, Nt)) * dt_root
+# dZ_build_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
+# dZ_build_mat = np.reshape(np.append(dZ_build_mat1, -dZ_build_mat1), (-1, Nt)) * dt_root
+# dZ_SI_build_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
+# dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat1, -dZ_SI_build_mat1), (-1, Nt)) * dt_root
+# np.save('shocks/dZ_matrix', dZ_mat)
+# np.save('shocks/dZ_SI_matrix', dZ_SI_mat)
+# np.save('shocks/dZ_build_matrix', dZ_build_mat)
+# np.save('shocks/dZ_SI_build_matrix', dZ_SI_build_mat)
 
 dZ_matrix = np.load('shocks/dZ_matrix.npy')
 dZ_build_matrix = np.load('shocks/dZ_build_matrix.npy')
@@ -122,13 +76,12 @@ dZ_SI_build_case = np.load('shocks/dZ_SI_build_case.npy')
 dZ_Y_cases = np.load('shocks/Z_Y_cases.npy')
 dZ_SI_cases = np.load('shocks/Z_SI_cases.npy')
 
-top_wealth = 0.05
-old_age_limit = 100
+# top_wealth = 0.05
+# old_age_limit = 100
 
 colors = ['mediumblue', 'orange', 'darkmagenta', 'red', 'gold', 'midnightblue', 'green', 'saddlebrown', 'darkgreen', 'firebrick', 'purple', 'blue',
           'olivedrab', 'darkviolet', 'pink', 'black', ]
 
-# modes_trade = ['complete', 'w_constraint', 'partial_constraint_rich', 'partial_constraint_old']
 modes_trade = ['complete', 'w_constraint', 'partial_constraint_old']
 modes_learn = ['reentry', 'disappointment']
 scenarios = []

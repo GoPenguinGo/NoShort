@@ -9,6 +9,7 @@ from src.param import mu_Y, sigma_Y, \
     cohort_size, rho_i, tax, beta0, beta_i, nu, Vhat, phi, Npre, \
     T_hat, rho_cohort_type, cohort_type_size
 from concurrent.futures import ProcessPoolExecutor
+from scipy.interpolate import make_interp_spline
 
 a_rho_bar = 1
 b_rho_bar = -(tax * beta0 + rho_i[0, 0] + rho_i[1, 0])
@@ -23,14 +24,15 @@ mode_learn = 'reentry'
 Mpath = 2000
 Nt_long = 8400
 T_hat_vec = np.append(
-    np.arange(1, 4, 1),
-    np.arange(4, 30, 3),
+    np.arange(1, 5, 2),
+    np.arange(5, 30, 5),
 )
 t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
 rho_i_mat = np.reshape(rho_i, (1, -1))
 discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/welfare/'
 plt.rcParams["font.family"] = 'serif'
+
 
 def utility_mu(mu_Y_use):
     t_s = np.cumsum(np.ones(N_T) * dt) - dt
@@ -127,7 +129,7 @@ def simulate_path(
 
 
 def main():
-    for T_hat_try in T_hat_vec[1:3]:
+    for T_hat_try in T_hat_vec[:1]:
         with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, int(T_hat_try)) for i in range(Mpath)]
             # Initialize a list to store the results
@@ -172,12 +174,16 @@ if __name__ == '__main__':
         for j in range(2):
             equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4))
+    X_Y_Spline = make_interp_spline(T_hat_vec, equiv_mu, k=3)
+    X_ = np.linspace(1, 25, 100)
+    Y_ = X_Y_Spline(X_)
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
     ax.set_xlabel('Pre-entry learning window')
     ax.set_ylabel(r'Equivalent $\mu^Y$')
-    ax.set_ylim(0, 0.025)
-    ax.plot(T_hat_vec, equiv_mu[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
-    ax.plot(T_hat_vec, equiv_mu[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=-0.1\%$')
+    # ax.set_ylim(0, 0.02)
+    ax.plot(X_, Y_[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
+    ax.plot(X_, Y_[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=0.5\%$')
     plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
     plt.legend(loc='lower right')
     ax.tick_params(axis='y', labelcolor='black')
@@ -185,7 +191,7 @@ if __name__ == '__main__':
     plt.savefig('Welfare.png', dpi=100)
     plt.show()
     plt.close()
-
+    #
 
 
 
