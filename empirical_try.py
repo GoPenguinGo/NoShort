@@ -15,9 +15,9 @@ from src.param_mix import Nconstraint
 
 country_names = [
     'US',
-    'Finland',
-    'Germany',
-    'Norway'
+    # 'Finland',
+    # 'Germany',
+    # 'Norway'
 ]
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
 # folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
@@ -27,14 +27,10 @@ plt.rcParams["font.family"] = 'serif'
 density_types = (0.25, 0.25, 0.25, 0.25)
 T_hat_set = [
     2,
-    # 3,
     5,
     10,
 ]
 rho_i_set = [
-    # np.array([[0.001], [-0.003]]),
-    # np.array([[0.001], [-0.001]]),
-    # np.array([[0.001], [0.003]]),
     np.array([[0.001], [0.005]]),
 
 ]
@@ -42,16 +38,14 @@ nu_set = [
     0.02,
 ]
 tax_set = [
-    # 0.3,
     0.35,
-    # 0.4
 ]
 phi_set = [0.0, 0.5]
 
 Mpath = 50
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
-correlation_list = pd.read_stata('stata_dataset/all_corr.dta')
+
 
 # noinspection PyTypeChecker
 def simulate_path(
@@ -78,10 +72,6 @@ def simulate_path(
             for nu in nu_set:
                 for tax in tax_set:
                     for phi in phi_set:
-                        # col_name_check = '_' + str(T_hat) + str(int(rho_i[1, 0] * 1000)) + str(int(nu * 1000)) + str(int(tax * 100)) \
-                        #     if rho_i[1, 0] > 0 \
-                        #     else '_' + str(T_hat) + '_' + str(int(abs(rho_i[1, 0]) * 1000)) + str(int(nu * 1000)) + str(int(tax * 100))
-
                         Npre = int(T_hat / dt)
                         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 
@@ -98,10 +88,9 @@ def simulate_path(
                             -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
                         need_Delta_country = 'True' if country == 'US' else 'False'
-                        # need_Delta_country = 'False'
+                        need_pi_country = 'True' if country == 'US' else 'False'
 
-                        col_name = str(T_hat) + '_' + str(h + 3) + '_' + str(
-                            int(nu * 1000)) + '_' + str(int(tax * 100)) + '_' + str(int(phi * 10))
+                        col_name = str(T_hat) + '_' + str(int(phi * 10))
 
                         (
                             r,
@@ -133,7 +122,7 @@ def simulate_path(
                                                cohort_type_size_mix,
                                                need_f='False',
                                                need_Delta=need_Delta_country,
-                                               need_pi='False',
+                                               need_pi=need_pi_country,
                                                )
 
                         parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
@@ -150,6 +139,16 @@ def simulate_path(
                             parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
                             parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, 3].astype(np.float32)
                             parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+
+                            parti_dividend = np.zeros(Nt_data).astype(np.float32)
+                            for t in range(Nt_data):
+                                parti_dividend_t = np.zeros((12, 4, Nc-12)).astype(np.float32)
+                                for tc in range(12):
+                                    parti_dividend_t[tc] = pi[Nt - Nt_data + t - tc, :, 12 - tc: -tc] != 0 if tc != 0 \
+                                        else pi[Nt - Nt_data + t - tc, :, 12 - tc:] != 0
+                                parti_dividend[t] = np.average(np.sum(parti_dividend_t, axis=0) != 0, weights=cohort_type_size_mix[0, :, 12:])
+                            parti_df['parti_dividend' + col_name] = parti_dividend.astype(np.float32)
+
                         if country == 'Finland' or country == 'Norway':
                             parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                             parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
@@ -170,7 +169,7 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=12) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=14) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []

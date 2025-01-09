@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
 from src.param import rho_i, nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
-    cutoffs_age, n_age_cutoffs, colors, \
+    cutoffs_age, n_age_cutoffs, colors, Mpath, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_labels, colors_short, PN_labels, age_labels, \
     Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size, popu_age_groups
@@ -37,10 +37,10 @@ density_set = [
 phi_set = [0.0, 0.5]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
-dZ_build = dZ_build_matrix[4]
-dZ_SI_build = dZ_SI_build_matrix[4]
-dZ = dZ_matrix[4]
-dZ_SI = dZ_SI_matrix[4]
+dZ_build = dZ_build_matrix[0]
+dZ_SI_build = dZ_SI_build_matrix[0]
+dZ = dZ_matrix[0]
+dZ_SI = dZ_SI_matrix[0]
 dZ_actual = data_shocks.to_numpy()[:, 0]
 Nt_data = dZ_actual.size - data_shocks['dZ_SI'].isna().sum()
 filler = np.random.randn(data_shocks['dZ_SI'].isna().sum()) * np.sqrt(dt)
@@ -213,11 +213,11 @@ for j, ax in enumerate(axes):
         Z_SI = np.cumsum(
             dZ_SI_actual[-Nt_data:])
         ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-        ax.plot(x, Z, color='black', linewidth=1.2, label=r'$z^Y_t$')
-        ax.plot(x, Z_SI, color='gray', linewidth=1.2, label=r'$z^{SI}_t$')
+        ax.plot(x, Z, color='black', linewidth=1.5, label=r'$z^Y_t$')
+        ax.plot(x, Z_SI, color='gray', linewidth=1.5, label=r'$z^{SI}_t$')
         ax.tick_params(axis='y', labelcolor='black')
         ax.tick_params(axis='x', labelcolor='black')
-        ax.set_title(r'Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
+        ax.set_title(r'(a) Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
         ax.legend(loc='lower left')
 
     elif j <= 2:
@@ -231,9 +231,9 @@ for j, ax in enumerate(axes):
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_ylim([y_min, y_max])
         if j == 1:
-            ax.set_title(r'Re-entry scenario, $\phi=0.0$')
+            ax.set_title(r'(b) Estimation error, reentry scenario, $\phi=0.0$')
         else:
-            ax.set_title(r'Re-entry scenario, $\phi=0.5$')
+            ax.set_title(r'(c) Estimation error, reentry scenario, $\phi=0.5$')
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -248,17 +248,17 @@ for j, ax in enumerate(axes):
             #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
             if j == 1:
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dotted',
+                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
                         )
                 ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o')
             elif m == 0:
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=PN_labels[0])
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dotted',
+                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
                         label=PN_labels[1])
                 ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o', label='switch')
             else:
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5)
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dotted')
+                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed')
                 ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o')
         ax.tick_params(axis='y', labelcolor='black')
         ax.legend(loc='lower left')
@@ -267,9 +267,9 @@ for j, ax in enumerate(axes):
         constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
         colors_short3 = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
         color_dot = 'red'
-        ax.set_title(r'Mix scenario, $\phi=0.5$')
+        ax.set_title(r'(d) Estimation error, mix scenario, $\phi=0.5$')
         ax.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
-        m = 1
+        m = 0
         Delta_focus = Delta_time_series[1, 1, m]
         parti_focus = parti_time_series[1, 1, m]
         switch_focus = switch_time_series[1, 1, m]
@@ -288,7 +288,7 @@ for j, ax in enumerate(axes):
                                                      y_cohort)
                 ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
                 ax.plot(x, y_cohort_P, color=colors_short3[k], linewidth=1.5, label=constraint_labels[k])
-                ax.plot(x, y_cohort_N, color=colors_short3[k], linewidth=1.5, linestyle='dotted')
+                ax.plot(x, y_cohort_N, color=colors_short3[k], linewidth=1.5, linestyle='dashed')
                 ax.scatter(x, y_cohort_switch, color=color_dot, s=10, marker='o')
             ax.legend(loc='lower left')
         ax.tick_params(axis='y', labelcolor='black')
@@ -366,7 +366,7 @@ for jj, ax in enumerate(axes):
     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
     ax.set_ylim(-1.5, 1.5)
     if jj == 0:
-        ax.set_title('Distribution of estimation error, participants vs. non-participants')
+        ax.set_title('(a) Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
         y21 = y2[:, 1]
         y22 = y2[:, 2]
@@ -377,13 +377,13 @@ for jj, ax in enumerate(axes):
         y32 = y3[:, 2]
         y33 = y3[:, 3]
         y34 = y3[:, 4]
-        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4)
-        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7, label=PN_labels[0])
-        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4)
-        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7, label=PN_labels[1])
+        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4, label=PN_labels[0])
+        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7)
+        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4, label=PN_labels[1])
+        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7)
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
     else:
-        ax.set_title('Distribution of estimation error, age groups')
+        ax.set_title('(b) Distribution of estimation error, age groups')
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
                 # label=r'Cutoff $\Delta_{s,t}$'
                 )
@@ -433,28 +433,23 @@ for i in range(2):
 ######################################
 ## Estimation error and participation rate given age
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-n_files = 80
+n_files = int(Mpath / 25)
 
 Delta_age_all = np.zeros((3, n_files, 2, 200))
-for i in range(n_files):
-    Delta_age_all[0, i] = np.average(np.load(folder_address + str(i) + str(0.0) + "simulation_new.npz")['Delta_age'], axis=0)
-    Delta_age_all[1, i] = np.average(np.load(folder_address + str(i) + str(0.5) + "simulation_new.npz")['Delta_age'], axis=0)
-    Delta_age_all[2, i] = np.average(np.load(folder_address + str(i) + str(0.8) + "simulation_new.npz")['Delta_age'],
-                                     axis=0)
-Delta_age_ave = np.average(Delta_age_all, axis=1)
-
+parti_age_all = np.zeros((3, n_files, 200))
 phi_set = [0.0, 0.5, 0.8]
-parti_age_all = np.zeros((int(n_files * 25), 3, 200))
-for i in range(int(n_files*25)):
+for i in range(n_files):
     for j, phi_j in enumerate(phi_set):
-        parti_age_all[i, j] = np.load(folder_address + str(i) + str(phi_j) + 'parti_age.npy')
-parti_age_ave = np.average(parti_age_all, axis=0)
+        Delta_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['Delta_age'], axis=0)
+        parti_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + 'parti_age.npy'), axis=0)
+Delta_age_ave = np.average(Delta_age_all, axis=1)
+parti_age_ave = np.average(parti_age_all, axis=1)
 
 n_phi = len(phi_set)
 age_cut = 100
 x_age = np.arange(20, age_cut)
-fig_titles = [r'Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
-              'Reentry, average participation probability']
+fig_titles = [r'(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
+              '(b) Reentry, average participation probability']
 y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
 fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
 for j, ax in enumerate(axes):
@@ -511,7 +506,7 @@ plt.close()
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-n_files = 80
+n_files = int(Mpath / 25)
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
 spell_mat = np.zeros((200, 2, len(sample_shocks), 2, 5748), dtype=int)
 stock_returns_mat = np.zeros((200, len(sample_shocks)))
