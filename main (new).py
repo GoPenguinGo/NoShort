@@ -432,7 +432,7 @@ for i in range(2):
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
 n_files = int(Mpath / 25)
 
 Delta_age_all = np.zeros((3, n_files, 2, 200))
@@ -714,13 +714,14 @@ table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
 for j in range(n_files):
     table4_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['reg2'], axis=0)
 table4_mat_ave = np.average(table4_mat, axis=0)
-table_output = np.transpose(table4_mat_ave[:, 1])
+table4_mat_std = np.std(table4_mat, axis=0)
 show_index = [
-    r'$R^S_{t-2, t}/2$',
-    r'$R^S_{t-2, t}/2 - r_{t-2}$',
+    r'$R^S_{t-n, t}/n$',
+    r'$R^S_{t-n, t}/n - r_{t-n}$',
 ]
-print(tab.tabulate(table_output, showindex=show_index, headers=header, floatfmt=".4f", tablefmt='latex_raw'))
-
+header = ['12m', '24m', '36m']
+print(tab.tabulate(np.transpose(table4_mat_ave[1]), showindex=show_index, headers=header, floatfmt=".3f", tablefmt='latex_raw'))
+print(tab.tabulate(np.transpose(table4_mat_std[1]), showindex=show_index, headers=header, floatfmt=".3f", tablefmt='latex_raw'))
 # # Panel 4: participation rate in wealth groups
 # file = file_list_mean_vola[10]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
