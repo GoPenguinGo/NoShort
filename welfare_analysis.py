@@ -34,9 +34,9 @@ folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/welfare/'
 plt.rcParams["font.family"] = 'serif'
 
 
-def utility_mu(mu_Y_use):
+def utility_mu(mu_Y_use, sigma_Y_use):
     t_s = np.cumsum(np.ones(N_T) * dt) - dt
-    E_log_C = (mu_Y_use + rho_bar - rho_i + nu - beta0 * nu - 1 / 2 * sigma_Y ** 2) * t_s * dt
+    E_log_C = (mu_Y_use + rho_bar - rho_i + nu - beta0 * nu - 1 / 2 * sigma_Y_use ** 2) * t_s * dt
     discount_rate = np.exp(-(nu + rho_i) * t_s)
     E_util = np.sum(E_log_C * discount_rate, axis=1)
     return E_util
@@ -160,19 +160,32 @@ if __name__ == '__main__':
     mu_vec = np.linspace(0, mu_Y, N_points)
     E_util_mu = np.zeros((N_points, 2))
     for i, mu_try in enumerate(mu_vec):
-        E_util_mu[i] = utility_mu(mu_try)
+        E_util_mu[i] = utility_mu(mu_try, sigma_Y)
+
+    sigma_vec = np.flip(np.linspace(sigma_Y, 0.5, N_points))
+    E_util_sigma = np.zeros((N_points, 2))
+    for i, sigma_try in enumerate(sigma_vec):
+        E_util_sigma[i] = utility_mu(mu_Y, sigma_try)
 
     t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
     rho_i_mat = np.reshape(rho_i, (1, -1))
     discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
 
     equiv_mu = np.zeros((len(T_hat_vec), 2))
+    equiv_sigma = np.zeros((len(T_hat_vec), 2))
 
     for i, T_hat_try in enumerate(T_hat_vec):
         E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
         E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
         for j in range(2):
             equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
+            equiv_sigma[i, j] = sigma_vec[np.searchsorted(E_util_sigma[:, j], E_util_learn[j])]
+
+
+    E_util_vola10 = utility_mu(mu_Y, 0.15)
+    equiv_mu_vola10 = np.zeros(2)
+    for i in range(2):
+        equiv_mu_vola10[i] = mu_vec[np.searchsorted(E_util_mu[:, i], E_util_vola10[i])]
 
     X_Y_Spline = make_interp_spline(T_hat_vec, equiv_mu, k=3)
     X_ = np.linspace(1, 25, 100)

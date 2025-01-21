@@ -22,10 +22,10 @@ data_shocks = pd.read_excel(
     sheet_name='Sheet1',
     index_col=0
 )
-results_df1 = np.load("parti_rate_regressions.npz")
-file_list_regression = results_df1.files
-results_mean_vola = np.load('results_mean_vola.npz')
-file_list_mean_vola = results_mean_vola.files
+# results_df1 = np.load("parti_rate_regressions.npz")
+# file_list_regression = results_df1.files
+# results_mean_vola = np.load('results_mean_vola.npz')
+# file_list_mean_vola = results_mean_vola.files
 
 plt.rcParams["font.family"] = 'serif'
 
@@ -441,7 +441,7 @@ phi_set = [0.0, 0.5, 0.8]
 for i in range(n_files):
     for j, phi_j in enumerate(phi_set):
         Delta_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['Delta_age'], axis=0)
-        parti_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + 'parti_age.npy'), axis=0)
+        parti_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['parti_age'], axis=0)
 Delta_age_ave = np.average(Delta_age_all, axis=1)
 parti_age_ave = np.average(parti_age_all, axis=1)
 
@@ -505,17 +505,17 @@ plt.close()
 # how long before exiting upon entry &
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
 n_files = int(Mpath / 25)
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
-spell_mat = np.zeros((200, 2, len(sample_shocks), 2, 5748), dtype=int)
-stock_returns_mat = np.zeros((200, len(sample_shocks)))
+spell_mat = np.zeros((int(Mpath / 10), 2, len(sample_shocks), 2, 5748), dtype=int)
+stock_returns_mat = np.zeros((int(Mpath / 10), len(sample_shocks)))
 gap = 12
-cumu_returns = np.zeros(Nt)
-for i in range(n_files * 25):
+for i in range(Mpath):
     if np.mod(i, 10) == 0:
         j = int(i / 10)
         spell_mat[j] = np.load(folder_address + str(i) + "reentry_time.npy")
+        cumu_returns = np.zeros(Nt)
         cumu_returns[gap:] = (np.cumsum(dZ_matrix[i])[gap:] - np.cumsum(dZ_matrix[i])[:-gap]) / (gap / 12)
         stock_returns_mat[j] = cumu_returns[sample_shocks]
 
@@ -557,7 +557,7 @@ for i, ax in enumerate(axes):
                 for jj, uni_jj in enumerate(unique):
                     counts_mat[ii, uni_jj] = counts[jj]
         else:
-            data_where = np.reshape(stock_returns_mat <= cutoffs_return, (200, -1, 1))
+            data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 10), -1, 1))
             counts_mat = np.zeros((5748, 21))
             for ii in range(5748):
                 unique, counts = np.unique(data_mat[:, :, :, ii] * data_where, return_counts=True)
