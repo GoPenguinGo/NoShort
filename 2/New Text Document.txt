@@ -1,1 +1,0 @@
-rho_i = np.array([[0.001], [0.005]])  # baseline

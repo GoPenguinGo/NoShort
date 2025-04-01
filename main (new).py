@@ -165,7 +165,8 @@ nn = 3  # number of cohorts illustrated
 starts = np.arange(nn) * 240 + 24 * 12
 Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
-switch_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+entry_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+exit_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 parti_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 for i in range(n_scenarios):
     for j in range(n_phi):
@@ -184,18 +185,21 @@ for i in range(n_scenarios):
                         pi_time_series[i, j, m, k, n] = pi[n, cohort_rank]
                         if k == 0:  # the unconstrained
                             parti_time_series[i, j, m, k, n] = 1
-                            switch_time_series[i, j, m, k, n] = 0
+                            entry_time_series[i, j, m, k, n] = 0
+                            exit_time_series[i, j, m, k, n] = 0
                         elif k == 1:  # the excluded
                             parti_time_series[i, j, m, k, n] = 0
-                            switch_time_series[i, j, m, k, n] = 0
+                            entry_time_series[i, j, m, k, n] = 0
+                            exit_time_series[i, j, m, k, n] = 0
                         else:
                             parti_time_series[i, j, m, k, n] = 1 if pi_time_series[i, j, m, k, n] != 0 else 0
                             switch_PN = 1 if (pi_time_series[i, j, m, k, n - 1] != 0) and (
                                     pi_time_series[i, j, m, k, n] == 0) else 0
                             switch_NP = 1 if (pi_time_series[i, j, m, k, n] != 0) and (
                                     pi_time_series[i, j, m, k, n - 1] == 0) else 0
-                            switch_time_series[i, j, m, k, n] = 1 if switch_PN == 1 else 0
-                            switch_time_series[i, j, m, k, n] = 1 if switch_NP == 1 else 0
+                            entry_time_series[i, j, m, k, n] = 1 if switch_NP == 1 else 0
+                            exit_time_series[i, j, m, k, n] = 1 if switch_PN == 1 else 0
+                            exit_time_series[i, j, m, k, start] = 0
                             if switch_NP == 1:
                                 parti_time_series[i, j, m, k, n] = 0.5
                             if switch_PN == 1:
@@ -223,7 +227,8 @@ for j, ax in enumerate(axes):
     elif j <= 2:
         Delta_focus = Delta_time_series[0, j - 1, :, 3]
         parti_focus = parti_time_series[0, j - 1, :, 3]
-        switch_focus = switch_time_series[0, j - 1, :, 3]
+        entry_focus = entry_time_series[0, j - 1, :, 3]
+        exit_focus = exit_time_series[0, j - 1, :, 3]
         y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
         y_max_raw = np.nanmax(Delta_focus)
         y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
@@ -241,8 +246,11 @@ for j, ax in enumerate(axes):
                                             y_cohort)
             y_cohort_P = np.ma.masked_where(parti_focus[m] == 0,
                                             y_cohort)
-            y_cohort_switch = np.ma.masked_where(
-                switch_focus[m] == 0,
+            y_cohort_entry = np.ma.masked_where(
+                entry_focus[m] == 0,
+                y_cohort)
+            y_cohort_exit = np.ma.masked_where(
+                exit_focus[m] == 0,
                 y_cohort)
             ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
             #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
@@ -250,16 +258,19 @@ for j, ax in enumerate(axes):
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
                 ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
                         )
-                ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o')
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
             elif m == 0:
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=PN_labels[0])
                 ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
                         label=PN_labels[1])
-                ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o', label='switch')
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
             else:
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5)
                 ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed')
-                ax.scatter(x, y_cohort_switch, color='red', s=10, marker='o')
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
         ax.tick_params(axis='y', labelcolor='black')
         ax.legend(loc='lower left')
 
@@ -272,7 +283,8 @@ for j, ax in enumerate(axes):
         m = 0
         Delta_focus = Delta_time_series[1, 1, m]
         parti_focus = parti_time_series[1, 1, m]
-        switch_focus = switch_time_series[1, 1, m]
+        entry_focus = entry_time_series[1, 1, m]
+        exit_focus = exit_time_series[1, 1, m]
         y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
         y_max_raw = np.nanmax(Delta_focus)
         y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
@@ -284,12 +296,15 @@ for j, ax in enumerate(axes):
                                                 y_cohort)
                 y_cohort_P = np.ma.masked_where(parti_focus[k] == 0,
                                                 y_cohort)
-                y_cohort_switch = np.ma.masked_where(switch_focus[k] == 0,
+                y_cohort_entry = np.ma.masked_where(entry_focus[k] == 0,
+                                                     y_cohort)
+                y_cohort_exit = np.ma.masked_where(exit_focus[k] == 0,
                                                      y_cohort)
                 ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
                 ax.plot(x, y_cohort_P, color=colors_short3[k], linewidth=1.5, label=constraint_labels[k])
                 ax.plot(x, y_cohort_N, color=colors_short3[k], linewidth=1.5, linestyle='dashed')
-                ax.scatter(x, y_cohort_switch, color=color_dot, s=10, marker='o')
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
             ax.legend(loc='lower left')
         ax.tick_params(axis='y', labelcolor='black')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
