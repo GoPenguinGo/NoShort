@@ -4,6 +4,8 @@ from linearmodels.panel import PanelOLS, results
 import statsmodels.api as sm
 import os
 from sklearn.linear_model import LinearRegression
+from IPython.display import display
+
 
 data = pd.read_excel(r'E:/Users/A2010290/Documents/GitHub/NoShort/data/US_state_data.xlsx', sheet_name=None,
                      index_col=0)

@@ -12,13 +12,15 @@ import statsmodels.api as sm
 import pandas as pd
 import tabulate as tab
 from scipy.interpolate import make_interp_spline
+import os
 
 # Fig1: Shocks and beliefs
 # Fig2: Distribution of beliefs
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+folder_address = os.path.join('empirical', '')
 # folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
-    folder_address + r'realized_shocks_US.xlsx',
+    os.path.join(folder_address, 'realized_shocks_US.xlsx'),
     sheet_name='Sheet1',
     index_col=0
 )
@@ -447,7 +449,7 @@ for i in range(2):
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+folder_address = 'simu_results/'
 n_files = int(Mpath / 25)
 
 Delta_age_all = np.zeros((3, n_files, 2, 200))
@@ -520,7 +522,7 @@ plt.close()
 # how long before exiting upon entry &
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+folder_address = 'simu_results/'
 n_files = int(Mpath / 25)
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
 spell_mat = np.zeros((int(Mpath / 10), 2, len(sample_shocks), 2, 5748), dtype=int)
@@ -877,7 +879,7 @@ reg_table3 = np.average(results_df2['parti_return_reg'], axis=0)
 #     print(label_scenario)
 #     print(tab.tabulate(reg_data, floatfmt=".3f", tablefmt='latex_raw'))
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results/'
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+folder_address = 'reg_results2/'
 reg_results1 = np.empty((25, 1, 2, 2, 2, 3, 3))
 # reg_results2 = np.empty((100, 1, 1, 3, 3))
 for i in range(25):
