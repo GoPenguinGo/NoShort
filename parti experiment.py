@@ -33,7 +33,7 @@ cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 window_bell = 20
 
 np.seterr(invalid='ignore')
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+folder_address = 'simu_results/'
 # folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
 
 

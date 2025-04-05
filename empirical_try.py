@@ -19,7 +19,7 @@ country_names = [
     'Germany',
     'Norway'
 ]
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+folder_address = 'empirical/'
 # folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
