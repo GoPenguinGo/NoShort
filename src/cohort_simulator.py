@@ -153,7 +153,7 @@ def simulate_cohorts_SI(
     parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
     parti_age_group = np.ones((Nt, 4), dtype=np.float16)
 
-    # equilibrium terms:
+    # equilibrium terms: (see Section 2.3, Eq. (12)–(14))
     dR = np.zeros(Nt)  # stores stock returns
     r = np.zeros(Nt)  # interest rate
     theta = np.zeros(Nt)  # market price of risk
@@ -170,6 +170,7 @@ def simulate_cohorts_SI(
     entry_mat = np.zeros((Nt, 3), dtype=np.float16)
     exit_mat = np.zeros((Nt, 3), dtype=np.float16)
 
+    # Technical constants for belief updating (related to Eq. (6), (9))
     a_phi = 1 - phi**2
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
@@ -185,11 +186,12 @@ def simulate_cohorts_SI(
         dZ_SI_t = dZ_SI[i]
 
         # new cohort born (age 0), get wealth transfer, observe, invest
+        # Belief updating via signal and output: Eq. (15)
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t
-        )  # equation (15)
+        )
 
-        # from equation (20) and the description below it
+        # Wealth transfer term: Eq. (20)
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
         X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
@@ -204,6 +206,7 @@ def simulate_cohorts_SI(
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
+        # Compute cohort-specific consumption and wealth shares
         f_c_ist = X_parts / X_t / dt
         f_c_ist = np.append(f_c_ist[:, 1:], tax * alpha_i * beta_i, axis=1)
 
@@ -211,6 +214,7 @@ def simulate_cohorts_SI(
         f_w_ist = f_c_ist / beta_i * beta_t
 
         w_indiv_ist = f_w_ist / cohort_type_size * dt
+        # Realized return: Eq. (12)
         dR_t = (
             mu_S_t * dt + sigma_S_t * dZ_t
         )  # realized stock return, mu_t^Sdt + sigma_t^Sdz_t
@@ -280,6 +284,7 @@ def simulate_cohorts_SI(
         else:
             init_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / T_hat
 
+        # Initialize Delta_s_t for newborn cohort using recent signal history (related to Eq. (9))
         Delta_s_t = Delta_s_t[:, 1:] + dDelta_s_t[:, 1:]
         Delta_s_t = np.append(Delta_s_t, init_bias * np.ones((Ntype, 1)), axis=1)
 
@@ -323,6 +328,8 @@ def simulate_cohorts_SI(
                 lowest_bound = -np.max(
                     possible_delta_st
                 )  # absolute lower bound for theta among active investors
+                # Solve for market-clearing theta: Eq. (13)
+                # Market clears when total demand (weighted by consumption share) = supply
                 theta_t = bisection(
                     solve_theta,
                     lowest_bound,
@@ -332,6 +339,8 @@ def simulate_cohorts_SI(
                     sigma_Y,
                 )  # solve for theta
                 a = Delta_s_t + theta_t
+                # Investment condition: Eq. (11)
+                # Agents invest if expected return a = Delta_s_t + theta_t > 0
                 invest = a > 0
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
@@ -360,8 +369,12 @@ def simulate_cohorts_SI(
             fw_parti_t = np.sum(invest_fw_st)
             Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
-            pi_st = (d_eta_st + theta_t) / sigma_S_t
+            sigma_S_t = fw_parti_t * (
+                theta_t + Delta_tilde_parti_t
+            )  # Conditional volatility: Eq. (14)
+            pi_st = (
+                d_eta_st + theta_t
+            ) / sigma_S_t  # Optimal portfolio choice: Eq. (11)
 
         elif mode_trade == "complete":
             fc_ist_standard = f_c_ist * dt
@@ -381,8 +394,10 @@ def simulate_cohorts_SI(
 
         rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
 
+        # Interest rate r_t: Eq. (12)
         r_t = nu - tax * beta0 + rho_bar_t + mu_Y - sigma_Y * theta_t
 
+        # Expected return mu_S_t: Eq. (14)
         mu_S_t = sigma_S_t * theta_t + r_t
 
         # store the results
@@ -567,9 +582,12 @@ def simulate_cohorts_mean_vola(
         cov_parti_matrix (np.ndarray): shape(4), mean only
 
     """
+    # Initialization of the simulation follows the same structure as the SI and mix_type variants,
+    # but focuses on saving summary statistics (e.g., means, variances) instead of full time series data.
+
     # Initializing variables
     keep_when = int(200 / dt)
-    a_phi = 1 - phi**2
+    a_phi = 1 - phi**2  # from equation (6): used in updating beliefs
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y**2
@@ -604,6 +622,7 @@ def simulate_cohorts_mean_vola(
     Delta_matrix = np.empty(
         (int((Nt - keep_when) / 12), len(age_sample)), dtype=np.float16
     )
+    # Only compute invest_matrix if market has participation constraints
     if mode_trade == "w_constraint":
         invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8)
     else:
@@ -614,11 +633,12 @@ def simulate_cohorts_mean_vola(
         dZ_SI_t = dZ_SI[i]
 
         # new cohort born (age 0), get wealth transfer, observe, invest
+        # Equation (15): Bayesian updating of signal precision for each cohort
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t
-        )  # equation (15)
+        )
 
-        # from equation (20) and the description below it
+        # Compute wealth shares X_t using Equation (20)
         # X_t = W_t * xi_t, is the sum of tax * X_s * eta_st_eta_ss * rho_cohort_type_short * dt, s<t;
         # X is the collection of all X_s, s<t.
         X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
@@ -638,10 +658,11 @@ def simulate_cohorts_mean_vola(
 
         dR_t = mu_S_t * dt + sigma_S_t * dZ_t  # realized stock return
 
-        # update beliefs
+        # Belief updating using equations (6) and (9)
+        # If market is complete: all agents update as participants
         if mode_trade == "complete":  # everyone is P
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P")
-            dDelta_s_t = dDelta_st_calculator(
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P")  # eq (6)
+            dDelta_s_t = dDelta_st_calculator(  # eq (9), "P" case
                 sigma_Y_sq,
                 a_phi_1,
                 phi_sqr_a_phi,
@@ -661,8 +682,8 @@ def simulate_cohorts_mean_vola(
         ):
             V_st_N = post_var(
                 sigma_Y_sq, Vhat_vector, tau_info, a_phi, "N"
-            )  # from eq(6)
-            dDelta_s_t_N = dDelta_st_calculator(
+            )  # eq (6) for nonparticipants
+            dDelta_s_t_N = dDelta_st_calculator(  # eq (9), "N" case
                 sigma_Y_sq,
                 a_phi_1,
                 phi_sqr_a_phi,
@@ -672,9 +693,11 @@ def simulate_cohorts_mean_vola(
                 dZ_t,
                 dZ_SI_t,
                 "N",
-            )  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P")
-            dDelta_s_t_P = dDelta_st_calculator(
+            )
+            V_st_P = post_var(
+                sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P"
+            )  # eq (6) for participants
+            dDelta_s_t_P = dDelta_st_calculator(  # eq (9), "P" case
                 sigma_Y_sq,
                 a_phi_1,
                 phi_sqr_a_phi,
@@ -696,11 +719,14 @@ def simulate_cohorts_mean_vola(
 
         Vhat_vector = np.append(Vhat_vector[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1)
 
+        # --- Compute initial bias (η) using rolling window ---
+        # See Section 2.4 — rolling average of dZ_t over past Npre periods
         if i < Npre - 1:
             init_bias = (np.sum(biasvec[i + 1 :]) + np.sum(dZ[: i + 1])) / T_hat
         else:
             init_bias = np.sum(dZ[i + 1 - Npre : i + 1]) / T_hat
 
+        # --- Update estimation bias Δ_{st} for all cohorts ---
         Delta_s_t = Delta_s_t[:, 1:] + dDelta_s_t[:, 1:]
         Delta_s_t = np.append(Delta_s_t, init_bias * np.ones((Ntype, 1)), axis=1)
 
@@ -708,6 +734,7 @@ def simulate_cohorts_mean_vola(
         invest_tracker = np.append(invest_tracker[:, 1:], np.ones((Ntype, 1)), axis=1)
 
         if mode_trade == "w_constraint":
+            # --- Disappointment learning: agents leave market permanently if constraint binds ---
             if mode_learn == "disappointment":
                 possible_cons_share = f_c_ist * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
@@ -723,7 +750,7 @@ def simulate_cohorts_mean_vola(
                     sigma_Y,
                 )  # solve for theta
                 a = Delta_s_t + theta_t
-                invest = a > 0
+                invest = a > 0  # only invest if signal exceeds threshold
                 switch_P_to_N = invest_tracker * (1 - invest)
                 invest_tracker = invest * invest_tracker  # update invest tracker
 
@@ -737,6 +764,7 @@ def simulate_cohorts_mean_vola(
                     1 - switch_P_to_N
                 )  # reset t'
 
+            # --- Reentry learning: agents can return to the market later ---
             elif mode_learn == "reentry":  # agents switch between type P and type N
                 possible_cons_share = f_c_ist * dt
                 possible_delta_st = Delta_s_t
@@ -780,12 +808,14 @@ def simulate_cohorts_mean_vola(
             fw_parti_t = np.sum(invest_fw_st)
             # Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
             Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-            sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
+            sigma_S_t = fw_parti_t * (
+                theta_t + Delta_tilde_parti_t
+            )  # Equation (23): σ_t^S = φ̃_t (θ_t + ẟ̃_t)
             # pi_st = (d_eta_st + theta_t) / sigma_S_t
 
         elif mode_trade == "complete":
             fc_ist_standard = f_c_ist * dt
-            Delta_bar_parti_t = np.sum(fc_ist_standard * Delta_s_t)
+            Delta_bar_parti_t = np.sum(fc_ist_standard * Delta_s_t)  # eq (22)
             theta_t = sigma_Y - Delta_bar_parti_t
             d_eta_st = Delta_s_t
             # invest = Delta_s_t >= -theta_t  # long stock
@@ -801,9 +831,10 @@ def simulate_cohorts_mean_vola(
 
         rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
 
+        # from Eq. (1) and surrounding discussion
         r_t = nu - tax * beta0 + rho_bar_t + mu_Y - sigma_Y * theta_t
 
-        mu_S_t = sigma_S_t * theta_t + r_t
+        mu_S_t = sigma_S_t * theta_t + r_t  # from Eq. (2)
 
         # store the results
         if i >= keep_when:  # only keeping the data after 200 years in the simulation
@@ -1279,11 +1310,13 @@ def simulate_cohorts_mix_type(
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so I rescale eta_bar to keep it away from 0, without changing f_st
 
+        # -- Cohort updates: Equation (15) from the paper --
         # new cohort born (age 0), get wealth transfer, observe, invest
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t
         )  # equation (15)
 
+        # Equation (20): Wealth aggregation across cohorts
         X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
         X_t = np.sum(X_parts) / (1 - tax * beta0 * dt)
         # eta_bar_t = np.sum(eta_bar_parts)
@@ -1295,6 +1328,7 @@ def simulate_cohorts_mix_type(
         #  eta_bar_t is the denominator; it creates issues if too close to 0
         #  so we rescale eta_bar to keep it away from 0, without changing f_st
 
+        # Calculate consumption and wealth shares from equation (19)
         f_c_ist = X_parts / X_t / dt
         f_c_ist = np.append(f_c_ist[:, :, 1:], tax * alpha_i * beta_i, axis=2)
 
@@ -1305,7 +1339,7 @@ def simulate_cohorts_mix_type(
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
 
-        # update beliefs
+        # -- Belief updating: Equation (6) and (9) --
         V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "N")  # from eq(6)
         dDelta_s_t_N = dDelta_st_calculator(
             sigma_Y_sq,
@@ -1381,7 +1415,9 @@ def simulate_cohorts_mix_type(
         switch_N_to_P[:, :3] = 0  # only applicable to the E type
         switch = switch_N_to_P + switch_P_to_N
         invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
-        d_eta_st = a * invest_tracker - theta_t
+        d_eta_st = (
+            a * invest_tracker - theta_t
+        )  # From equation (13): d_eta_s,t = (Δ_s,t + θ_t) if participating, else = -θ_t
 
         # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
         Vhat_vector = (
@@ -1394,6 +1430,7 @@ def simulate_cohorts_mix_type(
         # entry_t = np.sum(switch_N_to_P * cohort_type_size)
         # exit_t = np.sum(switch_P_to_N * cohort_type_size)
 
+        # Δ̄_P,t and 𝛥̃_P,t (eq. 14): weighted average belief biases
         invest_fc_st = invest_tracker * f_c_ist * dt
         invest_fw_st = invest_tracker * f_w_ist * dt
         popu_parti_t = np.sum(cohort_type_size * invest_tracker)
@@ -1401,14 +1438,17 @@ def simulate_cohorts_mix_type(
         fw_parti_t = np.sum(invest_fw_st)
         Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
         Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
-        sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
-        pi_st = (d_eta_st + theta_t) / sigma_S_t
+        sigma_S_t = fw_parti_t * (
+            theta_t + Delta_tilde_parti_t
+        )  # Volatility of stock return from eq. (12)
+        pi_st = (d_eta_st + theta_t) / sigma_S_t  # optimal risky share for participants
         # popu_can_short_t = np.sum(cohort_type_size * can_short_tracker)
         Phi_can_short_t = np.sum(can_short_tracker * f_c_ist * dt)
         short = pi_st < 0
         # Phi_short_t = np.sum(short * f_c_ist * dt)
         popu_short_t = np.sum(cohort_type_size * short)
 
+        # --- Compute interest rate (eq. 4): r_t = ν − τβ₀ + ρ̄_t + μ_Y − σ_Y θ_t
         rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
         # rho_tilde_t = np.sum(rho_i * f_w_ist) / np.sum(f_w_ist)
 
