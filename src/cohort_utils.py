@@ -1,0 +1,137 @@
+import numpy as np
+import statsmodels.api as sm
+
+def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
+    """
+    Compute regression tables 1b and 2b used in simulate_cohorts_mean_vola and simulate_mean_vola_mix_type.
+
+    Returns:
+        regression_table1_b (np.ndarray): shape (3, 3)
+        regression_table2_b (np.ndarray): shape (3, 2)
+    """
+    Nt = len(dR)
+    past_annual_return = np.zeros((3, Nt))
+    future_annual_return = np.zeros((3, Nt))
+
+    for n, gap in enumerate([12, 24, 36]):
+        past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
+        future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
+
+    x_set = np.copy(past_annual_return[:, sample])
+    y_set = [parti, entry_mat[sample], exit_mat[sample]]
+    regression_table1_b = np.zeros((3, 3), dtype=np.float32)
+
+    for ii in range(3):  # for 12, 24, 36 month gaps
+        x = (x_set[ii] - np.average(x_set[ii])) / np.std(x_set[ii])
+        for jj, y_mat in enumerate(y_set):
+            if jj == 1:  # entry on high return
+                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                x_condi = (x > np.percentile(x, 75)) + 0
+                x_regress = sm.add_constant(x_condi)
+            elif jj == 2:  # exit on low return
+                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
+                x_condi = (x < np.percentile(x, 25)) + 0
+                x_regress = sm.add_constant(x_condi)
+            else:
+                y = (y_mat[sample] - np.average(y_mat[sample])) / np.std(y_mat[sample])
+                x_regress = sm.add_constant(x)
+            model = sm.OLS(y, x_regress)
+            est = model.fit()
+            regression_table1_b[ii, jj] = est.params[1]
+
+    x = np.reshape((parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1))
+    x_regress = sm.add_constant(x)
+    y_set = [
+        future_annual_return[:, sample],
+        future_annual_return[:, sample] - r[sample],
+    ]
+    regression_table2_b = np.zeros((3, 2), dtype=np.float32)
+    for ii in range(3):
+        for jj, y_mat in enumerate(y_set):
+            y = (y_mat[ii] - np.average(y_mat[ii])) / np.std(y_mat[ii])
+            model = sm.OLS(y, x_regress)
+            est = model.fit()
+            regression_table2_b[ii, jj] = est.params[1]
+
+    return regression_table1_b, regression_table2_b
+
+
+def compute_reentry_exit_times(invest_matrix: np.ndarray, Nt: int, dt: float, window_bell: int = 20):
+    """
+    Computes the reentry and exit timing for agents in the stock market based on investment matrix data.
+
+    Args:
+        invest_matrix (np.ndarray): Matrix tracking cohort investment, shape (T_cohorts, 4, Nt)
+        Nt (int): Number of time periods
+        dt (float): Time step size
+        window_bell (int): Size of non-overlapping window to track (default is 20 years)
+
+    Returns:
+        reentry_time (np.ndarray): Binary matrix marking reentry events, shape (n_windows, 4, T_valid)
+        exit_time (np.ndarray): Binary matrix marking exit events, shape (n_windows, 4, T_valid)
+    """
+    sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
+    reentry_time = np.zeros(
+        (len(sample_bell) - 1, 4, Nt - int(window_bell / dt) - 12), dtype=int
+    )
+    exit_time = np.zeros(
+        (len(sample_bell) - 1, 4, Nt - int(window_bell / dt)), dtype=int
+    )
+
+    for n, entry_n in enumerate(sample_bell[1:]):
+        following_cohorts_entry = (
+            invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] > 0
+        )[:, int(window_bell / dt):]
+        following_cohorts_entry = np.append(
+            following_cohorts_entry, invest_matrix[entry_n, :, -12:], axis=1
+        )
+        parti_bell_entry = np.zeros((window_bell, 4, Nt - int(window_bell / dt)))
+        parti_bell_entry[0] = following_cohorts_entry
+        exit_bell = np.zeros((4, Nt - int(window_bell / dt)))
+
+        following_cohorts_exit = (
+            invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] < 0
+        )[:, int(window_bell / dt):]
+        parti_bell_exit = np.zeros((window_bell, 4, Nt - int(window_bell / dt) - 12))
+        parti_bell_exit[0] = following_cohorts_exit
+        reentry_bell = np.zeros((4, Nt - int(window_bell / dt) - 12))
+
+        for nn in range(1, window_bell):
+            cohorts_in = invest_matrix[
+                entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)
+            ]
+            cohorts_out = (1 - cohorts_in)[:, :-12]
+
+            if nn != 1:
+                exit_nn = (
+                    invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)]
+                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt): int((-nn + 1) / dt)]
+                ) < 0
+
+                reentry_nn = (
+                    invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)]
+                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt): int((-nn + 1) / dt)]
+                ) > 0
+            else:
+                exit_nn = (
+                    invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt): int(-nn / dt)]
+                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):]
+                ) < 0
+
+                reentry_nn = (
+                    invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt): int(-nn / dt)]
+                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):]
+                ) > 0
+
+            exit_bell = exit_bell + exit_nn > 0
+            reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
+            parti_bell_entry[nn] = cohorts_in * following_cohorts_entry * (1 - exit_bell)
+            parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+
+        for m in range(4):
+            reentry_time[n, m] = list(map(int, np.sum(parti_bell_exit[:, m], axis=0)))
+            exit_time[n, m] = list(map(int, np.sum(parti_bell_entry[:, m], axis=0)))
+
+    return reentry_time, exit_time
