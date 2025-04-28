@@ -1,5 +1,7 @@
 import numpy as np
 import statsmodels.api as sm
+from typing import Tuple
+
 
 def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
     """
@@ -14,9 +16,13 @@ def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
     future_annual_return = np.zeros((3, Nt))
 
     for n, gap in enumerate([12, 24, 36]):
-        past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        past_annual_return[n, gap:] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (
+            gap / 12
+        )
         past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
-        future_annual_return[n, :-gap] = (np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]) / (gap / 12)
+        future_annual_return[n, :-gap] = (
+            np.cumsum(dR)[gap:] - np.cumsum(dR)[:-gap]
+        ) / (gap / 12)
         future_annual_return[n, -gap:] = (np.cumsum(dR)[-gap:]) / (gap / 12)
 
     x_set = np.copy(past_annual_return[:, sample])
@@ -41,7 +47,9 @@ def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
             est = model.fit()
             regression_table1_b[ii, jj] = est.params[1]
 
-    x = np.reshape((parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1))
+    x = np.reshape(
+        (parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1)
+    )
     x_regress = sm.add_constant(x)
     y_set = [
         future_annual_return[:, sample],
@@ -58,7 +66,9 @@ def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
     return regression_table1_b, regression_table2_b
 
 
-def compute_reentry_exit_times(invest_matrix: np.ndarray, Nt: int, dt: float, window_bell: int = 20):
+def compute_reentry_exit_times(
+    invest_matrix: np.ndarray, Nt: int, dt: float, window_bell: int = 20
+):
     """
     Computes the reentry and exit timing for agents in the stock market based on investment matrix data.
 
@@ -83,7 +93,7 @@ def compute_reentry_exit_times(invest_matrix: np.ndarray, Nt: int, dt: float, wi
     for n, entry_n in enumerate(sample_bell[1:]):
         following_cohorts_entry = (
             invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] > 0
-        )[:, int(window_bell / dt):]
+        )[:, int(window_bell / dt) :]
         following_cohorts_entry = np.append(
             following_cohorts_entry, invest_matrix[entry_n, :, -12:], axis=1
         )
@@ -93,45 +103,149 @@ def compute_reentry_exit_times(invest_matrix: np.ndarray, Nt: int, dt: float, wi
 
         following_cohorts_exit = (
             invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] < 0
-        )[:, int(window_bell / dt):]
+        )[:, int(window_bell / dt) :]
         parti_bell_exit = np.zeros((window_bell, 4, Nt - int(window_bell / dt) - 12))
         parti_bell_exit[0] = following_cohorts_exit
         reentry_bell = np.zeros((4, Nt - int(window_bell / dt) - 12))
 
         for nn in range(1, window_bell):
             cohorts_in = invest_matrix[
-                entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)
+                entry_n + nn, :, int((window_bell - nn) / dt) : int(-nn / dt)
             ]
             cohorts_out = (1 - cohorts_in)[:, :-12]
 
             if nn != 1:
                 exit_nn = (
-                    invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)]
-                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt): int((-nn + 1) / dt)]
+                    invest_matrix[
+                        entry_n + nn, :, int((window_bell - nn) / dt) : int(-nn / dt)
+                    ]
+                    - invest_matrix[
+                        entry_n + nn - 1,
+                        :,
+                        int((window_bell - nn + 1) / dt) : int((-nn + 1) / dt),
+                    ]
                 ) < 0
 
                 reentry_nn = (
-                    invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt): int(-nn / dt)]
-                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt): int((-nn + 1) / dt)]
+                    invest_matrix[
+                        entry_n + nn, :, int((window_bell - nn) / dt) : int(-nn / dt)
+                    ]
+                    - invest_matrix[
+                        entry_n + nn - 1,
+                        :,
+                        int((window_bell - nn + 1) / dt) : int((-nn + 1) / dt),
+                    ]
                 ) > 0
             else:
                 exit_nn = (
-                    invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt): int(-nn / dt)]
-                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):]
+                    invest_matrix[
+                        entry_n + nn, :, int(window_bell / dt - nn / dt) : int(-nn / dt)
+                    ]
+                    - invest_matrix[
+                        entry_n + nn - 1, :, int((window_bell - nn + 1) / dt) :
+                    ]
                 ) < 0
 
                 reentry_nn = (
-                    invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt): int(-nn / dt)]
-                    - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):]
+                    invest_matrix[
+                        entry_n + nn, :, int(window_bell / dt - nn / dt) : int(-nn / dt)
+                    ]
+                    - invest_matrix[
+                        entry_n + nn - 1, :, int((window_bell - nn + 1) / dt) :
+                    ]
                 ) > 0
 
             exit_bell = exit_bell + exit_nn > 0
             reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
-            parti_bell_entry[nn] = cohorts_in * following_cohorts_entry * (1 - exit_bell)
-            parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+            parti_bell_entry[nn] = (
+                cohorts_in * following_cohorts_entry * (1 - exit_bell)
+            )
+            parti_bell_exit[nn] = (
+                cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+            )
 
         for m in range(4):
             reentry_time[n, m] = list(map(int, np.sum(parti_bell_exit[:, m], axis=0)))
             exit_time[n, m] = list(map(int, np.sum(parti_bell_entry[:, m], axis=0)))
 
     return reentry_time, exit_time
+
+
+def update_wealth_and_beliefs(
+    eta_st_eta_ss: np.ndarray,
+    X: np.ndarray,
+    d_eta_st: np.ndarray,
+    dZ_t: float,
+    dt: float,
+    rho_cohort_type: np.ndarray,
+    tax: float,
+    beta0: float,
+):
+    """
+    Updates eta_st_eta_ss and X based on signal shock and wealth tax adjustment.
+    """
+
+    # Update beliefs: Eq (15)
+    eta_st_eta_ss = eta_st_eta_ss * np.exp((-0.5 * d_eta_st**2) * dt + d_eta_st * dZ_t)
+
+    # Update wealth X: Eq (20)
+    X_parts = tax * X * eta_st_eta_ss * rho_cohort_type * dt
+    X_t = np.sum(X_parts) / (1 - tax * beta0 * dt)
+
+    # Append newborns
+    if eta_st_eta_ss.ndim == 2:
+        # 2D case
+        eta_st_eta_ss = np.append(
+            eta_st_eta_ss[:, 1:], np.ones((eta_st_eta_ss.shape[0], 1)), axis=1
+        )
+        X_newborn = X_t * np.ones((X.shape[0], 1))
+        X_new = np.append(X[:, 1:], X_newborn, axis=1)
+    elif eta_st_eta_ss.ndim == 3:
+        # 3D case
+        eta_st_eta_ss = np.append(
+            eta_st_eta_ss[:, :, 1:],
+            np.ones((eta_st_eta_ss.shape[0], eta_st_eta_ss.shape[1], 1)),
+            axis=2,
+        )
+        X_newborn = X_t * np.ones((X.shape[0], X.shape[1], 1))
+        X_new = np.append(X[:, :, 1:], X_newborn, axis=2)
+    else:
+        raise ValueError("eta_st_eta_ss must be 2D or 3D array.")
+
+    X_new = X_new / X_t  # normalize
+
+    return X_parts, eta_st_eta_ss, X_new, X_t
+
+
+def update_Delta_s_t(
+    Delta_s_t: np.ndarray,
+    dDelta_s_t: np.ndarray,
+    init_bias: float,
+):
+    """
+    Update Delta_s_t array with new belief innovations and initial bias.
+
+    Args:
+        Delta_s_t (np.ndarray): Current Delta_s_t
+        dDelta_s_t (np.ndarray): Innovations
+        init_bias (float): Initialization bias for newborns
+
+    Returns:
+        np.ndarray: Updated Delta_s_t
+    """
+    if Delta_s_t.ndim == 2:
+        Delta_s_t = Delta_s_t[:, 1:] + dDelta_s_t[:, 1:]
+        Delta_s_t = np.append(
+            Delta_s_t, init_bias * np.ones((Delta_s_t.shape[0], 1)), axis=1
+        )
+    elif Delta_s_t.ndim == 3:
+        Delta_s_t = Delta_s_t[:, :, 1:] + dDelta_s_t[:, :, 1:]
+        Delta_s_t = np.append(
+            Delta_s_t,
+            init_bias * np.ones((Delta_s_t.shape[0], Delta_s_t.shape[1], 1)),
+            axis=2,
+        )
+    else:
+        raise ValueError("Delta_s_t must be 2D or 3D array.")
+
+    return Delta_s_t
