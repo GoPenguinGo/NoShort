@@ -15,6 +15,8 @@ from src.cohort_utils import (
     compute_reentry_exit_times,
     update_wealth_and_beliefs,
     update_Delta_s_t,
+    find_market_clearing_theta_complete,
+    find_market_clearing_theta_partial,
 )
 
 
@@ -284,17 +286,12 @@ def simulate_cohorts_SI(
             if mode_learn == "disappointment":
                 possible_cons_share = f_c_ist * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                lowest_bound = -np.max(
-                    possible_delta_st[np.nonzero(possible_delta_st)]
-                )  # absolute lower bound for theta among active investors
-                theta_t = bisection(
-                    solve_theta,
-                    lowest_bound,
-                    50,
-                    possible_cons_share,
-                    possible_delta_st,
-                    sigma_Y,
-                )  # solve for theta
+                theta_t = find_market_clearing_theta_complete(
+                    possible_delta_st=possible_delta_st,
+                    possible_cons_share=possible_cons_share,
+                    sigma_Y=sigma_Y,
+                )
+                # solve for theta
                 a = Delta_s_t + theta_t
                 invest = a > 0
                 switch_P_to_N = invest_tracker * (1 - invest)
@@ -313,19 +310,14 @@ def simulate_cohorts_SI(
             elif mode_learn == "reentry":  # agents switch between type P and type N
                 possible_cons_share = f_c_ist * dt
                 possible_delta_st = Delta_s_t
-                lowest_bound = -np.max(
-                    possible_delta_st
-                )  # absolute lower bound for theta among active investors
                 # Solve for market-clearing theta: Eq. (13)
                 # Market clears when total demand (weighted by consumption share) = supply
-                theta_t = bisection(
-                    solve_theta,
-                    lowest_bound,
-                    50,
-                    possible_cons_share,
-                    possible_delta_st,
-                    sigma_Y,
-                )  # solve for theta
+                theta_t = find_market_clearing_theta_complete(
+                    possible_delta_st=possible_delta_st,
+                    possible_cons_share=possible_cons_share,
+                    sigma_Y=sigma_Y,
+                )
+                # solve for theta
                 a = Delta_s_t + theta_t
                 # Investment condition: Eq. (11)
                 # Agents invest if expected return a = Delta_s_t + theta_t > 0
@@ -722,18 +714,13 @@ def simulate_cohorts_mix_type(
         possible_cons_share = f_c_ist * dt * invest_tracker
         possible_delta_st = Delta_s_t * invest_tracker
 
-        lowest_bound = -np.max(
-            possible_delta_st[np.nonzero(possible_delta_st)]
-        )  # absolute lower bound
-        theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint,
-            lowest_bound,
-            50,
-            can_short_tracker,
-            possible_delta_st,
-            possible_cons_share,
-            sigma_Y,
+        theta_t = find_market_clearing_theta_partial(
+            can_short_tracker=can_short_tracker,
+            possible_delta_st=possible_delta_st,
+            possible_cons_share=possible_cons_share,
+            sigma_Y=sigma_Y,
         )
+
         a = Delta_s_t + theta_t
         invest = 1 - (a < 0) * (
             can_short_tracker < 1
@@ -1117,16 +1104,10 @@ def simulate_cohorts_mean_vola(
             if mode_learn == "disappointment":
                 possible_cons_share = f_c_ist * dt * invest_tracker
                 possible_delta_st = Delta_s_t * invest_tracker
-                lowest_bound = -np.max(
-                    possible_delta_st[np.nonzero(possible_delta_st)]
-                )  # absolute lower bound for theta among active investors
-                theta_t = bisection(
-                    solve_theta,
-                    lowest_bound,
-                    50,
-                    possible_cons_share,
-                    possible_delta_st,
-                    sigma_Y,
+                theta_t = find_market_clearing_theta_complete(
+                    possible_delta_st=possible_delta_st,
+                    possible_cons_share=possible_cons_share,
+                    sigma_Y=sigma_Y,
                 )  # solve for theta
                 a = Delta_s_t + theta_t
                 invest = a > 0  # only invest if signal exceeds threshold
@@ -1147,16 +1128,10 @@ def simulate_cohorts_mean_vola(
             elif mode_learn == "reentry":  # agents switch between type P and type N
                 possible_cons_share = f_c_ist * dt
                 possible_delta_st = Delta_s_t
-                lowest_bound = -np.max(
-                    possible_delta_st
-                )  # absolute lower bound for theta among active investors
-                theta_t = bisection(
-                    solve_theta,
-                    lowest_bound,
-                    50,
-                    possible_cons_share,
-                    possible_delta_st,
-                    sigma_Y,
+                theta_t = find_market_clearing_theta_complete(
+                    possible_delta_st=possible_delta_st,
+                    possible_cons_share=possible_cons_share,
+                    sigma_Y=sigma_Y,
                 )  # solve for theta
                 a = Delta_s_t + theta_t
                 invest = a > 0
@@ -1566,19 +1541,12 @@ def simulate_mean_vola_mix_type(
         possible_cons_share = f_c_ist * dt * invest_tracker
         possible_delta_st = Delta_s_t * invest_tracker
 
-        lowest_bound = -np.max(
-            possible_delta_st[np.nonzero(possible_delta_st)]
-        )  # absolute lower bound
-
         # Eq (13): Solve for market-clearing θ_t using beliefs and constraints
-        theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint,
-            lowest_bound,
-            50,
-            can_short_tracker,
-            possible_delta_st,
-            possible_cons_share,
-            sigma_Y,
+        theta_t = find_market_clearing_theta_partial(
+            can_short_tracker=can_short_tracker,
+            possible_delta_st=possible_delta_st,
+            possible_cons_share=possible_cons_share,
+            sigma_Y=sigma_Y,
         )
 
         # Eq (13): Excess return a_{s,t} used to determine investment decision

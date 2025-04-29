@@ -1,6 +1,12 @@
 import numpy as np
 import statsmodels.api as sm
 from typing import Tuple
+from src.solver import (
+    bisection,
+    solve_theta,
+    bisection_partial_constraint,
+    solve_theta_partial_constraint,
+)
 
 
 def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
@@ -249,3 +255,49 @@ def update_Delta_s_t(
         raise ValueError("Delta_s_t must be 2D or 3D array.")
 
     return Delta_s_t
+
+
+def find_market_clearing_theta_complete(
+    possible_cons_share: np.ndarray,
+    possible_delta_st: np.ndarray,
+    sigma_Y: float,
+) -> float:
+    """
+    Find market-clearing theta for complete or simple constrained markets.
+    Calls solve_theta (no shorting constraint).
+    """
+
+    lowest_bound = -np.max(possible_delta_st)
+    theta_t = bisection(
+        solve_theta,
+        lowest_bound,
+        50,
+        possible_cons_share,
+        possible_delta_st,
+        sigma_Y,
+    )
+    return theta_t
+
+
+def find_market_clearing_theta_partial(
+    possible_cons_share: np.ndarray,
+    possible_delta_st: np.ndarray,
+    can_short_tracker: np.ndarray,
+    sigma_Y: float,
+) -> float:
+    """
+    Find market-clearing theta for partial constraint markets (rich/old).
+    Calls solve_theta_partial_constraint (with shorting constraint tracking).
+    """
+
+    lowest_bound = -np.max(possible_delta_st)
+    theta_t = bisection_partial_constraint(
+        solve_theta_partial_constraint,
+        lowest_bound,
+        50,
+        possible_cons_share,
+        possible_delta_st,
+        can_short_tracker,
+        sigma_Y,
+    )
+    return theta_t
