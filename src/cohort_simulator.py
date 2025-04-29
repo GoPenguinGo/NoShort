@@ -16,9 +16,8 @@ from src.cohort_utils import (
     update_wealth_and_beliefs,
     update_Delta_s_t,
     find_market_clearing_theta_complete,
-    find_market_clearing_theta_partial,
+    find_market_clearing_theta_partial
 )
-
 
 def simulate_cohorts_SI(
     biasvec: np.ndarray,

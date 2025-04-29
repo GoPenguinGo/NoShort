@@ -1,6 +1,6 @@
 import numpy as np
 import statsmodels.api as sm
-from typing import Tuple
+from typing import Tuple, Dict
 from src.solver import (
     bisection,
     solve_theta,
@@ -301,3 +301,4 @@ def find_market_clearing_theta_partial(
         sigma_Y,
     )
     return theta_t
+
