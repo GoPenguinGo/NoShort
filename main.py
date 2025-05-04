@@ -659,82 +659,82 @@ for i in range(2):
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
-# folder_address = "simu_results/"
-# n_files = int(Mpath / 25)
+folder_address = "simu_results/"
+n_files = int(Mpath / 25)
 
-# Delta_age_all = np.zeros((3, n_files, 2, 200))
-# parti_age_all = np.zeros((3, n_files, 200))
-# phi_set = [0.0, 0.5, 0.8]
-# for i in range(n_files):
-#     for j, phi_j in enumerate(phi_set):
-#         Delta_age_all[j, i] = np.average(
-#             np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
-#                 "Delta_age"
-#             ],
-#             axis=0,
-#         )
-#         parti_age_all[j, i] = np.average(
-#             np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
-#                 "parti_age"
-#             ],
-#             axis=0,
-#         )
-# Delta_age_ave = np.average(Delta_age_all, axis=1)
-# parti_age_ave = np.average(parti_age_all, axis=1)
+Delta_age_all = np.zeros((3, n_files, 2, 200))
+parti_age_all = np.zeros((3, n_files, 200))
+phi_set = [0.0, 0.5, 0.8]
+for i in range(n_files):
+    for j, phi_j in enumerate(phi_set):
+        Delta_age_all[j, i] = np.average(
+            np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
+                "Delta_age"
+            ],
+            axis=0,
+        )
+        parti_age_all[j, i] = np.average(
+            np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
+                "parti_age"
+            ],
+            axis=0,
+        )
+Delta_age_ave = np.average(Delta_age_all, axis=1)
+parti_age_ave = np.average(parti_age_all, axis=1)
 
-# n_phi = len(phi_set)
-# age_cut = 100
-# x_age = np.arange(20, age_cut)
-# fig_titles = [
-#     r"(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$",
-#     "(b) Reentry, average participation probability",
-# ]
-# y_titles = [r"Average $\mid\Delta_{s,t}\mid$", "Average participation probability"]
-# fig, axes = plt.subplots(nrows=1, ncols=2, sharex="all", figsize=(10, 5))
-# for j, ax in enumerate(axes):
-#     ax.set_xlabel("Age")
-#     y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
-#     ax.set_ylabel(y_titles[j])
-#     for i in range(3):
-#         if j == 0:
-#             y_reentry = y_case[i, 1, : age_cut - 20]
-#             y_complete = y_case[i, 0, : age_cut - 20]
-#             if phi_set[i] == 0.5:
-#                 ax.plot(
-#                     x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry"
-#                 )
-#                 ax.plot(
-#                     x_age,
-#                     y_complete,
-#                     color=colors[i],
-#                     linewidth=1.5,
-#                     linestyle="dashed",
-#                     label="Complete Market",
-#                 )
-#                 ax.legend()
-#             elif phi_set[i] == 0:
-#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-#             else:
-#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-#                 ax.plot(
-#                     x_age,
-#                     y_complete,
-#                     color=colors[i],
-#                     linewidth=1.5,
-#                     linestyle="dashed",
-#                 )
-#         else:
-#             y = y_case[i, : age_cut - 20]
-#             label_i = r"$\phi$=" + str("{0:.2f}".format(phi_set[i]))
-#             ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
-#             ax.legend()
-#     ax.set_title(fig_titles[j], color="black")
-#     ax.tick_params(axis="y", labelcolor="black")
-#     # ax.set_xlim(-1, 100)
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig("f3_1.png", dpi=200)
-# plt.show()
-# plt.close()
+n_phi = len(phi_set)
+age_cut = 100
+x_age = np.arange(20, age_cut)
+fig_titles = [
+    r"(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$",
+    "(b) Reentry, average participation probability",
+]
+y_titles = [r"Average $\mid\Delta_{s,t}\mid$", "Average participation probability"]
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex="all", figsize=(10, 5))
+for j, ax in enumerate(axes):
+    ax.set_xlabel("Age")
+    y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
+    ax.set_ylabel(y_titles[j])
+    for i in range(3):
+        if j == 0:
+            y_reentry = y_case[i, 1, : age_cut - 20]
+            y_complete = y_case[i, 0, : age_cut - 20]
+            if phi_set[i] == 0.5:
+                ax.plot(
+                    x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry"
+                )
+                ax.plot(
+                    x_age,
+                    y_complete,
+                    color=colors[i],
+                    linewidth=1.5,
+                    linestyle="dashed",
+                    label="Complete Market",
+                )
+                ax.legend()
+            elif phi_set[i] == 0:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+            else:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+                ax.plot(
+                    x_age,
+                    y_complete,
+                    color=colors[i],
+                    linewidth=1.5,
+                    linestyle="dashed",
+                )
+        else:
+            y = y_case[i, : age_cut - 20]
+            label_i = r"$\phi$=" + str("{0:.2f}".format(phi_set[i]))
+            ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
+            ax.legend()
+    ax.set_title(fig_titles[j], color="black")
+    ax.tick_params(axis="y", labelcolor="black")
+    # ax.set_xlim(-1, 100)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig("f3_1.png", dpi=200)
+plt.show()
+plt.close()
 
 ######################################
 ###########   Figure 4   #############

@@ -50,7 +50,7 @@ cutoffs_age = [
 n_age_cutoffs = 4
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 10000
+Mpath = 50 ## Adjusted this
 t = np.arange(0, T_cohort, dt)
 
 phi_vector = [0, 0.5, 0.8]
