@@ -860,200 +860,202 @@ plt.close()
 ######################################
 #############  Table 1  ##############
 ######################################
-# Nsce = 3
-# Ncolumn = int(Nsce * 2)
-# table1_var = ["theta", "r", "mu_S", "sigma_S"]
-# Nrow = len(table1_var)
-# table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
-# # for file in file_list_mean_vola:
-# #     print(file)
-# #     print(np.average(results_mean_vola[file], axis=0))
-# for i, var in enumerate(table1_var):
-#     for j in range(n_files):
-#         table1_mat[i, j] = np.average(
-#             np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
-#             axis=0,
-#         )
-# table1_mat_ave = np.average(table1_mat, axis=1)
-# # Panel 1.1: mean vola of asset pricing values
-# table_output = np.zeros((Nrow, Ncolumn))
-# header = np.tile(["Mean", "Std"], Nsce)
-# # for j, file in enumerate(file_list_mean_vola[1:6]):
-# #     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# #     for i in range(Nsce):
-# #         row_index = j
-# #         col_index = i * 2
-# #         table_output[row_index, col_index:col_index + 2] = var_average[i]
-# for j in range(Nrow):
+Nsce = 3
+Ncolumn = int(Nsce * 2)
+table1_var = ["theta", "r", "mu_S", "sigma_S"]
+Nrow = len(table1_var)
+table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
+# for file in file_list_mean_vola:
+#     print(file)
+#     print(np.average(results_mean_vola[file], axis=0))
+for i, var in enumerate(table1_var):
+    for j in range(n_files):
+        table1_mat[i, j] = np.average(
+            np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
+            axis=0,
+        )
+table1_mat_ave = np.average(table1_mat, axis=1)
+# Panel 1.1: mean vola of asset pricing values
+table_output = np.zeros((Nrow, Ncolumn))
+header = np.tile(["Mean", "Std"], Nsce)
+# for j, file in enumerate(file_list_mean_vola[1:6]):
+#     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 #     for i in range(Nsce):
 #         row_index = j
 #         col_index = i * 2
-#         table_output[row_index, col_index : col_index + 2] = table1_mat_ave[j, i]
+#         table_output[row_index, col_index:col_index + 2] = var_average[i]
+for j in range(Nrow):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index : col_index + 2] = table1_mat_ave[j, i]
 
-# show_index = [
-#     # r'$dR_t$',
-#     r"$\theta_t$",
-#     r"$\r_t$",
-#     r"$\mu^S_t$",
-#     r"$\sigma^S_t$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output,
-#         headers=header,
-#         showindex=show_index,
-#         floatfmt=".4f",
-#         tablefmt="latex_raw",
-#     )
-# )
+show_index = [
+    # r'$dR_t$',
+    r"$\theta_t$",
+    r"$\r_t$",
+    r"$\mu^S_t$",
+    r"$\sigma^S_t$",
+]
+print(
+    tab.tabulate(
+        table_output,
+        headers=header,
+        showindex=show_index,
+        floatfmt=".4f",
+        tablefmt="latex_raw",
+    )
+)
 
 # Panel 1.2: correlations
-# Nrow = 3
-# table12_mat = np.zeros((n_files, Nsce, Nrow))
-# for j in range(n_files):
-#     table12_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
-#         axis=0,
-#     )[:, :3]
-# table12_mat_ave = np.average(table12_mat, axis=0)
-# # file = file_list_mean_vola[11]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # Nrow = np.shape(var_average)[1]
-# table_output = np.zeros((Nrow, Ncolumn))
-# for j in range(Nrow):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = table12_mat_ave[i, j]
-# show_index = [
-#     r"$\text{Corr}(dz_t^Y, \theta_t)$",
-#     r"$\text{Corr}(dz_t^Y, \sigma_t^S)$",
-#     r"$\text{Corr}(dz_t^{SI}, \theta_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+Nrow = 3
+table12_mat = np.zeros((n_files, Nsce, Nrow))
+for j in range(n_files):
+    table12_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
+        axis=0,
+    )[:, :3]
+table12_mat_ave = np.average(table12_mat, axis=0)
+# file = file_list_mean_vola[11]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# Nrow = np.shape(var_average)[1]
+table_output = np.zeros((Nrow, Ncolumn))
+for j in range(Nrow):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = table12_mat_ave[i, j]
+show_index = [
+    r"$\text{Corr}(dz_t^Y, \theta_t)$",
+    r"$\text{Corr}(dz_t^Y, \sigma_t^S)$",
+    r"$\text{Corr}(dz_t^{SI}, \theta_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
 
-# # Panel 21: participation rate, entry and exit
-# table21_var = ["parti", "entry", "exit"]
-# Nrow = len(table21_var)
-# Ncolumn = 2
-# table21_mat = np.zeros((Nrow, n_files, Ncolumn))
-# for i, var in enumerate(table21_var):
-#     for j in range(n_files):
-#         table21_mat[i, j] = np.average(
-#             np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
-#             axis=0,
-#         )
-# table21_mat_ave = np.average(table21_mat, axis=1)
-# # file = file_list_mean_vola[9]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # N_row = np.shape(var_average)[1]
-# header = ["Re-entry", "Mix-4"]
-# print(
-#     tab.tabulate(table21_mat_ave, headers=header, floatfmt=".4f", tablefmt="latex_raw")
-# )
-# # Panel 2.2: correlations
-# Nrow = 2
-# table22_mat = np.zeros((n_files, Nsce, Nrow))
-# for j in range(n_files):
-#     table22_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
-#         axis=0,
-#     )[:, 3:]
-# table22_mat_ave = np.average(table22_mat, axis=0)
-# # file = file_list_mean_vola[11]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # Nrow = np.shape(var_average)[1]
-# table_output = np.zeros((Nrow, Ncolumn))
-# for j in range(Nrow):
-#     for i in range(Nsce - 1):
-#         table_output[j, i] = table22_mat_ave[i + 1, j]
-# show_index = [
-#     r"$\text{Corr}(\Bar{\Phi}_t, P_t)$",
-#     r"$\text{Corr}(\tilde{\Phi}_t, P_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+# Panel 21: participation rate, entry and exit
+table21_var = ["parti", "entry", "exit"]
+Nrow = len(table21_var)
+Ncolumn = 2
+table21_mat = np.zeros((Nrow, n_files, Ncolumn))
+for i, var in enumerate(table21_var):
+    for j in range(n_files):
+        table21_mat[i, j] = np.average(
+            np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
+            axis=0,
+        )
+table21_mat_ave = np.average(table21_mat, axis=1)
+# file = file_list_mean_vola[9]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+header = ["Re-entry", "Mix-4"]
+print(
+    tab.tabulate(table21_mat_ave, headers=header, floatfmt=".4f", tablefmt="latex_raw")
+)
 
-# # Panel 3: participation rate, entry and exit on asset returns
-# table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
-# for j in range(n_files):
-#     table3_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg1"],
-#         axis=0,
-#     )
-# table3_mat_ave = np.average(table3_mat, axis=0)
-# table_output = np.zeros((3, 6))
-# table_output[:, :3] = table3_mat_ave[0]
-# table_output[:, 3:] = table3_mat_ave[1]
-# header = np.tile(["P_t", r"$\text{Entry}_{t-n, t}$", r"$\text{Exit}_{t-n, t}$"], 2)
-# show_index = [
-#     r"$R_{t-1, t}$",
-#     r"$R_{t-2, t}$",
-#     r"$R_{t-3, t}$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output,
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".4f",
-#         tablefmt="latex_raw",
-#     )
-# )
+# Panel 2.2: correlations
+Nrow = 2
+table22_mat = np.zeros((n_files, Nsce, Nrow))
+for j in range(n_files):
+    table22_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
+        axis=0,
+    )[:, 3:]
+table22_mat_ave = np.average(table22_mat, axis=0)
+# file = file_list_mean_vola[11]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# Nrow = np.shape(var_average)[1]
+table_output = np.zeros((Nrow, Ncolumn))
+for j in range(Nrow):
+    for i in range(Nsce - 1):
+        table_output[j, i] = table22_mat_ave[i + 1, j]
+show_index = [
+    r"$\text{Corr}(\Bar{\Phi}_t, P_t)$",
+    r"$\text{Corr}(\tilde{\Phi}_t, P_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
 
-# table_output = np.zeros((3, 2))
-# table_output[:, 0] = table3_mat_ave[0, 1]
-# table_output[:, 1] = table3_mat_ave[1, 1]
-# show_index = [
-#     r"$\text{Corr}(R_{t-2, t}, P_t)$",
-#     r"$\text{Corr}(R_{t-2, t}^{high}, \text{Entry}_t)$",
-#     r"$\text{Corr}(R_{t-2, t}^{low}, \text{Exit}_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+# Panel 3: participation rate, entry and exit on asset returns
+table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
+for j in range(n_files):
+    table3_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg1"],
+        axis=0,
+    )
+table3_mat_ave = np.average(table3_mat, axis=0)
+table_output = np.zeros((3, 6))
+table_output[:, :3] = table3_mat_ave[0]
+table_output[:, 3:] = table3_mat_ave[1]
+header = np.tile(["P_t", r"$\text{Entry}_{t-n, t}$", r"$\text{Exit}_{t-n, t}$"], 2)
+show_index = [
+    r"$R_{t-1, t}$",
+    r"$R_{t-2, t}$",
+    r"$R_{t-3, t}$",
+]
+print(
+    tab.tabulate(
+        table_output,
+        showindex=show_index,
+        headers=header,
+        floatfmt=".4f",
+        tablefmt="latex_raw",
+    )
+)
 
-# # Panel 4: future asset returns on participation rate, entry and exit
-# table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
-# for j in range(n_files):
-#     table4_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg2"],
-#         axis=0,
-#     )
-# table4_mat_ave = np.average(table4_mat, axis=0)
-# table4_mat_std = np.std(table4_mat, axis=0)
-# show_index = [
-#     r"$R^S_{t-n, t}/n$",
-#     r"$R^S_{t-n, t}/n - r_{t-n}$",
-# ]
-# header = ["12m", "24m", "36m"]
-# print(
-#     tab.tabulate(
-#         np.transpose(table4_mat_ave[1]),
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".3f",
-#         tablefmt="latex_raw",
-#     )
-# )
-# print(
-#     tab.tabulate(
-#         np.transpose(table4_mat_std[1]),
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".3f",
-#         tablefmt="latex_raw",
-#     )
-# )
+table_output = np.zeros((3, 2))
+table_output[:, 0] = table3_mat_ave[0, 1]
+table_output[:, 1] = table3_mat_ave[1, 1]
+show_index = [
+    r"$\text{Corr}(R_{t-2, t}, P_t)$",
+    r"$\text{Corr}(R_{t-2, t}^{high}, \text{Entry}_t)$",
+    r"$\text{Corr}(R_{t-2, t}^{low}, \text{Exit}_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
+
+# Panel 4: future asset returns on participation rate, entry and exit
+table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
+for j in range(n_files):
+    table4_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg2"],
+        axis=0,
+    )
+table4_mat_ave = np.average(table4_mat, axis=0)
+table4_mat_std = np.std(table4_mat, axis=0)
+show_index = [
+    r"$R^S_{t-n, t}/n$",
+    r"$R^S_{t-n, t}/n - r_{t-n}$",
+]
+header = ["12m", "24m", "36m"]
+print(
+    tab.tabulate(
+        np.transpose(table4_mat_ave[1]),
+        showindex=show_index,
+        headers=header,
+        floatfmt=".3f",
+        tablefmt="latex_raw",
+    )
+)
+print(
+    tab.tabulate(
+        np.transpose(table4_mat_std[1]),
+        showindex=show_index,
+        headers=header,
+        floatfmt=".3f",
+        tablefmt="latex_raw",
+    )
+)
+
 # # Panel 4: participation rate in wealth groups
 # file = file_list_mean_vola[10]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
