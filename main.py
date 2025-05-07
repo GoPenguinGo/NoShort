@@ -109,153 +109,153 @@ invest_tracker_compare = np.zeros(
 parti_age_group_compare = np.zeros((n_scenarios, n_phi, Nt_data, 4), dtype=np.float16)
 
 
-def run_simulations():
-    for i in range(n_scenarios):
-        for j, phi in enumerate(phi_set):
-            if i == 0:
-                mode_trade = "w_constraint"
-                mode_learn = "reentry"
-                (
-                    r,
-                    theta,
-                    f_c,
-                    Delta,
-                    pi,
-                    parti,
-                    Phi_bar_parti,
-                    Phi_tilde_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    parti_age_group,
-                    parti_wealth_group,
-                    entry_mat,
-                    exit_mat,
-                ) = simulate_SI(
-                    mode_trade,
-                    mode_learn,
-                    Nc,
-                    Nt,
-                    dt,
-                    nu,
-                    Vhat,
-                    mu_Y,
-                    sigma_Y,
-                    tax,
-                    beta0,
-                    phi,
-                    Npre,
-                    Ninit,
-                    T_hat,
-                    dZ_build,
-                    dZ,
-                    dZ_SI_build,
-                    dZ_SI,
-                    tau,
-                    cutoffs_age,
-                    Ntype,
-                    rho_i,
-                    alpha_i,
-                    beta_i,
-                    rho_cohort_type,
-                    cohort_type_size,
-                    need_f="True",
-                    need_Delta="True",
-                    need_pi="True",
-                )
-                Delta_compare[i, j, :, 3] = Delta[-Nt_data:]
-                pi_compare[i, j, :, 3] = pi[-Nt_data:]
-                invest_tracker_compare[i, j, :, 3] = pi[-Nt_data:] != 0
-            else:
-                alpha_constraint = np.ones((1, Nconstraint)) * density_set[i]
-                alpha_i_mix = np.reshape(
-                    alpha_i * alpha_constraint, (Ntype, Nconstraint, 1)
-                )
-                cohort_type_size_mix = cohort_size * alpha_i_mix
-                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                rho_cohort_type_mix = (
-                    alpha_i_mix * beta_i_mix * np.exp(-(rho_i_mix + nu) * tau)
-                )  # shape(2, 6000)
-                (
-                    r,
-                    theta,
-                    f_c,
-                    Delta,
-                    pi,
-                    parti,
-                    Phi_bar_parti,
-                    Phi_tilde_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    parti_age_group,
-                    parti_wealth_group,
-                    entry_mat,
-                    exit_mat,
-                ) = simulate_mix_types(
-                    Nc,
-                    Nt,
-                    dt,
-                    nu,
-                    Vhat,
-                    mu_Y,
-                    sigma_Y,
-                    tax,
-                    beta0,
-                    phi,
-                    Npre,
-                    Ninit,
-                    T_hat,
-                    dZ_build,
-                    dZ,
-                    dZ_SI_build,
-                    dZ_SI,
-                    cutoffs_age,
-                    Ntype,
-                    Nconstraint,
-                    rho_i_mix,
-                    alpha_i_mix,
-                    beta_i_mix,
-                    rho_cohort_type_mix,
-                    cohort_type_size_mix,
-                    need_f="True",
-                    need_Delta="True",
-                    need_pi="True",
-                )
-                Delta_compare[i, j] = Delta[-Nt_data:]
-                pi_compare[i, j] = pi[-Nt_data:]
-                invest_tracker_compare[i, j] = pi[-Nt_data:] != 0
-            theta_compare[i, j] = theta[-Nt_data:]
-            Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
-            parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
-    return (
-        theta_compare,
-        Delta_compare,
-        pi_compare,
-        invest_tracker_compare,
-        parti_age_group_compare,
-    )
+#def run_simulations():
+for i in range(n_scenarios):
+    for j, phi in enumerate(phi_set):
+        if i == 0:
+            mode_trade = "w_constraint"
+            mode_learn = "reentry"
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_bar_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+                entry_mat,
+                exit_mat,
+            ) = simulate_SI(
+                mode_trade,
+                mode_learn,
+                Nc,
+                Nt,
+                dt,
+                nu,
+                Vhat,
+                mu_Y,
+                sigma_Y,
+                tax,
+                beta0,
+                phi,
+                Npre,
+                Ninit,
+                T_hat,
+                dZ_build,
+                dZ,
+                dZ_SI_build,
+                dZ_SI,
+                tau,
+                cutoffs_age,
+                Ntype,
+                rho_i,
+                alpha_i,
+                beta_i,
+                rho_cohort_type,
+                cohort_type_size,
+                need_f="True",
+                need_Delta="True",
+                need_pi="True",
+            )
+            Delta_compare[i, j, :, 3] = Delta[-Nt_data:]
+            pi_compare[i, j, :, 3] = pi[-Nt_data:]
+            invest_tracker_compare[i, j, :, 3] = pi[-Nt_data:] != 0
+        else:
+            alpha_constraint = np.ones((1, Nconstraint)) * density_set[i]
+            alpha_i_mix = np.reshape(
+                alpha_i * alpha_constraint, (Ntype, Nconstraint, 1)
+            )
+            cohort_type_size_mix = cohort_size * alpha_i_mix
+            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+            rho_cohort_type_mix = (
+                alpha_i_mix * beta_i_mix * np.exp(-(rho_i_mix + nu) * tau)
+            )  # shape(2, 6000)
+            (
+                r,
+                theta,
+                f_c,
+                Delta,
+                pi,
+                parti,
+                Phi_bar_parti,
+                Phi_tilde_parti,
+                Delta_bar_parti,
+                Delta_tilde_parti,
+                dR,
+                mu_S,
+                sigma_S,
+                beta,
+                invest_tracker,
+                parti_age_group,
+                parti_wealth_group,
+                entry_mat,
+                exit_mat,
+            ) = simulate_mix_types(
+                Nc,
+                Nt,
+                dt,
+                nu,
+                Vhat,
+                mu_Y,
+                sigma_Y,
+                tax,
+                beta0,
+                phi,
+                Npre,
+                Ninit,
+                T_hat,
+                dZ_build,
+                dZ,
+                dZ_SI_build,
+                dZ_SI,
+                cutoffs_age,
+                Ntype,
+                Nconstraint,
+                rho_i_mix,
+                alpha_i_mix,
+                beta_i_mix,
+                rho_cohort_type_mix,
+                cohort_type_size_mix,
+                need_f="True",
+                need_Delta="True",
+                need_pi="True",
+            )
+            Delta_compare[i, j] = Delta[-Nt_data:]
+            pi_compare[i, j] = pi[-Nt_data:]
+            invest_tracker_compare[i, j] = pi[-Nt_data:] != 0
+        theta_compare[i, j] = theta[-Nt_data:]
+        Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
+        parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
+#     return (
+#         theta_compare,
+#         Delta_compare,
+#         pi_compare,
+#         invest_tracker_compare,
+#         parti_age_group_compare,
+#     )
 
 
-tic()
-results = {}
+# tic()
+# results = {}
 
 
-def profiled_run():
-    return run_simulations()
+# def profiled_run():
+#     return run_simulations()
 
 
-results = cProfile.runctx("profiled_run()", globals(), locals(), "profile_output")
+# results = cProfile.runctx("profiled_run()", globals(), locals(), "profile_output")
 
-toc()
+# toc()
 
 nn = 3  # number of cohorts illustrated
 starts = np.arange(nn) * 240 + 24 * 12
@@ -659,82 +659,82 @@ for i in range(2):
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
-# folder_address = "simu_results/"
-# n_files = int(Mpath / 25)
+folder_address = "simu_results/"
+n_files = int(Mpath / 25)
 
-# Delta_age_all = np.zeros((3, n_files, 2, 200))
-# parti_age_all = np.zeros((3, n_files, 200))
-# phi_set = [0.0, 0.5, 0.8]
-# for i in range(n_files):
-#     for j, phi_j in enumerate(phi_set):
-#         Delta_age_all[j, i] = np.average(
-#             np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
-#                 "Delta_age"
-#             ],
-#             axis=0,
-#         )
-#         parti_age_all[j, i] = np.average(
-#             np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
-#                 "parti_age"
-#             ],
-#             axis=0,
-#         )
-# Delta_age_ave = np.average(Delta_age_all, axis=1)
-# parti_age_ave = np.average(parti_age_all, axis=1)
+Delta_age_all = np.zeros((3, n_files, 2, 200))
+parti_age_all = np.zeros((3, n_files, 200))
+phi_set = [0.0, 0.5, 0.8]
+for i in range(n_files):
+    for j, phi_j in enumerate(phi_set):
+        Delta_age_all[j, i] = np.average(
+            np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
+                "Delta_age"
+            ],
+            axis=0,
+        )
+        parti_age_all[j, i] = np.average(
+            np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")[
+                "parti_age"
+            ],
+            axis=0,
+        )
+Delta_age_ave = np.average(Delta_age_all, axis=1)
+parti_age_ave = np.average(parti_age_all, axis=1)
 
-# n_phi = len(phi_set)
-# age_cut = 100
-# x_age = np.arange(20, age_cut)
-# fig_titles = [
-#     r"(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$",
-#     "(b) Reentry, average participation probability",
-# ]
-# y_titles = [r"Average $\mid\Delta_{s,t}\mid$", "Average participation probability"]
-# fig, axes = plt.subplots(nrows=1, ncols=2, sharex="all", figsize=(10, 5))
-# for j, ax in enumerate(axes):
-#     ax.set_xlabel("Age")
-#     y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
-#     ax.set_ylabel(y_titles[j])
-#     for i in range(3):
-#         if j == 0:
-#             y_reentry = y_case[i, 1, : age_cut - 20]
-#             y_complete = y_case[i, 0, : age_cut - 20]
-#             if phi_set[i] == 0.5:
-#                 ax.plot(
-#                     x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry"
-#                 )
-#                 ax.plot(
-#                     x_age,
-#                     y_complete,
-#                     color=colors[i],
-#                     linewidth=1.5,
-#                     linestyle="dashed",
-#                     label="Complete Market",
-#                 )
-#                 ax.legend()
-#             elif phi_set[i] == 0:
-#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-#             else:
-#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-#                 ax.plot(
-#                     x_age,
-#                     y_complete,
-#                     color=colors[i],
-#                     linewidth=1.5,
-#                     linestyle="dashed",
-#                 )
-#         else:
-#             y = y_case[i, : age_cut - 20]
-#             label_i = r"$\phi$=" + str("{0:.2f}".format(phi_set[i]))
-#             ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
-#             ax.legend()
-#     ax.set_title(fig_titles[j], color="black")
-#     ax.tick_params(axis="y", labelcolor="black")
-#     # ax.set_xlim(-1, 100)
-# fig.tight_layout()  # otherwise the right y-label is slightly clipped
-# plt.savefig("f3_1.png", dpi=200)
-# plt.show()
-# plt.close()
+n_phi = len(phi_set)
+age_cut = 100
+x_age = np.arange(20, age_cut)
+fig_titles = [
+    r"(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$",
+    "(b) Reentry, average participation probability",
+]
+y_titles = [r"Average $\mid\Delta_{s,t}\mid$", "Average participation probability"]
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex="all", figsize=(10, 5))
+for j, ax in enumerate(axes):
+    ax.set_xlabel("Age")
+    y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
+    ax.set_ylabel(y_titles[j])
+    for i in range(3):
+        if j == 0:
+            y_reentry = y_case[i, 1, : age_cut - 20]
+            y_complete = y_case[i, 0, : age_cut - 20]
+            if phi_set[i] == 0.5:
+                ax.plot(
+                    x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry"
+                )
+                ax.plot(
+                    x_age,
+                    y_complete,
+                    color=colors[i],
+                    linewidth=1.5,
+                    linestyle="dashed",
+                    label="Complete Market",
+                )
+                ax.legend()
+            elif phi_set[i] == 0:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+            else:
+                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+                ax.plot(
+                    x_age,
+                    y_complete,
+                    color=colors[i],
+                    linewidth=1.5,
+                    linestyle="dashed",
+                )
+        else:
+            y = y_case[i, : age_cut - 20]
+            label_i = r"$\phi$=" + str("{0:.2f}".format(phi_set[i]))
+            ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
+            ax.legend()
+    ax.set_title(fig_titles[j], color="black")
+    ax.tick_params(axis="y", labelcolor="black")
+    # ax.set_xlim(-1, 100)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig("f3_1.png", dpi=200)
+plt.show()
+plt.close()
 
 ######################################
 ###########   Figure 4   #############
@@ -860,200 +860,202 @@ for i in range(2):
 ######################################
 #############  Table 1  ##############
 ######################################
-# Nsce = 3
-# Ncolumn = int(Nsce * 2)
-# table1_var = ["theta", "r", "mu_S", "sigma_S"]
-# Nrow = len(table1_var)
-# table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
-# # for file in file_list_mean_vola:
-# #     print(file)
-# #     print(np.average(results_mean_vola[file], axis=0))
-# for i, var in enumerate(table1_var):
-#     for j in range(n_files):
-#         table1_mat[i, j] = np.average(
-#             np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
-#             axis=0,
-#         )
-# table1_mat_ave = np.average(table1_mat, axis=1)
-# # Panel 1.1: mean vola of asset pricing values
-# table_output = np.zeros((Nrow, Ncolumn))
-# header = np.tile(["Mean", "Std"], Nsce)
-# # for j, file in enumerate(file_list_mean_vola[1:6]):
-# #     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# #     for i in range(Nsce):
-# #         row_index = j
-# #         col_index = i * 2
-# #         table_output[row_index, col_index:col_index + 2] = var_average[i]
-# for j in range(Nrow):
+Nsce = 3
+Ncolumn = int(Nsce * 2)
+table1_var = ["theta", "r", "mu_S", "sigma_S"]
+Nrow = len(table1_var)
+table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
+# for file in file_list_mean_vola:
+#     print(file)
+#     print(np.average(results_mean_vola[file], axis=0))
+for i, var in enumerate(table1_var):
+    for j in range(n_files):
+        table1_mat[i, j] = np.average(
+            np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
+            axis=0,
+        )
+table1_mat_ave = np.average(table1_mat, axis=1)
+# Panel 1.1: mean vola of asset pricing values
+table_output = np.zeros((Nrow, Ncolumn))
+header = np.tile(["Mean", "Std"], Nsce)
+# for j, file in enumerate(file_list_mean_vola[1:6]):
+#     var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
 #     for i in range(Nsce):
 #         row_index = j
 #         col_index = i * 2
-#         table_output[row_index, col_index : col_index + 2] = table1_mat_ave[j, i]
+#         table_output[row_index, col_index:col_index + 2] = var_average[i]
+for j in range(Nrow):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index : col_index + 2] = table1_mat_ave[j, i]
 
-# show_index = [
-#     # r'$dR_t$',
-#     r"$\theta_t$",
-#     r"$\r_t$",
-#     r"$\mu^S_t$",
-#     r"$\sigma^S_t$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output,
-#         headers=header,
-#         showindex=show_index,
-#         floatfmt=".4f",
-#         tablefmt="latex_raw",
-#     )
-# )
+show_index = [
+    # r'$dR_t$',
+    r"$\theta_t$",
+    r"$\r_t$",
+    r"$\mu^S_t$",
+    r"$\sigma^S_t$",
+]
+print(
+    tab.tabulate(
+        table_output,
+        headers=header,
+        showindex=show_index,
+        floatfmt=".4f",
+        tablefmt="latex_raw",
+    )
+)
 
 # Panel 1.2: correlations
-# Nrow = 3
-# table12_mat = np.zeros((n_files, Nsce, Nrow))
-# for j in range(n_files):
-#     table12_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
-#         axis=0,
-#     )[:, :3]
-# table12_mat_ave = np.average(table12_mat, axis=0)
-# # file = file_list_mean_vola[11]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # Nrow = np.shape(var_average)[1]
-# table_output = np.zeros((Nrow, Ncolumn))
-# for j in range(Nrow):
-#     for i in range(Nsce):
-#         row_index = j
-#         col_index = i * 2
-#         table_output[row_index, col_index] = table12_mat_ave[i, j]
-# show_index = [
-#     r"$\text{Corr}(dz_t^Y, \theta_t)$",
-#     r"$\text{Corr}(dz_t^Y, \sigma_t^S)$",
-#     r"$\text{Corr}(dz_t^{SI}, \theta_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+Nrow = 3
+table12_mat = np.zeros((n_files, Nsce, Nrow))
+for j in range(n_files):
+    table12_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
+        axis=0,
+    )[:, :3]
+table12_mat_ave = np.average(table12_mat, axis=0)
+# file = file_list_mean_vola[11]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# Nrow = np.shape(var_average)[1]
+table_output = np.zeros((Nrow, Ncolumn))
+for j in range(Nrow):
+    for i in range(Nsce):
+        row_index = j
+        col_index = i * 2
+        table_output[row_index, col_index] = table12_mat_ave[i, j]
+show_index = [
+    r"$\text{Corr}(dz_t^Y, \theta_t)$",
+    r"$\text{Corr}(dz_t^Y, \sigma_t^S)$",
+    r"$\text{Corr}(dz_t^{SI}, \theta_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
 
-# # Panel 21: participation rate, entry and exit
-# table21_var = ["parti", "entry", "exit"]
-# Nrow = len(table21_var)
-# Ncolumn = 2
-# table21_mat = np.zeros((Nrow, n_files, Ncolumn))
-# for i, var in enumerate(table21_var):
-#     for j in range(n_files):
-#         table21_mat[i, j] = np.average(
-#             np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
-#             axis=0,
-#         )
-# table21_mat_ave = np.average(table21_mat, axis=1)
-# # file = file_list_mean_vola[9]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # N_row = np.shape(var_average)[1]
-# header = ["Re-entry", "Mix-4"]
-# print(
-#     tab.tabulate(table21_mat_ave, headers=header, floatfmt=".4f", tablefmt="latex_raw")
-# )
-# # Panel 2.2: correlations
-# Nrow = 2
-# table22_mat = np.zeros((n_files, Nsce, Nrow))
-# for j in range(n_files):
-#     table22_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
-#         axis=0,
-#     )[:, 3:]
-# table22_mat_ave = np.average(table22_mat, axis=0)
-# # file = file_list_mean_vola[11]
-# # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
-# # Nrow = np.shape(var_average)[1]
-# table_output = np.zeros((Nrow, Ncolumn))
-# for j in range(Nrow):
-#     for i in range(Nsce - 1):
-#         table_output[j, i] = table22_mat_ave[i + 1, j]
-# show_index = [
-#     r"$\text{Corr}(\Bar{\Phi}_t, P_t)$",
-#     r"$\text{Corr}(\tilde{\Phi}_t, P_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+# Panel 21: participation rate, entry and exit
+table21_var = ["parti", "entry", "exit"]
+Nrow = len(table21_var)
+Ncolumn = 2
+table21_mat = np.zeros((Nrow, n_files, Ncolumn))
+for i, var in enumerate(table21_var):
+    for j in range(n_files):
+        table21_mat[i, j] = np.average(
+            np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var],
+            axis=0,
+        )
+table21_mat_ave = np.average(table21_mat, axis=1)
+# file = file_list_mean_vola[9]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# N_row = np.shape(var_average)[1]
+header = ["Re-entry", "Mix-4"]
+print(
+    tab.tabulate(table21_mat_ave, headers=header, floatfmt=".4f", tablefmt="latex_raw")
+)
 
-# # Panel 3: participation rate, entry and exit on asset returns
-# table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
-# for j in range(n_files):
-#     table3_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg1"],
-#         axis=0,
-#     )
-# table3_mat_ave = np.average(table3_mat, axis=0)
-# table_output = np.zeros((3, 6))
-# table_output[:, :3] = table3_mat_ave[0]
-# table_output[:, 3:] = table3_mat_ave[1]
-# header = np.tile(["P_t", r"$\text{Entry}_{t-n, t}$", r"$\text{Exit}_{t-n, t}$"], 2)
-# show_index = [
-#     r"$R_{t-1, t}$",
-#     r"$R_{t-2, t}$",
-#     r"$R_{t-3, t}$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output,
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".4f",
-#         tablefmt="latex_raw",
-#     )
-# )
+# Panel 2.2: correlations
+Nrow = 2
+table22_mat = np.zeros((n_files, Nsce, Nrow))
+for j in range(n_files):
+    table22_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["cov_mat"],
+        axis=0,
+    )[:, 3:]
+table22_mat_ave = np.average(table22_mat, axis=0)
+# file = file_list_mean_vola[11]
+# var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
+# Nrow = np.shape(var_average)[1]
+table_output = np.zeros((Nrow, Ncolumn))
+for j in range(Nrow):
+    for i in range(Nsce - 1):
+        table_output[j, i] = table22_mat_ave[i + 1, j]
+show_index = [
+    r"$\text{Corr}(\Bar{\Phi}_t, P_t)$",
+    r"$\text{Corr}(\tilde{\Phi}_t, P_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
 
-# table_output = np.zeros((3, 2))
-# table_output[:, 0] = table3_mat_ave[0, 1]
-# table_output[:, 1] = table3_mat_ave[1, 1]
-# show_index = [
-#     r"$\text{Corr}(R_{t-2, t}, P_t)$",
-#     r"$\text{Corr}(R_{t-2, t}^{high}, \text{Entry}_t)$",
-#     r"$\text{Corr}(R_{t-2, t}^{low}, \text{Exit}_t)$",
-# ]
-# print(
-#     tab.tabulate(
-#         table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
-#     )
-# )
+# Panel 3: participation rate, entry and exit on asset returns
+table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
+for j in range(n_files):
+    table3_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg1"],
+        axis=0,
+    )
+table3_mat_ave = np.average(table3_mat, axis=0)
+table_output = np.zeros((3, 6))
+table_output[:, :3] = table3_mat_ave[0]
+table_output[:, 3:] = table3_mat_ave[1]
+header = np.tile(["P_t", r"$\text{Entry}_{t-n, t}$", r"$\text{Exit}_{t-n, t}$"], 2)
+show_index = [
+    r"$R_{t-1, t}$",
+    r"$R_{t-2, t}$",
+    r"$R_{t-3, t}$",
+]
+print(
+    tab.tabulate(
+        table_output,
+        showindex=show_index,
+        headers=header,
+        floatfmt=".4f",
+        tablefmt="latex_raw",
+    )
+)
 
-# # Panel 4: future asset returns on participation rate, entry and exit
-# table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
-# for j in range(n_files):
-#     table4_mat[j] = np.average(
-#         np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg2"],
-#         axis=0,
-#     )
-# table4_mat_ave = np.average(table4_mat, axis=0)
-# table4_mat_std = np.std(table4_mat, axis=0)
-# show_index = [
-#     r"$R^S_{t-n, t}/n$",
-#     r"$R^S_{t-n, t}/n - r_{t-n}$",
-# ]
-# header = ["12m", "24m", "36m"]
-# print(
-#     tab.tabulate(
-#         np.transpose(table4_mat_ave[1]),
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".3f",
-#         tablefmt="latex_raw",
-#     )
-# )
-# print(
-#     tab.tabulate(
-#         np.transpose(table4_mat_std[1]),
-#         showindex=show_index,
-#         headers=header,
-#         floatfmt=".3f",
-#         tablefmt="latex_raw",
-#     )
-# )
+table_output = np.zeros((3, 2))
+table_output[:, 0] = table3_mat_ave[0, 1]
+table_output[:, 1] = table3_mat_ave[1, 1]
+show_index = [
+    r"$\text{Corr}(R_{t-2, t}, P_t)$",
+    r"$\text{Corr}(R_{t-2, t}^{high}, \text{Entry}_t)$",
+    r"$\text{Corr}(R_{t-2, t}^{low}, \text{Exit}_t)$",
+]
+print(
+    tab.tabulate(
+        table_output, showindex=show_index, floatfmt=".4f", tablefmt="latex_raw"
+    )
+)
+
+# Panel 4: future asset returns on participation rate, entry and exit
+table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
+for j in range(n_files):
+    table4_mat[j] = np.average(
+        np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")["reg2"],
+        axis=0,
+    )
+table4_mat_ave = np.average(table4_mat, axis=0)
+table4_mat_std = np.std(table4_mat, axis=0)
+show_index = [
+    r"$R^S_{t-n, t}/n$",
+    r"$R^S_{t-n, t}/n - r_{t-n}$",
+]
+header = ["12m", "24m", "36m"]
+print(
+    tab.tabulate(
+        np.transpose(table4_mat_ave[1]),
+        showindex=show_index,
+        headers=header,
+        floatfmt=".3f",
+        tablefmt="latex_raw",
+    )
+)
+print(
+    tab.tabulate(
+        np.transpose(table4_mat_std[1]),
+        showindex=show_index,
+        headers=header,
+        floatfmt=".3f",
+        tablefmt="latex_raw",
+    )
+)
+
 # # Panel 4: participation rate in wealth groups
 # file = file_list_mean_vola[10]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -1231,5 +1233,6 @@ for i in range(2):
 # plt.show()
 # # plt.close()
 
-p = pstats.Stats("profile_output")
-p.strip_dirs().sort_stats("cumulative").print_stats(30)
+## Performance evaluation
+# p = pstats.Stats("profile_output")
+# p.strip_dirs().sort_stats("cumulative").print_stats(30)

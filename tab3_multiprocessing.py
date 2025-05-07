@@ -10,7 +10,7 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-# Mpath = 500
+Mpath = 2
 
 def simulate_mean_vola_path(i: int,
                             Nscenario=4,
@@ -114,7 +114,8 @@ def simulate_mean_vola_path(i: int,
                     alpha_i,
                     beta_i,
                     rho_cohort_type,
-                    cohort_type_size
+                    cohort_type_size,
+                    need_invest_matrix=False
                 )
             else:
                 alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 2 else np.ones(
@@ -177,7 +178,7 @@ def simulate_mean_vola_path(i: int,
             cov_save_mean_vola_results[h, g] = cov_save_mean_vola
             parti_results[h, g] = parti_mean_vola
             cov_parti_results[h, g] = cov_parti_mean_vola
-        covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
+            covariance_parti[h] = np.corrcoef(parti_results[h, 1], parti_results[h, 2])[0, 1]
 
     return (
         i,
@@ -220,6 +221,7 @@ def main():
         cov_save_mean_vola_results, \
         covariance_parti, \
         cov_parti_results = result.result()
+
 
         data = {
             "i": i,

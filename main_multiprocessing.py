@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 
 # # for testing:
-# Mpath = 10
+Mpath = 2
 np.seterr(invalid='ignore')
 
 
@@ -28,7 +28,9 @@ def simulate_path(
     Delta_results = np.zeros((Nscenario, len(data_point)), dtype=np.float32)
     t_gap = int(2 / dt)  # 2-year window
     N_cut = int(Nc - t_gap)
-    parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    time_horizon = Nt - t_gap
+    #parti_pre_results = np.zeros((n_age_cutoffs, N_cut), dtype=np.float32)
+    parti_pre_results = np.zeros((n_age_cutoffs, time_horizon), dtype=np.float32)
 
     # for figure 9
     popu_cummu = np.cumsum(cohort_size)
@@ -89,7 +91,7 @@ def simulate_path(
             mu_S,
             sigma_S,
             beta,
-            invest_tracker,
+            invest_mat,
             parti_age_group,
             parti_wealth_group,
             entry_mat,
@@ -128,7 +130,7 @@ def simulate_path(
 
         Delta_results[g] = np.flip(np.average(np.abs(Delta), axis=0)[-Nc_cut:])[data_point]
         if g == 1:
-            invest_results = np.flip(np.average(invest_tracker, axis=0)[-Nc_cut:])[data_point]
+            invest_results = np.flip(np.average(invest_mat, axis=0)[-Nc_cut:])[data_point]
 
             belief_popu_old_results = np.average(
                 Delta[:, :cutoff_age_old_below],
@@ -139,11 +141,11 @@ def simulate_path(
                 weights=cohort_type_size[0, cutoff_age_young:],
                 axis=1)
             P_old_results = np.average(
-                invest_tracker[:, :cutoff_age_old_below],
+                invest_mat[:, :cutoff_age_old_below],
                 weights=cohort_type_size[0, :cutoff_age_old_below],
                 axis=1) / popu
             P_young_results = np.average(
-                invest_tracker[:, cutoff_age_young:],
+                invest_mat[:, cutoff_age_young:],
                 weights=cohort_type_size[0, cutoff_age_young:],
                 axis=1) / popu
             Wealthshare_old_results = np.sum(
@@ -162,9 +164,9 @@ def simulate_path(
             age_top = cutoffs_age[mm]
             weights_group = cohort_type_size[0, age_bottom:age_top]
             if g == 1:
-                parti_pre_results[mm] = np.average(invest_tracker[:-t_gap, age_bottom:age_top],
+                parti_pre_results[mm] = np.average(invest_mat[:-t_gap, age_bottom:age_top],
                                                    weights=weights_group, axis=1)
-                parti_post_results[mm] = np.average(invest_tracker[t_gap:, age_bottom - t_gap:age_top - t_gap],
+                parti_post_results[mm] = np.average(invest_mat[t_gap:, age_bottom - t_gap:age_top - t_gap],
                                                     weights=weights_group, axis=1)
                 pi = np.ma.masked_where(pi == 0, pi)
                 leverage_parti_pre_results[mm] = np.ma.average(
@@ -208,34 +210,34 @@ def simulate_path(
             )
         else:
             belief_f_old_results[g] = np.sum(
-                Delta[:, :cutoff_age_old_below_5] * invest_tracker[:, :cutoff_age_old_below_5] * np.sum(
+                Delta[:, :cutoff_age_old_below_5] * invest_mat[:, :cutoff_age_old_below_5] * np.sum(
                     f_c[:, :, :cutoff_age_old_below_5],
                     axis=1
                 ), axis=1
             ) / np.sum(
-                invest_tracker[:, :cutoff_age_old_below_5] * np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=1
+                invest_mat[:, :cutoff_age_old_below_5] * np.sum(f_c[:, :, :cutoff_age_old_below_5], axis=1
                                                                     ), axis=1
             )
             belief_f_young_results[g] = np.sum(
-                Delta[:, cutoff_age_young_5:] * invest_tracker[:, cutoff_age_young_5:] * np.sum(
+                Delta[:, cutoff_age_young_5:] * invest_mat[:, cutoff_age_young_5:] * np.sum(
                     f_c[:, :, cutoff_age_young_5:],
                     axis=1
                 ), axis=1
             ) / np.sum(
-                invest_tracker[:, cutoff_age_young_5:] * np.sum(f_c[:, :, cutoff_age_young_5:], axis=1
+                invest_mat[:, cutoff_age_young_5:] * np.sum(f_c[:, :, cutoff_age_young_5:], axis=1
                                                                 ), axis=1
             )
             Phi_old_results[g] = np.sum(
                 np.sum(
                     f_c[:, :, :cutoff_age_old_below_5], axis=1
-                ) * invest_tracker[:, :cutoff_age_old_below_5] * dt,
+                ) * invest_mat[:, :cutoff_age_old_below_5] * dt,
                 axis=1
             )
             Phi_young_results[g] = np.sum(
                 np.sum(
                     f_c[:, :, cutoff_age_young_5:],
                     axis=1
-                ) * invest_tracker[:, cutoff_age_young_5:] * dt,
+                ) * invest_mat[:, cutoff_age_young_5:] * dt,
                 axis=1
             )
 
