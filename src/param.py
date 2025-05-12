@@ -50,8 +50,27 @@ cutoffs_age = [
 n_age_cutoffs = 4
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 25 ## Adjusted this
+Mpath = 50  ## Adjusted this
 t = np.arange(0, T_cohort, dt)
+
+# (complete, excluded, disappointment, reentry)
+density_types = (0.25, 0.25, 0.25, 0.25)
+T_hat_set = [
+    2,
+    5,
+    10,
+]
+rho_i_set = [
+    np.array([[0.001], [0.005]]),
+
+]
+nu_set = [
+    0.02,
+]
+tax_set = [
+    0.35,
+]
+phi_set = [0.0, 0.5]
 
 phi_vector = [0, 0.5, 0.8]
 n_phi = len(phi_vector)

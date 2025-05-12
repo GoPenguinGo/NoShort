@@ -12,7 +12,7 @@ import pandas as pd
 keep_data = int(Nt - 200 / dt)
 np.seterr(invalid='ignore')
 
-Mpath = 500
+Mpath = 2
 
 
 def simulate_mean_vola_path(i: int,
@@ -92,7 +92,8 @@ def simulate_mean_vola_path(i: int,
                 alpha_i,
                 beta_i,
                 rho_cohort_type,
-                cohort_type_size
+                cohort_type_size,
+                need_invest_matrix=True
             )
         else:
             alpha_constraint = np.ones((1, Nconstraint)) * 1 / Nconstraint if g == 1 else np.ones(
@@ -141,6 +142,7 @@ def simulate_mean_vola_path(i: int,
                 beta_i_mix,
                 rho_cohort_type_mix,
                 cohort_type_size_mix,
+                need_invest_matrix=True
             )
 
         dR_mean_vola_results[g] = dR_mean_vola

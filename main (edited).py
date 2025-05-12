@@ -660,8 +660,8 @@ for i in range(2):
 ###########   Figure 3   #############  # todo: figure 3 in the paper
 ######################################
 ## Estimation error and participation rate given age
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
-n_files = 40
+folder_address = 'simu_results/'
+n_files = 8 # Change this as necessary
 
 Delta_age_all = np.zeros((3, n_files, 2, 200))
 for i in range(n_files):  # todo: from "parti experiment.py"
@@ -672,8 +672,8 @@ for i in range(n_files):  # todo: from "parti experiment.py"
 Delta_age_ave = np.average(Delta_age_all, axis=1)
 
 phi_set = [0.0, 0.5, 0.8]
-parti_age_all = np.zeros((100, 3, 200))
-for i in range(100):
+parti_age_all = np.zeros((10, 3, 200)) # Change this as necessary
+for i in range(10): # Change this as necessary
     for j, phi_j in enumerate(phi_set):
         parti_age_all[i, j] = np.load(folder_address + str(i) + str(phi_j) + 'parti_age.npy')
 parti_age_ave = np.average(parti_age_all, axis=0)
@@ -725,13 +725,13 @@ plt.close()
 #todo: figure 8 in the paper;
 # I for some reason had the wrong version of the code in the branch; now it should work
 
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+folder_address = 'simu_results/'
 n_files = int(Mpath / 25)
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
 spell_mat = np.zeros((int(Mpath / 10), 2, len(sample_shocks), 2, 5748), dtype=int)
 stock_returns_mat = np.zeros((int(Mpath / 10), len(sample_shocks)))
 gap = 12
-for i in range(Mpath):
+for i in range(Mpath): # Mpath
     if np.mod(i, 10) == 0:
         j = int(i / 10)
         spell_mat[j] = np.load(folder_address + str(i) + "reentry_time.npy")
@@ -817,7 +817,7 @@ Nrow = len(table1_var)
 table1_mat = np.zeros((Nrow, n_files, Nsce, 2))
 for i, var in enumerate(table1_var):
     for j in range(n_files):
-        table1_mat[i, j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")[var], axis=0)
+        table1_mat[i, j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var], axis=0) # np.average(np.load(folder_address + str(j) + "simulation_new.npz")[var], axis=0)
 table1_mat_ave = np.average(table1_mat, axis=1)
 # Panel 1.1: mean vola of asset pricing values
 table_output = np.zeros((Nrow, Ncolumn))
@@ -841,7 +841,7 @@ print(tab.tabulate(table_output, headers=header, showindex=show_index, floatfmt=
 Nrow = 3
 table12_mat = np.zeros((n_files, Nsce, Nrow))
 for j in range(n_files):
-    table12_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['cov_mat'], axis=0)[:, :3]
+    table12_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['cov_mat'], axis=0)[:, :3]
 table12_mat_ave = np.average(table12_mat, axis=0)
 # file = file_list_mean_vola[11]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -865,7 +865,7 @@ Ncolumn = 2
 table21_mat = np.zeros((Nrow, n_files, Ncolumn))
 for i, var in enumerate(table21_var):
     for j in range(n_files):
-        table21_mat[i, j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")[var], axis=0)
+        table21_mat[i, j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")[var], axis=0)
 table21_mat_ave = np.average(table21_mat, axis=1)
 # file = file_list_mean_vola[9]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -877,7 +877,7 @@ print(tab.tabulate(table21_mat_ave, headers=header,
 Nrow = 2
 table22_mat = np.zeros((n_files, Nsce, Nrow))
 for j in range(n_files):
-    table22_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['cov_mat'], axis=0)[:, 3:]
+    table22_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['cov_mat'], axis=0)[:, 3:]
 table22_mat_ave = np.average(table22_mat, axis=0)
 # file = file_list_mean_vola[11]
 # var_average = np.average(results_mean_vola[file], axis=0)  # shape (n_scenarios, 2)
@@ -895,7 +895,7 @@ print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt=
 # Panel 3: participation rate, entry and exit on asset returns
 table3_mat = np.zeros((n_files, Nsce - 1, 3, 3))
 for j in range(n_files):
-    table3_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['reg1'], axis=0)
+    table3_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['reg1'], axis=0)
 table3_mat_ave = np.average(table3_mat, axis=0)
 table_output = np.zeros((3, 6))
 table_output[:, :3] = table3_mat_ave[0]
@@ -919,13 +919,13 @@ show_index = [
 print(tab.tabulate(table_output, showindex=show_index, floatfmt=".4f", tablefmt='latex_raw'))
 
 # Panel 4: future asset returns on participation rate, entry and exit
-table4_mat = np.zeros((n_files, Nsce - 1, 3, 3))
+table4_mat = np.zeros((n_files, Nsce - 1, 3, 2))
 for j in range(n_files):
-    table4_mat[j] = np.average(np.load(folder_address + str(j) + "simulation_new.npz")['reg2'], axis=0)
+    table4_mat[j] = np.average(np.load(folder_address + str(j) + str(0.5) + "simulation_new.npz")['reg2'], axis=0)
 table4_mat_ave = np.average(table4_mat, axis=0)
 table_output = np.zeros((3, 6))
-table_output[:, :3] = table4_mat_ave[0]
-table_output[:, 3:] = table4_mat_ave[1]
+table_output[:, :3] = np.pad(table4_mat_ave[0], ((0, 0), (0, 1)), mode='constant') # table_output[:, :3] = table4_mat_ave[0]
+table_output[:, 3:] = np.pad(table4_mat_ave[1], ((0, 0), (0, 1)), mode='constant') # table_output[:, 3:] = table4_mat_ave[1]
 header = np.tile([
     r'$R^S_{t-1, t}$',
     r'$R^S_{t-2, t}$',
@@ -974,7 +974,7 @@ reg_table3 = np.average(results_df2['parti_return_reg'], axis=0)
 
 
 # # regression 2: participation rate predicts future returns
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/reg_results2/'
+folder_address = 'reg_results2/'
 reg_results1 = np.empty((25, 1, 2, 2, 2, 3, 3))
 # reg_results2 = np.empty((100, 1, 1, 3, 3))
 for i in range(25):
