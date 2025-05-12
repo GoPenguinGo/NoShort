@@ -41,7 +41,7 @@ black main.py
 6. **simulation.py** defines functions that bundle 4 and 5 in one function (SI, mean_vola, SI_mix, mean_vola_mix);
 7. **main_multiprocessing.py** runs a large number of simulation and store data for figures 4, 8-10;
 8. **tab3_multiprocessing.py** runs a large number of rounds of simulation and store data for table3;
-9. **main.py** is the main file that:
+9. **main (edited).py** is the main file that:
    1. generates data for figures based on single paths;
-   2. generate graphs based on data from **main_multiprocessing.py**
-   3. generate tables based on data from **tab3_multiprocessing.py**
+   2. generate graphs based on data from **main_multiprocessing.py** 
+   3. generate tables based on data from **tab3_multiprocessing.py** (Note: Update with current logic required)
