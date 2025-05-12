@@ -9,6 +9,125 @@ from src.solver import (
 )
 
 
+def initialize_simulation_arrays(
+    Nt: int,
+    Ntype: int,
+    Nc: int,
+    dt: float,
+    need_f: str,
+    need_Delta: str,
+    need_pi: str,
+    use_constraints: bool = False,
+    Nconstraint: int = 1,
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
+    """
+    Initialize the main simulation arrays.
+
+    Args:
+        Nt (int): Number of time steps.
+        Ntype (int): Number of agent types.
+        Nc (int): Number of cohorts.
+        dt (float): Time step size.
+        need_f (str): If "True", initializes the consumption share matrix.
+        need_Delta (str): If "True", initializes the belief bias matrix.
+        need_pi (str): If "True", initializes the portfolio matrix.
+        use_constraints (bool): If True, enables constraint handling.
+        Nconstraint (int): Number of constraint types (only relevant if use_constraints=True).
+
+    Returns:
+        Tuple of initialized arrays.
+    """
+    # Shared arrays
+    # Equilibrium terms: (see Section 2.3, Eq. (12)–(14))
+    dR = np.zeros(Nt)
+    r = np.zeros(Nt)
+    theta = np.zeros(Nt)
+    mu_S = np.zeros(Nt)
+    sigma_S = np.zeros(Nt)
+    beta = np.zeros(Nt)
+    Phi_bar_parti = np.ones(Nt, dtype=np.float16)
+    Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
+    parti = np.ones(Nt, dtype=np.float16)
+    parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
+    parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
+    entry_mat = np.zeros((Nt, 3), dtype=np.float16)
+    exit_mat = np.zeros((Nt, 3), dtype=np.float16)
+
+    # Constraint handling
+    if use_constraints:
+        invest_mat = np.zeros((36, Nconstraint, Nc), dtype=np.int8)
+        if need_f == "True":
+            f_c = np.zeros((Nt, Ntype, Nconstraint, Nc), dtype=np.float16)
+        else:
+            f_c = 0
+
+        if need_Delta == "True":
+            Delta = np.zeros((Nt, Nconstraint, Nc), dtype=np.float16)
+        else:
+            Delta = 0
+
+        if need_pi == "True":
+            pi = np.zeros((Nt, Nconstraint, Nc), dtype=np.float16)
+        else:
+            pi = 0
+    else:
+        invest_mat = np.zeros((36, Nc), dtype=np.int8)
+        if need_f == "True":
+            f_c = np.zeros((Nt, Ntype, Nc), dtype=np.float16)
+        else:
+            f_c = 0
+
+        if need_Delta == "True":
+            Delta = np.zeros((Nt, Nc), dtype=np.float16)
+        else:
+            Delta = 0
+
+        if need_pi == "True":
+            pi = np.zeros((Nt, Nc), dtype=np.float16)
+        else:
+            pi = 0
+
+    return (
+        dR,
+        r,
+        theta,
+        mu_S,
+        sigma_S,
+        beta,
+        Phi_bar_parti,
+        Phi_tilde_parti,
+        parti,
+        parti_age_group,
+        parti_wealth_group,
+        entry_mat,
+        exit_mat,
+        invest_mat,
+        f_c,
+        Delta,
+        pi,
+    )
+
+
 def compute_regression_tables(dR, r, sample, entry_mat, exit_mat, parti):
     """
     Compute regression tables 1b and 2b used in simulate_cohorts_mean_vola and simulate_mean_vola_mix_type.
@@ -301,4 +420,3 @@ def find_market_clearing_theta_partial(
         sigma_Y,
     )
     return theta_t
-

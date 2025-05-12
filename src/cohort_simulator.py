@@ -16,8 +16,10 @@ from src.cohort_utils import (
     update_wealth_and_beliefs,
     update_Delta_s_t,
     find_market_clearing_theta_complete,
-    find_market_clearing_theta_partial
+    find_market_clearing_theta_partial,
+    initialize_simulation_arrays,
 )
+
 
 def simulate_cohorts_SI(
     biasvec: np.ndarray,
@@ -136,47 +138,48 @@ def simulate_cohorts_SI(
         parti_wealth_group: participation rate in wealth groups, shape(Nt, 4)
 
     """
+
     # Initializing variables
-    if need_f == "True":
-        f_c = np.zeros(
-            (Nt, Ntype, Nc), dtype=np.float16
-        )  # evolution of cohort consumption share
-    else:
-        f_c = f_w = w_indiv_mat = 0
+    (
+        dR,
+        r,
+        theta,
+        mu_S,
+        sigma_S,
+        beta,
+        Phi_bar_parti,
+        Phi_tilde_parti,
+        parti,
+        parti_age_group,
+        parti_wealth_group,
+        entry_mat,
+        exit_mat,
+        invest_mat,
+        f_c,
+        Delta,
+        pi,
+    ) = initialize_simulation_arrays(
+        Nt=Nt,
+        Ntype=Ntype,
+        Nc=Nc,
+        dt=dt,
+        need_f=need_f,
+        need_Delta=need_Delta,
+        need_pi=need_pi,
+        use_constraints=False,  # No constraints in SI function
+    )
 
-    if need_Delta == "True":
-        Delta = np.zeros((Nt, Nc), dtype=np.float16)  # stores bias in beliefs
-    else:
-        Delta = 0
-
-    if need_pi == "True":
-        pi = np.zeros((Nt, Nc), dtype=np.float16)  # portfolio choices
-    else:
-        pi = 0
-
-    Phi_bar_parti = np.ones(Nt, dtype=np.float16)
-    Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
-    invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
-    #invest_mat = np.ones((Nt, Nc), dtype=np.int8) # Need this to run main_multiprocessing.py
-    parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
-    parti_age_group = np.ones((Nt, 4), dtype=np.float16)
+    # invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
+    # invest_mat = np.ones((Nt, Nc), dtype=np.int8) # Need this to run main_multiprocessing.py
 
     # equilibrium terms: (see Section 2.3, Eq. (12)–(14))
-    dR = np.zeros(Nt)  # stores stock returns
-    r = np.zeros(Nt)  # interest rate
-    theta = np.zeros(Nt)  # market price of risk
-    mu_S = np.zeros(Nt)
-    sigma_S = np.zeros(Nt)
-    beta = np.zeros(Nt)
+
     Delta_bar_parti = np.zeros(
         Nt, dtype=np.float16
     )  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros(
         Nt, dtype=np.float16
     )  # wealth weighted estimation error of the stock market participants
-    parti = np.ones(Nt, dtype=np.float16)  # participation rate
-    entry_mat = np.zeros((Nt, 3), dtype=np.float16)
-    exit_mat = np.zeros((Nt, 3), dtype=np.float16)
 
     # Technical constants for belief updating (related to Eq. (6), (9))
     a_phi = 1 - phi**2
@@ -578,6 +581,36 @@ def simulate_cohorts_mix_type(
         parti_wealth_group: participation rate in wealth groups, shape(Nt, 4)
 
     """
+    (
+        dR,
+        r,
+        theta,
+        mu_S,
+        sigma_S,
+        beta,
+        Phi_bar_parti,
+        Phi_tilde_parti,
+        parti,
+        parti_age_group,
+        parti_wealth_group,
+        entry_mat,
+        exit_mat,
+        invest_mat,
+        f_c,
+        Delta,
+        pi,
+    ) = initialize_simulation_arrays(
+        Nt=Nt,
+        Ntype=Ntype,
+        Nc=Nc,
+        dt=dt,
+        need_f=need_f,
+        need_Delta=need_Delta,
+        need_pi=need_pi,
+        use_constraints=True,  # Enable constraints for the mix type function
+        Nconstraint=Nconstraint,
+    )
+
     # Initializing variables
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones(
         (Ntype, Nconstraint, 1), dtype=np.int8
@@ -587,32 +620,18 @@ def simulate_cohorts_mix_type(
     )
     # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
-    Phi_bar_parti = np.ones(
-        Nt, dtype=np.float16
-    )  # consumption share of the stock market participants
-    Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
-
     popu_short = np.zeros(Nt, dtype=np.float16)
     Phi_can_short = np.zeros(Nt, dtype=np.float16)
 
     # equilibrium terms:
-    dR = np.zeros(Nt)  # stores stock returns
-    r = np.zeros(Nt)  # interest rate
-    theta = np.zeros(Nt)  # market price of risk
-    mu_S = np.zeros(Nt)
-    sigma_S = np.zeros(Nt)
-    beta = np.zeros(Nt)
+
     Delta_bar_parti = np.zeros(
         Nt, dtype=np.float16
     )  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros(
         Nt, dtype=np.float16
     )  # wealth weighted estimation error of the stock market participants
-    parti = np.ones(Nt, dtype=np.float16)  # participation rate
-    entry_mat = np.ones((Nt, 3), dtype=np.float16)
-    exit_mat = np.ones((Nt, 3), dtype=np.float16)
-    parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
-    parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
+
     dR_t = 0
     a_phi = 1 - phi**2
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -1303,52 +1322,104 @@ def simulate_cohorts_mean_vola(
         if need_invest_matrix == "True":
             window_bell = 20
             sample_bell = np.arange(0, np.shape(invest_matrix)[0], window_bell)
-            reentry_time = np.zeros((len(sample_bell) - 1, Nt - int(window_bell / dt) - 12), dtype=int)
-            exit_time = np.zeros((len(sample_bell) - 1, Nt - int(window_bell / dt)), dtype=int)
-            for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
-                following_cohorts_entry = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] > 0)[
-                                    int(window_bell / dt):]
-                following_cohorts_entry = np.append(following_cohorts_entry, invest_matrix[entry_n, -12:])
+            reentry_time = np.zeros(
+                (len(sample_bell) - 1, Nt - int(window_bell / dt) - 12), dtype=int
+            )
+            exit_time = np.zeros(
+                (len(sample_bell) - 1, Nt - int(window_bell / dt)), dtype=int
+            )
+            for n, entry_n in enumerate(
+                sample_bell[1:]
+            ):  # 20 year non-overlapping windows
+                following_cohorts_entry = (
+                    invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] > 0
+                )[int(window_bell / dt) :]
+                following_cohorts_entry = np.append(
+                    following_cohorts_entry, invest_matrix[entry_n, -12:]
+                )
                 parti_bell_entry = np.zeros((window_bell, Nt - int(window_bell / dt)))
                 parti_bell_entry[0] = following_cohorts_entry
-                exit_bell = np.zeros((Nt - int(window_bell / dt)))  # following the entering cohorts until they exit the first time
+                exit_bell = np.zeros(
+                    (Nt - int(window_bell / dt))
+                )  # following the entering cohorts until they exit the first time
 
-                following_cohorts_exit = (invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] < 0)[
-                                         int(window_bell / dt):]  # ignoring the cohorts born during the "year"
-                parti_bell_exit = np.zeros((window_bell, Nt - int(window_bell / dt) - 12))
+                following_cohorts_exit = (
+                    invest_matrix[entry_n, :-12] - invest_matrix[entry_n - 1, 12:] < 0
+                )[
+                    int(window_bell / dt) :
+                ]  # ignoring the cohorts born during the "year"
+                parti_bell_exit = np.zeros(
+                    (window_bell, Nt - int(window_bell / dt) - 12)
+                )
                 parti_bell_exit[0] = following_cohorts_exit
                 reentry_bell = np.zeros((Nt - int(window_bell / dt) - 12))
 
                 for nn in range(1, window_bell):
-                    cohorts_in = invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
+                    cohorts_in = invest_matrix[
+                        entry_n + nn, int((window_bell - nn) / dt) : int(-nn / dt)
+                    ]
                     cohorts_out = (1 - cohorts_in)[:-12]
 
                     exit_nn = (
-                            invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
-                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] < 0
-                    ) if nn != 1 else (
-                            invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] < 0
+                        (
+                            invest_matrix[
+                                entry_n + nn,
+                                int((window_bell - nn) / dt) : int(-nn / dt),
+                            ]
+                            - invest_matrix[
+                                entry_n + nn - 1,
+                                int((window_bell - nn + 1) / dt) : int((-nn + 1) / dt),
+                            ]
+                            < 0
+                        )
+                        if nn != 1
+                        else (
+                            invest_matrix[
+                                entry_n + nn,
+                                int(window_bell / dt - nn / dt) : int(-nn / dt),
+                            ]
+                            - invest_matrix[
+                                entry_n + nn - 1, int((window_bell - nn + 1) / dt) :
+                            ]
+                            < 0
+                        )
                     )
 
                     reentry_nn = (
-                            invest_matrix[entry_n + nn, int((window_bell - nn) / dt):int(-nn / dt)]
-                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] > 0
-                    ) if nn != 1 else (
-                            invest_matrix[entry_n + nn, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                            - invest_matrix[entry_n + nn - 1, int((window_bell - nn + 1) / dt):] > 0
+                        (
+                            invest_matrix[
+                                entry_n + nn,
+                                int((window_bell - nn) / dt) : int(-nn / dt),
+                            ]
+                            - invest_matrix[
+                                entry_n + nn - 1,
+                                int((window_bell - nn + 1) / dt) : int((-nn + 1) / dt),
+                            ]
+                            > 0
+                        )
+                        if nn != 1
+                        else (
+                            invest_matrix[
+                                entry_n + nn,
+                                int(window_bell / dt - nn / dt) : int(-nn / dt),
+                            ]
+                            - invest_matrix[
+                                entry_n + nn - 1, int((window_bell - nn + 1) / dt) :
+                            ]
+                            > 0
+                        )
                     )
                     exit_bell = exit_bell + exit_nn > 0
                     reentry_bell = reentry_bell + reentry_nn[:-12] > 0
-                    parti_bell_entry[nn] = cohorts_in * following_cohorts_entry * (1 - exit_bell)
-                    parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+                    parti_bell_entry[nn] = (
+                        cohorts_in * following_cohorts_entry * (1 - exit_bell)
+                    )
+                    parti_bell_exit[nn] = (
+                        cohorts_out * following_cohorts_exit * (1 - reentry_bell)
+                    )
 
-                reentry_time[n] = list(
-                    map(int, np.sum(parti_bell_exit, axis=0))
-                )
-                exit_time[n] = list(
-                    map(int, np.sum(parti_bell_entry, axis=0))
-                )
+                reentry_time[n] = list(map(int, np.sum(parti_bell_exit, axis=0)))
+                exit_time[n] = list(map(int, np.sum(parti_bell_entry, axis=0)))
     return (
         theta_ave,
         r_ave,
