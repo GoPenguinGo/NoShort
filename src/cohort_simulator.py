@@ -643,28 +643,6 @@ def simulate_cohorts_mix_type(
 
     cohort_type_size_parti = np.sum(cohort_type_size, axis=0)
 
-    if need_f == "True":
-        f_c = np.zeros(
-            (Nt, Ntype, Nconstraint, Nc), dtype=np.float16
-        )  # evolution of cohort consumption share
-        # f_w = np.zeros((Nt, Ntype, Nc))  # evolution of cohort wealth share
-        # w_indiv_mat = np.zeros((Nt, Ntype, Nc))
-    else:
-        f_c = f_w = w_indiv_mat = 0
-
-    if need_Delta == "True":
-        Delta = np.zeros(
-            (Nt, Nconstraint, Nc), dtype=np.float16
-        )  # stores bias in beliefs
-    else:
-        Delta = 0
-
-    if need_pi == "True":
-        pi = np.zeros((Nt, Nconstraint, Nc), dtype=np.float16)  # portfolio choices
-    else:
-        pi = 0
-    invest_mat = np.zeros((36, Nconstraint, Nc), dtype=np.int8)
-
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
         dZ_SI_t = dZ_SI[i]
