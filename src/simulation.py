@@ -471,6 +471,7 @@ def simulate_mix_types(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """
     Bundles the build_cohorts_mix_type function and the simulate_cohorts_mix_type function together
@@ -527,6 +528,7 @@ def simulate_mix_types(
         beta (np.ndarray): aggregate consumption wealth ratio, shape(Nt)
         invest_mat (np.ndarray): whether a cohort is in the stock market, shape(Nt, Nc)
         parti_age_group: participation rate in age groups, shape(Nt, 4)
+        portf_age_group: risky share in age groups, shape(Nt, 4)
         parti_wealth_group: participation rate in wealth groups, shape(Nt, 4)
     """
 
@@ -578,6 +580,7 @@ def simulate_mix_types(
         beta,
         invest_tracker,
         parti_age_group,
+        fortf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat
@@ -635,6 +638,7 @@ def simulate_mix_types(
         beta,
         invest_tracker,
         parti_age_group,
+        fortf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat

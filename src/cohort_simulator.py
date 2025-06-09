@@ -1,5 +1,9 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Any
+
+from numpy import ndarray, dtype, floating, generic
+from numpy._typing import _64Bit, _16Bit
+
 from src.param_mix import cohort_type_size_mix, alpha_i_mix
 from src.stats import post_var, dDelta_st_calculator
 from src.solver import (
@@ -151,6 +155,7 @@ def simulate_cohorts_SI(
         Phi_tilde_parti,
         parti,
         parti_age_group,
+        portf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat,
@@ -496,27 +501,14 @@ def simulate_cohorts_mix_type(
     need_f: str,
     need_Delta: str,
     need_pi: str,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+) -> tuple[
+    ndarray[Any, dtype[floating[_64Bit]]],
+    ndarray[Any, dtype[floating[_64Bit]]],
+    Any, Any, Any, Any, Any, Any,
+    ndarray[Any, dtype[floating[_64Bit]]] |ndarray[Any,dtype[Any]],
+    ndarray[Any, dtype[floating[_64Bit]]] |ndarray[Any,dtype[Any]],
+    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
+    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[generic | Any]] | Any, Any, Any, Any, Any, Any]:
     """Simulate the economy forward
         a mixture of 4 different types of agents in each cohort:
         unconstrained (designated participants);
@@ -592,6 +584,7 @@ def simulate_cohorts_mix_type(
         Phi_tilde_parti,
         parti,
         parti_age_group,
+        portf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat,
@@ -823,6 +816,12 @@ def simulate_cohorts_mix_type(
                 invest_tracker[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
                 weights=cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
             )
+
+            portf_age_group[i, j] = np.ma.average(
+                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+                weights=invest_tracker[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+            )
+
             within_group = np.where(
                 (w_indiv_ist >= wealth_cutoffs[j])
                 * (w_indiv_ist < wealth_cutoffs[j + 1])
@@ -848,6 +847,7 @@ def simulate_cohorts_mix_type(
         beta,
         invest_mat,
         parti_age_group,
+        portf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat,

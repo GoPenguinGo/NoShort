@@ -1,6 +1,10 @@
 import numpy as np
 import statsmodels.api as sm
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Any
+
+from numpy import ndarray, dtype, floating, signedinteger
+from numpy._typing import _64Bit, _16Bit, _8Bit
+
 from src.solver import (
     bisection,
     solve_theta,
@@ -19,27 +23,17 @@ def initialize_simulation_arrays(
     need_pi: str,
     use_constraints: bool = False,
     Nconstraint: int = 1,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+) -> tuple[
+    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
+    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
+    ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
+        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
+        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
+        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
+        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
+        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
+        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]] | int, ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
+        Any, dtype[Any]] | int, ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]] | int]:
     """
     Initialize the main simulation arrays.
 
@@ -69,6 +63,7 @@ def initialize_simulation_arrays(
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
     parti = np.ones(Nt, dtype=np.float16)
     parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
+    portf_age_group = np.zeros((Nt, 4), dtype=np.float16)
     parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
     entry_mat = np.zeros((Nt, 3), dtype=np.float16)
     exit_mat = np.zeros((Nt, 3), dtype=np.float16)
@@ -118,6 +113,7 @@ def initialize_simulation_arrays(
         Phi_tilde_parti,
         parti,
         parti_age_group,
+        portf_age_group,
         parti_wealth_group,
         entry_mat,
         exit_mat,

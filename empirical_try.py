@@ -114,6 +114,7 @@ def simulate_path(
                                 beta,
                                 invest_tracker,
                                 parti_age_group,
+                                portf_age_group,
                                 parti_wealth_group,
                                 entry_mat,
                                 exit_mat
@@ -144,6 +145,8 @@ def simulate_path(
                                 parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
                                 parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, 3].astype(np.float32)
                                 parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                                parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, 3].astype(np.float32)
+                                parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
 
                                 parti_dividend = np.zeros(Nt_data).astype(np.float32)
                                 for t in range(Nt_data):
