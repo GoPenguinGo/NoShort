@@ -76,7 +76,7 @@ def simulate_path(
             for nu in nu_set:
                 for tax in tax_set:
                     for phi in phi_set:
-                        for density_types in density_types_set:
+                        for density_n, density_types in enumerate(density_types_set):
                             Npre = int(T_hat / dt)
                             Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 
@@ -95,7 +95,7 @@ def simulate_path(
                             need_Delta_country = 'True' if country == 'US' else 'False'
                             need_pi_country = 'True' if country == 'US' else 'False'
 
-                            col_name = str(T_hat) + '_' + str(int(phi * 10))
+                            col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}'
 
                             (
                                 r,
@@ -178,7 +178,7 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=14) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []

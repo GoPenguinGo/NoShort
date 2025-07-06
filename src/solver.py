@@ -1,9 +1,9 @@
 import numpy as np
 from typing import Callable
-from numba import njit
+# from numba import njit
 
 
-@njit
+# @njit
 def bisection(
     optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
     xlow: np.float64,
@@ -50,7 +50,7 @@ def bisection(
     return xmid
 
 
-@njit
+# @njit
 def solve_theta(
     theta_guess: np.float64,
     consumption_share: np.ndarray,
@@ -87,7 +87,7 @@ def solve_theta(
     return diff
 
 
-@njit
+# @njit
 def find_the_rich(
     indiv_w: np.ndarray, cohort_size: np.ndarray, top: float = 0.05
 ) -> np.float64:
@@ -107,7 +107,7 @@ def find_the_rich(
     return wealth_cutoff
 
 
-@njit
+# @njit
 def find_the_rich_mix(
     indiv_w: np.ndarray, cohort_type_size: np.ndarray, top: np.ndarray
 ) -> np.float64:
@@ -129,7 +129,7 @@ def find_the_rich_mix(
     return wealth_cutoff
 
 
-@njit
+# @njit
 def solve_theta_partial_constraint(
     theta_guess: float,
     unconstrained: np.ndarray,
@@ -162,7 +162,7 @@ def solve_theta_partial_constraint(
     return diff
 
 
-@njit
+# @njit
 def solve_theta_partial_constraint_2(
     theta_guess: float,
     unconstrained: np.ndarray,
@@ -200,7 +200,7 @@ def solve_theta_partial_constraint_2(
     return diff
 
 
-@njit
+# @njit
 def bisection_partial_constraint(
     optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float], float],
     xlow: float,

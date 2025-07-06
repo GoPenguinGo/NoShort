@@ -3,7 +3,7 @@ import statsmodels.api as sm
 from typing import Tuple, Dict, Any
 
 from numpy import ndarray, dtype, floating, signedinteger
-from numpy._typing import _64Bit, _16Bit, _8Bit
+# from numpy._typing import _64Bit, _16Bit, _8Bit
 
 from src.solver import (
     bisection,
@@ -23,17 +23,26 @@ def initialize_simulation_arrays(
     need_pi: str,
     use_constraints: bool = False,
     Nconstraint: int = 1,
-) -> tuple[
-    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
-    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
-    ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
-        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
-        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
-        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
-        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
-        Any, dtype[Any]], ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]], ndarray[
-        Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]] | int, ndarray[Any, dtype[floating[_64Bit]]] | ndarray[
-        Any, dtype[Any]] | int, ndarray[Any, dtype[floating[_64Bit]]] | ndarray[Any, dtype[Any]] | int]:
+) -> Tuple[
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        ]:
     """
     Initialize the main simulation arrays.
 

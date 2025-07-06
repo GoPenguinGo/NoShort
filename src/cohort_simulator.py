@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple, Any
 
 from numpy import ndarray, dtype, floating, generic
-from numpy._typing import _64Bit, _16Bit
+# from numpy._typing import _64Bit, _16Bit
 
 from src.param_mix import cohort_type_size_mix, alpha_i_mix
 from src.stats import post_var, dDelta_st_calculator
@@ -501,14 +501,29 @@ def simulate_cohorts_mix_type(
     need_f: str,
     need_Delta: str,
     need_pi: str,
-) -> tuple[
-    ndarray[Any, dtype[floating[_64Bit]]],
-    ndarray[Any, dtype[floating[_64Bit]]],
-    Any, Any, Any, Any, Any, Any,
-    ndarray[Any, dtype[floating[_64Bit]]] |ndarray[Any,dtype[Any]],
-    ndarray[Any, dtype[floating[_64Bit]]] |ndarray[Any,dtype[Any]],
-    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[floating[_64Bit]]],
-    ndarray[Any, dtype[floating[_64Bit]]], ndarray[Any, dtype[generic | Any]] | Any, Any, Any, Any, Any, Any]:
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray
+    ]:
+
     """Simulate the economy forward
         a mixture of 4 different types of agents in each cohort:
         unconstrained (designated participants);
