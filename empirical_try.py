@@ -36,7 +36,6 @@ T_hat_set = [
 ]
 rho_i_set = [
     np.array([[0.001], [0.005]]),
-
 ]
 nu_set = [
     0.02,
@@ -44,9 +43,13 @@ nu_set = [
 tax_set = [
     0.35,
 ]
-phi_set = [0.0, 0.5]
+phi_set = [
+    0.0, 
+    0.3,
+    0.6
+    ]
 
-Mpath = 50
+Mpath = 30
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
 
@@ -89,8 +92,7 @@ def simulate_path(
 
                             rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
                             beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(- (rho_i_mix + nu) * tau)  # shape(2, 6000)
 
                             need_Delta_country = 'True' if country == 'US' else 'False'
                             need_pi_country = 'True' if country == 'US' else 'False'
@@ -130,7 +132,7 @@ def simulate_path(
                                                need_Delta=need_Delta_country,
                                                need_pi=need_pi_country,
                                                )
-
+                            parti_df['beta' + col_name] = beta[-Nt_data:].astype(np.float32)
                             parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
                             if country == 'US':
                                 age_belief = np.zeros((4, Nt_data))
@@ -160,7 +162,7 @@ def simulate_path(
                             if country == 'Finland' or country == 'Norway' or country == 'US':
                                 parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                                 parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                            parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + '.dta')
+                            parti_df.to_stata('stata_dataset_inattention/' + country + '/' + str(i) + '.dta')
 
     return (
         i,
@@ -178,7 +180,7 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=30) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []

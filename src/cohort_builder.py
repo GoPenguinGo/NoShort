@@ -423,43 +423,43 @@ def build_cohorts_mix_type(
         # Belief updating with participation type:
         # Use eq (9) for nonparticipants and P-type learning for participants
         if i < Ninit:
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P")
+            V_st = post_var(sigma_Y_sq, Vhat_vector, tau_info)
             dDelta_s_t = dDelta_st_calculator(
                 sigma_Y_sq,
-                a_phi_1,
-                phi_sqr_a_phi,
+                phi,
+                # phi_sqr_a_phi,
                 dt,
-                V_st_P,
+                V_st,
                 Delta_s_t,
                 dZ_build_t,
-                dZ_SI_build_t,
+                # dZ_SI_build_t,
                 "P",
             )
         else:
-            V_st_N = post_var(
-                sigma_Y_sq, Vhat_vector, tau_info, a_phi, "N"
+            V_st = post_var(
+                sigma_Y_sq, Vhat_vector, tau_info
             )  # from eq(6)
             dDelta_s_t_N = dDelta_st_calculator(
                 sigma_Y_sq,
-                a_phi_1,
-                phi_sqr_a_phi,
+                phi,
+                # phi_sqr_a_phi,
                 dt,
-                V_st_N,
+                V_st,
                 Delta_s_t,
                 dZ_build_t,
-                dZ_SI_build_t,
+                # dZ_SI_build_t,
                 "N",
             )  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, "P")
+            # V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info)
             dDelta_s_t_P = dDelta_st_calculator(
                 sigma_Y_sq,
-                a_phi_1,
-                phi_sqr_a_phi,
+                phi,
+                # phi_sqr_a_phi,
                 dt,
-                V_st_P,
+                V_st,
                 Delta_s_t,
                 dZ_build_t,
-                dZ_SI_build_t,
+                # dZ_SI_build_t,
                 "P",
             )
             dDelta_s_t = (
@@ -476,7 +476,7 @@ def build_cohorts_mix_type(
                 Delta_s_t, np.zeros((Ntype, Nconstraint, 1)), axis=2
             )  # newborns begin with 0 bias when there are not enough observations
         else:
-            init_bias = np.average(dZ_build[int(i - Npre) : i]) / dt
+            init_bias = np.average(dZ_build[int(i - Npre): i]) / dt
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
                 Delta_s_t, init_bias * np.zeros((Ntype, Nconstraint, 1)), axis=2
@@ -526,13 +526,13 @@ def build_cohorts_mix_type(
             d_eta_st = a * invest_tracker - theta_t
 
             # tau_info and V_hat has to change for the agents who switch
-            Vhat_vector = (
-                np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2)
-                * switch_P_to_N
-                + np.append(V_st_N, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2)
-                * switch_N_to_P
-                + Vhat_vector * (1 - switch)
-            )  # reset V'
+            # Vhat_vector = (
+            #     np.append(V_st, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2)
+            #     * switch_P_to_N
+            #     + np.append(V_st, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2)
+            #     * switch_N_to_P
+            #     + Vhat_vector * (1 - switch)
+            # )  # reset V'
             tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
     return (
