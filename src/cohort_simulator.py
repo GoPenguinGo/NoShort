@@ -1016,8 +1016,9 @@ def simulate_cohorts_mix_type(
     parti = np.ones(Nt, dtype=np.float16)  # participation rate
     entry_mat = np.ones((Nt, 3), dtype=np.float16)
     exit_mat = np.ones((Nt, 3), dtype=np.float16)
-    parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
+    # parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
     parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
+    portf_age_group = np.zeros((Nt, 4), dtype=np.float16)
     dR_t = 0
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -1025,7 +1026,7 @@ def simulate_cohorts_mix_type(
     sigma_Y_sq = sigma_Y ** 2
 
     append_init = np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
-    wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
+    # wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     cohort_type_size_parti = np.sum(cohort_type_size, axis=0)
 
@@ -1197,11 +1198,16 @@ def simulate_cohorts_mix_type(
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4, -1)), axis=0))
 
         for j in range(4):
-            parti_age_group[i, j] = np.ma.average(invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
-                                                  weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
-            within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
-            parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
-                                                     weights=cohort_type_size[within_group])
+            parti_age_group[i, j] = np.ma.average(
+                invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
+                weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
+            portf_age_group[i, j] = np.ma.average(
+                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+                weights=invest_tracker[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+            )
+            # within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
+            # parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
+            #                                          weights=cohort_type_size[within_group])
 
     return (
         r,
@@ -1220,7 +1226,7 @@ def simulate_cohorts_mix_type(
         beta,
         invest_mat,
         parti_age_group,
-        parti_wealth_group,
+        portf_age_group,
         entry_mat,
         exit_mat
     )

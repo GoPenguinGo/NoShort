@@ -1,9 +1,8 @@
 import numpy as np
-from numba import jit
+# from numba import jit
 from typing import Tuple, Callable
 
 
-@jit(nopython=True)
 def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(6)
 
@@ -67,7 +66,7 @@ def dDelta_st_calculator(sigma_Y_sq: float,
     return dDelta_s_t.astype(np.float32)
 
 
-@jit(nopython=True)
+
 def shocks(
         dZt: np.ndarray,
         mu_Y: float,
@@ -96,7 +95,6 @@ Returns:
     return Yt
 
 
-@jit(nopython=True)
 def tau_calculator(
         dt: float,
         T_cohort: int
