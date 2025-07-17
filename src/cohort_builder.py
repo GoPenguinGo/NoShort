@@ -323,19 +323,29 @@ def build_cohorts_mix_type(
         # f_w_ist = f_c_ist / beta_i * beta_t
 
         # update beliefs
+        # if i < Ninit:
+        #     V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
+        #     dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
+        # else:
+        #     V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
+        #     dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'N')  # from eq(9)
+        #     V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
+        #     dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
+        #     dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+
         if i < Ninit:
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector)
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
         else:
-            V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
-            dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'N')  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
+            V_st_N = post_var(sigma_Y_sq, Vhat_vector)  # from eq(6)
+            dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_N, Delta_s_t, dZ_build_t, 'N')  # from eq(9)
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector)
+            dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         # add a new cohort to Vhat_vector and tau_info
         Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
-        tau_info = np.append(tau_info, np.zeros((Ntype, Nconstraint, 1)), axis=2) + dt
+        # tau_info = np.append(tau_info, np.zeros((Ntype, Nconstraint, 1)), axis=2) + dt
 
         if i < Npre:
             Delta_s_t += dDelta_s_t
@@ -379,7 +389,7 @@ def build_cohorts_mix_type(
             Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
                           np.append(V_st_N, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_N_to_P + \
                           Vhat_vector * (1 - switch)  # reset V'
-            tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
+            # tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
     return (
         Delta_s_t,

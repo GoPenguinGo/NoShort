@@ -14,9 +14,9 @@ from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
-    'US',
-    'Finland',
-    'Germany',
+    # 'US',
+    # 'Finland',
+    # 'Germany',
     'Norway'
 ]
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
@@ -39,7 +39,7 @@ rho_i = np.array([[0.001], [0.005]])
 nu = 0.02
 tax = 0.35
 
-phi_set = [0.0, 0.5]
+phi_set = [0.0, 0.4, 0.8]
 
 Mpath = 30
 np.seterr(invalid='ignore')
@@ -123,6 +123,7 @@ def simulate_path(
                                        )
 
                 parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                parti_df['beta' + col_name] = beta[-Nt_data:].astype(np.float32)
                 if country == 'US':
                     age_belief = np.zeros((4, Nt_data))
                     for n in range(len(age_cutoffs_SCF) - 1):
@@ -152,7 +153,7 @@ def simulate_path(
                 if country == 'Finland' or country == 'Norway':
                     parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                     parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                parti_df.to_stata('stata_dataset/' + country + '/' + str(i) + '.dta')
+                parti_df.to_stata('stata_dataset_inattention/' + country + '/' + str(i) + '.dta')
 
     return (
         i,

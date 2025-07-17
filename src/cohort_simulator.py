@@ -901,7 +901,7 @@ def simulate_cohorts_mix_type(
         d_eta_st: np.ndarray,
         invest_tracker: np.ndarray,
         can_short_tracker: np.ndarray,
-        tau_info: np.ndarray,
+        tau: np.ndarray,
         Vhat_vector: np.ndarray,
         need_f: str,
         need_Delta: str,
@@ -1084,15 +1084,22 @@ def simulate_cohorts_mix_type(
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
 
         # update beliefs
-        V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
-        dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
-                                            'N')  # from eq(9)
-        V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-        dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
-                                            'P')
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (
-                1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
-        tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
+        # V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
+        # dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
+        #                                     'N')  # from eq(9)
+        # V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
+        # dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
+        #                                     'P')
+        # dDelta_s_t = invest_tracker * dDelta_s_t_P + (
+        #         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
+        # tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
+
+        V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau)  # from eq(6)
+        dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_N, Delta_s_t, dZ_t, 'N')  # from eq(9)
+        V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info)
+        dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_t, 'P')
+        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+
         Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
 
         if i < Npre - 1:
