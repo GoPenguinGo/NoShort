@@ -16,7 +16,7 @@ import statsmodels.api as sm
 mode_trade = "w_constraint"
 mode_learn = 'reentry'
 
-folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort'
+folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/'
 plt.rcParams["font.family"] = 'serif'
 
 
@@ -136,7 +136,7 @@ def main():
     # Create a DataFrame from the list of dictionaries
     results_df = pd.DataFrame(results_list)
     results_dict = results_df.to_dict(orient='list')
-    np.savez(folder_address +".npz", **results_dict)
+    np.savez(folder_address +"corr.npz", **results_dict)
 
 
 if __name__ == '__main__':
