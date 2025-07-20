@@ -901,7 +901,7 @@ def simulate_cohorts_mix_type(
         d_eta_st: np.ndarray,
         invest_tracker: np.ndarray,
         can_short_tracker: np.ndarray,
-        tau: np.ndarray,
+        tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
         need_f: str,
         need_Delta: str,
@@ -1094,13 +1094,13 @@ def simulate_cohorts_mix_type(
         #         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
         # tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
 
-        V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau)  # from eq(6)
+        V_st_N = post_var(sigma_Y_sq, Vhat)  # from eq(6)
         dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_N, Delta_s_t, dZ_t, 'N')  # from eq(9)
-        V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info)
+        V_st_P = post_var(sigma_Y_sq, Vhat)
         dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_t, 'P')
         dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
-        Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
+        # Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
 
         if i < Npre - 1:
             init_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / T_hat
@@ -1136,10 +1136,10 @@ def simulate_cohorts_mix_type(
         d_eta_st = a * invest_tracker - theta_t
 
         # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
-        Vhat_vector = np.append(V_st_P[:, :, 1:], Vhat * append_init, axis=2) * switch_P_to_N + \
-                      np.append(V_st_N[:, :, 1:], Vhat * append_init, axis=2) * switch_N_to_P + \
-                      Vhat_vector * (1 - switch)  # reset V'
-        tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
+        # Vhat_vector = np.append(V_st_P[:, :, 1:], Vhat * append_init, axis=2) * switch_P_to_N + \
+        #               np.append(V_st_N[:, :, 1:], Vhat * append_init, axis=2) * switch_N_to_P + \
+        #               Vhat_vector * (1 - switch)  # reset V'
+        # tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
         # entry_t = np.sum(switch_N_to_P * cohort_type_size)
         # exit_t = np.sum(switch_P_to_N * cohort_type_size)

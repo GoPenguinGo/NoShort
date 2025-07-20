@@ -334,17 +334,17 @@ def build_cohorts_mix_type(
         #     dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         if i < Ninit:
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector)
+            V_st_P = post_var(sigma_Y_sq, Vhat)[:, -i:]
             dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
         else:
-            V_st_N = post_var(sigma_Y_sq, Vhat_vector)  # from eq(6)
+            V_st_N = post_var(sigma_Y_sq, Vhat)[:, -i:]  # from eq(6)
             dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_N, Delta_s_t, dZ_build_t, 'N')  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector)
+            V_st_P = post_var(sigma_Y_sq, Vhat)[:, -i:]
             dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         # add a new cohort to Vhat_vector and tau_info
-        Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
+        # Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
         # tau_info = np.append(tau_info, np.zeros((Ntype, Nconstraint, 1)), axis=2) + dt
 
         if i < Npre:
@@ -386,9 +386,9 @@ def build_cohorts_mix_type(
             d_eta_st = a * invest_tracker - theta_t
 
             # tau_info and V_hat has to change for the agents who switch
-            Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
-                          np.append(V_st_N, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_N_to_P + \
-                          Vhat_vector * (1 - switch)  # reset V'
+            # Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
+            #               np.append(V_st_N, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_N_to_P + \
+            #               Vhat_vector * (1 - switch)  # reset V'
             # tau_info = dt * switch + tau_info * (1 - switch)  # reset t'
 
     return (
