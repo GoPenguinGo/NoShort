@@ -14,9 +14,9 @@ from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
-    'US',
-    'Finland',
-    'Germany',
+    # 'US',
+    # 'Finland',
+    # 'Germany',
     'Norway'
 ]
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
@@ -26,16 +26,26 @@ plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_types_set = [
     (0.25, 0.25, 0.25, 0.25),
-    (0.2, 0.4, 0.2, 0.2),
-    (0.2, 0.4, 0.1, 0.3),
-    (0.1, 0.4, 0.25, 0.25),
-    ]
+    (0.25, 0.25, 0.3, 0.2),
+    (0.25, 0.25, 0.2, 0.3),
+    (0.25, 0.2, 0.3, 0.25),
+    (0.25, 0.3, 0.2, 0.25),
+    (0.25, 0.2, 0.25, 0.3),
+    (0.25, 0.3, 0.25, 0.2),
+    (0.2, 0.3, 0.25, 0.25),
+    (0.3, 0.2, 0.25, 0.25),
+    (0.2, 0.25, 0.3, 0.25),
+    (0.3, 0.25, 0.2, 0.25),
+    (0.2, 0.25, 0.25, 0.3),
+    (0.3, 0.25, 0.25, 0.2),
+]
 T_hat_set = [
     2,
     5,
     10,
 ]
-rho_i = np.array([[0.001], [0.005]])
+# rho_i = np.array([[0.001], [0.005]])
+rho_i = np.array([[0.001], [0.001]])
 nu = 0.02
 tax = 0.35
 
@@ -123,6 +133,7 @@ def simulate_path(
                                        )
 
                 parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                parti_df['beta' + col_name] = beta[-Nt_data:].astype(np.float32)
                 if country == 'US':
                     age_belief = np.zeros((4, Nt_data))
                     for n in range(len(age_cutoffs_SCF) - 1):
