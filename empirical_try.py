@@ -14,34 +14,49 @@ from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
-    'US',
-    'Finland',
-    'Germany',
+    # 'US',
+    # 'Finland',
+    # 'Germany',
     'Norway'
 ]
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
-# folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_types_set = [
     (0.25, 0.25, 0.25, 0.25),
-    # (0.2, 0.4, 0.2, 0.2),
-    # (0.2, 0.4, 0.1, 0.3),
-    # (0.1, 0.4, 0.25, 0.25),
-    ]
+    (0.25, 0.25, 0.3, 0.2),
+    (0.25, 0.25, 0.2, 0.3),
+    (0.25, 0.2, 0.3, 0.25),
+    (0.25, 0.3, 0.2, 0.25),
+    (0.25, 0.2, 0.25, 0.3),
+    (0.25, 0.3, 0.25, 0.2),
+    (0.2, 0.3, 0.25, 0.25),
+    (0.3, 0.2, 0.25, 0.25),
+    (0.2, 0.25, 0.3, 0.25),
+    (0.3, 0.25, 0.2, 0.25),
+    (0.2, 0.25, 0.25, 0.3),
+    (0.3, 0.25, 0.25, 0.2),
+]
 T_hat_set = [
     2,
     5,
-    10,
+    # 10,
 ]
 rho_i = np.array([[0.001], [0.005]])
 nu = 0.02
 tax = 0.35
 
-phi_set = [0.0, 0.2, 0.4, 0.6, 0.8]
+phi_set = [
+    0.0,
+    # 0.2,
+    0.4,
+    # 0.6,
+    0.8
+]
 
-Mpath = 30
+Mpath = 10
 np.seterr(invalid='ignore')
 age_cutoffs_SCF = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
 
@@ -171,7 +186,7 @@ def main():
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=30) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []
