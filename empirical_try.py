@@ -19,8 +19,8 @@ country_names = [
     # 'Germany',
     'Norway'
 ]
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
-# folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
@@ -45,7 +45,7 @@ T_hat_set = [
     # 10,
 ]
 # rho_i = np.array([[0.001], [0.005]])
-rho_i = np.array([[0.015], [0.015]])
+rho_i = np.array([[0.05], [0.05]])
 nu = 0.02
 tax = 0.35
 

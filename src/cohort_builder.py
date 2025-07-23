@@ -339,11 +339,11 @@ def build_cohorts_mix_type(
         if i < Ninit:
             V_st = post_var(sigma_Y_sq, Vhat)[:, -i:]
             # dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
-            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_t)  # from eq(9)
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_build_t)  # from eq(9)
         else:
             V_st = post_var(sigma_Y_sq, Vhat)[:, -i:]  # from eq(6)
             phi_mat = (1 - popu_parti_t) * (1 - invest_tracker)
-            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_t)  # from eq(9)
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_build_t)  # from eq(9)
 
         # add a new cohort to Vhat_vector and tau_info
         # Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
