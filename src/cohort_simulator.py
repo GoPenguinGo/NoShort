@@ -1029,7 +1029,7 @@ def simulate_cohorts_mix_type(
     # wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     cohort_type_size_parti = np.sum(cohort_type_size, axis=0)
-    popu_parti_t = np.sum(cohort_type_size * invest_tracker)
+    popu_parti_t = np.average(cohort_type_size, weights=invest_tracker)
 
     if need_f == 'True':
         f_c = np.zeros((Nt, Ntype, Nconstraint, Nc), dtype=np.float16)  # evolution of cohort consumption share

@@ -388,7 +388,7 @@ def build_cohorts_mix_type(
             invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
             d_eta_st = a * invest_tracker - theta_t
 
-            popu_parti_t = np.sum(cohort_type_size[:, :, -i:] * invest_tracker)
+            popu_parti_t = np.average(cohort_type_size[:, :, -i-1:], weights=invest_tracker)
 
             # tau_info and V_hat has to change for the agents who switch
             # Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
