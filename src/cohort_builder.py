@@ -228,6 +228,7 @@ def build_cohorts_mix_type(
     phi: float,
     Npre: int,
     Ninit: int,
+    cohort_type_size: np.ndarray,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,

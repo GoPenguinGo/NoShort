@@ -559,6 +559,7 @@ def simulate_mix_types(
         phi,
         Npre,
         Ninit,
+        cohort_type_size,
     )
 
     (
