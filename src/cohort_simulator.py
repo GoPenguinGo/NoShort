@@ -1029,6 +1029,7 @@ def simulate_cohorts_mix_type(
     # wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
 
     cohort_type_size_parti = np.sum(cohort_type_size, axis=0)
+    popu_parti_t = np.sum(cohort_type_size * invest_tracker)
 
     if need_f == 'True':
         f_c = np.zeros((Nt, Ntype, Nconstraint, Nc), dtype=np.float16)  # evolution of cohort consumption share
@@ -1094,11 +1095,9 @@ def simulate_cohorts_mix_type(
         #         1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
         # tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
 
-        V_st_N = post_var(sigma_Y_sq, Vhat)  # from eq(6)
-        dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_N, Delta_s_t, dZ_t, 'N')  # from eq(9)
-        V_st_P = post_var(sigma_Y_sq, Vhat)
-        dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_t, 'P')
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+        V_st = post_var(sigma_Y_sq, Vhat)  # from eq(6)
+        phi_mat = (1 - popu_parti_t) * (1 - invest_tracker)
+        dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_t)  # from eq(9)
 
         # Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
 

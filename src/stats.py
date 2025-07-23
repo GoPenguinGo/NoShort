@@ -27,8 +27,7 @@ def dDelta_st_calculator(sigma_Y_sq: float,
                          dt: float,
                          V_st: np.ndarray,
                          Delta_s_t: np.ndarray,
-                         dZ_t: float,
-                         type: str) -> np.ndarray:
+                         dZ_t: float) -> np.ndarray:
     """Calculate change in beliefs, as in eq(9)
 
     Args:
@@ -45,18 +44,9 @@ def dDelta_st_calculator(sigma_Y_sq: float,
     Returns:
         np.ndarray: shape (T, )
     """
-    if type == 'N':
-        dDelta_s_t = (1 - phi) * V_st / sigma_Y_sq * (
-                -Delta_s_t * dt + dZ_t
-        )
-
-    elif type == 'P':
-        dDelta_s_t = V_st / sigma_Y_sq * (
-                -Delta_s_t * dt + dZ_t
-        )
-    else:
-        print('Error: type not found')
-        dDelta_s_t = 0
+    dDelta_s_t = (1 - phi) * V_st / sigma_Y_sq * (
+            -Delta_s_t * dt + dZ_t
+    )
     return dDelta_s_t.astype(np.float32)
 
 

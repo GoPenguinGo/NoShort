@@ -292,6 +292,9 @@ def build_cohorts_mix_type(
     a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
+    phi_mat = 0
+    popu_parti_t = 1
+
     for i in tqdm(range(1, Nc)):
         # new cohort born (age 0), get wealth transfer, observe, invest
         rho_cohort_type_short = rho_cohort_type[:, :, -i:]
@@ -334,14 +337,13 @@ def build_cohorts_mix_type(
         #     dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
 
         if i < Ninit:
-            V_st_P = post_var(sigma_Y_sq, Vhat)[:, -i:]
-            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
+            V_st = post_var(sigma_Y_sq, Vhat)[:, -i:]
+            # dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_t)  # from eq(9)
         else:
-            V_st_N = post_var(sigma_Y_sq, Vhat)[:, -i:]  # from eq(6)
-            dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_N, Delta_s_t, dZ_build_t, 'N')  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat)[:, -i:]
-            dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi,  dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
-            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+            V_st = post_var(sigma_Y_sq, Vhat)[:, -i:]  # from eq(6)
+            phi_mat = (1 - popu_parti_t) * (1 - invest_tracker)
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi_mat, dt, V_st, Delta_s_t, dZ_t)  # from eq(9)
 
         # add a new cohort to Vhat_vector and tau_info
         # Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
@@ -362,6 +364,9 @@ def build_cohorts_mix_type(
             d_eta_st = (
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
+
+            popu_parti_t = np.sum(cohort_type_size * invest_tracker)
+            phi_mat = (1 - popu_parti_t) * (1 - invest_tracker)
 
         else:
             invest_tracker = np.append(invest_tracker, invest_newborn, axis=2)  # indicator of current type, =1 for a cohort if type == P
@@ -384,6 +389,8 @@ def build_cohorts_mix_type(
             switch = switch_N_to_P + switch_P_to_N
             invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
             d_eta_st = a * invest_tracker - theta_t
+
+            popu_parti_t = np.sum(cohort_type_size * invest_tracker)
 
             # tau_info and V_hat has to change for the agents who switch
             # Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
