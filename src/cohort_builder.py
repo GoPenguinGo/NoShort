@@ -366,9 +366,6 @@ def build_cohorts_mix_type(
                 Delta_s_t  # relax the short-sale constraint in the beginning
             )
 
-            popu_parti_t = np.sum(cohort_type_size * invest_tracker)
-            phi_mat = (1 - popu_parti_t) * (1 - invest_tracker)
-
         else:
             invest_tracker = np.append(invest_tracker, invest_newborn, axis=2)  # indicator of current type, =1 for a cohort if type == P
             can_short_tracker = np.append(can_short_tracker, can_short_newborn, axis=2)
