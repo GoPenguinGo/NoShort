@@ -23,6 +23,7 @@ mode_trade = "w_constraint"
 mode_learn = 'reentry'
 Mpath = 2000
 Nt_long = 8400
+c_sample = np.arange(0, int(200/dt), 24)
 T_hat_vec = np.append(
     np.arange(1, 5, 2),
     np.arange(5, 30, 5),
@@ -38,8 +39,9 @@ def utility_mu(mu_Y_use, sigma_Y_use):
     t_s = np.cumsum(np.ones(N_T) * dt) - dt
     E_log_C = (mu_Y_use + rho_bar - rho_i + nu - beta0 * nu - 1 / 2 * sigma_Y_use ** 2) * t_s * dt
     discount_rate = np.exp(-(nu + rho_i) * t_s)
-    E_util = np.sum(E_log_C * discount_rate, axis=1)
-    return E_util
+    E_util_t = E_log_C * discount_rate
+    E_util = np.sum(E_util_t, axis=1)
+    return E_util, E_util_t[:, c_sample]
 
 
 def simulate_path(
@@ -120,11 +122,13 @@ def simulate_path(
         log_C_mat[j] = np.log(C_matrix[t_start + sample, :, Nt - 1 - sample] / C_matrix[t_start, :, -1])
 
     # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
-    E_util_path = np.sum(np.average(log_C_mat, axis=0) * dt * discount_rate_mat, axis=0)
+    E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
+    E_util_path = np.sum(E_util_path_t, axis=0)
 
     return (
         i,
-        E_util_path
+        E_util_path,
+        E_util_path_t[c_sample, :],
     )
 
 
@@ -138,12 +142,13 @@ def main():
         # Retrieve results from parallel processes
         for result in results:
             i, \
-            E_util_path_result = result.result()
+            E_util_path_result, \
+            E_util_path_t_result,    = result.result()
 
             data = {
                 "i": i,
-                'E_util': E_util_path_result
-
+                'E_util': E_util_path_result,
+                'E_util_t': E_util_path_t_result,
             }
             results_list.append(data)
 
@@ -156,54 +161,55 @@ def main():
 if __name__ == '__main__':
     main()
 
-    N_points = 1000
-    mu_vec = np.linspace(0, mu_Y, N_points)
-    E_util_mu = np.zeros((N_points, 2))
-    for i, mu_try in enumerate(mu_vec):
-        E_util_mu[i] = utility_mu(mu_try, sigma_Y)
-
-    sigma_vec = np.flip(np.linspace(sigma_Y, 0.5, N_points))
-    E_util_sigma = np.zeros((N_points, 2))
-    for i, sigma_try in enumerate(sigma_vec):
-        E_util_sigma[i] = utility_mu(mu_Y, sigma_try)
-
-    t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
-    rho_i_mat = np.reshape(rho_i, (1, -1))
-    discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
-
-    equiv_mu = np.zeros((len(T_hat_vec), 2))
-    equiv_sigma = np.zeros((len(T_hat_vec), 2))
-
-    for i, T_hat_try in enumerate(T_hat_vec):
-        E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
-        E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
-        for j in range(2):
-            equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
-            equiv_sigma[i, j] = sigma_vec[np.searchsorted(E_util_sigma[:, j], E_util_learn[j])]
-
-
-    E_util_vola10 = utility_mu(mu_Y, 0.15)
-    equiv_mu_vola10 = np.zeros(2)
-    for i in range(2):
-        equiv_mu_vola10[i] = mu_vec[np.searchsorted(E_util_mu[:, i], E_util_vola10[i])]
-
-    X_Y_Spline = make_interp_spline(T_hat_vec, equiv_mu, k=3)
-    X_ = np.linspace(1, 25, 100)
-    Y_ = X_Y_Spline(X_)
-
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
-    ax.set_xlabel('Pre-entry learning window')
-    ax.set_ylabel(r'Equivalent $\mu^Y$')
-    # ax.set_ylim(0, 0.02)
-    ax.plot(X_, Y_[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
-    ax.plot(X_, Y_[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=0.5\%$')
-    plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
-    plt.legend(loc='lower right')
-    ax.tick_params(axis='y', labelcolor='black')
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig('Welfare.png', dpi=100)
-    plt.show()
-    plt.close()
+    # N_points = 1000
+    # mu_vec = np.linspace(0, mu_Y, N_points)
+    # E_util_mu = np.zeros((N_points, 2))
+    # E_util_t_mu = np.zeros((N_points, 2, len(c_sample)))
+    # for i, mu_try in enumerate(mu_vec):
+    #     E_util_mu[i],  E_util_t_mu[i] = utility_mu(mu_try, sigma_Y)
+    #
+    # sigma_vec = np.flip(np.linspace(sigma_Y, 0.5, N_points))
+    # E_util_sigma = np.zeros((N_points, 2))
+    # for i, sigma_try in enumerate(sigma_vec):
+    #     E_util_sigma[i] = utility_mu(mu_Y, sigma_try)
+    #
+    # t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
+    # rho_i_mat = np.reshape(rho_i, (1, -1))
+    # discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
+    #
+    # equiv_mu = np.zeros((len(T_hat_vec), 2))
+    # equiv_sigma = np.zeros((len(T_hat_vec), 2))
+    #
+    # for i, T_hat_try in enumerate(T_hat_vec):
+    #     E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
+    #     E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
+    #     for j in range(2):
+    #         equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
+    #         equiv_sigma[i, j] = sigma_vec[np.searchsorted(E_util_sigma[:, j], E_util_learn[j])]
+    #
+    #
+    # # E_util_vola10 = utility_mu(mu_Y, 0.15)
+    # # equiv_mu_vola10 = np.zeros(2)
+    # # for i in range(2):
+    # #     equiv_mu_vola10[i] = mu_vec[np.searchsorted(E_util_mu[:, i], E_util_vola10[i])]
+    #
+    # X_Y_Spline = make_interp_spline(T_hat_vec, equiv_mu, k=3)
+    # X_ = np.linspace(1, 25, 100)
+    # Y_ = X_Y_Spline(X_)
+    #
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
+    # ax.set_xlabel('Pre-entry learning window')
+    # ax.set_ylabel(r'Equivalent $\mu^Y$')
+    # # ax.set_ylim(0, 0.02)
+    # ax.plot(X_, Y_[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
+    # ax.plot(X_, Y_[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=0.5\%$')
+    # plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
+    # plt.legend(loc='lower right')
+    # ax.tick_params(axis='y', labelcolor='black')
+    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    # plt.savefig('Welfare.png', dpi=100)
+    # plt.show()
+    # plt.close()
     #
 
 
