@@ -21,13 +21,20 @@ N_T = int(T / dt)
 mode_trade = "w_constraint"
 # mode_trade = "complete"
 mode_learn = 'reentry'
-Mpath = 2000
-Nt_long = 8400
-c_sample = np.arange(0, int(200/dt), 24)
-T_hat_vec = np.append(
-    np.arange(1, 5, 2),
-    np.arange(5, 30, 5),
-)
+Mpath = 100
+# Nt_long = 8400
+Nt_long = 6000
+c_sample = np.arange(-1, -int(200/dt), -24)
+
+fc_init = tax / (1 + tax) * (1 + rho_i / nu)
+growth_c_i = nu - tax * beta0 + rho_bar - rho_i
+f_c_benchmark = (fc_init * np.exp(growth_c_i * tau))[:, c_sample]
+
+# T_hat_vec = np.append(
+#     np.arange(1, 5, 2),
+#     np.arange(5, 30, 5),
+# )
+T_hat_vec = [2, 5, 10, 20]
 t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
 rho_i_mat = np.reshape(rho_i, (1, -1))
 discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
@@ -41,7 +48,7 @@ def utility_mu(mu_Y_use, sigma_Y_use):
     discount_rate = np.exp(-(nu + rho_i) * t_s)
     E_util_t = E_log_C * discount_rate
     E_util = np.sum(E_util_t, axis=1)
-    return E_util, E_util_t[:, c_sample]
+    return E_util
 
 
 def simulate_path(
@@ -125,16 +132,17 @@ def simulate_path(
     E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
     E_util_path = np.sum(E_util_path_t, axis=0)
 
+    f_c_indi = np.average(np.ma.masked_invalid(f_c) / cohort_type_size * dt, axis=0)[:, c_sample]
     return (
         i,
         E_util_path,
-        E_util_path_t[c_sample, :],
+        f_c_indi,
     )
 
 
 def main():
-    for T_hat_try in T_hat_vec[:1]:
-        with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+    for T_hat_try in T_hat_vec:
+        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, int(T_hat_try)) for i in range(Mpath)]
             # Initialize a list to store the results
         results_list = []
@@ -143,14 +151,22 @@ def main():
         for result in results:
             i, \
             E_util_path_result, \
-            E_util_path_t_result,    = result.result()
+            f_c_result,  = result.result()
 
             data = {
-                "i": i,
+                'i': i,
                 'E_util': E_util_path_result,
-                'E_util_t': E_util_path_t_result,
+                'f_c_indi': f_c_result,
             }
             results_list.append(data)
+            # i, \
+            # f_c_result,  = result.result()
+            #
+            # data = {
+            #     'i': i,
+            #     'f_c_indi': f_c_result,
+            # }
+            # results_list.append(data)
 
         # Create a DataFrame from the list of dictionaries
         results_df = pd.DataFrame(results_list)
@@ -160,13 +176,13 @@ def main():
 
 if __name__ == '__main__':
     main()
-
+    #
     # N_points = 1000
     # mu_vec = np.linspace(0, mu_Y, N_points)
     # E_util_mu = np.zeros((N_points, 2))
     # E_util_t_mu = np.zeros((N_points, 2, len(c_sample)))
     # for i, mu_try in enumerate(mu_vec):
-    #     E_util_mu[i],  E_util_t_mu[i] = utility_mu(mu_try, sigma_Y)
+    #     E_util_mu[i] = utility_mu(mu_try, sigma_Y)
     #
     # sigma_vec = np.flip(np.linspace(sigma_Y, 0.5, N_points))
     # E_util_sigma = np.zeros((N_points, 2))
@@ -210,7 +226,26 @@ if __name__ == '__main__':
     # plt.savefig('Welfare.png', dpi=100)
     # plt.show()
     # plt.close()
-    #
+
+    line_styles = ['dashed', 'solid', 'dotted', 'dashdot']
+    x = np.arange(0, int(200/dt), 24) * dt
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    ax.set_xlabel('Age')
+    ax.set_ylabel(r'Consumption relative to the benchmark economy')
+    for i, T_hat_try in enumerate(T_hat_vec):
+        f_c_indi_mat = np.load(folder_address + str(int(T_hat_try)) + ".npz")['f_c_indi']
+        f_c_indi = np.average(f_c_indi_mat, axis=0)
+        ax.plot(x, f_c_indi[0] / f_c_benchmark[0], color='navy', linewidth=2, linestyle= line_styles[i], label=f'Learning window = {T_hat_try}')
+    ax.plot(x, f_c_benchmark[0] / f_c_benchmark[0], color='gray', linewidth=2, linestyle='dashed', label=r'Benchmark OLG economy')
+    plt.legend(loc='lower right')
+    ax.tick_params(axis='y', labelcolor='black')
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig('Welfare_1.png', dpi=100)
+    plt.show()
+    plt.close()
+
+
+
 
 
 
