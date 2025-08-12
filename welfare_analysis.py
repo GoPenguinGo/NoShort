@@ -21,7 +21,7 @@ N_T = int(T / dt)
 mode_trade = "w_constraint"
 # mode_trade = "complete"
 mode_learn = 'reentry'
-Mpath = 100
+Mpath = 2000
 # Nt_long = 8400
 Nt_long = 6000
 c_sample = np.arange(-1, -int(200/dt), -24)
@@ -117,25 +117,25 @@ def simulate_path(
                     need_Delta='False',
                     need_pi='False',
                     )
-    C_mat = np.exp((mu_Y - 1/2 * sigma_Y ** 2) * np.arange(0, Nt_long) * dt + sigma_Y * np.cumsum(dZ))
-    C_mat_reshape = np.tile(np.reshape(C_mat, (-1, 1, 1)), (1, 2, 6000))
-    C_matrix = f_c * C_mat_reshape / cohort_type_size * dt
-    sample = np.arange(0, N_T, 1)
+    # C_mat = np.exp((mu_Y - 1/2 * sigma_Y ** 2) * np.arange(0, Nt_long) * dt + sigma_Y * np.cumsum(dZ))
+    # C_mat_reshape = np.tile(np.reshape(C_mat, (-1, 1, 1)), (1, 2, 6000))
+    # C_matrix = f_c * C_mat_reshape / cohort_type_size * dt
+    # sample = np.arange(0, N_T, 1)
 
-    del C_mat_reshape
+    # del C_mat_reshape
 
-    for j in range(10):
-        t_start = int(100 / dt) + int(10 / dt) * j
-        log_C_mat[j] = np.log(C_matrix[t_start + sample, :, Nt - 1 - sample] / C_matrix[t_start, :, -1])
+    # for j in range(10):
+    #     t_start = int(100 / dt) + int(10 / dt) * j
+    #     log_C_mat[j] = np.log(C_matrix[t_start + sample, :, Nt - 1 - sample] / C_matrix[t_start, :, -1])
 
-    # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
-    E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
-    E_util_path = np.sum(E_util_path_t, axis=0)
+    # # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
+    # E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
+    # E_util_path = np.sum(E_util_path_t, axis=0)
 
     f_c_indi = np.average(np.ma.masked_invalid(f_c) / cohort_type_size * dt, axis=0)[:, c_sample]
     return (
         i,
-        E_util_path,
+        # E_util_path,
         f_c_indi,
     )
 
@@ -149,29 +149,29 @@ def main():
 
         # Retrieve results from parallel processes
         for result in results:
-            i, \
-            E_util_path_result, \
-            f_c_result,  = result.result()
-
-            data = {
-                'i': i,
-                'E_util': E_util_path_result,
-                'f_c_indi': f_c_result,
-            }
-            results_list.append(data)
             # i, \
+            # E_util_path_result, \
             # f_c_result,  = result.result()
-            #
+
             # data = {
             #     'i': i,
+            #     'E_util': E_util_path_result,
             #     'f_c_indi': f_c_result,
             # }
             # results_list.append(data)
+            i, \
+            f_c_result,  = result.result()
+            
+            data = {
+                'i': i,
+                'f_c_indi': f_c_result,
+            }
+            results_list.append(data)
 
         # Create a DataFrame from the list of dictionaries
         results_df = pd.DataFrame(results_list)
         results_dict = results_df.to_dict(orient='list')
-        np.savez(folder_address + str(int(T_hat_try)) + ".npz", **results_dict)
+        np.savez(folder_address + str(int(T_hat_try)) + "_indi.npz", **results_dict)
 
 
 if __name__ == '__main__':
@@ -227,22 +227,22 @@ if __name__ == '__main__':
     # plt.show()
     # plt.close()
 
-    line_styles = ['dashed', 'solid', 'dotted', 'dashdot']
-    x = np.arange(0, int(200/dt), 24) * dt
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
-    ax.set_xlabel('Age')
-    ax.set_ylabel(r'Consumption relative to the benchmark economy')
-    for i, T_hat_try in enumerate(T_hat_vec):
-        f_c_indi_mat = np.load(folder_address + str(int(T_hat_try)) + ".npz")['f_c_indi']
-        f_c_indi = np.average(f_c_indi_mat, axis=0)
-        ax.plot(x, f_c_indi[0] / f_c_benchmark[0], color='navy', linewidth=2, linestyle= line_styles[i], label=f'Learning window = {T_hat_try}')
-    ax.plot(x, f_c_benchmark[0] / f_c_benchmark[0], color='gray', linewidth=2, linestyle='dashed', label=r'Benchmark OLG economy')
-    plt.legend(loc='lower right')
-    ax.tick_params(axis='y', labelcolor='black')
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.savefig('Welfare_1.png', dpi=100)
-    plt.show()
-    plt.close()
+    # line_styles = ['dashed', 'solid', 'dotted', 'dashdot']
+    # x = np.arange(0, int(200/dt), 24) * dt
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
+    # ax.set_xlabel('Age')
+    # ax.set_ylabel(r'Consumption relative to the benchmark economy')
+    # for i, T_hat_try in enumerate(T_hat_vec):
+    #     f_c_indi_mat = np.load(folder_address + str(int(T_hat_try)) + ".npz")['f_c_indi']
+    #     f_c_indi = np.average(f_c_indi_mat, axis=0)
+    #     ax.plot(x, f_c_indi[0] / f_c_benchmark[0], color='navy', linewidth=2, linestyle= line_styles[i], label=f'Learning window = {T_hat_try}')
+    # ax.plot(x, f_c_benchmark[0] / f_c_benchmark[0], color='gray', linewidth=2, linestyle='dashed', label=r'Benchmark OLG economy')
+    # plt.legend(loc='lower right')
+    # ax.tick_params(axis='y', labelcolor='black')
+    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    # plt.savefig('Welfare_1.png', dpi=100)
+    # plt.show()
+    # plt.close()
 
 
 
