@@ -525,8 +525,16 @@ def simulate_cohorts_mean_vola(
         invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8)
     else:
         invest_matrix = 0
-    table_1c_mat = np.ones((int((Nt - keep_when)/60), 3, 2))
-    dDelta_popu = np.ones((Nt - keep_when))
+
+    dDelta_popu = np.zeros((Nt - keep_when))
+    c_sample = np.arange(-1, -5000, -60)
+    n_c_sample = len(c_sample)
+    n_t_sample = int((Nt - keep_when) / 60)
+    Delta_sample = np.zeros((n_t_sample, n_c_sample))
+    dDelta_sample = np.zeros((n_t_sample, n_c_sample))
+    entry_sample = np.zeros((n_t_sample, n_c_sample))
+    exit_sample = np.zeros((n_t_sample, n_c_sample))
+    invest_sample = np.zeros((n_t_sample, n_c_sample))
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -700,29 +708,11 @@ def simulate_cohorts_mean_vola(
                 if np.mod(ii, 12) == 0:
                     invest_matrix[int(ii/12)] = invest_tracker[0]
 
-                if (np.mod(ii, 60) == 0):
-                    jj = int(ii / 60)
-                    y_set = [invest_tracker[0, :-1],
-                             switch_N_to_P[0, :-1],
-                             switch_P_to_N[0, :-1]]
-                    x_set = [Delta_s_t[0, :-1],
-                             dDelta_s_t[0, 1:],
-                             dDelta_s_t[0, 1:]]
-                    for n, x in enumerate(x_set):
-                        x_std = (x - np.average(x)) / np.std(x)
-                        y = y_set[n]
-                        if n == 0:
-                            x_regress = sm.add_constant(x_std)
-                            model = sm.OLS(y, x_regress)
-                            est = model.fit()
-                            table_1c_mat[jj, n, 0] = est.params[1]
-                        else:
-                            x_control = sm.add_constant(x_std)
-                            x_control[:, 0] = Delta_s_t[0, :-1] - dDelta_s_t[0, 1:]
-                            x_regress = sm.add_constant(x_control)
-                            model = sm.OLS(y, x_regress)
-                            est = model.fit()
-                            table_1c_mat[jj, n] = est.params[1:]
+                Delta_sample[int(ii/60)] = Delta_s_t[0, :-1][c_sample]
+                dDelta_sample[int(ii/60)] = dDelta_s_t[0, 1:][c_sample]
+                entry_sample[int(ii/60)] = switch_N_to_P[0, :-1][c_sample]
+                exit_sample[int(ii / 60)] = switch_P_to_N[0, :-1][c_sample]
+                invest_sample[int(ii / 60)] = invest_tracker[0, :-1][c_sample]
 
             for j in range(3):
                 entry_i = np.copy(invest_tracker[0])
@@ -746,7 +736,6 @@ def simulate_cohorts_mean_vola(
     parti_ave = np.mean(parti)
     parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if mode_trade == 'w_constraint' else 0
     Delta_age_ave = np.average(np.abs(Delta_matrix), axis=0)
-    table_1c_ave = np.average(table_1c_mat, axis=0)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
@@ -873,6 +862,31 @@ def simulate_cohorts_mean_vola(
                 exit_time[n] = list(
                     map(int, np.sum(parti_bell_entry, axis=0))
                 )
+
+        table_1c_age = np.zeros(n_c_sample, 3, 2)
+        for jj in n_c_sample:
+            y_set = [invest_sample[:, jj],
+                     entry_sample[:, jj],
+                     exit_sample[:, jj]]
+            x_set = [Delta_sample[:, jj],
+                     dDelta_sample[:, jj],
+                     dDelta_sample[:, jj]]
+            for n, x in enumerate(x_set):
+                # x_std = (x - np.average(x)) / np.std(x)
+                y = y_set[n]
+                if n == 0:
+                    x_regress = sm.add_constant(x)
+                    model = sm.OLS(y, x_regress)
+                    est = model.fit()
+                    table_1c_age[jj, n, 0] = est.params[1]
+                else:
+                    x_control = sm.add_constant(x)
+                    x_control[:, 0] = Delta_sample[:, jj] - dDelta_sample[:, jj]
+                    x_regress = sm.add_constant(x_control)
+                    model = sm.OLS(y, x_regress)
+                    est = model.fit()
+                    table_1c_age[jj, n] = est.params[1:]
+            table_1c_ave = np.average(table_1c_age, weights=cohort_type_size[0][c_sample], axis=0)
 
     return (
         theta_ave,
