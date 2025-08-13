@@ -718,7 +718,7 @@ def simulate_cohorts_mean_vola(
                             table_1c_mat[jj, n, 0] = est.params[1]
                         else:
                             x_control = sm.add_constant(x_std)
-                            x_control[:, 0] = Delta_s_t[0, :-1]
+                            x_control[:, 0] = Delta_s_t[0, :-1] - dDelta_s_t[0, 1:]
                             x_regress = sm.add_constant(x_control)
                             model = sm.OLS(y, x_regress)
                             est = model.fit()
