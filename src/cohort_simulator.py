@@ -64,6 +64,7 @@ def simulate_cohorts_SI(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """ Simulate the economy forward
 
@@ -510,6 +511,7 @@ def simulate_cohorts_mean_vola(
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
 
+
     # parti_age_group = np.ones((Nt - keep_when, 4))
     # N_wealth_group = 4
     # wealth_cutoffs = np.array([0, 1, 10, 100, 100000])
@@ -523,6 +525,8 @@ def simulate_cohorts_mean_vola(
         invest_matrix = np.ones((int((Nt - keep_when) / 12), Nt), dtype=np.int8)
     else:
         invest_matrix = 0
+    table_1c_mat = np.ones((int((Nt - keep_when)/60), 3, 2))
+    dDelta_popu = np.ones((Nt - keep_when))
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
@@ -687,6 +691,7 @@ def simulate_cohorts_mean_vola(
             sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
             parti[ii] = popu_parti_t
+            dDelta_popu[ii] = np.average(dDelta_s_t[0], weights=np.sum(cohort_type_size, axis=0))
             if np.mod(ii, 12) == 0:
                 Delta_matrix[int(ii / 12)] = Delta_s_t[0, -age_sample]
             if mode_trade == 'w_constraint':
@@ -694,17 +699,6 @@ def simulate_cohorts_mean_vola(
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
                     invest_matrix[int(ii/12)] = invest_tracker[0]
-            #     for l in range(N_wealth_group):
-            #         within_group = np.where((w_indiv_ist >= wealth_cutoffs[l]) * (w_indiv_ist < wealth_cutoffs[l + 1]))
-            #         parti_wealth_group[ii, l] = np.ma.average(invest_tracker[within_group],
-            #                                                   weights=cohort_type_size[within_group]
-            #                                                   )
-            #     for j in range(4):
-            #         invest_age = invest_tracker[:, cutoffs_age[j + 1]:cutoffs_age[j]]
-            #         cohort_type_age = cohort_type_size[:, cutoffs_age[j + 1]:cutoffs_age[j]]
-            #         parti_age_group[ii, j] = np.ma.average(invest_age,
-            #                                                weights=cohort_type_age)
-
             for j in range(3):
                 entry_i = np.copy(invest_tracker[0])
                 entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (
@@ -714,6 +708,32 @@ def simulate_cohorts_mean_vola(
                 exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), 12 * (j + 1):]
                 entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
+
+            if (np.mode(ii, 60) == 0) & (mode_trade == 'w_constraint'):
+                jj = int(ii / 60)
+                x_set = [invest_tracker[0, :-1],
+                         switch_N_to_P[0, :-1],
+                         switch_P_to_N[0, :-1]]
+                y_set = [Delta_s_t[0, :-1],
+                         dDelta_s_t[0, 1:],
+                         dDelta_s_t[0, 1:]]
+                for n, x in enumerate(x_set):
+                    x_std = (x - np.average(x)) / np.std(x)
+                    y = y_set[n]
+                    y_std = (y - np.average(y)) / np.std(y)
+                    if n == 0:
+                        x_regress = sm.add_constant(x)
+                        model = sm.OLS(y, x_regress)
+                        est = model.fit()
+                        table_1c_mat[jj, n, 0] = est.params[1]
+                    else:
+                        x_control = sm.add_constant(x)
+                        x_control[0] = Delta_s_t[0, :-1]
+                        x_regress = sm.add_constant(x_control)
+                        model = sm.OLS(y, x_regress)
+                        est = model.fit()
+                        table_1c_mat[jj, n] = est.params[1:]
+
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0))
 
     # save the mean and standard deviation
@@ -726,12 +746,14 @@ def simulate_cohorts_mean_vola(
     parti_ave = np.mean(parti)
     parti_age_ave = np.average(invest_matrix, axis=0)[-age_sample] if mode_trade == 'w_constraint' else 0
     Delta_age_ave = np.average(np.abs(Delta_matrix), axis=0)
+    table_1c_ave = np.average(table_1c_mat, axis=0)
 
     cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
     cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
     cov_theta_z_SI = np.corrcoef(dZ_SI[keep_when:], theta)[0, 1]
     cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1] if mode_trade == 'w_constraint' else 0
     cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1] if mode_trade == 'w_constraint' else 0
+    cov_popu_Delta_z_Y = np.corrcoef(dZ[keep_when:], dDelta_popu)[0, 1]
 
     # results about covariance
     cov_matrix = np.array([
@@ -868,6 +890,7 @@ def simulate_cohorts_mean_vola(
         parti_ave,
         regression_table1_b,
         regression_table2_b,
+        table_1c_ave
     )
 
 
