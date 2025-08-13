@@ -699,6 +699,32 @@ def simulate_cohorts_mean_vola(
                 Phi_tilde_parti[ii] = fw_parti_t
                 if np.mod(ii, 12) == 0:
                     invest_matrix[int(ii/12)] = invest_tracker[0]
+
+                if (np.mod(ii, 60) == 0):
+                    jj = int(ii / 60)
+                    x_set = [invest_tracker[0, :-1],
+                             switch_N_to_P[0, :-1],
+                             switch_P_to_N[0, :-1]]
+                    y_set = [Delta_s_t[0, :-1],
+                             dDelta_s_t[0, 1:],
+                             dDelta_s_t[0, 1:]]
+                    for n, x in enumerate(x_set):
+                        x_std = (x - np.average(x)) / np.std(x)
+                        y = y_set[n]
+                        y_std = (y - np.average(y)) / np.std(y)
+                        if n == 0:
+                            x_regress = sm.add_constant(x)
+                            model = sm.OLS(y, x_regress)
+                            est = model.fit()
+                            table_1c_mat[jj, n, 0] = est.params[1]
+                        else:
+                            x_control = sm.add_constant(x)
+                            x_control[0] = Delta_s_t[0, :-1]
+                            x_regress = sm.add_constant(x_control)
+                            model = sm.OLS(y, x_regress)
+                            est = model.fit()
+                            table_1c_mat[jj, n] = est.params[1:]
+
             for j in range(3):
                 entry_i = np.copy(invest_tracker[0])
                 entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (
@@ -708,31 +734,6 @@ def simulate_cohorts_mean_vola(
                 exit_i = invest_tracker[0, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), 12 * (j + 1):]
                 entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
-
-            if (np.mod(ii, 60) == 0) and (mode_trade == 'w_constraint'):
-                jj = int(ii / 60)
-                x_set = [invest_tracker[0, :-1],
-                         switch_N_to_P[0, :-1],
-                         switch_P_to_N[0, :-1]]
-                y_set = [Delta_s_t[0, :-1],
-                         dDelta_s_t[0, 1:],
-                         dDelta_s_t[0, 1:]]
-                for n, x in enumerate(x_set):
-                    x_std = (x - np.average(x)) / np.std(x)
-                    y = y_set[n]
-                    y_std = (y - np.average(y)) / np.std(y)
-                    if n == 0:
-                        x_regress = sm.add_constant(x)
-                        model = sm.OLS(y, x_regress)
-                        est = model.fit()
-                        table_1c_mat[jj, n, 0] = est.params[1]
-                    else:
-                        x_control = sm.add_constant(x)
-                        x_control[0] = Delta_s_t[0, :-1]
-                        x_regress = sm.add_constant(x_control)
-                        model = sm.OLS(y, x_regress)
-                        est = model.fit()
-                        table_1c_mat[jj, n] = est.params[1:]
 
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0))
 
