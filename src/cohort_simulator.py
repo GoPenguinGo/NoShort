@@ -863,7 +863,7 @@ def simulate_cohorts_mean_vola(
                     map(int, np.sum(parti_bell_entry, axis=0))
                 )
 
-        table_1c_age = np.zeros(n_c_sample, 3, 2)
+        table_1c_age = np.zeros((n_c_sample, 3, 2))
         for jj in n_c_sample:
             y_set = [invest_sample[:, jj],
                      entry_sample[:, jj],
