@@ -709,7 +709,7 @@ def simulate_cohorts_mean_vola(
                 entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
                 exit_mat[ii, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
 
-            if (np.mod(ii, 60) == 0) & (mode_trade == 'w_constraint'):
+            if (np.mod(ii, 60) == 0) and (mode_trade == 'w_constraint'):
                 jj = int(ii / 60)
                 x_set = [invest_tracker[0, :-1],
                          switch_N_to_P[0, :-1],
