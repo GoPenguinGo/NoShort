@@ -702,23 +702,22 @@ def simulate_cohorts_mean_vola(
 
                 if (np.mod(ii, 60) == 0):
                     jj = int(ii / 60)
-                    x_set = [invest_tracker[0, :-1],
+                    y_set = [invest_tracker[0, :-1],
                              switch_N_to_P[0, :-1],
                              switch_P_to_N[0, :-1]]
-                    y_set = [Delta_s_t[0, :-1],
+                    x_set = [Delta_s_t[0, :-1],
                              dDelta_s_t[0, 1:],
                              dDelta_s_t[0, 1:]]
                     for n, x in enumerate(x_set):
                         x_std = (x - np.average(x)) / np.std(x)
                         y = y_set[n]
-                        y_std = (y - np.average(y)) / np.std(y)
                         if n == 0:
-                            x_regress = sm.add_constant(x)
+                            x_regress = sm.add_constant(x_std)
                             model = sm.OLS(y, x_regress)
                             est = model.fit()
                             table_1c_mat[jj, n, 0] = est.params[1]
                         else:
-                            x_control = sm.add_constant(x)
+                            x_control = sm.add_constant(x_std)
                             x_control[0] = Delta_s_t[0, :-1]
                             x_regress = sm.add_constant(x_control)
                             model = sm.OLS(y, x_regress)
