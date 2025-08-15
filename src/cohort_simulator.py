@@ -1239,7 +1239,7 @@ def simulate_cohorts_mix_type(
                 invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                 weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
             portf_age_group[i, j] = np.ma.average(
-                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * f_c[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] / cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * f_c_ist[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] / cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
                 weights=invest_tracker[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
             )
             # within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
