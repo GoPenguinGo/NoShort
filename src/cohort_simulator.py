@@ -344,7 +344,7 @@ def simulate_cohorts_SI(
             Phi_bar_parti[i] = fc_parti_t
             Phi_tilde_parti[i] = fw_parti_t
             parti[i] = popu_parti_t
-            for j in range(4):
+            for j in range(len(cutoffs_age) - 1):
                 parti_age_group[i, j] = np.ma.average(invest_tracker[0, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                       weights=cohort_type_size[0, cutoffs_age[j + 1]:cutoffs_age[j]])
                 within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
@@ -1054,8 +1054,8 @@ def simulate_cohorts_mix_type(
     entry_mat = np.ones((Nt, 3), dtype=np.float16)
     exit_mat = np.ones((Nt, 3), dtype=np.float16)
     # parti_wealth_group = np.zeros((Nt, 4), dtype=np.float16)
-    parti_age_group = np.zeros((Nt, 4), dtype=np.float16)
-    portf_age_group = np.zeros((Nt, 4), dtype=np.float16)
+    parti_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
+    portf_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
     dR_t = 0
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
@@ -1234,7 +1234,7 @@ def simulate_cohorts_mix_type(
             exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0))
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4, -1)), axis=0))
 
-        for j in range(4):
+        for j in range(len(cutoffs_age) - 1):
             parti_age_group[i, j] = np.ma.average(
                 invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                 weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
