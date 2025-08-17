@@ -145,8 +145,8 @@ def simulate_cohorts_SI(
     Phi_bar_parti = np.ones(Nt, dtype=np.float16)
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
     invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
-    parti_age_group = np.ones((Nt, 4), dtype=np.float16)
-    portf_age_group = np.ones((Nt, 4), dtype=np.float16)
+    parti_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
+    portf_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -351,9 +351,8 @@ def simulate_cohorts_SI(
                 portf_age_group[i, j] = np.ma.average(
                     pi_st[:, cutoffs_age[j + 1]: cutoffs_age[j]] * f_w_ist[:, cutoffs_age[j + 1]: cutoffs_age[
                         j]] / cohort_type_size[:, cutoffs_age[j + 1]: cutoffs_age[j]],
-                    weights=invest_tracker[:, cutoffs_age[j + 1]: cutoffs_age[j]] * cohort_type_size[:,
-                                                                                       cutoffs_age[j + 1]: cutoffs_age[
-                                                                                           j]]
+                    weights=invest_tracker[:, cutoffs_age[j + 1]: cutoffs_age[j]] *
+                            cohort_type_size[:, cutoffs_age[j + 1]: cutoffs_age[j]]
                 )
         for j in range(3):
             entry_i = np.copy(invest_tracker[0])
