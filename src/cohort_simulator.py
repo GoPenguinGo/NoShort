@@ -145,8 +145,8 @@ def simulate_cohorts_SI(
     Phi_bar_parti = np.ones(Nt, dtype=np.float16)
     Phi_tilde_parti = np.ones(Nt, dtype=np.float16)
     invest_mat = np.ones((12 * 3, Nc), dtype=np.int8)
-    parti_wealth_group = np.ones((Nt, 4), dtype=np.float16)
     parti_age_group = np.ones((Nt, 4), dtype=np.float16)
+    portf_age_group = np.ones((Nt, 4), dtype=np.float16)
 
     # equilibrium terms:
     dR = np.zeros(Nt)  # stores stock returns
@@ -347,9 +347,14 @@ def simulate_cohorts_SI(
             for j in range(len(cutoffs_age) - 1):
                 parti_age_group[i, j] = np.ma.average(invest_tracker[0, cutoffs_age[j + 1]:cutoffs_age[j]],
                                                       weights=cohort_type_size[0, cutoffs_age[j + 1]:cutoffs_age[j]])
-                within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
-                parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
-                                                         weights=cohort_type_size[within_group])
+                # within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
+                portf_age_group[i, j] = np.ma.average(
+                    pi_st[:, cutoffs_age[j + 1]: cutoffs_age[j]] * f_w_ist[:, cutoffs_age[j + 1]: cutoffs_age[
+                        j]] / cohort_type_size[:, cutoffs_age[j + 1]: cutoffs_age[j]],
+                    weights=invest_tracker[:, cutoffs_age[j + 1]: cutoffs_age[j]] * cohort_type_size[:,
+                                                                                       cutoffs_age[j + 1]: cutoffs_age[
+                                                                                           j]]
+                )
         for j in range(3):
             entry_i = np.copy(invest_tracker[0])
             entry_i[:-12 * (j + 1)] = invest_tracker[0, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), 12 * (j + 1):]  # entry including the newborns who are in
@@ -375,7 +380,7 @@ def simulate_cohorts_SI(
         beta,
         invest_mat,
         parti_age_group,
-        parti_wealth_group,
+        portf_age_group,
         entry_mat,
         exit_mat
     )
@@ -1239,7 +1244,7 @@ def simulate_cohorts_mix_type(
                 invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                 weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
             portf_age_group[i, j] = np.ma.average(
-                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * f_c_ist[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] / cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
+                pi_st[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * f_w_ist[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] / cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
                 weights=invest_tracker[:, :, cutoffs_age[j + 1] : cutoffs_age[j]] * cohort_type_size[:, :, cutoffs_age[j + 1] : cutoffs_age[j]],
             )
             # within_group = np.where((w_indiv_ist >= wealth_cutoffs[j]) * (w_indiv_ist < wealth_cutoffs[j + 1]))
