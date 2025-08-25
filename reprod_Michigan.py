@@ -16,13 +16,16 @@ from src.param_mix import Nconstraint
 
 
 # (complete, excluded, disappointment, reentry)
-Mpath = 1000
+Mpath = 2000
 np.seterr(invalid='ignore')
 age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
 exp_old = 50
 exp_young = 20
 
 data_sample = np.arange(int(exp_old / dt), Nt, 60)
+t_sample = np.arange(int(200 / dt), Nt, 12)
+c_sample = np.arange(-1, -Nc + 12, -12)
+
 
 # noinspection PyTypeChecker
 def simulate_path(
@@ -36,6 +39,7 @@ def simulate_path(
     dZ_SI = dZ_SI_matrix[i]
 
     cov_matrix = np.zeros((2, 3))
+    cov_matrix2 = np.zeros((2, 5))
 
     for density_n in range(2):
         if density_n == 0:
@@ -88,9 +92,9 @@ def simulate_path(
                             beta_i,
                             rho_cohort_type,
                             cohort_type_size,
-                            need_f='False',
+                            need_f='True',
                             need_Delta='True',
-                            need_pi='False',
+                            need_pi='True',
                             )
 
             portf_age_group[np.isnan(portf_age_group)] = 0
@@ -114,6 +118,32 @@ def simulate_path(
             cov_matrix[density_n, 0] = np.corrcoef(experience_gap, belief_gap)[0, 1]
             cov_matrix[density_n, 1] = np.corrcoef(belief_gap, parti_gap)[0, 1]
             cov_matrix[density_n, 2] = np.corrcoef(belief_gap, portf_gap)[0, 1]
+
+            invest = np.zeros((Nt, Nc))
+            invest[np.where(pi>0)] = 1.0
+            invest_annual = invest[t_sample]
+            belief_annual = Delta[t_sample]
+            cumu_returns_annual = total_returns[t_sample]
+            del invest
+            portf = pi * np.sum(f_c, axis=1)
+            portf_annual = portf[t_sample]
+            del portf
+            del pi
+            del f_c
+            del Delta
+            change_invest_annual = (invest_annual[1:, :-12] - invest_annual[:-1, 12:])[:, c_sample]
+            change_belief_annual = (belief_annual[1:, :-12] - belief_annual[:-1, 12:])[:, c_sample]
+            returns_annual = cumu_returns_annual[1:] - cumu_returns_annual[:-1]
+            change_portf_annual = (portf_annual[1:, :-12] - portf_annual[:-1, 12:])[:, c_sample]
+
+            cov_matrix_cohorts = np.zeros((5, len(c_sample)))
+            for i_cohort in range(len(c_sample)):
+                cov_matrix_cohorts[0, i_cohort] = np.corrcoef(change_belief_annual[:, i_cohort], change_invest_annual[:, i_cohort])[0, 1]
+                cov_matrix_cohorts[1, i_cohort] = np.corrcoef(change_belief_annual[:, i_cohort], change_portf_annual[:, i_cohort])[0, 1]
+                cov_matrix_cohorts[2, i_cohort] = np.corrcoef(returns_annual, change_belief_annual[:, i_cohort])[0, 1]
+                cov_matrix_cohorts[3, i_cohort] = np.corrcoef(returns_annual, change_invest_annual[:, i_cohort])[0, 1]
+                cov_matrix_cohorts[4, i_cohort] = np.corrcoef(returns_annual, change_portf_annual[:, i_cohort])[0, 1]
+            cov_matrix2[density_n] = np.average(np.nan_to_num(cov_matrix_cohorts, nan=0), weights=cohort_size[0, c_sample], axis=1)
 
         else:
             density_types = (0.25, 0.25, 0.25, 0.25)
@@ -181,10 +211,53 @@ def simulate_path(
             cov_matrix[density_n, 1] = np.corrcoef(belief_gap, parti_gap)[0, 1]
             cov_matrix[density_n, 2] = np.corrcoef(belief_gap, portf_gap)[0, 1]
 
+            invest = np.zeros((Nt, 4, Nc))
+            invest[np.where(pi!=0)] = 1.0
+            invest_annual = invest[t_sample]
+            belief_annual = Delta[t_sample]
+            cumu_returns_annual = total_returns[t_sample]
+            del invest
+            portf = pi * np.sum(f_c, axis=1)
+            portf_annual = portf[t_sample]
+            del portf
+            del pi
+            del f_c
+            del Delta
+            change_invest_annual = (invest_annual[1:, :, :-12] - invest_annual[:-1, :, 12:])[:, :, c_sample]
+            change_belief_annual = (belief_annual[1:, :, :-12] - belief_annual[:-1, :, 12:])[:, :, c_sample]
+            # change_belief_annual[:, 1, :] = 0
+            # change_belief_annual[:, 2, :][np.where(invest_annual[:-1, 2, 12:]) == 0] = 0
+            returns_annual = cumu_returns_annual[1:] - cumu_returns_annual[:-1]
+            change_portf_annual = (portf_annual[1:, :, :-12] - portf_annual[:-1, :, 12:])[:, :, c_sample]
+
+            cov_matrix_cohorts = np.zeros((5, 4, len(c_sample)))
+            for i_cohort in range(len(c_sample)):
+                for i_type in range(4):
+                    cov_matrix_cohorts[0, i_type, i_cohort] = np.corrcoef(
+                        change_belief_annual[:, i_type, i_cohort],
+                        change_invest_annual[:, i_type, i_cohort])[0, 1]
+                    cov_matrix_cohorts[1, i_type, i_cohort] = np.corrcoef(
+                        change_belief_annual[:, i_type, i_cohort],
+                        change_portf_annual[:, i_type, i_cohort])[0, 1]
+                    cov_matrix_cohorts[2, i_type, i_cohort] = np.corrcoef(
+                        returns_annual,
+                        change_belief_annual[:, i_type, i_cohort])[0, 1]
+                    cov_matrix_cohorts[3, i_type, i_cohort] = np.corrcoef(
+                        returns_annual,
+                        change_invest_annual[:, i_type, i_cohort])[0, 1]
+                    cov_matrix_cohorts[4, i_type, i_cohort] = np.corrcoef(
+                        returns_annual,
+                        change_portf_annual[:, i_type, i_cohort])[0, 1]
+
+            cov_matrix2[density_n] = np.average(
+                np.average(np.nan_to_num(cov_matrix_cohorts, nan=0), weights=cohort_type_size_mix[0, 0][c_sample], axis=2),
+                axis=1
+            )
 
     return (
         i,
-        cov_matrix
+        cov_matrix,
+        cov_matrix2
     )
 
 
@@ -197,10 +270,12 @@ def main():
     # Retrieve results from parallel processes
     for result in results:
         i, \
-        cov_matrix = result.result()
+        cov_matrix, \
+        cov_matrix2, = result.result()
         data = {
             "i": i,
             "cov_matrix": cov_matrix,
+            "cov_matrix2": cov_matrix2,
         }
         results_list.append(data)
 
