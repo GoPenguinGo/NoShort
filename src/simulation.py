@@ -270,7 +270,6 @@ def simulate_SI_mean_vola(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
 ]:
     """
     Bundles the cohort_builder_mean_vola function and the cohort_simulator_mean_vola function together
@@ -370,7 +369,7 @@ def simulate_SI_mean_vola(
         parti,
         regression_table1_b,
         regression_table2_b,
-        table_1c_ave
+        # table_1c_ave
     ) = simulate_cohorts_mean_vola(
         biasvec,
         dZ,
@@ -421,7 +420,7 @@ def simulate_SI_mean_vola(
         parti,
         regression_table1_b,
         regression_table2_b,
-        table_1c_ave
+        # table_1c_ave
     )
 
 

@@ -868,30 +868,30 @@ def simulate_cohorts_mean_vola(
                     map(int, np.sum(parti_bell_entry, axis=0))
                 )
 
-        table_1c_age = np.zeros((n_c_sample, 3, 2))
-        for jj in range(n_c_sample):
-            y_set = [invest_sample[:, jj],
-                     entry_sample[:, jj],
-                     exit_sample[:, jj]]
-            x_set = [Delta_sample[:, jj],
-                     dDelta_sample[:, jj],
-                     dDelta_sample[:, jj]]
-            for n, x in enumerate(x_set):
-                # x_std = (x - np.average(x)) / np.std(x)
-                y = y_set[n]
-                if n == 0:
-                    x_regress = sm.add_constant(x)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    table_1c_age[jj, n, 0] = est.params[1]
-                else:
-                    x_control = sm.add_constant(x)
-                    x_control[:, 0] = Delta_sample[:, jj] - dDelta_sample[:, jj]
-                    x_regress = sm.add_constant(x_control)
-                    model = sm.OLS(y, x_regress)
-                    est = model.fit()
-                    table_1c_age[jj, n] = est.params[1:]
-            table_1c_ave = np.average(table_1c_age, weights=cohort_type_size[0][c_sample], axis=0)
+        # table_1c_age = np.zeros((n_c_sample, 3, 2))
+        # for jj in range(n_c_sample):
+        #     y_set = [invest_sample[:, jj],
+        #              entry_sample[:, jj],
+        #              exit_sample[:, jj]]
+        #     x_set = [Delta_sample[:, jj],
+        #              dDelta_sample[:, jj],
+        #              dDelta_sample[:, jj]]
+        #     for n, x in enumerate(x_set):
+        #         # x_std = (x - np.average(x)) / np.std(x)
+        #         y = y_set[n]
+        #         if n == 0:
+        #             x_regress = sm.add_constant(x)
+        #             model = sm.OLS(y, x_regress)
+        #             est = model.fit()
+        #             table_1c_age[jj, n, 0] = est.params[1]
+        #         else:
+        #             x_control = sm.add_constant(x)
+        #             x_control[:, 0] = Delta_sample[:, jj] - dDelta_sample[:, jj]
+        #             x_regress = sm.add_constant(x_control)
+        #             model = sm.OLS(y, x_regress)
+        #             est = model.fit()
+        #             table_1c_age[jj, n] = est.params[1:]
+        #     table_1c_ave = np.average(table_1c_age, weights=cohort_type_size[0][c_sample], axis=0)
 
     return (
         theta_ave,
@@ -909,7 +909,7 @@ def simulate_cohorts_mean_vola(
         parti_ave,
         regression_table1_b,
         regression_table2_b,
-        table_1c_ave
+        # table_1c_ave
     )
 
 
