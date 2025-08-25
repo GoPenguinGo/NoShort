@@ -50,7 +50,7 @@ scenario_labels = ['Complete', 'Reentry', 'Mix']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
-age_labels = [r'20 < Age $\leq$ 35, the young', r'35 < Age $\leq$ 55', r'55 < Age $\leq$ 75', 'Age > 75, the old']
+age_labels = [r'20 < Age $\leq$ 40, the young', r'40 < Age $\leq$ 60', 'Age > 60, the old']
 
 # dZ_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
 # dZ_mat = np.reshape(np.append(dZ_mat1, -dZ_mat1), (-1, Nt)) * dt_root
