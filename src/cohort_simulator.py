@@ -814,7 +814,7 @@ def simulate_cohorts_mean_vola(
                 est = model.fit()
                 regression_table2_b[ii, jj] = est.params[1]
 
-        cohort_entry_annual = (invest_matrix[1:, 12:] - invest_matrix[:-1, :-12]) > 0
+        cohort_entry_annual = (invest_matrix[1:, :-12] - invest_matrix[:-1, 12:]) > 0
         entry_cumu = np.cumsum(np.flip(np.average(cohort_entry_annual * dt, axis=0)))[age_sample]
 
         # fraction of agents re-entering after exiting the stock market
