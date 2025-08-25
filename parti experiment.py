@@ -17,12 +17,12 @@ import statsmodels.api as sm
 plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_set = [
-    (1.0, 0.0, 0.0, 0.0),
+    # (1.0, 0.0, 0.0, 0.0),
     (0.0, 0.0, 0.0, 1.0),
     (0.25, 0.25, 0.25, 0.25),
 ]
 n_scenarios = len(density_set)
-phi_set = [0.0, 0.5, 0.8]
+phi_set = [0.5]
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -33,13 +33,12 @@ cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 window_bell = 20
 
 np.seterr(invalid='ignore')
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
-# folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/reg_results2/'
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/simu_results/'
 
 
 def simulate_path(
         i: int,
-        phi_i: float,
 ):
     print(i)
     # shocks
@@ -55,19 +54,19 @@ def simulate_path(
     r_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
     mu_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
     sigma_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
-    parti_compare = np.zeros((n_scenarios - 1), dtype=np.float32)
-    entry_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
-    exit_compare = np.zeros(n_scenarios - 1, dtype=np.float32)
+    parti_compare = np.zeros((n_scenarios), dtype=np.float32)
+    entry_compare = np.zeros(n_scenarios, dtype=np.float32)
+    exit_compare = np.zeros(n_scenarios, dtype=np.float32)
     Delta_age_compare = np.zeros((2, len(age_sample)), dtype=np.float32)
-    regression_table1 = np.zeros((n_scenarios - 1, 3, 3), dtype=np.float32)
-    regression_table2 = np.zeros((n_scenarios - 1, 3, 2), dtype=np.float32)
+    regression_table1 = np.zeros((n_scenarios, 3, 3), dtype=np.float32)
+    regression_table2 = np.zeros((n_scenarios, 3, 2), dtype=np.float32)
     cov_compare = np.zeros((n_scenarios, 5), dtype=np.float32)
     parti_age_compare = 0
-    entry_cumu_compare = np.zeros((n_scenarios - 1, 200), dtype=np.float32)
+    entry_cumu_compare = np.zeros((n_scenarios, 200), dtype=np.float32)
 
     if np.mod(i, 10) == 0:
-        reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-        exit_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
+        reentry_time_compare = np.zeros((n_scenarios, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+        exit_time_compare = np.zeros((n_scenarios, 14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
         need_invest_matrix = 'True'
     else:
         reentry_time_compare = 0
@@ -78,62 +77,7 @@ def simulate_path(
     # reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
     # need_invest_matrix = 'True'
     for g, type_density in enumerate(density_set):
-        if type_density[0] == 1:
-            mode_trade = 'complete'
-            mode_learn = 'reentry'
-            (
-                theta_ave,
-                r_ave,
-                mu_S_ave,
-                sigma_S_ave,
-                parti_age_ave,
-                Delta_age_ave,
-                reentry_time,
-                exit_time,
-                entry_cumu,
-                entry_ave,
-                exit_ave,
-                cov_matrix,
-                parti_ave,
-                regression_table1_b,
-                regression_table2_b
-            ) = simulate_SI_mean_vola(
-                mode_trade,
-                mode_learn,
-                Nc,
-                Nt,
-                dt,
-                nu,
-                Vhat,
-                mu_Y,
-                sigma_Y,
-                tax,
-                beta0,
-                phi_i,
-                Npre,
-                Ninit,
-                T_hat,
-                dZ_build,
-                dZ,
-                dZ_SI_build,
-                dZ_SI,
-                tau,
-                Ntype,
-                rho_i,
-                alpha_i,
-                beta_i,
-                rho_cohort_type,
-                cohort_type_size,
-                need_invest_matrix
-            )
-            theta_compare[g] = theta_ave
-            r_compare[g] = r_ave
-            mu_S_compare[g] = mu_S_ave
-            sigma_S_compare[g] = sigma_S_ave
-            Delta_age_compare[g] = Delta_age_ave
-            cov_compare[g] = cov_matrix
-
-        elif type_density[3] == 1:
+        if type_density[3] == 1:
             mode_trade = 'w_constraint'
             mode_learn = 'reentry'
 
@@ -165,7 +109,7 @@ def simulate_path(
                 sigma_Y,
                 tax,
                 beta0,
-                phi_i,
+                phi,
                 Npre,
                 Ninit,
                 T_hat,
@@ -188,18 +132,18 @@ def simulate_path(
             sigma_S_compare[g] = sigma_S_ave
             Delta_age_compare[g] = Delta_age_ave
             cov_compare[g] = cov_matrix
-            parti_compare[g - 1] = parti_ave
-            entry_compare[g - 1] = entry_ave
-            exit_compare[g - 1] = exit_ave
-            regression_table1[g - 1] = regression_table1_b
-            regression_table2[g - 1] = regression_table2_b
+            parti_compare[g] = parti_ave
+            entry_compare[g] = entry_ave
+            exit_compare[g] = exit_ave
+            regression_table1[g] = regression_table1_b
+            regression_table2[g] = regression_table2_b
             parti_age_compare = parti_age_ave
-            entry_cumu_compare[g - 1] = entry_cumu
+            entry_cumu_compare[g] = entry_cumu
             if need_invest_matrix == 'True':
-                reentry_time_compare[g - 1, :, 1] = reentry_time
-                exit_time_compare[g - 1, :, 1] = exit_time
+                reentry_time_compare[g, :, 1] = reentry_time
+                exit_time_compare[g, :, 1] = exit_time
 
-        elif phi_i == phi:
+        else:
             alpha_constraint = np.ones(
                 (1, Nconstraint)) * type_density
             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
@@ -256,17 +200,15 @@ def simulate_path(
             mu_S_compare[g] = mu_S_ave
             sigma_S_compare[g] = sigma_S_ave
             cov_compare[g] = cov_matrix
-            parti_compare[g - 1] = parti_ave
-            entry_compare[g - 1] = entry_ave
-            exit_compare[g - 1] = exit_ave
-            regression_table1[g - 1] = regression_table1_b
-            regression_table2[g - 1] = regression_table2_b
-            entry_cumu_compare[g - 1] = entry_cumu
+            parti_compare[g] = parti_ave
+            entry_compare[g] = entry_ave
+            exit_compare[g] = exit_ave
+            regression_table1[g] = regression_table1_b
+            regression_table2[g] = regression_table2_b
+            entry_cumu_compare[g] = entry_cumu
             if need_invest_matrix == 'True':
-                reentry_time_compare[g - 1] = reentry_time[:, 2:]
-                exit_time_compare[g - 1] = exit_time[:, 2:]
-        else:
-            print('skip')
+                reentry_time_compare[g] = reentry_time[:, 2:]
+                exit_time_compare[g] = exit_time[:, 2:]
 
     if need_invest_matrix == 'True':
         if phi_i == phi:
@@ -286,7 +228,8 @@ def simulate_path(
         regression_table1,
         regression_table2,
         cov_compare,
-        parti_age_compare
+        parti_age_compare,
+        entry_cumu_compare,
     )
 
 
@@ -295,49 +238,51 @@ def main():
     for j in range(int(Mpath / 25)):
         per_path = 25
         paths_j = j * per_path
-        for phi_i in phi_set:
-            with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
-                results = [executor.submit(simulate_path, i, phi_i) for i in range(paths_j, paths_j + per_path)]
-            # Initialize a list to store the results
-            results_list = []
 
-            # Retrieve results from parallel processes
-            for result in results:
-                i, \
-                    theta_compare, \
-                    r_compare, \
-                    mu_S_compare, \
-                    sigma_S_compare, \
-                    parti_compare, \
-                    entry_compare, \
-                    exit_compare, \
-                    Delta_age_compare, \
-                    regression_table1, \
-                    regression_table2, \
-                    cov_compare, \
-                    parti_age_compare = result.result()
+        with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+            results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + per_path)]
+        # Initialize a list to store the results
+        results_list = []
 
-                data = {
-                    "i": i,
-                    "theta": theta_compare,
-                    "r": r_compare,
-                    "mu_S": mu_S_compare,
-                    "sigma_S": sigma_S_compare,
-                    "parti": parti_compare,
-                    "entry": entry_compare,
-                    "exit": exit_compare,
-                    "Delta_age": Delta_age_compare,
-                    "reg1": regression_table1,
-                    "reg2": regression_table2,
-                    "cov_mat": cov_compare,
-                    "parti_age": parti_age_compare,
-                }
-                results_list.append(data)
+        # Retrieve results from parallel processes
+        for result in results:
+            i, \
+                theta_compare, \
+                r_compare, \
+                mu_S_compare, \
+                sigma_S_compare, \
+                parti_compare, \
+                entry_compare, \
+                exit_compare, \
+                Delta_age_compare, \
+                regression_table1, \
+                regression_table2, \
+                cov_compare, \
+                parti_age_compare, \
+                entry_cumu_compare = result.result()
 
-            # Create a DataFrame from the list of dictionaries
-            results_df = pd.DataFrame(results_list)
-            results_dict = results_df.to_dict(orient='list')
-            np.savez(folder_address + str(j) + str(phi_i) + "simulation_new.npz", **results_dict)
+            data = {
+                "i": i,
+                "theta": theta_compare,
+                "r": r_compare,
+                "mu_S": mu_S_compare,
+                "sigma_S": sigma_S_compare,
+                "parti": parti_compare,
+                "entry": entry_compare,
+                "exit": exit_compare,
+                "Delta_age": Delta_age_compare,
+                "reg1": regression_table1,
+                "reg2": regression_table2,
+                "cov_mat": cov_compare,
+                "parti_age": parti_age_compare,
+                "entry_cumu": entry_cumu_compare,
+            }
+            results_list.append(data)
+
+        # Create a DataFrame from the list of dictionaries
+        results_df = pd.DataFrame(results_list)
+        results_dict = results_df.to_dict(orient='list')
+        np.savez(folder_address + str(j) + "simulation_new.npz", **results_dict)
 
 
 if __name__ == '__main__':
