@@ -362,6 +362,7 @@ def simulate_cohorts_SI(
             entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
             exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size[:, :-12 * (j + 1)], axis=0))
         invest_mat = np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, -1)), axis=0)
+
     return (
         r,
         theta,
@@ -1128,6 +1129,7 @@ def simulate_cohorts_mix_type(
         V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
         dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
                                             'N')  # from eq(9)
+        dDelta_s_t_N[:, 1:3] = 0.0  # designated N and disappointed do not update
         V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
         dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
                                             'P')
