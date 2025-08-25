@@ -136,14 +136,44 @@ def simulate_path(
             returns_annual = cumu_returns_annual[1:] - cumu_returns_annual[:-1]
             change_portf_annual = (portf_annual[1:, :-12] - portf_annual[:-1, 12:])[:, c_sample]
 
-            cov_matrix_cohorts = np.zeros((5, len(c_sample)))
-            for i_cohort in range(len(c_sample)):
-                cov_matrix_cohorts[0, i_cohort] = np.corrcoef(change_belief_annual[:, i_cohort], change_invest_annual[:, i_cohort])[0, 1]
-                cov_matrix_cohorts[1, i_cohort] = np.corrcoef(change_belief_annual[:, i_cohort], change_portf_annual[:, i_cohort])[0, 1]
-                cov_matrix_cohorts[2, i_cohort] = np.corrcoef(returns_annual, change_belief_annual[:, i_cohort])[0, 1]
-                cov_matrix_cohorts[3, i_cohort] = np.corrcoef(returns_annual, change_invest_annual[:, i_cohort])[0, 1]
-                cov_matrix_cohorts[4, i_cohort] = np.corrcoef(returns_annual, change_portf_annual[:, i_cohort])[0, 1]
-            cov_matrix2[density_n] = np.average(np.nan_to_num(cov_matrix_cohorts, nan=0), weights=cohort_size[0, c_sample], axis=1)
+            num_samples_row = 2000
+            num_samples_col = 300
+            weight_ave = cohort_size[0, c_sample]
+            row_index = np.random.choice(np.arange(weight_ave.shape[0]),
+                                         p=weight_ave / np.sum(weight_ave),
+                                         size=num_samples_row
+                                         )
+            col_index = np.random.choice(np.arange(change_portf_annual.shape[0]),
+                                         size=num_samples_col
+                                         )
+
+            returns_annual_flat = np.reshape(
+                np.tile(
+                    np.reshape(
+                        returns_annual[col_index], (-1, 1)),
+                    (1, num_samples_row)
+                ), (-1))
+
+            cov_matrix2[density_n, 0] = np.corrcoef(
+                np.reshape(change_belief_annual[col_index][:, row_index], (-1)),
+                np.reshape(change_invest_annual[col_index][:, row_index], (-1))
+            )[0, 1]
+            cov_matrix2[density_n, 1] = np.corrcoef(
+                np.reshape(change_belief_annual[col_index][:, row_index], (-1)),
+                np.reshape(change_portf_annual[col_index][:, row_index], (-1))
+            )[0, 1]
+            cov_matrix2[density_n, 2] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_belief_annual[col_index][:, row_index], (-1)),
+            )[0, 1]
+            cov_matrix2[density_n, 3] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_invest_annual[col_index][:, row_index], (-1)),
+            )[0, 1]
+            cov_matrix2[density_n, 4] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_portf_annual[col_index][:, row_index], (-1)),
+            )[0, 1]
 
         else:
             density_types = (0.25, 0.25, 0.25, 0.25)
@@ -225,34 +255,47 @@ def simulate_path(
             del Delta
             change_invest_annual = (invest_annual[1:, :, :-12] - invest_annual[:-1, :, 12:])[:, :, c_sample]
             change_belief_annual = (belief_annual[1:, :, :-12] - belief_annual[:-1, :, 12:])[:, :, c_sample]
-            # change_belief_annual[:, 1, :] = 0
-            # change_belief_annual[:, 2, :][np.where(invest_annual[:-1, 2, 12:]) == 0] = 0
             returns_annual = cumu_returns_annual[1:] - cumu_returns_annual[:-1]
             change_portf_annual = (portf_annual[1:, :, :-12] - portf_annual[:-1, :, 12:])[:, :, c_sample]
 
-            cov_matrix_cohorts = np.zeros((5, 4, len(c_sample)))
-            for i_cohort in range(len(c_sample)):
-                for i_type in range(4):
-                    cov_matrix_cohorts[0, i_type, i_cohort] = np.corrcoef(
-                        change_belief_annual[:, i_type, i_cohort],
-                        change_invest_annual[:, i_type, i_cohort])[0, 1]
-                    cov_matrix_cohorts[1, i_type, i_cohort] = np.corrcoef(
-                        change_belief_annual[:, i_type, i_cohort],
-                        change_portf_annual[:, i_type, i_cohort])[0, 1]
-                    cov_matrix_cohorts[2, i_type, i_cohort] = np.corrcoef(
-                        returns_annual,
-                        change_belief_annual[:, i_type, i_cohort])[0, 1]
-                    cov_matrix_cohorts[3, i_type, i_cohort] = np.corrcoef(
-                        returns_annual,
-                        change_invest_annual[:, i_type, i_cohort])[0, 1]
-                    cov_matrix_cohorts[4, i_type, i_cohort] = np.corrcoef(
-                        returns_annual,
-                        change_portf_annual[:, i_type, i_cohort])[0, 1]
+            num_samples_row = 1000
+            num_samples_col = 300
+            weight_ave = cohort_type_size_mix[0, 0, c_sample]
+            row_index = np.random.choice(np.arange(weight_ave.shape[0]),
+                                         p=weight_ave / np.sum(weight_ave),
+                                         size=num_samples_row
+                                         )
+            col_index = np.random.choice(np.arange(change_portf_annual.shape[0]),
+                                         size=num_samples_col
+                                         )
 
-            cov_matrix2[density_n] = np.average(
-                np.average(np.nan_to_num(cov_matrix_cohorts, nan=0), weights=cohort_type_size_mix[0, 0][c_sample], axis=2),
-                axis=1
-            )
+            returns_annual_flat = np.reshape(
+                np.tile(
+                    np.reshape(
+                        returns_annual[col_index], (-1, 1, 1)),
+                    (1, 4, num_samples_row)
+                ), (-1))
+
+            cov_matrix2[density_n, 0] = np.corrcoef(
+                np.reshape(change_belief_annual[col_index][:, :, row_index], (-1)),
+                np.reshape(change_invest_annual[col_index][:, :, row_index], (-1))
+            )[0, 1]
+            cov_matrix2[density_n, 1] = np.corrcoef(
+                np.reshape(change_belief_annual[col_index][:, :, row_index], (-1)),
+                np.reshape(change_portf_annual[col_index][:, :, row_index], (-1))
+            )[0, 1]
+            cov_matrix2[density_n, 2] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_belief_annual[col_index][:, :, row_index], (-1)),
+            )[0, 1]
+            cov_matrix2[density_n, 3] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_invest_annual[col_index][:, :, row_index], (-1)),
+            )[0, 1]
+            cov_matrix2[density_n, 4] = np.corrcoef(
+                returns_annual_flat,
+                np.reshape(change_portf_annual[col_index][:, :, row_index], (-1)),
+            )[0, 1]
 
     return (
         i,
