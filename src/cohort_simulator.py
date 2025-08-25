@@ -1637,7 +1637,7 @@ def simulate_mean_vola_mix_type(
             est = model.fit()
             regression_table2_b[ii, jj] = est.params[1]
 
-    cohort_entry_annual = (invest_matrix[1:, :, 12:] - invest_matrix[:-1, :, :-12]) > 0
+    cohort_entry_annual = (invest_matrix[1:, :, :-12] - invest_matrix[:-1, :, 12:]) > 0
     entry_cumu = np.cumsum(
         np.flip(np.average(
             np.average(cohort_entry_annual * dt, axis=0), axis=0, weights=alpha_i_mix[0, :, 0]
