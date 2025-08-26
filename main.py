@@ -15,8 +15,8 @@ from scipy.interpolate import make_interp_spline
 
 # Fig1: Shocks and beliefs
 # Fig2: Distribution of beliefs
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
-# folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
+folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
     folder_address + r'realized_shocks_US.xlsx',
     sheet_name='Sheet1',
@@ -220,10 +220,10 @@ cohort_type_size_mix = cohort_size * alpha_i_mix
 Delta_focus = Delta_compare[0, 1, :, 3]
 invest_focus = invest_tracker_compare[0, 1, :, 3]
 cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[3]
-age_cutoffs_SCF = [int(Nt), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]
-n_age_cutoffs = len(age_cutoffs_SCF) - 1
+age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
+n_age_cutoffs = len(age_cutoffs) - 1
 for n in range(n_age_cutoffs):
-    Delta_age_group = Delta_focus[:, age_cutoffs_SCF[n + 1]:age_cutoffs_SCF[n]]
+    Delta_age_group = Delta_focus[:, age_cutoffs[n + 1]:age_cutoffs[n]]
     y_min[:, n] = np.amin(Delta_age_group, axis=1)
     y_max[:, n] = np.amax(Delta_age_group, axis=1)
 for m in range(Nt_data):
@@ -269,7 +269,8 @@ belief_cutoff_case = -theta_compare[0, 1]
 ######################################
 print('Figure 1')
 x = 1926 + np.arange(Nt_data) * dt
-fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(12, 12))
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
+fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(10, 10))
 for j, ax in enumerate(axes):
     if j == 0:
         Z = np.cumsum(dZ_actual[-Nt_data:])
@@ -283,21 +284,18 @@ for j, ax in enumerate(axes):
         ax.set_title(r'(a) Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
         ax.legend(loc='lower left')
 
-    if j == 1:
-        Delta_focus = Delta_time_series[0, 0, :, 3]
-        parti_focus = parti_time_series[0, 0, :, 3]
-        entry_focus = entry_time_series[0, 0, :, 3]
-        exit_focus = exit_time_series[0, 0, :, 3]
+    elif j == 1:
+        Delta_focus = Delta_time_series[0, 1, :, 3]
+        parti_focus = parti_time_series[0, 1, :, 3]
+        entry_focus = entry_time_series[0, 1, :, 3]
+        exit_focus = exit_time_series[0, 1, :, 3]
         y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
         y_max_raw = np.nanmax(Delta_focus)
         y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
         y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_ylim([y_min, y_max])
-        if j == 1:
-            ax.set_title(r'(b) Estimation error, reentry scenario, $\phi=0.0$')
-        else:
-            ax.set_title(r'(c) Estimation error, reentry scenario, $\phi=0.5$')
+        ax.set_title(r'(b) Cohort estimation error')
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -317,25 +315,18 @@ for j, ax in enumerate(axes):
                 ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
                 ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
                         )
-                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
-            elif m == 0:
-                ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=PN_labels[0])
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
-                        label=PN_labels[1])
-                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
-                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
-            else:
-                ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5)
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed')
-                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
+                if m == 2:
+                    ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
+                    ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
+                else:
+                    ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+                    ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
         ax.tick_params(axis='y', labelcolor='black')
         ax.legend(loc='lower left')
 
     elif j == 2:
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim(-1.5, 1.5)
+        ax.set_ylim(-1.4, 1.3)
         ax.set_title('(c) Distribution of estimation error, participants vs. non-participants')
         y20 = y2[:, 0]
         y21 = y2[:, 1]
@@ -352,10 +343,10 @@ for j, ax in enumerate(axes):
         ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4, label=PN_labels[1])
         ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7)
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
-
+        ax.legend(loc='lower left')
     else:
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim(-1.5, 1.5)
+        ax.set_ylim(-1.4, 1.3)
         ax.set_title('(d) Distribution of estimation error, age groups')
         ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
                 # label=r'Cutoff $\Delta_{s,t}$'
@@ -363,45 +354,96 @@ for j, ax in enumerate(axes):
         for k in range(n_age_cutoffs):
             y40 = y4[:, k]
             y50 = y5[:, k]
-            ax.fill_between(x, y40, y50, color=colors_short[k], linewidth=0., alpha=0.4,
+            color_age_group = colors_short[k] if k <= 1 else 'red'
+            ax.fill_between(x, y40, y50, color=color_age_group, linewidth=0., alpha=0.4,
                             label=age_labels[k])
-
-        # constraint_labels = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
-        # colors_short3 = ['midnightblue', 'red', 'darkgreen', 'darkviolet']
-        # color_dot = 'red'
-        # ax.set_title(r'(d) Estimation error, mix scenario, $\phi=0.5$')
-        # ax.set_ylabel(r'Estimation error $\Delta_{j, s,t}$', color='black')
-        # m = 0
-        # Delta_focus = Delta_time_series[1, 1, m]
-        # parti_focus = parti_time_series[1, 1, m]
-        # entry_focus = entry_time_series[1, 1, m]
-        # exit_focus = exit_time_series[1, 1, m]
-        # y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
-        # y_max_raw = np.nanmax(Delta_focus)
-        # y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        # y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        # for k in range(Nconstraint):
-        #     if k != 1:  # not showing the excluded type
-        #         y_cohort = Delta_focus[k]
-        #         y_cohort_N = np.ma.masked_where(parti_focus[k] == 1,
-        #                                         y_cohort)
-        #         y_cohort_P = np.ma.masked_where(parti_focus[k] == 0,
-        #                                         y_cohort)
-        #         y_cohort_entry = np.ma.masked_where(entry_focus[k] == 0,
-        #                                              y_cohort)
-        #         y_cohort_exit = np.ma.masked_where(exit_focus[k] == 0,
-        #                                              y_cohort)
-        #         ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
-        #         ax.plot(x, y_cohort_P, color=colors_short3[k], linewidth=1.5, label=constraint_labels[k])
-        #         ax.plot(x, y_cohort_N, color=colors_short3[k], linewidth=1.5, linestyle='dashed')
-        #         ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-        #         ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
             ax.legend(loc='lower left')
         ax.tick_params(axis='y', labelcolor='black')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig(
-    'f1.png',
+    'f1_merged.png',
+    dpi=200)
+plt.show()
+plt.close()
+
+
+######################################
+######## Figure 1.Appendix   #########
+######################################
+y_age_group = np.empty((Nt_data, 3, 3))
+alpha_constraint = np.ones(
+    (1, Nconstraint)) * density_set[1]
+alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+cohort_type_size_mix = cohort_size * alpha_i_mix
+Delta_focus = Delta_compare[1, 1]
+invest_focus = invest_tracker_compare[1, 1]
+cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[3]
+age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
+n_age_cutoffs = len(age_cutoffs) - 1
+
+for m in range(Nt_data):
+    # in age groups
+    for n in range(n_age_cutoffs):
+        Delta_age_group = np.reshape(Delta_focus[m, :, age_cutoffs[n + 1]:age_cutoffs[n]], (-1))
+        popu_age_group = np.reshape(cohort_type_size_mix[0, :, age_cutoffs[n + 1]:age_cutoffs[n]], (-1))
+        Delta_rank = Delta_age_group.argsort()
+        Delta_sorted = Delta_age_group[Delta_rank[::-1]]
+        cohort_size_sorted = popu_age_group[Delta_rank[::-1]]
+        popu_cumsum = np.cumsum(cohort_size_sorted)
+        total_popu = popu_cumsum[-1]
+        cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
+        y_age_group[m, n] = Delta_sorted[cutoff]  # highest to lowest
+
+y_PN = np.zeros((Nt_data, 2, 2))
+for m in range(Nt_data):
+    # participants vs. non-participants
+    parti_cohorts = invest_focus[m]
+    Delta = Delta_focus[m]
+
+    y_PN[m, 0, 0] = np.average(Delta, weights=cohort_type_size_mix[0]*parti_cohorts)
+    y_PN[m, 1, 0] = np.average(Delta, weights=cohort_type_size_mix[0]*(1-parti_cohorts))
+
+    # print(m)
+    # for n in range(100):
+    #     num_samples_row = 1000
+    #     weight_ave = cohort_type_size_mix[0, 0]
+    #     row_index = np.random.choice(np.arange(weight_ave.shape[0]),
+    #                                  p=weight_ave / np.sum(weight_ave),
+    #                                  size=num_samples_row
+    #                                  )
+    #     Delta_sample = Delta[:, row_index]
+    #     parti_sample = parti_cohorts[:, row_index]
+    #     YN_sample[n, 0, 0] = np.average(Delta_sample, weights=parti_sample)
+    #     YN_sample[n, 1, 0] = np.average(Delta_sample, weights=(1 - parti_sample))
+    #     YN_sample[n, 0, 1] = np.std(Delta_sample[np.where(parti_sample == 1)])
+    #     YN_sample[n, 1, 1] = np.std(Delta_sample[np.where(parti_sample == 0)])
+    # y_PN[m] = np.average(YN_sample, axis=0)
+
+x = 1926 + np.arange(Nt_data) * dt
+belief_cutoff_case = -theta_compare[1, 1]
+
+######################################
+###########   Figure 1   #############
+######################################
+print('Figure 1')
+x = 1926 + np.arange(Nt_data) * dt
+fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(10, 5))
+for j, ax in enumerate(axes):
+    ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+    color_j = 'maroon' if j == 0 else 'navy'
+    title_j = 'Participants' if j == 0 else 'Nonparticipants'
+    ax.set_title(title_j)
+    # if j == 1:
+    ax.set_ylim(-0.3, 0.3)
+    ax.plot(x, y_PN[:, j, 0], color=color_j, linewidth=2, label=PN_labels[j])
+    # ax.fill_between(x, y_PN[77 * 12:, j, 0]-y_PN[77 * 12:, j, 1], y_PN[77 * 12:, j, 0]+y_PN[77 * 12:, j, 1], color=color_j, linewidth=0., alpha=0.4)
+    # ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
+    ax.legend(loc='lower left')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'IA_f1_merged.png',
     dpi=200)
 plt.show()
 plt.close()
@@ -411,44 +453,44 @@ plt.close()
 ######################################
 
 
-fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
-for jj, ax in enumerate(axes):
-    ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    ax.set_ylim(-1.5, 1.5)
-    if jj == 0:
-        ax.set_title('(a) Distribution of estimation error, participants vs. non-participants')
-        y20 = y2[:, 0]
-        y21 = y2[:, 1]
-        y22 = y2[:, 2]
-        y23 = y2[:, 3]
-        y24 = np.maximum(belief_cutoff_case, y1[:, 4])
-        y30 = np.maximum(belief_cutoff_case, y3[:, 0])
-        y31 = y3[:, 1]
-        y32 = y3[:, 2]
-        y33 = y3[:, 3]
-        y34 = y3[:, 4]
-        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4, label=PN_labels[0])
-        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7)
-        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4, label=PN_labels[1])
-        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7)
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
-    else:
-        ax.set_title('(b) Distribution of estimation error, age groups')
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
-                # label=r'Cutoff $\Delta_{s,t}$'
-                )
-        for k in range(n_age_cutoffs):
-            y40 = y4[:, k]
-            y50 = y5[:, k]
-            ax.fill_between(x, y40, y50, color=colors_short[k], linewidth=0., alpha=0.4,
-                            label=age_labels[k])
-    ax.legend(loc='lower right')
-    ax.set_xlabel('Time in simulation')
-    fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
-    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-fig.savefig('f2.png', dpi=200)
-plt.show()
-plt.close()
+# fig, axes = plt.subplots(nrows=2, sharex='all', sharey='all', figsize=(10, 8))
+# for jj, ax in enumerate(axes):
+#     ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+#     ax.set_ylim(-1.5, 1.5)
+#     if jj == 0:
+#         ax.set_title('(a) Distribution of estimation error, participants vs. non-participants')
+#         y20 = y2[:, 0]
+#         y21 = y2[:, 1]
+#         y22 = y2[:, 2]
+#         y23 = y2[:, 3]
+#         y24 = np.maximum(belief_cutoff_case, y1[:, 4])
+#         y30 = np.maximum(belief_cutoff_case, y3[:, 0])
+#         y31 = y3[:, 1]
+#         y32 = y3[:, 2]
+#         y33 = y3[:, 3]
+#         y34 = y3[:, 4]
+#         ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4, label=PN_labels[0])
+#         ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7)
+#         ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4, label=PN_labels[1])
+#         ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7)
+#         ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
+#     else:
+#         ax.set_title('(b) Distribution of estimation error, age groups')
+#         ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
+#                 # label=r'Cutoff $\Delta_{s,t}$'
+#                 )
+#         for k in range(n_age_cutoffs):
+#             y40 = y4[:, k]
+#             y50 = y5[:, k]
+#             ax.fill_between(x, y40, y50, color=colors_short[k], linewidth=0., alpha=0.4,
+#                             label=age_labels[k])
+#     ax.legend(loc='lower right')
+#     ax.set_xlabel('Time in simulation')
+#     fig.tight_layout(h_pad=2, w_pad=2)  # otherwise the right y-label is slightly clipped
+#     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+# fig.savefig('f2.png', dpi=200)
+# plt.show()
+# plt.close()
 
 ######################################
 ##########   Figure 2.1   ############
@@ -482,69 +524,79 @@ for i in range(2):
 ###########   Figure 3   #############
 ######################################
 ## Estimation error and participation rate given age
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
-n_files = int(Mpath / 25)
-
-Delta_age_all = np.zeros((3, n_files, 2, 200))
-parti_age_all = np.zeros((3, n_files, 200))
-phi_set = [0.0, 0.5, 0.8]
-for i in range(n_files):
-    for j, phi_j in enumerate(phi_set):
-        Delta_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['Delta_age'], axis=0)
-        parti_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['parti_age'], axis=0)
-Delta_age_ave = np.average(Delta_age_all, axis=1)
-parti_age_ave = np.average(parti_age_all, axis=1)
-
-n_phi = len(phi_set)
-age_cut = 100
-x_age = np.arange(20, age_cut)
-fig_titles = [r'(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
-              '(b) Reentry, average participation probability']
-y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
-fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
-for j, ax in enumerate(axes):
-    ax.set_xlabel('Age')
-    y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
-    ax.set_ylabel(y_titles[j])
-    for i in range(3):
-        if j == 0:
-            y_reentry = y_case[i, 1, :age_cut - 20]
-            y_complete = y_case[i, 0, :age_cut - 20]
-            if phi_set[i] == 0.5:
-                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry")
-                ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed', label="Complete Market")
-                ax.legend()
-            elif phi_set[i] == 0:
-                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-            else:
-                ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
-                ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed')
-        else:
-            y = y_case[i, :age_cut - 20]
-            label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_set[i]))
-            ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
-            ax.legend()
-    ax.set_title(fig_titles[j], color='black')
-    ax.tick_params(axis='y', labelcolor='black')
-    # ax.set_xlim(-1, 100)
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('f3_1.png', dpi=200)
-plt.show()
-plt.close()
+# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+# n_files = int(Mpath / 25)
+#
+# Delta_age_all = np.zeros((3, n_files, 2, 200))
+# parti_age_all = np.zeros((3, n_files, 200))
+# phi_set = [0.0, 0.5, 0.8]
+# for i in range(n_files):
+#     for j, phi_j in enumerate(phi_set):
+#         Delta_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['Delta_age'], axis=0)
+#         parti_age_all[j, i] = np.average(np.load(folder_address + str(i) + str(phi_j) + "simulation_new.npz")['parti_age'], axis=0)
+# Delta_age_ave = np.average(Delta_age_all, axis=1)
+# parti_age_ave = np.average(parti_age_all, axis=1)
+#
+# n_phi = len(phi_set)
+# age_cut = 100
+# x_age = np.arange(20, age_cut)
+# fig_titles = [r'(a) Reentry and complete market, average $\mid\Delta_{s,t}\mid$',
+#               '(b) Reentry, average participation probability']
+# y_titles = [r'Average $\mid\Delta_{s,t}\mid$', 'Average participation probability']
+# fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', figsize=(10, 5))
+# for j, ax in enumerate(axes):
+#     ax.set_xlabel('Age')
+#     y_case = np.copy(Delta_age_ave) if j == 0 else np.copy(parti_age_ave)
+#     ax.set_ylabel(y_titles[j])
+#     for i in range(3):
+#         if j == 0:
+#             y_reentry = y_case[i, 1, :age_cut - 20]
+#             y_complete = y_case[i, 0, :age_cut - 20]
+#             if phi_set[i] == 0.5:
+#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5, label="Re-entry")
+#                 ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed', label="Complete Market")
+#                 ax.legend()
+#             elif phi_set[i] == 0:
+#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+#             else:
+#                 ax.plot(x_age, y_reentry, color=colors[i], linewidth=1.5)
+#                 ax.plot(x_age, y_complete, color=colors[i], linewidth=1.5, linestyle='dashed')
+#         else:
+#             y = y_case[i, :age_cut - 20]
+#             label_i = r'$\phi$=' + str('{0:.2f}'.format(phi_set[i]))
+#             ax.plot(x_age, y, color=colors[i], linewidth=1.5, label=label_i)
+#             ax.legend()
+#     ax.set_title(fig_titles[j], color='black')
+#     ax.tick_params(axis='y', labelcolor='black')
+#     # ax.set_xlim(-1, 100)
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.savefig('f3_1.png', dpi=200)
+# plt.show()
+# plt.close()
 
 ######################################
 ###########   Figure 4   #############
 ######################################
 # # counts of entry
-# entry_counts = np.average(results_df1['nr of entry'], axis=0)
-# y_case = np.copy(entry_counts[2][1])
-# age_cut = 65
-# x_age = np.arange(20, 20+age_cut)
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+Mpath = 2000
+n_files = int(Mpath / 25)
+# entry_counts_mat = np.load(folder_address+ f'0simulation_new.npz')['entry_cumu']
+# for i in range(1, n_files):
+#     entry_counts_i = np.load(folder_address+ f'{i}simulation_new.npz')['entry_cumu']
+#     entry_counts_mat = np.append(entry_counts_mat, entry_counts_i, axis=0)
+#
+# y_case = np.average(entry_counts_mat, axis=0)
+# y_case[1] += 0.25
+# age_cut = 60
+# x_age = np.arange(0, age_cut)
 # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 4))
-# ax.set_xlabel('Age')
+# ax.set_xlabel('Years of experience')
 # ax.set_ylabel('Average counts of entry')
-# ax.set_ylim(0, 1.5)
-# ax.plot(x_age, y_case[:age_cut], color='navy', linewidth=1.5)
+# ax.set_ylim(0, 1.0)
+# ax.plot(x_age, y_case[1, :age_cut], color='navy', linewidth=1.5, label='Mix')
+# # ax.plot(x_age, y_case[0, :age_cut], color='navy', linewidth=1.5, label='Reentry', linestyle='dashed')
+# ax.legend()
 # # ax.set_title(fig_titles[j], color='black')
 # ax.tick_params(axis='y', labelcolor='black')
 # fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -555,8 +607,6 @@ plt.close()
 # how long before exiting upon entry &
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
-n_files = int(Mpath / 25)
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
 spell_mat = np.zeros((int(Mpath / 10), 2, len(sample_shocks), 2, 5748), dtype=int)
 stock_returns_mat = np.zeros((int(Mpath / 10), len(sample_shocks)))
@@ -593,12 +643,56 @@ for i in range(Mpath):
 # plt.close()
 
 # conditional on stock returns at the point of exit
-fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 4.5))
-for i, ax in enumerate(axes):
+# fig, axes = plt.subplots(nrows=1, ncols=2, sharey='all', sharex='all', figsize=(10, 4.5))
+# for i, ax in enumerate(axes):
+#     cutoffs_return = np.percentile(stock_returns_mat, [10])
+#     title_i = 'Re-entry scenario' if i == 0 else 'Mix scenario'
+#     ax.set_title(title_i)
+#     data_mat = spell_mat[:, i]
+#     for j in range(2):
+#         if j == 0:
+#             counts_mat = np.zeros((5748, 21))
+#             for ii in range(5748):
+#                 unique, counts = np.unique(data_mat[:, :, :, ii], return_counts=True)
+#                 for jj, uni_jj in enumerate(unique):
+#                     counts_mat[ii, uni_jj] = counts[jj]
+#         else:
+#             data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 10), -1, 1))
+#             counts_mat = np.zeros((5748, 21))
+#             for ii in range(5748):
+#                 unique, counts = np.unique(data_mat[:, :, :, ii] * data_where, return_counts=True)
+#                 for jj, uni_jj in enumerate(unique):
+#                     counts_mat[ii, uni_jj] = counts[jj]
+#         popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
+#         counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
+#         counts_percentage_cum = np.cumsum(counts_percentage)
+#         x = np.arange(1, 20)
+#         data_inter = np.arange(0, len(counts_percentage) - 1, 2)
+#         X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage_cum[data_inter], k=3)
+#         X_ = np.linspace(1, 19, 100)
+#         Y_ = X_Y_Spline(X_)
+#         color_i = 'red' if j == 1 else 'navy'
+#         label_i = '1-year return bottom decile' if j == 1 else 'Unconditional'
+#         ax.plot(X_, Y_, linewidth=2,
+#                 # linestyle=line_style_i,
+#                 label=label_i, color=color_i)
+#         ax.legend(loc='lower right')
+#     ax.set_ylim(0.1, 1.0)
+#     ax.set_xlim(0, 10)
+#     ax.set_xlabel('Years since exiting')
+#     ax.set_ylabel('Fraction of individuals re-entering')
+# plt.savefig('f5_2.png', dpi=200)
+# plt.show()
+# plt.close()
+
+
+
+# ax.set_title('Simulation')
+for i in range(2):
+    fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(5, 5))
     cutoffs_return = np.percentile(stock_returns_mat, [10])
-    title_i = 'Re-entry scenario' if i == 0 else 'Mix scenario'
-    ax.set_title(title_i)
     data_mat = spell_mat[:, i]
+    label_i = 'reentry' if i == 0 else 'mix'
     for j in range(2):
         if j == 0:
             counts_mat = np.zeros((5748, 21))
@@ -621,19 +715,20 @@ for i, ax in enumerate(axes):
         X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage_cum[data_inter], k=3)
         X_ = np.linspace(1, 19, 100)
         Y_ = X_Y_Spline(X_)
-        color_i = 'red' if j == 1 else 'navy'
-        label_i = '1-year return bottom decile' if j == 1 else 'Unconditional'
+        color_j = 'red' if j == 1 else 'navy'
+        label_j = r'$dR_{t-1,t}$ bottom decile' if j == 1 else 'Unconditional'
+        line_style_i = 'solid'
         ax.plot(X_, Y_, linewidth=2,
-                # linestyle=line_style_i,
-                label=label_i, color=color_i)
+                linestyle=line_style_i,
+                label=label_j, color=color_j)
         ax.legend(loc='lower right')
     ax.set_ylim(0.1, 1.0)
-    ax.set_xlim(0, 20)
+    ax.set_xlim(1, 10)
     ax.set_xlabel('Years since exiting')
     ax.set_ylabel('Fraction of individuals re-entering')
-plt.savefig('f5_2.png', dpi=200)
-plt.show()
-plt.close()
+    plt.savefig(f'f5_2{label_i}.png', dpi=200)
+    plt.show()
+    plt.close()
 
 
 
