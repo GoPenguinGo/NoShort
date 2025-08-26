@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate_SI_mean_vola, simulate_mix_mean_vola
 from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nt, Nc, tau, tax, \
-    cutoffs_age, Ntype, alpha_i, Mpath, \
+    cutoffs_age, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_type_size, cohort_size, T_hat, Npre, Vhat
 from src.param import phi
@@ -31,10 +31,11 @@ N_sample = len(sample)
 age_sample = np.arange(1, int(200 / dt), 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
 window_bell = 20
+Mpath = 2000
 
 np.seterr(invalid='ignore')
-# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
-folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/simu_results/'
+folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
+# folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/simu_results/'
 
 
 def simulate_path(
@@ -177,7 +178,7 @@ def simulate_path(
                 sigma_Y,
                 tax,
                 beta0,
-                phi_i,
+                phi,
                 Npre,
                 Ninit,
                 T_hat,
@@ -211,8 +212,7 @@ def simulate_path(
                 exit_time_compare[g] = exit_time[:, 2:]
 
     if need_invest_matrix == 'True':
-        if phi_i == phi:
-            np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
+        np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
     # np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
 
     return (
