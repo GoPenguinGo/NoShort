@@ -84,16 +84,23 @@ def simulate_path(
                     )
 
     # regression: regressing change of belief on shocks, with a dummy about time and age
+    gap = 12
 
-    t_sample = np.arange(0, Nt, 12)
+    t_sample = np.arange(0, Nt, gap)
     c_sample = np.arange(0, Nc, 60)
 
     parti = pi > 0
 
-    Delta_prior = Delta[:-1, 1:]
-    d_Delta = Delta[1:, :-1] - Delta_prior
-    Parti_prior = parti[:-1, 1:]
-    shocks = dZ[1:]
+    Delta_prior = Delta[:-gap, gap:]
+    d_Delta = Delta[gap:, :-gap] - Delta_prior
+    Parti_prior = parti[:-gap, gap:]
+    d_parti = parti[gap:, :-gap] - parti_prior
+    shocks = dZ[gap:]
+
+    past_annual_return = np.zeros(Nt)
+
+    past_annual_return[n, gap:] = (np.cumsum(dZ)[gap:] - np.cumsum(dZ)[:-gap]) / (gap / 12)
+    past_annual_return[n, :gap] = np.cumsum(dR[:gap]) / (gap / 12)
 
     regression_table = np.zeros((len(c_sample), 4))
     for j in range(len(c_sample)):

@@ -448,6 +448,109 @@ plt.savefig(
 plt.show()
 plt.close()
 
+
+x = 1926 + np.arange(Nt_data) * dt
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'saddlebrown']
+fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(10, 10))
+for j, ax in enumerate(axes):
+    if j == 0:
+        Z = np.cumsum(dZ_actual[-Nt_data:])
+        Z_SI = np.cumsum(
+            dZ_SI_actual[-Nt_data:])
+        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
+        ax.plot(x, Z, color='black', linewidth=1.5, label=r'$z^Y_t$')
+        ax.plot(x, Z_SI, color='gray', linewidth=1.5, label=r'$z^{SI}_t$')
+        ax.tick_params(axis='y', labelcolor='black')
+        ax.tick_params(axis='x', labelcolor='black')
+        ax.set_title(r'(a) Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
+        ax.legend(loc='lower left')
+
+    elif j <= 2:
+        Delta_focus = Delta_time_series[0, 2 - j, :, 3]
+        parti_focus = parti_time_series[0, 2 - j, :, 3]
+        entry_focus = entry_time_series[0, 2 - j, :, 3]
+        exit_focus = exit_time_series[0, 2 - j, :, 3]
+        y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
+        y_max_raw = np.nanmax(Delta_focus)
+        y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        ax.set_ylim([y_min, y_max])
+        phi_j = r', $\phi=0.5$' if j == 1 else r', $\phi=0.0$'
+        number_j = r'(b) ' if j == 1 else r'(c) '
+        ax.set_title(number_j + r'Cohort estimation error, Reentry scenario, ' + phi_j)
+        for m in range(nn):
+            # switch[m, starts[m]] = 1
+            y_cohort = Delta_focus[m]
+            y_cohort_N = np.ma.masked_where(parti_focus[m] == 1,
+                                            y_cohort)
+            y_cohort_P = np.ma.masked_where(parti_focus[m] == 0,
+                                            y_cohort)
+            y_cohort_entry = np.ma.masked_where(
+                entry_focus[m] == 0,
+                y_cohort)
+            y_cohort_exit = np.ma.masked_where(
+                exit_focus[m] == 0,
+                y_cohort)
+            ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
+            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+            ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
+            ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
+                    )
+            if m == 2:
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
+            else:
+                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
+            if j == 1:
+                ax.legend(loc='lower left')
+        ax.tick_params(axis='y', labelcolor='black')
+
+    else:
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        ax.set_title('(d) Cohort estimation error, Mix scenario, $\phi=0.5$')
+        cohort_j = 1
+        Delta_focus = Delta_time_series[1, 1, cohort_j]
+        parti_focus = parti_time_series[1, 1, cohort_j]
+        entry_focus = entry_time_series[1, 1, cohort_j]
+        exit_focus = exit_time_series[1, 1, cohort_j]
+        y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
+        y_max_raw = np.nanmax(Delta_focus)
+        y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        ax.set_ylim([y_min, y_max])
+        types_label = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
+        for m, type_label in enumerate(types_label):
+            # switch[m, starts[m]] = 1
+            y_cohort = Delta_focus[m]
+            y_cohort_N = np.ma.masked_where(parti_focus[m] == 1,
+                                            y_cohort)
+            y_cohort_P = np.ma.masked_where(parti_focus[m] == 0,
+                                            y_cohort)
+            y_cohort_entry = np.ma.masked_where(
+                entry_focus[m] == 0,
+                y_cohort)
+            y_cohort_exit = np.ma.masked_where(
+                exit_focus[m] == 0,
+                y_cohort)
+            ax.vlines(starts[cohort_j]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
+            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
+            ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=type_label)
+            ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
+                    )
+            ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
+            ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
+            ax.legend(loc='lower left')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'IA_f1_merged.png',
+    dpi=200)
+plt.show()
+plt.close()
+
+
 ######################################
 ###########   Figure 2   #############
 ######################################

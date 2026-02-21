@@ -50,7 +50,7 @@ nu = 0.02
 tax = 0.35
 
 phi_set = [
-    # 0.0,
+    0.0,
     0.5
 ]
 
@@ -136,36 +136,22 @@ def simulate_path(
                                        )
 
                 parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-                parti_df['beta' + col_name] = beta[-Nt_data:].astype(np.float32)
-                if country == 'US':
-                    age_belief = np.zeros((len(age_cutoffs)-1, Nt_data))
-                    for n in range(len(age_cutoffs) - 1):
-                        age_belief[n] = np.average(
-                            np.average(Delta[-Nt_data:, :, age_cutoffs[n + 1]:age_cutoffs[n]],
-                                       weights=cohort_size[0, age_cutoffs[n + 1]:age_cutoffs[n]],
-                                       axis=2),
-                            weights=density_types,
-                            axis=1)
-                    parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
-                    parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                    parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
-                    parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
-
-                    parti_dividend = np.zeros(Nt_data).astype(np.float32)
-                    for t in range(Nt_data):
-                        parti_dividend_t = np.zeros((12, 4, Nc - 12)).astype(np.float32)
-                        for tc in range(12):
-                            parti_dividend_t[tc] = pi[Nt - Nt_data + t - tc, :, 12 - tc: -tc] != 0 if tc != 0 \
-                                else pi[Nt - Nt_data + t - tc, :, 12 - tc:] != 0
-                        parti_dividend[t] = np.average(np.sum(parti_dividend_t, axis=0) != 0,
-                                                       weights=cohort_type_size_mix[0, :, 12:])
-                    parti_df['parti_dividend' + col_name] = parti_dividend.astype(np.float32)
-
-                if country == 'Finland' or country == 'Norway':
-                    parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
-                    parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
+                age_belief = np.zeros((len(age_cutoffs) - 1, Nt_data))
+                for n in range(len(age_cutoffs) - 1):
+                    age_belief[n] = np.average(
+                        np.average(Delta[-Nt_data:, :, age_cutoffs[n + 1]:age_cutoffs[n]],
+                                   weights=cohort_size[0, age_cutoffs[n + 1]:age_cutoffs[n]],
+                                   axis=2),
+                        weights=density_types,
+                        axis=1)
+                parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
+                parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
+                parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
+                parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
+                parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
+                parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
                 parti_df.to_stata(f'stata_dataset/{country}_Michigan/{i}.dta')
 
     return (
