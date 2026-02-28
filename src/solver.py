@@ -278,7 +278,7 @@ def solve_theta(
     invest = (
             Delta_s_t >= -theta_guess
     ) * invest_tracker + (
-            Delta_s_t >= entry_bound - theta_guess
+            Delta_s_t >= (entry_bound - theta_guess)
     ) * (1 - invest_tracker)
     invest_consumption_share = invest * consumption_share
     Delta_bar_parti = np.sum(

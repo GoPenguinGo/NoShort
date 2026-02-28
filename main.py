@@ -35,8 +35,8 @@ phi_set = [
     0.5
 ]
 entry_boundary_set = [
-    0.1,
-    0.2,
+    0.05,
+    0.03,
 ]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
@@ -60,110 +60,112 @@ invest_tracker_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data
 parti_age_group_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, 4), dtype=np.float16)
 for i in range(n_scenarios):
     for j, phi in enumerate(phi_set):
-        if i == 0:
-            mode_trade = 'w_constraint'
-            mode_learn = 'reentry'
-            (
-                r,
-                theta,
-                f_c,
-                Delta,
-                pi,
-                parti,
-                Phi_bar_parti,
-                Phi_tilde_parti,
-                Delta_bar_parti,
-                Delta_tilde_parti,
-                dR,
-                mu_S,
-                sigma_S,
-                beta,
-                invest_tracker,
-                parti_age_group,
-                parti_wealth_group,
-                entry_mat,
-                exit_mat
-            ) = simulate_SI(mode_trade,
-                            mode_learn,
-                            Nc,
-                            Nt,
-                            dt,
-                            nu,
-                            Vhat,
-                            mu_Y,
-                            sigma_Y,
-                            tax,
-                            beta0,
-                            phi,
-                            Npre,
-                            Ninit,
-                            T_hat,
-                            entry_bound,
-                            dZ_build,
-                            dZ,
-                            dZ_SI_build,
-                            dZ_SI,
-                            tau,
-                            cutoffs_age,
-                            Ntype,
-                            rho_i,
-                            alpha_i,
-                            beta_i,
-                            rho_cohort_type,
-                            cohort_type_size,
-                            need_f='True',
-                            need_Delta='True',
-                            need_pi='True',
-                            )
-            Delta_compare[i, j, :, 3] = Delta[-Nt_data:]
-            pi_compare[i, j, :, 3] = pi[-Nt_data:]
-            invest_tracker_compare[i, j, :, 3] = (pi[-Nt_data:] != 0)
-        else:
-            alpha_constraint = np.ones(
-                (1, Nconstraint)) * density_set[i]
-            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-            cohort_type_size_mix = cohort_size * alpha_i_mix
-            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-            (
-                r,
-                theta,
-                f_c,
-                Delta,
-                pi,
-                parti,
-                Phi_bar_parti,
-                Phi_tilde_parti,
-                Delta_bar_parti,
-                Delta_tilde_parti,
-                dR,
-                mu_S,
-                sigma_S,
-                beta,
-                invest_tracker,
-                parti_age_group,
-                parti_wealth_group,
-                entry_mat,
-                exit_mat
-            ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                   beta0,
-                                   phi, Npre, Ninit, T_hat,
-                                   dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                   cutoffs_age, Ntype,
-                                   Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                   rho_cohort_type_mix,
-                                   cohort_type_size_mix,
-                                   need_f='True',
-                                   need_Delta='True',
-                                   need_pi='True',
-                                   )
-            Delta_compare[i, j] = Delta[-Nt_data:]
-            pi_compare[i, j] = pi[-Nt_data:]
-            invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
-        theta_compare[i, j] = theta[-Nt_data:]
-        Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
-        parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
+        for k, entry_bound in enumerate(entry_boundary_set):
+            if i == 0:
+                mode_trade = 'w_constraint'
+                mode_learn = 'reentry'
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    invest_tracker,
+                    parti_age_group,
+                    parti_wealth_group,
+                    entry_mat,
+                    exit_mat
+                ) = simulate_SI(mode_trade,
+                                mode_learn,
+                                Nc,
+                                Nt,
+                                dt,
+                                nu,
+                                Vhat,
+                                mu_Y,
+                                sigma_Y,
+                                tax,
+                                beta0,
+                                phi,
+                                Npre,
+                                Ninit,
+                                T_hat,
+                                entry_bound,
+                                dZ_build,
+                                dZ,
+                                dZ_SI_build,
+                                dZ_SI,
+                                tau,
+                                cutoffs_age,
+                                Ntype,
+                                rho_i,
+                                alpha_i,
+                                beta_i,
+                                rho_cohort_type,
+                                cohort_type_size,
+                                need_f='True',
+                                need_Delta='True',
+                                need_pi='True',
+                                )
+                Delta_compare[i, j, k, :, 3] = Delta[-Nt_data:]
+                pi_compare[i, j, k, :, 3] = pi[-Nt_data:]
+                invest_tracker_compare[i, j, k, :, 3] = (pi[-Nt_data:] != 0)
+            else:
+                alpha_constraint = np.ones(
+                    (1, Nconstraint)) * density_set[i]
+                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                cohort_type_size_mix = cohort_size * alpha_i_mix
+                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    invest_tracker,
+                    parti_age_group,
+                    parti_wealth_group,
+                    entry_mat,
+                    exit_mat
+                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                       beta0,
+                                       phi, Npre, Ninit, T_hat,
+                                       dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                       cutoffs_age, Ntype,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                       rho_cohort_type_mix,
+                                       cohort_type_size_mix,
+                                       need_f='True',
+                                       need_Delta='True',
+                                       need_pi='True',
+                                       )
+                Delta_compare[i, j, k] = Delta[-Nt_data:]
+                pi_compare[i, j] = pi[-Nt_data:]
+                invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
+            theta_compare[i, j] = theta[-Nt_data:]
+            Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
+            parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
+
 
 #####################################
 #######  individual cohorts  #######
