@@ -21,6 +21,7 @@ def build_cohorts_SI(
     phi: float,
     Npre: int,
     Ninit: int,
+    entry_bound: float,
     mode_trade: str,
     mode_learn: str,
 ) -> Tuple[
@@ -162,8 +163,8 @@ def build_cohorts_SI(
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
                 )
-                a = Delta_s_t + theta_t
-                invest = (a > 0)
+                theta_st = Delta_s_t + theta_t
+                invest = (theta_st > 0)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 invest_tracker = invest * invest_tracker
                 d_eta_st = a * invest_tracker - theta_t
@@ -173,18 +174,23 @@ def build_cohorts_SI(
 
             elif mode_learn == 'reentry':   # agents switch between type P and type N
                 possible_cons_share = f_c_ist * dt
-                possible_delta_st = Delta_s_t
+                possible_delta_st = np.copy(Delta_s_t)
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection(
-                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
+                    solve_theta, lowest_bound, 50,
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
                 )
-                a = Delta_s_t + theta_t
-                invest = (a > 0)
+                theta_st = Delta_s_t + theta_t
+                invest = (
+                                 Delta_s_t >= -theta_t
+                         ) * invest_tracker + (
+                                 Delta_s_t >= entry_bound - theta_t
+                         ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
                 switch = switch_N_to_P + switch_P_to_N
-                invest_tracker = invest
-                d_eta_st = a * invest_tracker - theta_t
+                invest_tracker = np.copy(invest)
+                d_eta_st = theta_st * invest_tracker - theta_t
 
                 # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
                 Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + \

@@ -30,9 +30,17 @@ density_set = [
     (0.0, 0.0, 0.0, 1.0),
     (0.25, 0.25, 0.25, 0.25),
 ]
-phi_set = [0.0, 0.5]
+phi_set = [
+    0.0,
+    0.5
+]
+entry_boundary_set = [
+    0.1,
+    0.2,
+]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
+n_entry_boundary = len(entry_boundary_set)
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]
 dZ = dZ_matrix[0]
@@ -44,12 +52,12 @@ data_shocks.loc[data_shocks['dZ_SI'].isna(), 'dZ_SI'] = filler
 dZ_SI_actual = data_shocks.to_numpy()[:, 1]
 dZ[-dZ_actual.size:] = dZ_actual
 dZ_SI[-Nt_data:] = dZ_SI_actual[-Nt_data:]
-theta_compare = np.empty((n_scenarios, n_phi, Nt_data), dtype=np.float32)
-Delta_bar_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float32)
-Delta_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
-pi_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
-invest_tracker_compare = np.zeros((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=int)
-parti_age_group_compare = np.zeros((n_scenarios, n_phi, Nt_data, 4), dtype=np.float16)
+theta_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float32)
+Delta_bar_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float32)
+Delta_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
+pi_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
+invest_tracker_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=int)
+parti_age_group_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, 4), dtype=np.float16)
 for i in range(n_scenarios):
     for j, phi in enumerate(phi_set):
         if i == 0:
@@ -90,6 +98,7 @@ for i in range(n_scenarios):
                             Npre,
                             Ninit,
                             T_hat,
+                            entry_bound,
                             dZ_build,
                             dZ,
                             dZ_SI_build,

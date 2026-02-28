@@ -30,6 +30,7 @@ def simulate_cohorts_SI(
         phi: float,
         T_hat: float,
         Npre: float,
+        entry_bound: float,
         mode_trade: str,
         mode_learn: str,
         cohort_type_size: np.ndarray,
@@ -268,10 +269,15 @@ def simulate_cohorts_SI(
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
-                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
-                )  # solve for theta
+                    solve_theta, lowest_bound, 50,
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
+                )
                 a = Delta_s_t + theta_t
-                invest = (a > 0)
+                invest = (
+                                 Delta_s_t >= -theta_t
+                         ) * invest_tracker + (
+                                 Delta_s_t >= entry_bound - theta_t
+                         ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
 
@@ -407,6 +413,7 @@ def simulate_cohorts_mean_vola(
         phi: float,
         T_hat: float,
         Npre: float,
+        entry_bound: float,
         mode_trade: str,
         mode_learn: str,
         cohort_type_size: np.ndarray,
@@ -634,10 +641,15 @@ def simulate_cohorts_mean_vola(
                 possible_delta_st = Delta_s_t
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
-                    solve_theta, lowest_bound, 50, possible_cons_share, possible_delta_st, sigma_Y
-                )  # solve for theta
+                    solve_theta, lowest_bound, 50,
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
+                )
                 a = Delta_s_t + theta_t
-                invest = (a > 0)
+                invest = (
+                                 Delta_s_t >= -theta_t
+                         ) * invest_tracker + (
+                                 Delta_s_t >= entry_bound - theta_t
+                         ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
                 # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
