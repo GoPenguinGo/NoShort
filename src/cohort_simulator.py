@@ -266,7 +266,7 @@ def simulate_cohorts_SI(
 
             elif mode_learn == 'reentry':  # agents switch between type P and type N
                 possible_cons_share = f_c_ist * dt
-                possible_delta_st = Delta_s_t
+                possible_delta_st = np.copy(Delta_s_t)
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50,

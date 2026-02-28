@@ -248,9 +248,11 @@ def bisection(
             flow = fmid
         diff = abs(fhigh - flow)
         iter += 1
-        if iter > 50:
-            print("Warning! It takes more than 50 iteration to converge.")
-            break
+        if iter > 30:
+            # print("Warning! It takes more than 50 iteration to converge.")
+            print(diff)
+            if iter > 50:
+                break
     return xmid
 
 
