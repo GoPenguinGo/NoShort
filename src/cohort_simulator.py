@@ -274,9 +274,9 @@ def simulate_cohorts_SI(
                 )
                 a = Delta_s_t + theta_t
                 invest = (
-                                 Delta_s_t >= -theta_t
+                                 a >= 0
                          ) * invest_tracker + (
-                                 Delta_s_t >= (entry_bound - theta_t)
+                                 a >= entry_bound
                          ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
@@ -646,15 +646,15 @@ def simulate_cohorts_mean_vola(
                 )
                 a = Delta_s_t + theta_t
                 invest = (
-                                 Delta_s_t >= -theta_t
+                                 a >= 0
                          ) * invest_tracker + (
-                                 Delta_s_t >= (entry_bound - theta_t)
+                                 a >= entry_bound
                          ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
                 # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
                 switch = switch_N_to_P + switch_P_to_N
-                invest_tracker = invest
+                invest_tracker = np.copy(invest)
 
                 Vhat_vector = np.append(V_st_P[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + np.append(
                     V_st_N[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1) * switch_N_to_P + Vhat_vector * (

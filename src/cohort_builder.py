@@ -182,9 +182,9 @@ def build_cohorts_SI(
                 )
                 theta_st = Delta_s_t + theta_t
                 invest = (
-                                 Delta_s_t >= -theta_t
+                                 theta_st >= 0
                          ) * invest_tracker + (
-                                 Delta_s_t >= (entry_bound - theta_t)
+                                 theta_st >= entry_bound
                          ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)

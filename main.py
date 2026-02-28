@@ -28,15 +28,15 @@ plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_set = [
     (0.0, 0.0, 0.0, 1.0),
-    (0.25, 0.25, 0.25, 0.25),
+    # (0.25, 0.25, 0.25, 0.25),
 ]
 phi_set = [
-    0.0,
+    # 0.0,
     0.5
 ]
 entry_boundary_set = [
     0.05,
-    0.03,
+    # 0.03,
 ]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
