@@ -10,7 +10,7 @@ from src.param import rho_i, nu, mu_Y, sigma_Y, tax, phi, \
 from src.param_mix import Nconstraint, rho_i_mix
 import statsmodels.api as sm
 import pandas as pd
-import tabulate as tab
+# import tabulate as tab
 from scipy.interpolate import make_interp_spline
 
 # Fig1: Shocks and beliefs
@@ -19,7 +19,7 @@ from scipy.interpolate import make_interp_spline
 folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
     folder_address + r'realized_shocks_US.xlsx',
-    sheet_name='Sheet1',
+    # sheet_name='Sheet1',
     index_col=0
 )
 
@@ -35,6 +35,7 @@ phi_set = [
     0.5
 ]
 entry_boundary_set = [
+    0.0,
     0.05,
     # 0.03,
 ]
@@ -162,9 +163,9 @@ for i in range(n_scenarios):
                 Delta_compare[i, j, k] = Delta[-Nt_data:]
                 pi_compare[i, j] = pi[-Nt_data:]
                 invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
-            theta_compare[i, j] = theta[-Nt_data:]
-            Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
-            parti_age_group_compare[i, j] = parti_age_group[-Nt_data:]
+            theta_compare[i, j, k] = theta[-Nt_data:]
+            Delta_bar_compare[i, j, k] = Delta_bar_parti[-Nt_data:]
+            parti_age_group_compare[i, j, k] = parti_age_group[-Nt_data:]
 
 
 #####################################
@@ -172,47 +173,49 @@ for i in range(n_scenarios):
 #####################################
 nn = 3  # number of cohorts illustrated
 starts = np.arange(nn) * 240 + 24 * 12
-Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
-pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
-entry_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
-exit_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
-parti_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+Delta_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
+entry_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
+exit_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
 for i in range(n_scenarios):
     for j in range(n_phi):
-        for k in range(Nconstraint):
-            pi = pi_compare[i, j, :, k]
-            Delta = Delta_compare[i, j, :, k]
-            for m in range(nn):
-                start = starts[m]
-                for n in range(Nt_data):
-                    if n < start:
-                        pi_time_series[i, j, m, k, n] = np.nan
-                        Delta_time_series[i, j, m, k, n] = np.nan
-                    else:
-                        cohort_rank = Nt - (n - start) - 1
-                        Delta_time_series[i, j, m, k, n] = Delta[n, cohort_rank]
-                        pi_time_series[i, j, m, k, n] = pi[n, cohort_rank]
-                        if k == 0:  # the unconstrained
-                            parti_time_series[i, j, m, k, n] = 1
-                            entry_time_series[i, j, m, k, n] = 0
-                            exit_time_series[i, j, m, k, n] = 0
-                        elif k == 1:  # the excluded
-                            parti_time_series[i, j, m, k, n] = 0
-                            entry_time_series[i, j, m, k, n] = 0
-                            exit_time_series[i, j, m, k, n] = 0
+        for jj in range(n_entry_boundary):
+            for k in range(Nconstraint):
+                pi = pi_compare[i, j, jj, :, k]
+                Delta = Delta_compare[i, j, jj, :, k]
+                for m in range(nn):
+                    start = starts[m]
+                    for n in range(Nt_data):
+                        if n < start:
+                            pi_time_series[i, j, jj, m, k, n] = np.nan
+                            Delta_time_series[i, j, jj, m, k, n] = np.nan
                         else:
-                            parti_time_series[i, j, m, k, n] = 1 if pi_time_series[i, j, m, k, n] != 0 else 0
-                            switch_PN = 1 if (pi_time_series[i, j, m, k, n - 1] != 0) and (
-                                    pi_time_series[i, j, m, k, n] == 0) else 0
-                            switch_NP = 1 if (pi_time_series[i, j, m, k, n] != 0) and (
-                                    pi_time_series[i, j, m, k, n - 1] == 0) else 0
-                            entry_time_series[i, j, m, k, n] = 1 if switch_NP == 1 else 0
-                            exit_time_series[i, j, m, k, n] = 1 if switch_PN == 1 else 0
-                            exit_time_series[i, j, m, k, start] = 0
-                            if switch_NP == 1:
-                                parti_time_series[i, j, m, k, n] = 0.5
-                            if switch_PN == 1:
-                                parti_time_series[i, j, m, k, n - 1] = 0.5
+                            cohort_rank = Nt - (n - start) - 1
+                            Delta_time_series[i, j, jj, m, k, n] = Delta[n, cohort_rank]
+                            pi_time_series[i, j, jj, m, k, n] = pi[n, cohort_rank]
+                            if k == 0:  # the unconstrained
+                                parti_time_series[i, j, jj, m, k, n] = 1
+                                entry_time_series[i, j, jj, m, k, n] = 0
+                                exit_time_series[i, j, jj, m, k, n] = 0
+                            elif k == 1:  # the excluded
+                                parti_time_series[i, j, jj, m, k, n] = 0
+                                entry_time_series[i, j, jj, m, k, n] = 0
+                                exit_time_series[i, j, jj, m, k, n] = 0
+                            else:
+                                parti_time_series[i, j, jj, m, k, n] = 1 if pi_time_series[i, j, jj, m, k, n] != 0 else 0
+                                switch_PN = 1 if (pi_time_series[i, j, jj, m, k, n - 1] != 0) and (
+                                        pi_time_series[i, j, jj, m, k, n] == 0) else 0
+                                switch_NP = 1 if (pi_time_series[i, j, jj, m, k, n] != 0) and (
+                                        pi_time_series[i, j, jj, m, k, n - 1] == 0) else 0
+                                entry_time_series[i, j, jj, m, k, n] = 1 if switch_NP == 1 else 0
+                                exit_time_series[i, j, jj, m, k, n] = 1 if switch_PN == 1 else 0
+                                exit_time_series[i, j, jj, m, k, start] = 0
+                                if switch_NP == 1:
+                                    parti_time_series[i, j, jj, m, k, n] = 0.5
+                                if switch_PN == 1:
+                                    parti_time_series[i, j, jj, m, k, n - 1] = 0.5
+
 
 #####################################
 #######  belief distribution  #######

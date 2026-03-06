@@ -947,6 +947,7 @@ def simulate_cohorts_mix_type(
         phi: float,
         T_hat: float,
         Npre: float,
+        entry_bound: float,
         cohort_type_size: np.ndarray,
         cutoffs_age: np.ndarray,
         Delta_s_t: np.ndarray,
@@ -1164,14 +1165,30 @@ def simulate_cohorts_mix_type(
         can_short_tracker = np.append(can_short_tracker[:, :, 1:], can_short_newborn, axis=2)
 
         possible_cons_share = f_c_ist * dt * invest_tracker
+        possible_cons_share[:, 3] = f_c_ist[:, 3] * dt
         possible_delta_st = Delta_s_t * invest_tracker
+        possible_delta_st[:, 3] = Delta_s_t[:, 3] * dt
 
-        lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound
+        lowest_bound = -np.max(
+            possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound where no agent holds the stock
         theta_t = bisection_partial_constraint(
-            solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-            sigma_Y
+            solve_theta_partial_constraint,
+            lowest_bound,
+            50,
+            invest_tracker,
+            can_short_tracker,
+            possible_delta_st,
+            possible_cons_share,
+            sigma_Y,
+            entry_bound,
         )
-        a = Delta_s_t + theta_t
+
+        a = (
+                    Delta_s_t >= -theta_t
+            ) * invest_tracker + (
+                    Delta_s_t >= (entry_bound - theta_t)
+            ) * (1 - invest_tracker)
+
         invest = 1 - (a < 0) * (can_short_tracker < 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
         switch_P_to_N = invest_tracker * (1 - invest) * (

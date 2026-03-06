@@ -129,80 +129,80 @@ def find_the_rich_mix(
 
 
 
-def solve_theta_partial_constraint(
-        theta_guess: float,
-        unconstrained: np.ndarray,
-        Delta_s_t: np.ndarray,
-        consumption_share: np.ndarray,
-        sigma_Y: float,
-) -> np.float64:
-    '''
-    solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
-    :param theta_guess (float): any guess of theta
-    :param unconstrained (np.ndarray): the cohorts that can short
-    :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
-    :param consumption_share (np.ndarray): shape (Nc,)
-    :param sigma_Y (float): volatility of aggregate output
-    :return: the distance to converge
-    '''
-    constrained = 1 - unconstrained
-    pi_constrained = np.maximum(Delta_s_t + theta_guess, 0)  # investment if a cohort can't short
-    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
-    part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
-
-    diff = (part_constrained + part_unconstrained) / sigma_Y - 1
-
-    return diff
-
-
-
-def bisection_partial_constraint(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float], np.float64],
-        xlow: np.float64,
-        xhigh: np.float64,
-        arg1: np.ndarray,
-        arg2: np.ndarray,
-        arg3: np.ndarray,
-        arg4: float,
-        eps: float = 1e-6,
-) -> np.float64:
-    """Bisection method to solve x (theta)
-
-    Args:
-        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
-        xlow (float): lower bound for x
-        xhigh (float): upper bound for x
-        arg1 (np.ndarray): second input for optimfun
-        arg2 (np.ndarray): third input for optimfun
-        arg3 (np.ndarray): fourth input for optimfun
-        arg4 (np.ndarray): fifth input for optimfun
-        eps (float, optional): converging criteria. Defaults to 1e-6.
-
-    Returns:
-        xmid: the estimated value that makes the optimfun close to 0
-
-    """
-    flow = optimfun(xlow, arg1, arg2, arg3, arg4)
-    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4)
-    diff = 1
-    iter = 0
-    xmid = 10000
-
-    while diff > eps:
-        xmid = (xlow + xhigh) / 2
-        fmid = optimfun(xmid, arg1, arg2, arg3, arg4)
-        if flow * fmid < 0:  # root between flow and fmid
-            xhigh = xmid
-            fhigh = fmid
-        elif fmid * fhigh < 0:  # root between fmid and fhigh
-            xlow = xmid
-            flow = fmid
-        diff = abs(fhigh - flow)
-        iter += 1
-        if iter > 50:
-            print("Warning! It takes more than 50 iteration to converge.")
-            break
-    return xmid
+# def solve_theta_partial_constraint(
+#         theta_guess: float,
+#         unconstrained: np.ndarray,
+#         Delta_s_t: np.ndarray,
+#         consumption_share: np.ndarray,
+#         sigma_Y: float,
+# ) -> np.float64:
+#     '''
+#     solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
+#     :param theta_guess (float): any guess of theta
+#     :param unconstrained (np.ndarray): the cohorts that can short
+#     :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
+#     :param consumption_share (np.ndarray): shape (Nc,)
+#     :param sigma_Y (float): volatility of aggregate output
+#     :return: the distance to converge
+#     '''
+#     constrained = 1 - unconstrained
+#     pi_constrained = np.maximum(Delta_s_t + theta_guess, 0)  # investment if a cohort can't short
+#     part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
+#     part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
+#
+#     diff = (part_constrained + part_unconstrained) / sigma_Y - 1
+#
+#     return diff
+#
+#
+#
+# def bisection_partial_constraint(
+#         optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float], np.float64],
+#         xlow: np.float64,
+#         xhigh: np.float64,
+#         arg1: np.ndarray,
+#         arg2: np.ndarray,
+#         arg3: np.ndarray,
+#         arg4: float,
+#         eps: float = 1e-6,
+# ) -> np.float64:
+#     """Bisection method to solve x (theta)
+#
+#     Args:
+#         optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
+#         xlow (float): lower bound for x
+#         xhigh (float): upper bound for x
+#         arg1 (np.ndarray): second input for optimfun
+#         arg2 (np.ndarray): third input for optimfun
+#         arg3 (np.ndarray): fourth input for optimfun
+#         arg4 (np.ndarray): fifth input for optimfun
+#         eps (float, optional): converging criteria. Defaults to 1e-6.
+#
+#     Returns:
+#         xmid: the estimated value that makes the optimfun close to 0
+#
+#     """
+#     flow = optimfun(xlow, arg1, arg2, arg3, arg4)
+#     fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4)
+#     diff = 1
+#     iter = 0
+#     xmid = 10000
+#
+#     while diff > eps:
+#         xmid = (xlow + xhigh) / 2
+#         fmid = optimfun(xmid, arg1, arg2, arg3, arg4)
+#         if flow * fmid < 0:  # root between flow and fmid
+#             xhigh = xmid
+#             fhigh = fmid
+#         elif fmid * fhigh < 0:  # root between fmid and fhigh
+#             xlow = xmid
+#             flow = fmid
+#         diff = abs(fhigh - flow)
+#         iter += 1
+#         if iter > 50:
+#             print("Warning! It takes more than 50 iteration to converge.")
+#             break
+#     return xmid
 
 
 
@@ -296,3 +296,91 @@ def solve_theta(
                        sigma_Y - Delta_bar_parti
                ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
     return diff
+
+
+
+def solve_theta_partial_constraint(
+        theta_guess: float,
+        invest_tracker: np.ndarray,
+        unconstrained: np.ndarray,
+        Delta_s_t: np.ndarray,
+        consumption_share: np.ndarray,
+        sigma_Y: float,
+        entry_bound: float,
+) -> np.float64:
+    '''
+    solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
+    :param theta_guess (float): any guess of theta
+    :param unconstrained (np.ndarray): the cohorts that can short
+    :param Delta_s_t (np.ndarray): estimation error, shape (Nc,)
+    :param consumption_share (np.ndarray): shape (Nc,)
+    :param sigma_Y (float): volatility of aggregate output
+    :return: the distance to converge
+    '''
+    constrained = 1 - unconstrained
+
+    invest = (
+            Delta_s_t >= -theta_guess
+    ) * invest_tracker + (
+            Delta_s_t >= (entry_bound - theta_guess)
+    ) * (1 - invest_tracker)
+
+    pi_constrained = np.maximum(Delta_s_t + theta_guess, 0) * invest # investment if a cohort can't short
+    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
+    part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
+
+    diff = (part_constrained + part_unconstrained) / sigma_Y - 1
+
+    return diff
+
+
+
+def bisection_partial_constraint(
+        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float], np.float64],
+        xlow: float,
+        xhigh: float,
+        arg1: np.ndarray,
+        arg2: np.ndarray,
+        arg3: np.ndarray,
+        arg4: np.ndarray,
+        arg5: float,
+        arg6: float,
+        eps: float = 1e-6,
+) -> np.float64:
+    """Bisection method to solve x (theta)
+
+    Args:
+        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
+        xlow (float): lower bound for x
+        xhigh (float): upper bound for x
+        arg1 (np.ndarray): second input for optimfun
+        arg2 (np.ndarray): third input for optimfun
+        arg3 (np.ndarray): fourth input for optimfun
+        arg4 (np.ndarray): fifth input for optimfun
+        eps (float, optional): converging criteria. Defaults to 1e-6.
+
+    Returns:
+        xmid: the estimated value that makes the optimfun close to 0
+
+    """
+    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6)
+    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6)
+    diff = 1
+    iter = 0
+    xmid = 10000
+
+    while diff > eps:
+        xmid = (xlow + xhigh) / 2
+        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6)
+        if flow * fmid < 0:  # root between flow and fmid
+            xhigh = xmid
+            fhigh = fmid
+        elif fmid * fhigh < 0:  # root between fmid and fhigh
+            xlow = xmid
+            flow = fmid
+        diff = abs(fhigh - flow)
+        iter += 1
+        if iter > 50:
+            print("Warning! It takes more than 50 iteration to converge.")
+            break
+    return xmid

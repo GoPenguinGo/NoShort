@@ -167,7 +167,7 @@ def build_cohorts_SI(
                 invest = (theta_st > 0)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 invest_tracker = invest * invest_tracker
-                d_eta_st = a * invest_tracker - theta_t
+                d_eta_st = theta_st * invest_tracker - theta_t
                 # tau_info and V_hat has to change for the agents who switch to N
                 Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + Vhat_vector * (1 - switch_P_to_N)  # reset prior variance V'
                 tau_info = dt * switch_P_to_N + tau_info * (1 - switch_P_to_N)  # reset clock t'
@@ -234,6 +234,7 @@ def build_cohorts_mix_type(
     phi: float,
     Npre: int,
     Ninit: int,
+    entry_bound: float,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -364,14 +365,27 @@ def build_cohorts_mix_type(
             can_short_tracker = np.append(can_short_tracker, can_short_newborn, axis=2)
 
             possible_cons_share = f_c_ist * dt * invest_tracker
+            possible_cons_share[:, 3] = f_c_ist[:, 3] * dt
             possible_delta_st = Delta_s_t * invest_tracker
+            possible_delta_st[:, 3] = Delta_s_t[:, 3] * dt
 
             lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound where no agent holds the stock
             theta_t = bisection_partial_constraint(
-                    solve_theta_partial_constraint, lowest_bound, 50, can_short_tracker, possible_delta_st, possible_cons_share,
-                    sigma_Y
+                solve_theta_partial_constraint,
+                lowest_bound,
+                50,
+                invest_tracker,
+                can_short_tracker,
+                possible_delta_st,
+                possible_cons_share,
+                sigma_Y,
+                entry_bound,
                 )
-            a = Delta_s_t + theta_t
+            a = (
+                             Delta_s_t >= -theta_t
+                     ) * invest_tracker + (
+                             Delta_s_t >= (entry_bound - theta_t)
+                     ) * (1 - invest_tracker)
             invest = 1 - (a < 0) * (can_short_tracker < 1)  # not invest if a<0 and can not short
             invest[:, 1] = 0  # exclusion type
             switch_P_to_N = invest_tracker * (1 - invest) * (can_short_tracker < 1) # switch to nonparti if type R&E & not investing this period

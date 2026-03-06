@@ -444,6 +444,7 @@ def simulate_mix_types(
         Npre: int,
         Ninit: int,
         T_hat: int,
+        entry_bound: float,
         dZ_build: np.ndarray,
         dZ: np.ndarray,
         dZ_SI_build: np.ndarray,
@@ -567,6 +568,7 @@ def simulate_mix_types(
         phi,
         Npre,
         Ninit,
+        entry_bound,
     )
 
     (
@@ -611,6 +613,7 @@ def simulate_mix_types(
         phi,
         T_hat,
         Npre,
+        entry_bound,
         cohort_type_size,
         cutoffs_age,
         Delta_s_t,
