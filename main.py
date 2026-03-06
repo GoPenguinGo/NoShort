@@ -28,7 +28,7 @@ plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_set = [
     (0.0, 0.0, 0.0, 1.0),
-    # (0.25, 0.25, 0.25, 0.25),
+    (0.25, 0.25, 0.25, 0.25),
 ]
 phi_set = [
     # 0.0,
@@ -151,6 +151,7 @@ for i in range(n_scenarios):
                 ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                        beta0,
                                        phi, Npre, Ninit, T_hat,
+                                       entry_bound,
                                        dZ_build, dZ, dZ_SI_build, dZ_SI,
                                        cutoffs_age, Ntype,
                                        Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,

@@ -1167,7 +1167,7 @@ def simulate_cohorts_mix_type(
         possible_cons_share = f_c_ist * dt * invest_tracker
         possible_cons_share[:, 3] = f_c_ist[:, 3] * dt
         possible_delta_st = Delta_s_t * invest_tracker
-        possible_delta_st[:, 3] = Delta_s_t[:, 3] * dt
+        possible_delta_st[:, 3] = Delta_s_t[:, 3]
 
         lowest_bound = -np.max(
             possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound where no agent holds the stock
