@@ -1,8 +1,6 @@
 import numpy as np
 from typing import Callable
 
-from main import Delta
-
 
 # def bisection(
 #         optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
