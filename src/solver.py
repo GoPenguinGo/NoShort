@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Callable
 
+from main import Delta
+
 
 # def bisection(
 #         optimfun: Callable[[float, np.ndarray, np.ndarray, float], np.float64],
@@ -325,11 +327,14 @@ def solve_theta_partial_constraint(
             Delta_s_t >= (entry_bound - theta_guess)
     ) * (1 - invest_tracker)
 
-    pi_constrained = np.maximum(Delta_s_t + theta_guess, 0) * invest # investment if a cohort can't short
-    part_constrained = np.sum(pi_constrained * consumption_share * constrained)  # for those cohorts that can't short
-    part_unconstrained = np.sum((Delta_s_t + theta_guess) * consumption_share * unconstrained)  # for those cohorts that can short
+    f_sum = np.sum(invest * consumption_share * constrained) + np.sum(consumption_share * unconstrained)
+    Delta_bar = np.sum(
+        Delta_s_t * invest * consumption_share * constrained
+    ) + np.sum(
+        Delta_s_t * consumption_share * unconstrained
+    ) / f_sum
 
-    diff = (part_constrained + part_unconstrained) / sigma_Y - 1
+    diff = sigma_Y / f_sum - Delta_bar - theta_guess
 
     return diff
 

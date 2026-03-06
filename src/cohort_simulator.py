@@ -283,7 +283,7 @@ def simulate_cohorts_SI(
 
                 # tau_info and V_hat has to change for the agents who switch
                 switch = switch_N_to_P + switch_P_to_N
-                invest_tracker = invest
+                invest_tracker = np.copy(invest)
                 Vhat_vector = np.append(V_st_P[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1) * switch_P_to_N + np.append(
                     V_st_N[:, 1:], Vhat * np.ones((Ntype, 1)), axis=1) * switch_N_to_P + Vhat_vector * (
                                       1 - switch)  # reset prior variance V'

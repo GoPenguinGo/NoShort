@@ -288,6 +288,7 @@ def build_cohorts_mix_type(
     eta_st_eta_ss_init = np.ones((Ntype, Nconstraint, 1))
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
+    invest_tracker[:, 1] = 0
     invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     can_short_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
@@ -351,7 +352,7 @@ def build_cohorts_mix_type(
             init_bias = np.average(dZ_build[int(i - Npre): i]) / dt
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
-                Delta_s_t, init_bias * np.zeros((Ntype, Nconstraint, 1)), axis=2
+                Delta_s_t, init_bias * np.ones((Ntype, Nconstraint, 1)), axis=2
             )  # newborns begin with Npre observations of the dividend process
 
         # find the market clearing theta, given beliefs and consumption shares
