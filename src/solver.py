@@ -384,6 +384,7 @@ def bisection_partial_constraint(
         diff = abs(fhigh - flow)
         iter += 1
         if iter > 50:
-            print("Warning! It takes more than 50 iteration to converge.")
+            # print("Warning! It takes more than 50 iteration to converge.")
+            # print(diff)
             break
     return xmid

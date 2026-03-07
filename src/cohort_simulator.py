@@ -1183,13 +1183,13 @@ def simulate_cohorts_mix_type(
             entry_bound,
         )
 
-        a = (
+        invest = (
                     Delta_s_t >= -theta_t
             ) * invest_tracker + (
                     Delta_s_t >= (entry_bound - theta_t)
             ) * (1 - invest_tracker)
 
-        invest = 1 - (a < 0) * (can_short_tracker < 1)  # not invest if a<0 and can not short
+        invest = 1 - (invest != 1) * (can_short_tracker != 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
         switch_P_to_N = invest_tracker * (1 - invest) * (
                 can_short_tracker < 1)  # switch to nonparti if type R&E & not investing this period
@@ -1198,7 +1198,7 @@ def simulate_cohorts_mix_type(
         switch_N_to_P[:, :3] = 0  # only applicable to the E type
         switch = switch_N_to_P + switch_P_to_N
         invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
-        d_eta_st = a * invest_tracker - theta_t
+        d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
 
         # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
         Vhat_vector = np.append(V_st_P[:, :, 1:], Vhat * append_init, axis=2) * switch_P_to_N + \
