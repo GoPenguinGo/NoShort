@@ -1,0 +1,3 @@
+vary T and phi values
+
+dataset replicate results in the JF submission

@@ -58,7 +58,7 @@ Delta_bar_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data), dt
 Delta_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
 pi_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
 invest_tracker_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=int)
-parti_age_group_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, 4), dtype=np.float16)
+parti_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float16)
 for i in range(n_scenarios):
     for j, phi in enumerate(phi_set):
         for k, entry_bound in enumerate(entry_boundary_set):
@@ -166,7 +166,7 @@ for i in range(n_scenarios):
                 invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
             theta_compare[i, j, k] = theta[-Nt_data:]
             Delta_bar_compare[i, j, k] = Delta_bar_parti[-Nt_data:]
-            parti_age_group_compare[i, j, k] = parti_age_group[-Nt_data:]
+            parti_compare[i, j, k] = parti[-Nt_data:]
 
 
 #####################################

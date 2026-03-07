@@ -326,13 +326,16 @@ def solve_theta_partial_constraint(
     ) * (1 - invest_tracker)
 
     f_sum = np.sum(invest * consumption_share * constrained) + np.sum(consumption_share * unconstrained)
-    Delta_bar = (np.sum(
+    Delta_bar_f = (np.sum(
         Delta_s_t * invest * consumption_share * constrained
     ) + np.sum(
         Delta_s_t * consumption_share * unconstrained
-    )) / f_sum
+    ))
 
-    diff = sigma_Y / f_sum - Delta_bar - theta_guess
+    if f_sum != 0:
+        diff = (sigma_Y - Delta_bar_f) / f_sum - theta_guess
+    else:
+        diff = 1000
 
     return diff
 
