@@ -14,8 +14,8 @@ from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
-    # 'US',
-    'Finland',
+    'US',
+    # 'Finland',
     # 'Germany',
     # 'Norway'
 ]
@@ -26,7 +26,9 @@ plt.rcParams["font.family"] = 'serif'
 # (complete, excluded, disappointment, reentry)
 density_types_set = [
     (0.25, 0.25, 0.25, 0.25),
-    # (0.0, 0.5, 0.0, 0.5),
+    (0.0, 0.5, 0.0, 0.5),
+    (0.0, 0.4, 0.0, 0.6),
+    (0.0, 0.3, 0.0, 0.7),
     # (0.25, 0.25, 0.2, 0.3),
     # (0.25, 0.2, 0.3, 0.25),
     # (0.25, 0.3, 0.2, 0.25),
@@ -47,17 +49,22 @@ T_hat_set = [
 rho_i = np.array([[0.001], [0.005]])
 # rho_i = np.array([[0.01], [0.01]])
 nu = 0.02
-tax = 0.35
-
-phi_set = [
-    # 0.0,
-    0.5
+tax_set = [
+    0.35,
+    0.3
 ]
+
+# phi_set = [
+#     # 0.0,
+#     0.5
+# ]
+
+phi = 0.5
 
 entry_boundary_set = [
     0.0,
     0.03,
-    0.05,
+    # 0.05,
 ]
 
 n_entry_boundary = len(entry_boundary_set)
@@ -89,7 +96,7 @@ def simulate_path(
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
     for T_hat in T_hat_set:
         for density_n, density_types in enumerate(density_types_set):
-            for phi in phi_set:
+            for tax in tax_set:
                 for entry_bound in entry_boundary_set:
                     Npre = int(T_hat / dt)
                     Vhat = (sigma_Y ** 2) / T_hat  # prior variance
@@ -106,7 +113,7 @@ def simulate_path(
                     rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                         -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                    col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}_{int(entry_bound * 100)}'
+                    col_name = f'{int(T_hat)}_{int(tax * 100)}_{int(density_n)}_{int(entry_bound * 100)}'
 
                     (
                         r,
@@ -151,12 +158,12 @@ def simulate_path(
                                        axis=2),
                             weights=density_types,
                             axis=1)
-                    parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
-                    parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                    parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
-                    parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
+                    # parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
+                    # parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                    # parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
+                    # parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                    # parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
+                    # parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
                     parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                     parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
                     parti_df.to_stata(f'stata_dataset/{country}/{i}.dta')
