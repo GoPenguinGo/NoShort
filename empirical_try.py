@@ -15,20 +15,25 @@ from src.param_mix import Nconstraint
 
 country_names = [
     'US',
-    # 'Finland',
-    # 'Germany',
-    # 'Norway'
+    'Finland',
+    'Germany',
+    'Norway'
 ]
-# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
-folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
+folder_address = r'C:\Users\zeshu\BI Norwegian Business School Dropbox\Zeshu XU\to sync\between_computers\entry_exit/empirical/'
+# folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_types_set = [
     (0.25, 0.25, 0.25, 0.25),
-    (0.0, 0.5, 0.0, 0.5),
-    (0.0, 0.4, 0.0, 0.6),
-    (0.0, 0.3, 0.0, 0.7),
+    # (0.0, 0.6, 0.0, 0.4),
+    # (0.0, 0.5, 0.0, 0.5),
+    # (0.0, 0.4, 0.0, 0.6),
+    # (0.0, 0.3, 0.0, 0.7),
+    # (0.2, 0.6, 0.0, 0.2),
+    # (0.2, 0.5, 0.0, 0.3),
+    # (0.0, 0.6, 0.2, 0.2),
+    # (0.0, 0.5, 0.2, 0.3),
     # (0.25, 0.25, 0.2, 0.3),
     # (0.25, 0.2, 0.3, 0.25),
     # (0.25, 0.3, 0.2, 0.25),
@@ -42,34 +47,37 @@ density_types_set = [
     # (0.3, 0.25, 0.25, 0.2),
 ]
 T_hat_set = [
-    # 2,
+    2,
     5,
-    # 10,
+    10,
 ]
 rho_i = np.array([[0.001], [0.005]])
 # rho_i = np.array([[0.01], [0.01]])
 nu = 0.02
-tax_set = [
-    0.35,
-    0.3
-]
-
-# phi_set = [
-#     # 0.0,
-#     0.5
+tax = 0.35
+# tax_set = [
+#     0.35,
+#     # 0.3
 # ]
 
-phi = 0.5
+phi_set = [
+    # 0.0,
+    0.2,
+    # 0.4,
+    0.5
+]
+
+# phi = 0.5
 
 entry_boundary_set = [
     0.0,
-    0.03,
+    # 0.03,
     # 0.05,
 ]
 
 n_entry_boundary = len(entry_boundary_set)
 
-Mpath = 1
+Mpath = 20
 np.seterr(invalid='ignore')
 age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
 
@@ -96,7 +104,7 @@ def simulate_path(
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
     for T_hat in T_hat_set:
         for density_n, density_types in enumerate(density_types_set):
-            for tax in tax_set:
+            for phi in phi_set:
                 for entry_bound in entry_boundary_set:
                     Npre = int(T_hat / dt)
                     Vhat = (sigma_Y ** 2) / T_hat  # prior variance
@@ -113,7 +121,7 @@ def simulate_path(
                     rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                         -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                    col_name = f'{int(T_hat)}_{int(tax * 100)}_{int(density_n)}_{int(entry_bound * 100)}'
+                    col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}_{int(entry_bound * 100)}'
 
                     (
                         r,
@@ -158,15 +166,15 @@ def simulate_path(
                                        axis=2),
                             weights=density_types,
                             axis=1)
-                    # parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
-                    # parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                    # parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
-                    # parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
-                    # parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
-                    # parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
+                    parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
+                    parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                    parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
+                    parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                    parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
+                    parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
                     parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                     parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                    parti_df.to_stata(f'stata_dataset/{country}/{i}.dta')
+                    parti_df.to_stata(f'stata_dataset/{country}/{i}_signal.dta')
 
     return (
         i,
@@ -180,11 +188,11 @@ def main():
         # Create a ProcessPoolExecutor for parallel execution
         # run this on a grid of parameters & type densities & signal
         data_shocks = pd.read_excel(
-            f'{folder_address}realized_shocks_{country}.xlsx',
+            f'{folder_address}realized_shocks_{country}1.xlsx',
             sheet_name='Sheet1',
             index_col=0
         )
-        with ProcessPoolExecutor(max_workers=1) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []
