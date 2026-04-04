@@ -31,6 +31,7 @@ def simulate_cohorts_SI(
         T_hat: float,
         Npre: float,
         entry_bound: float,
+        exit_bound: float,
         mode_trade: str,
         mode_learn: str,
         cohort_type_size: np.ndarray,
@@ -270,13 +271,14 @@ def simulate_cohorts_SI(
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50,
-                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y,
+                    entry_bound, exit_bound,
                 )
-                a = Delta_s_t + theta_t
+                theta_st = Delta_s_t + theta_t
                 invest = (
-                                 a >= 0
+                                 theta_st >= exit_bound
                          ) * invest_tracker + (
-                                 a >= entry_bound
+                                 theta_st >= entry_bound
                          ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
@@ -414,6 +416,7 @@ def simulate_cohorts_mean_vola(
         T_hat: float,
         Npre: float,
         entry_bound: float,
+        exit_bound: float,
         mode_trade: str,
         mode_learn: str,
         cohort_type_size: np.ndarray,
@@ -642,13 +645,14 @@ def simulate_cohorts_mean_vola(
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound for theta among active investors
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50,
-                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y,
+                    entry_bound, exit_bound,
                 )
-                a = Delta_s_t + theta_t
+                theta_st = Delta_s_t + theta_t
                 invest = (
-                                 a >= 0
+                                 theta_st >= exit_bound
                          ) * invest_tracker + (
-                                 a >= entry_bound
+                                 theta_st >= entry_bound
                          ) * (1 - invest_tracker)
                 switch_P_to_N = invest_tracker * (1 - invest)
                 switch_N_to_P = np.maximum(invest - invest_tracker, 0)
@@ -948,6 +952,7 @@ def simulate_cohorts_mix_type(
         T_hat: float,
         Npre: float,
         entry_bound: float,
+        exit_bound: float,
         cohort_type_size: np.ndarray,
         cutoffs_age: np.ndarray,
         Delta_s_t: np.ndarray,
@@ -1150,14 +1155,16 @@ def simulate_cohorts_mix_type(
                 1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
         tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
         Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
+        Vhat_vector[:, 0] = 0.0
 
         if i < Npre - 1:
-            init_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / T_hat
+            init_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / T_hat * append_init
         else:
-            init_bias = np.sum(dZ[i + 1 - Npre:i + 1]) / T_hat
+            init_bias = np.sum(dZ[i + 1 - Npre:i + 1]) / T_hat * append_init
+        init_bias[:, 0] = 0.0
 
         Delta_s_t = Delta_s_t[:, :, 1:] + dDelta_s_t[:, :, 1:]
-        Delta_s_t = np.append(Delta_s_t, init_bias * append_init, axis=2)
+        Delta_s_t = np.append(Delta_s_t, init_bias, axis=2)
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         invest_tracker = np.append(invest_tracker[:, :, 1:], invest_newborn,
@@ -1181,13 +1188,15 @@ def simulate_cohorts_mix_type(
             possible_cons_share,
             sigma_Y,
             entry_bound,
+            exit_bound,
         )
 
+        theta_st = Delta_s_t + theta_t
         invest = (
-                    Delta_s_t >= -theta_t
-            ) * invest_tracker + (
-                    Delta_s_t >= (entry_bound - theta_t)
-            ) * (1 - invest_tracker)
+                         theta_st >= exit_bound
+                 ) * invest_tracker + (
+                         theta_st >= entry_bound
+                 ) * (1 - invest_tracker)
 
         invest = 1 - (invest != 1) * (can_short_tracker != 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
@@ -1266,7 +1275,9 @@ def simulate_cohorts_mix_type(
             #         j + 1):]  # entry excluding the newborns
             exit_i = invest_tracker[0, :, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
             entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
-            exit_mat[i, j] = np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0))
+            exit_mat[i, j] = (np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) 
+                                     + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):], weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) * nu * j
+                                     )
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4, -1)), axis=0))
 
         for j in range(len(cutoffs_age) - 1):

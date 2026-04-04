@@ -14,10 +14,10 @@ from src.param_mix import Nconstraint
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
-    'US',
-    'Finland',
+    # 'US',
+    # 'Finland',
     'Germany',
-    'Norway'
+    # 'Norway'
 ]
 folder_address = r'C:\Users\zeshu\BI Norwegian Business School Dropbox\Zeshu XU\to sync\between_computers\entry_exit/empirical/'
 # folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
@@ -25,29 +25,24 @@ plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_types_set = [
-    (0.25, 0.25, 0.25, 0.25),
-    # (0.0, 0.6, 0.0, 0.4),
-    # (0.0, 0.5, 0.0, 0.5),
-    # (0.0, 0.4, 0.0, 0.6),
-    # (0.0, 0.3, 0.0, 0.7),
-    # (0.2, 0.6, 0.0, 0.2),
-    # (0.2, 0.5, 0.0, 0.3),
-    # (0.0, 0.6, 0.2, 0.2),
-    # (0.0, 0.5, 0.2, 0.3),
-    # (0.25, 0.25, 0.2, 0.3),
-    # (0.25, 0.2, 0.3, 0.25),
-    # (0.25, 0.3, 0.2, 0.25),
-    # (0.25, 0.2, 0.25, 0.3),
-    # (0.25, 0.3, 0.25, 0.2),
-    # (0.2, 0.3, 0.25, 0.25),
-    # (0.3, 0.2, 0.25, 0.25),
-    # (0.2, 0.25, 0.3, 0.25),
-    # (0.3, 0.25, 0.2, 0.25),
-    # (0.2, 0.25, 0.25, 0.3),
-    # (0.3, 0.25, 0.25, 0.2),
+    # (0.25, 0.25, 0.25, 0.25),
+    (0.3, 0.3, 0.0, 0.4),
+    (0.4, 0.3, 0.0, 0.3),
+    (0.5, 0.3, 0.0, 0.2),
+    (0.6, 0.3, 0.0, 0.1),
+    (0.2, 0.4, 0.0, 0.4),
+    (0.3, 0.4, 0.0, 0.3),
+    (0.4, 0.4, 0.0, 0.2),
+    (0.5, 0.4, 0.0, 0.1),
+    (0.1, 0.5, 0.0, 0.4),
+    (0.2, 0.5, 0.0, 0.3),
+    (0.3, 0.5, 0.0, 0.2),
+    (0.4, 0.5, 0.0, 0.1),
 ]
 T_hat_set = [
-    2,
+    # 2,
+    # 3,
+    # 4,
     5,
     10,
 ]
@@ -55,29 +50,33 @@ rho_i = np.array([[0.001], [0.005]])
 # rho_i = np.array([[0.01], [0.01]])
 nu = 0.02
 tax = 0.35
-# tax_set = [
-#     0.35,
-#     # 0.3
-# ]
+tax_set = [
+    0.35,
+    # 0.3,
+    # 0.25
+]
 
 phi_set = [
     # 0.0,
-    0.2,
-    # 0.4,
-    0.5
+    # 0.2,
+    0.3,
+    0.4,
 ]
 
 # phi = 0.5
 
 entry_boundary_set = [
-    0.0,
-    # 0.03,
-    # 0.05,
+    # 0.0,
+    0.03,
+    0.05,
 ]
+
+exit_bound = 0.01
+
 
 n_entry_boundary = len(entry_boundary_set)
 
-Mpath = 20
+Mpath = 10
 np.seterr(invalid='ignore')
 age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
 
@@ -106,75 +105,77 @@ def simulate_path(
         for density_n, density_types in enumerate(density_types_set):
             for phi in phi_set:
                 for entry_bound in entry_boundary_set:
-                    Npre = int(T_hat / dt)
-                    Vhat = (sigma_Y ** 2) / T_hat  # prior variance
+                    for tax in tax_set:
+                        Npre = int(T_hat / dt)
+                        Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 
-                    beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-                    beta0 = np.sum(alpha_i * beta_i).astype(float)
-                    alpha_constraint = np.ones(
-                        (1, Nconstraint)) * density_types
-                    alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-                    cohort_type_size_mix = cohort_size * alpha_i_mix
+                        beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+                        beta0 = np.sum(alpha_i * beta_i).astype(float)
+                        alpha_constraint = np.ones(
+                            (1, Nconstraint)) * density_types
+                        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                        cohort_type_size_mix = cohort_size * alpha_i_mix
 
-                    rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-                    beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                    rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                        -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                        rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+                        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+                        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                    col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}_{int(entry_bound * 100)}'
+                        col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}_{int(entry_bound * 100)}_{int(tax * 100)}'
 
-                    (
-                        r,
-                        theta,
-                        f_c,
-                        Delta,
-                        pi,
-                        parti,
-                        Phi_bar_parti,
-                        Phi_tilde_parti,
-                        Delta_bar_parti,
-                        Delta_tilde_parti,
-                        dR,
-                        mu_S,
-                        sigma_S,
-                        beta,
-                        invest_tracker,
-                        parti_age_group,
-                        portf_age_group,
-                        entry_mat,
-                        exit_mat
-                    ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                           beta0,
-                                           phi, Npre, Ninit, T_hat,
-                                           entry_bound,
-                                           dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                           age_cutoffs, Ntype,
-                                           Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                           rho_cohort_type_mix,
-                                           cohort_type_size_mix,
-                                           need_f='False',
-                                           need_Delta='True',
-                                           need_pi='True',
-                                           )
+                        (
+                            r,
+                            theta,
+                            f_c,
+                            Delta,
+                            pi,
+                            parti,
+                            Phi_bar_parti,
+                            Phi_tilde_parti,
+                            Delta_bar_parti,
+                            Delta_tilde_parti,
+                            dR,
+                            mu_S,
+                            sigma_S,
+                            beta,
+                            invest_tracker,
+                            parti_age_group,
+                            portf_age_group,
+                            entry_mat,
+                            exit_mat
+                        ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                                               beta0,
+                                               phi, Npre, Ninit, T_hat,
+                                               entry_bound,
+                                               exit_bound,
+                                               dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                               age_cutoffs, Ntype,
+                                               Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                               rho_cohort_type_mix,
+                                               cohort_type_size_mix,
+                                               need_f='False',
+                                               need_Delta='True',
+                                               need_pi='True',
+                                               )
 
-                    parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-                    age_belief = np.zeros((len(age_cutoffs) - 1, Nt_data))
-                    for n in range(len(age_cutoffs) - 1):
-                        age_belief[n] = np.average(
-                            np.average(Delta[-Nt_data:, :, age_cutoffs[n + 1]:age_cutoffs[n]],
-                                       weights=cohort_size[0, age_cutoffs[n + 1]:age_cutoffs[n]],
-                                       axis=2),
-                            weights=density_types,
-                            axis=1)
-                    parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
-                    parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
-                    parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
-                    parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
-                    parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
-                    parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
-                    parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                    parti_df.to_stata(f'stata_dataset/{country}/{i}_signal.dta')
+                        parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                        # age_belief = np.zeros((len(age_cutoffs) - 1, Nt_data))
+                        # for n in range(len(age_cutoffs) - 1):
+                        #     age_belief[n] = np.average(
+                        #         np.average(Delta[-Nt_data:, :, age_cutoffs[n + 1]:age_cutoffs[n]],
+                        #                    weights=cohort_size[0, age_cutoffs[n + 1]:age_cutoffs[n]],
+                        #                    axis=2),
+                        #         weights=density_types,
+                        #         axis=1)
+                        # parti_df['belief_old' + col_name] = age_belief[-1].astype(np.float32)
+                        # parti_df['belief_young' + col_name] = age_belief[0].astype(np.float32)
+                        # parti_df['parti_old' + col_name] = parti_age_group[-Nt_data:, -1].astype(np.float32)
+                        # parti_df['parti_young' + col_name] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+                        # parti_df['portf_old' + col_name] = portf_age_group[-Nt_data:, -1].astype(np.float32)
+                        # parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
+                        # parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
+                        # parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
+                        parti_df.to_stata(f'stata_dataset/{country}/{i}_exit_bound.dta')
 
     return (
         i,

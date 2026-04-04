@@ -207,7 +207,7 @@ def find_the_rich_mix(
 
 
 def bisection(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float, float], np.float64],
+        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float, float, float], np.float64],
         xlow: np.float64,
         xhigh: np.float64,
         arg1: np.ndarray,
@@ -215,6 +215,7 @@ def bisection(
         arg3: np.ndarray,
         arg4: float,
         arg5: float,
+        arg6: float,
         eps: float = 1e-9,
 ) -> np.float64:
     """Bisection method to solve x (theta)
@@ -231,15 +232,15 @@ def bisection(
         xmid: the estimated value that makes the optimfun close to 0
 
     """
-    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5)
-    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5)
+    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6)
+    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6)
     diff = 1
     iter = 0
     xmid = 100000
 
     while diff > eps:
         xmid = (xlow + xhigh) / 2
-        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5)
+        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6)
         if flow * fmid < 0:  # root between flow and fmid
             xhigh = xmid
             fhigh = fmid
@@ -265,6 +266,7 @@ def solve_theta(
         Delta_s_t: np.ndarray,
         sigma_Y: float,
         entry_bound: float,
+        exit_bound: float,
 ) -> np.float64:
     """RHS - LHS of the eq(22), used to iteratively solve theta
 
@@ -277,11 +279,12 @@ def solve_theta(
     Returns:
         np.float64: RHS - LHS
     """
+    theta_st = Delta_s_t + theta_guess
     invest = (
-            Delta_s_t >= -theta_guess
-    ) * invest_tracker + (
-            Delta_s_t >= (entry_bound - theta_guess)
-    ) * (1 - invest_tracker)
+                     theta_st >= exit_bound
+             ) * invest_tracker + (
+                     theta_st >= entry_bound
+             ) * (1 - invest_tracker)
     invest_consumption_share = invest * consumption_share
     Delta_bar_parti = np.sum(
         Delta_s_t * invest_consumption_share
@@ -307,6 +310,7 @@ def solve_theta_partial_constraint(
         consumption_share: np.ndarray,
         sigma_Y: float,
         entry_bound: float,
+        exit_bound: float,
 ) -> np.float64:
     '''
     solve for theta in the conditionally constrained case, with the goal of market clearing in the stock market
@@ -319,11 +323,12 @@ def solve_theta_partial_constraint(
     '''
     constrained = 1 - unconstrained
 
+    theta_st = Delta_s_t + theta_guess
     invest = (
-            Delta_s_t >= -theta_guess
-    ) * invest_tracker + (
-            Delta_s_t >= (entry_bound - theta_guess)
-    ) * (1 - invest_tracker)
+                     theta_st >= exit_bound
+             ) * invest_tracker + (
+                     theta_st >= entry_bound
+             ) * (1 - invest_tracker)
 
     f_sum = np.sum(invest * consumption_share * constrained) + np.sum(consumption_share * unconstrained)
     Delta_bar_f = (np.sum(
@@ -342,7 +347,7 @@ def solve_theta_partial_constraint(
 
 
 def bisection_partial_constraint(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float], np.float64],
+        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, float, float], np.float64],
         xlow: float,
         xhigh: float,
         arg1: np.ndarray,
@@ -351,6 +356,7 @@ def bisection_partial_constraint(
         arg4: np.ndarray,
         arg5: float,
         arg6: float,
+        arg7: float,
         eps: float = 1e-6,
 ) -> np.float64:
     """Bisection method to solve x (theta)
@@ -369,15 +375,15 @@ def bisection_partial_constraint(
         xmid: the estimated value that makes the optimfun close to 0
 
     """
-    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6)
-    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6)
+    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
     diff = 1
     iter = 0
     xmid = 10000
 
     while diff > eps:
         xmid = (xlow + xhigh) / 2
-        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6)
+        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         if flow * fmid < 0:  # root between flow and fmid
             xhigh = xmid
             fhigh = fmid

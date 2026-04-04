@@ -36,7 +36,7 @@ phi_set = [
 ]
 entry_boundary_set = [
     0.0,
-    0.05,
+    # 0.05,
     # 0.03,
 ]
 n_scenarios = len(density_set)

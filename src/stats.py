@@ -41,6 +41,8 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
         V = V_hat
     return V.astype(np.float32)
 
+
+
 # # @jit(nopython=True)
 # def dDelta_st_calculator(sigma_Y_sq: float,
 #                          a1: float,
@@ -50,7 +52,7 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
 #                          Delta_s_t: np.ndarray,
 #                          dZ_t: float,
 #                          dZ_SI_t: float,
-#                          type: str) -> np.ndarray:
+#                          type: # str) -> np.ndarray:
 #     """Calculate change in beliefs, as in eq(9)
 
 #     Args:

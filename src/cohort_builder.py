@@ -23,6 +23,7 @@ def build_cohorts_SI(
     Npre: int,
     Ninit: int,
     entry_bound: float,
+    exit_bound: float,
     mode_trade: str,
     mode_learn: str,
 ) -> Tuple[
@@ -179,11 +180,12 @@ def build_cohorts_SI(
                 lowest_bound = -np.max(possible_delta_st)  # absolute lower bound
                 theta_t = bisection(
                     solve_theta, lowest_bound, 50,
-                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y, entry_bound
+                    possible_cons_share, invest_tracker, possible_delta_st, sigma_Y,
+                    entry_bound, exit_bound
                 )
                 theta_st = Delta_s_t + theta_t
                 invest = (
-                                 theta_st >= 0
+                                 theta_st >= exit_bound
                          ) * invest_tracker + (
                                  theta_st >= entry_bound
                          ) * (1 - invest_tracker)
@@ -236,6 +238,7 @@ def build_cohorts_mix_type(
     Npre: int,
     Ninit: int,
     entry_bound: float,
+    exit_bound: float,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -295,7 +298,8 @@ def build_cohorts_mix_type(
     can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     tau_info = np.ones((Ntype, Nconstraint, 1)) * dt
     Vhat_init = np.ones((Ntype, Nconstraint, 1)) * Vhat
-    Vhat_vector = Vhat_init
+    Vhat_init[:, 0] = 0.0
+    Vhat_vector = np.copy(Vhat_init)
     a_phi = (1 - phi ** 2)
     phi_sqr_a_phi = phi / np.sqrt(a_phi)
     a_phi_1 = 1 / a_phi
@@ -350,10 +354,11 @@ def build_cohorts_mix_type(
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(Delta_s_t, np.zeros((Ntype, Nconstraint, 1)), axis=2)  # newborns begin with 0 bias when there are not enough observations
         else:
-            init_bias = np.average(dZ_build[int(i - Npre): i]) / dt
+            init_bias = np.average(dZ_build[int(i - Npre): i]) / dt * np.ones((Ntype, Nconstraint, 1))
+            init_bias[:, 0] = 0.0
             Delta_s_t += dDelta_s_t
             Delta_s_t = np.append(
-                Delta_s_t, init_bias * np.ones((Ntype, Nconstraint, 1)), axis=2
+                Delta_s_t, init_bias, axis=2
             )  # newborns begin with Npre observations of the dividend process
 
         # find the market clearing theta, given beliefs and consumption shares
@@ -382,12 +387,15 @@ def build_cohorts_mix_type(
                 possible_cons_share,
                 sigma_Y,
                 entry_bound,
+                exit_bound
                 )
+            theta_st = Delta_s_t + theta_t
             invest = (
-                             Delta_s_t >= -theta_t
+                             theta_st >= exit_bound
                      ) * invest_tracker + (
-                             Delta_s_t >= (entry_bound - theta_t)
+                             theta_st >= entry_bound
                      ) * (1 - invest_tracker)
+
             invest = 1 - (invest != 1) * (can_short_tracker != 1)  # not invest if a<0 and can not short
             invest[:, 1] = 0  # exclusion type
             switch_P_to_N = invest_tracker * (1 - invest) * (can_short_tracker != 1) # switch to nonparti if type R&E & not investing this period

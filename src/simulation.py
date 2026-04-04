@@ -23,6 +23,7 @@ def simulate_SI(
         Ninit: int,
         T_hat: int,
         entry_bound: float,
+        exit_bound: float,
         dZ_build: np.ndarray,
         dZ: np.ndarray,
         dZ_SI_build: np.ndarray,
@@ -143,6 +144,7 @@ def simulate_SI(
         Npre,
         Ninit,
         entry_bound,
+        exit_bound,
         mode_trade,
         mode_learn,
     )
@@ -190,6 +192,7 @@ def simulate_SI(
         T_hat,
         Npre,
         entry_bound,
+        exit_bound,
         mode_trade,
         mode_learn,
         cohort_type_size,
@@ -246,6 +249,7 @@ def simulate_SI_mean_vola(
         Ninit: int,
         T_hat: int,
         entry_bound: float,
+        exit_bound: float,
         dZ_build: np.ndarray,
         dZ: np.ndarray,
         dZ_SI_build: np.ndarray,
@@ -354,6 +358,7 @@ def simulate_SI_mean_vola(
         Npre,
         Ninit,
         entry_bound,
+        exit_bound,
         mode_trade,
         mode_learn,
     )
@@ -397,6 +402,7 @@ def simulate_SI_mean_vola(
         T_hat,
         Npre,
         entry_bound,
+        exit_bound,
         mode_trade,
         mode_learn,
         cohort_type_size,
@@ -445,6 +451,7 @@ def simulate_mix_types(
         Ninit: int,
         T_hat: int,
         entry_bound: float,
+        exit_bound: float,
         dZ_build: np.ndarray,
         dZ: np.ndarray,
         dZ_SI_build: np.ndarray,
@@ -569,6 +576,7 @@ def simulate_mix_types(
         Npre,
         Ninit,
         entry_bound,
+        exit_bound
     )
 
     (
@@ -614,6 +622,7 @@ def simulate_mix_types(
         T_hat,
         Npre,
         entry_bound,
+        exit_bound,
         cohort_type_size,
         cutoffs_age,
         Delta_s_t,
