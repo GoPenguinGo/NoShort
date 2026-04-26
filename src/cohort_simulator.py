@@ -960,6 +960,7 @@ def simulate_cohorts_mix_type(
         X: np.ndarray,
         d_eta_st: np.ndarray,
         invest_tracker: np.ndarray,
+        information_tracker: np.ndarray,
         can_short_tracker: np.ndarray,
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
@@ -1052,8 +1053,8 @@ def simulate_cohorts_mix_type(
 
     """
     # Initializing variables
-    invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
-    can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    invest_newborn = np.array([[[1], [0], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    can_short_newborn = np.array([[[1], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
     Phi_bar_parti = np.ones(Nt, dtype=np.float16)  # consumption share of the stock market participants
@@ -1147,12 +1148,12 @@ def simulate_cohorts_mix_type(
         V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
         dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
                                             'N')  # from eq(9)
-        dDelta_s_t_N[:, 1:3] = 0.0  # designated N and disappointed do not update
+        # dDelta_s_t_N[:, 1] = 0.0  # designated N and disappointed do not update
         V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
         dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
                                             'P')
-        dDelta_s_t = invest_tracker * dDelta_s_t_P + (
-                1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
+        dDelta_s_t = information_tracker * dDelta_s_t_P + (
+                1 - information_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
         tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt
         Vhat_vector = np.append(Vhat_vector[:, :, 1:], Vhat * append_init, axis=2)
         Vhat_vector[:, 0] = 0.0
@@ -1170,11 +1171,13 @@ def simulate_cohorts_mix_type(
         invest_tracker = np.append(invest_tracker[:, :, 1:], invest_newborn,
                                    axis=2)  # all cohorts that are still in the market, 1 by default
         can_short_tracker = np.append(can_short_tracker[:, :, 1:], can_short_newborn, axis=2)
+        information_tracker = np.append(information_tracker[:, :, 1:], invest_newborn,
+                                   axis=2)
 
         possible_cons_share = f_c_ist * dt * invest_tracker
-        possible_cons_share[:, 3] = f_c_ist[:, 3] * dt
+        possible_cons_share[:, 2] = f_c_ist[:, 2] * dt
         possible_delta_st = Delta_s_t * invest_tracker
-        possible_delta_st[:, 3] = Delta_s_t[:, 3]
+        possible_delta_st[:, 2] = Delta_s_t[:, 2]
 
         lowest_bound = -np.max(
             possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound where no agent holds the stock
@@ -1200,16 +1203,27 @@ def simulate_cohorts_mix_type(
 
         invest = 1 - (invest != 1) * (can_short_tracker != 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
-        switch_P_to_N = invest_tracker * (1 - invest) * (
-                can_short_tracker < 1)  # switch to nonparti if type R&E & not investing this period
-        switch_N_to_P = np.maximum(invest - invest_tracker,
-                                   0)  # switch to parti if not investing before & investing this period
-        switch_N_to_P[:, :3] = 0  # only applicable to the E type
-        switch = switch_N_to_P + switch_P_to_N
-        invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
+        # switch_P_to_N = invest_tracker * (1 - invest) * (
+        #         can_short_tracker < 1)  # switch to nonparti if type R&E & not investing this period
+        # switch_N_to_P = np.maximum(invest - invest_tracker,
+        #                            0)  # switch to parti if not investing before & investing this period
+        # switch_N_to_P[:, :2] = 0  # only applicable to the E type
+        # switch = switch_N_to_P + switch_P_to_N
+        # invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
+        invest_tracker = np.copy(invest)
         d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
 
         # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
+        # the switches are specific to passing the exit_boundary
+        information = theta_st[:, 2] >= exit_bound
+        switch_P_to_N = information_tracker * 0.0
+        switch_N_to_P = information_tracker * 0.0
+        switch_P_to_N[:, 2] = (information_tracker[:,
+                               2] - information == 1)  # switch to nonparti if type R&E & not investing this period
+        switch_N_to_P[:, 2] = (information_tracker[:, 2] - information == -1)  # only applicable to the E type
+        switch = switch_N_to_P + switch_P_to_N
+        information_tracker[:, 2] = np.copy(information)
+
         Vhat_vector = np.append(V_st_P[:, :, 1:], Vhat * append_init, axis=2) * switch_P_to_N + \
                       np.append(V_st_N[:, :, 1:], Vhat * append_init, axis=2) * switch_N_to_P + \
                       Vhat_vector * (1 - switch)  # reset V'
@@ -1278,7 +1292,7 @@ def simulate_cohorts_mix_type(
             exit_mat[i, j] = (np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) 
                                      + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):], weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) * nu * j
                                      )
-        invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4, -1)), axis=0))
+        invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, Nconstraint, -1)), axis=0))
 
         for j in range(len(cutoffs_age) - 1):
             parti_age_group[i, j] = np.ma.average(

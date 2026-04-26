@@ -248,6 +248,7 @@ def build_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
+    np.ndarray,
 ]:
     """builds up a sufficiently large set of cohorts in the economy, view each cohort as one agent with a constantly shrinking size
     a mixture of 4 different types of agents in each cohort:
@@ -293,9 +294,11 @@ def build_cohorts_mix_type(
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
     invest_tracker[:, 1] = 0
-    invest_newborn = np.array([[[1], [0], [1], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    invest_newborn = np.array([[[1], [0], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    information_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
+    information_tracker[:, 1] = 0
     can_short_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
-    can_short_newborn = np.array([[[1], [0], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    can_short_newborn = np.array([[[1], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     tau_info = np.ones((Ntype, Nconstraint, 1)) * dt
     Vhat_init = np.ones((Ntype, Nconstraint, 1)) * Vhat
     Vhat_init[:, 0] = 0.0
@@ -344,7 +347,7 @@ def build_cohorts_mix_type(
             dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'N')  # from eq(9)
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
             dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
-            dDelta_s_t = invest_tracker * dDelta_s_t_P + (1 - invest_tracker) * dDelta_s_t_N
+            dDelta_s_t = information_tracker * dDelta_s_t_P + (1 - information_tracker) * dDelta_s_t_N
 
         # add a new cohort to Vhat_vector and tau_info
         Vhat_vector = np.append(Vhat_vector, Vhat_init, axis=2)
@@ -370,11 +373,12 @@ def build_cohorts_mix_type(
         else:
             invest_tracker = np.append(invest_tracker, invest_newborn, axis=2)  # indicator of current type, =1 for a cohort if type == P
             can_short_tracker = np.append(can_short_tracker, can_short_newborn, axis=2)
+            information_tracker = np.append(information_tracker, invest_newborn, axis=2)
 
             possible_cons_share = f_c_ist * dt * invest_tracker
-            possible_cons_share[:, 3] = f_c_ist[:, 3] * dt
+            possible_cons_share[:, 2] = f_c_ist[:, 2] * dt
             possible_delta_st = Delta_s_t * invest_tracker
-            possible_delta_st[:, 3] = Delta_s_t[:, 3]
+            possible_delta_st[:, 2] = Delta_s_t[:, 2]
 
             lowest_bound = -np.max(possible_delta_st[np.nonzero(possible_delta_st)])  # absolute lower bound where no agent holds the stock
             theta_t = bisection_partial_constraint(
@@ -398,12 +402,21 @@ def build_cohorts_mix_type(
 
             invest = 1 - (invest != 1) * (can_short_tracker != 1)  # not invest if a<0 and can not short
             invest[:, 1] = 0  # exclusion type
-            switch_P_to_N = invest_tracker * (1 - invest) * (can_short_tracker != 1) # switch to nonparti if type R&E & not investing this period
-            switch_N_to_P = np.maximum(invest - invest_tracker, 0)  # switch to parti if not investing before & investing this period
-            switch_N_to_P[:, :3] = 0  # only applicable to the E type
-            switch = switch_N_to_P + switch_P_to_N
-            invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
+            # switch_P_to_N = invest_tracker * (1 - invest) * (can_short_tracker != 1) # switch to nonparti if type R&E & not investing this period
+            # switch_N_to_P = np.maximum(invest - invest_tracker, 0)  # switch to parti if not investing before & investing this period
+            # switch_N_to_P[:, :2] = 0  # only applicable to the E type
+            # switch = switch_N_to_P + switch_P_to_N
+            invest_tracker = np.copy(invest)
             d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
+
+            # the switches are specific to passing the exit_boundary
+            information = theta_st[:, 2] >= exit_bound
+            switch_P_to_N = information_tracker * 0.0
+            switch_N_to_P = information_tracker * 0.0
+            switch_P_to_N[:, 2] = (information_tracker[:, 2] - information ==  1)  # switch to nonparti if type R&E & not investing this period
+            switch_N_to_P[:, 2] = (information_tracker[:, 2] - information ==  -1)  # only applicable to the E type
+            switch = switch_N_to_P + switch_P_to_N
+            information_tracker[:, 2] = np.copy(information)
 
             # tau_info and V_hat has to change for the agents who switch
             Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \
@@ -417,6 +430,7 @@ def build_cohorts_mix_type(
         X,
         d_eta_st,
         invest_tracker,
+        information_tracker,
         tau_info,
         Vhat_vector,
         can_short_tracker,
