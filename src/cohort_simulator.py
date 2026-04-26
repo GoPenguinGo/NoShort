@@ -215,14 +215,11 @@ def simulate_cohorts_SI(
             tau_info = tau  # au_info is the same with age; no switch between N and P for complete market
 
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
-            V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
-            dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t,
-                                                dZ_SI_t,
+            V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, phi, 'N')  # from eq(6)
+            dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_N, Delta_s_t, dZ_t,
                                                 'N')  # from eq(9)
-            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t,
-                                                dZ_SI_t,
-                                                'P')
+            V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, phi, 'P')
+            dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_t, 'P')
             dDelta_s_t = invest_tracker * dDelta_s_t_P + (
                     1 - invest_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
             tau_info = np.append(tau_info[:, 1:], np.zeros((Ntype, 1)),
@@ -1145,13 +1142,11 @@ def simulate_cohorts_mix_type(
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
 
         # update beliefs
-        V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'N')  # from eq(6)
-        dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_N, Delta_s_t, dZ_t, dZ_SI_t,
+        V_st_N = post_var(sigma_Y_sq, Vhat_vector, tau_info, phi, 'N')  # from eq(6)
+        dDelta_s_t_N = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_N, Delta_s_t, dZ_t,
                                             'N')  # from eq(9)
-        # dDelta_s_t_N[:, 1] = 0.0  # designated N and disappointed do not update
-        V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-        dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_t, dZ_SI_t,
-                                            'P')
+        V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, phi, 'P')
+        dDelta_s_t_P = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_t, 'P')
         dDelta_s_t = information_tracker * dDelta_s_t_P + (
                 1 - information_tracker) * dDelta_s_t_N  # the participation decision of last time affects the updating pattern
         tau_info = np.append(tau_info[:, :, 1:], 0 * append_init, axis=2) + dt

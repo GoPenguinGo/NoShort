@@ -3,7 +3,7 @@ import numpy as np
 from typing import Tuple, Callable
 
 
-def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, type: str) -> np.ndarray:
+def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, phi: float, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(6)
 
     Args:
@@ -16,7 +16,6 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
     Returns:
         np.ndarray: shape (T, )
     """
-    phi = np.sqrt(1 - 1 / a_phi)
 
     if type == 'N':
         V = sigma_Y_sq * V_hat / (sigma_Y_sq + phi * V_hat * tau)
@@ -53,13 +52,11 @@ def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, a_phi: float, typ
 
 # @jit(nopython=True)
 def dDelta_st_calculator(sigma_Y_sq: float,
-                         a1: float,
-                         a2: float,
+                         phi: float,
                          dt: float,
                          V_st: np.ndarray,
                          Delta_s_t: np.ndarray,
                          dZ_t: float,
-                         dZ_SI_t: float,
                          type: str) -> np.ndarray:
     """Calculate change in beliefs, as in eq(9)
 
@@ -77,7 +74,6 @@ def dDelta_st_calculator(sigma_Y_sq: float,
     Returns:
         np.ndarray: shape (T, )
     """
-    phi = np.sqrt(1 - 1 / a1)
     if type == 'N':
         dDelta_s_t = phi * V_st / sigma_Y_sq * (
                 -Delta_s_t * dt + dZ_t
