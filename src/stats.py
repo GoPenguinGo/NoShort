@@ -3,7 +3,7 @@ import numpy as np
 from typing import Tuple, Callable
 
 
-def post_var(sigma_Y_sq: float, V_hat: float, tau: np.ndarray, phi: float, type: str) -> np.ndarray:
+def post_var(sigma_Y_sq: float, V_hat: np.ndarray, tau: np.ndarray, phi: float, type: str) -> np.ndarray:
     """Calculate the posterior variance, correspond to eq(6)
 
     Args:
@@ -56,7 +56,7 @@ def dDelta_st_calculator(sigma_Y_sq: float,
                          dt: float,
                          V_st: np.ndarray,
                          Delta_s_t: np.ndarray,
-                         dZ_t: float,
+                         dZ_t: np.ndarray,
                          type: str) -> np.ndarray:
     """Calculate change in beliefs, as in eq(9)
 

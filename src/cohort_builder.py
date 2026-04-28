@@ -116,7 +116,7 @@ def build_cohorts_SI(
         # update beliefs
         if mode_trade == 'complete':
             V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, a_phi, 'P')
-            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, a_phi_1, phi_sqr_a_phi, dt, V_st_P, Delta_s_t, dZ_build_t, dZ_SI_build_t, 'P')
+            dDelta_s_t = dDelta_st_calculator(sigma_Y_sq, phi, dt, V_st_P, Delta_s_t, dZ_build_t, 'P')
         elif mode_trade == 'w_constraint' or mode_trade == 'partial_constraint_rich' or mode_trade == 'partial_constraint_old':
             if i < Ninit:
                 V_st_P = post_var(sigma_Y_sq, Vhat_vector, tau_info, phi, 'P')
@@ -310,7 +310,7 @@ def build_cohorts_mix_type(
         # new cohort born (age 0), get wealth transfer, observe, invest
         rho_cohort_type_short = rho_cohort_type[:, :, -i:]
         dZ_build_t = dZ_build[i - 1]
-        dZ_SI_build_t = dZ_SI_build[i - 1]
+        # dZ_SI_build_t = dZ_SI_build[i - 1]
 
         eta_st_eta_ss = eta_st_eta_ss * np.exp(
             (-0.5 * d_eta_st ** 2) * dt
