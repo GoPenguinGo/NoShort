@@ -1,5 +1,7 @@
 import numpy as np
 
+from main import entry_bound
+
 # Parameters
 Ntype = 2
 rho_i = np.array([[0.001], [0.005]])  # baseline
@@ -13,6 +15,9 @@ phi = 0.5
 tax = 0.35   # marginal rate of consumption tax
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
+
+entry_bound = 0.01
+exit_bound = 0.01
 
 # Setting prior variance
 dt = 1 / 12  # time incremental

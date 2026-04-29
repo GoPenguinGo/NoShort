@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.simulation import simulate_SI, simulate_mix_types
-from src.param import rho_i, nu, mu_Y, sigma_Y, tax, phi, \
+from src.param import (rho_i, nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, Mpath, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_labels, colors_short, PN_labels, age_labels, \
-    Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size, popu_age_groups
+    Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size,
+                       popu_age_groups, entry_bound, exit_bound)
 from src.param_mix import Nconstraint, rho_i_mix
 import statsmodels.api as sm
 import pandas as pd
@@ -34,14 +35,8 @@ phi_set = [
     # 0.0,
     0.5
 ]
-entry_boundary_set = [
-    0.0,
-    # 0.05,
-    # 0.03,
-]
 n_scenarios = len(density_set)
 n_phi = len(phi_set)
-n_entry_boundary = len(entry_boundary_set)
 dZ_build = dZ_build_matrix[0]
 dZ_SI_build = dZ_SI_build_matrix[0]
 dZ = dZ_matrix[0]
@@ -53,120 +48,61 @@ data_shocks.loc[data_shocks['dZ_SI'].isna(), 'dZ_SI'] = filler
 dZ_SI_actual = data_shocks.to_numpy()[:, 1]
 dZ[-dZ_actual.size:] = dZ_actual
 dZ_SI[-Nt_data:] = dZ_SI_actual[-Nt_data:]
-theta_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float32)
-Delta_bar_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float32)
-Delta_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
-pi_compare = np.empty((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=np.float16)
-invest_tracker_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data, Nconstraint, Nc), dtype=int)
-parti_compare = np.zeros((n_scenarios, n_phi, n_entry_boundary, Nt_data), dtype=np.float16)
+theta_compare = np.empty((n_scenarios, n_phi, Nt_data), dtype=np.float32)
+Delta_bar_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float32)
+Delta_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
+pi_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
+invest_tracker_compare = np.zeros((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=int)
+parti_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float16)
 for i in range(n_scenarios):
     for j, phi in enumerate(phi_set):
-        for k, entry_bound in enumerate(entry_boundary_set):
-            if i == 0:
-                mode_trade = 'w_constraint'
-                mode_learn = 'reentry'
-                (
-                    r,
-                    theta,
-                    f_c,
-                    Delta,
-                    pi,
-                    parti,
-                    Phi_bar_parti,
-                    Phi_tilde_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    parti_age_group,
-                    parti_wealth_group,
-                    entry_mat,
-                    exit_mat
-                ) = simulate_SI(mode_trade,
-                                mode_learn,
-                                Nc,
-                                Nt,
-                                dt,
-                                nu,
-                                Vhat,
-                                mu_Y,
-                                sigma_Y,
-                                tax,
-                                beta0,
-                                phi,
-                                Npre,
-                                Ninit,
-                                T_hat,
-                                entry_bound,
-                                dZ_build,
-                                dZ,
-                                dZ_SI_build,
-                                dZ_SI,
-                                tau,
-                                cutoffs_age,
-                                Ntype,
-                                rho_i,
-                                alpha_i,
-                                beta_i,
-                                rho_cohort_type,
-                                cohort_type_size,
-                                need_f='True',
-                                need_Delta='True',
-                                need_pi='True',
-                                )
-                Delta_compare[i, j, k, :, 3] = Delta[-Nt_data:]
-                pi_compare[i, j, k, :, 3] = pi[-Nt_data:]
-                invest_tracker_compare[i, j, k, :, 3] = (pi[-Nt_data:] != 0)
-            else:
-                alpha_constraint = np.ones(
-                    (1, Nconstraint)) * density_set[i]
-                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-                cohort_type_size_mix = cohort_size * alpha_i_mix
-                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-                (
-                    r,
-                    theta,
-                    f_c,
-                    Delta,
-                    pi,
-                    parti,
-                    Phi_bar_parti,
-                    Phi_tilde_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    invest_tracker,
-                    parti_age_group,
-                    parti_wealth_group,
-                    entry_mat,
-                    exit_mat
-                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
-                                       beta0,
-                                       phi, Npre, Ninit, T_hat,
-                                       entry_bound,
-                                       dZ_build, dZ, dZ_SI_build, dZ_SI,
-                                       cutoffs_age, Ntype,
-                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                       rho_cohort_type_mix,
-                                       cohort_type_size_mix,
-                                       need_f='True',
-                                       need_Delta='True',
-                                       need_pi='True',
-                                       )
-                Delta_compare[i, j, k] = Delta[-Nt_data:]
-                pi_compare[i, j] = pi[-Nt_data:]
-                invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
-            theta_compare[i, j, k] = theta[-Nt_data:]
-            Delta_bar_compare[i, j, k] = Delta_bar_parti[-Nt_data:]
-            parti_compare[i, j, k] = parti[-Nt_data:]
+        alpha_constraint = np.ones(
+            (1, Nconstraint)) * density_set[i]
+        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+        cohort_type_size_mix = cohort_size * alpha_i_mix
+        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+        (
+            r,
+            theta,
+            f_c,
+            Delta,
+            pi,
+            parti,
+            Phi_bar_parti,
+            Phi_tilde_parti,
+            Delta_bar_parti,
+            Delta_tilde_parti,
+            dR,
+            mu_S,
+            sigma_S,
+            beta,
+            invest_tracker,
+            parti_age_group,
+            parti_wealth_group,
+            entry_mat,
+            exit_mat
+        ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
+                               beta0,
+                               phi, Npre, Ninit, T_hat,
+                               entry_bound,
+                               exit_bound,
+                               dZ_build, dZ, dZ_SI_build, dZ_SI,
+                               cutoffs_age, Ntype,
+                               Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                               rho_cohort_type_mix,
+                               cohort_type_size_mix,
+                               need_f='True',
+                               need_Delta='True',
+                               need_pi='True',
+                               )
+        Delta_compare[i, j] = Delta[-Nt_data:]
+        pi_compare[i, j] = pi[-Nt_data:]
+        invest_tracker_compare[i, j] = (pi[-Nt_data:] != 0)
+        theta_compare[i, j] = theta[-Nt_data:]
+        Delta_bar_compare[i, j] = Delta_bar_parti[-Nt_data:]
+        parti_compare[i, j] = parti[-Nt_data:]
 
 
 #####################################
@@ -174,48 +110,55 @@ for i in range(n_scenarios):
 #####################################
 nn = 3  # number of cohorts illustrated
 starts = np.arange(nn) * 240 + 24 * 12
-Delta_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
-pi_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
-entry_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
-exit_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
-parti_time_series = np.zeros((n_scenarios, n_phi, n_entry_boundary, nn, Nconstraint, Nt_data), dtype=np.float32)
+Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+entry_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+exit_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
+parti_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 for i in range(n_scenarios):
     for j in range(n_phi):
-        for jj in range(n_entry_boundary):
-            for k in range(Nconstraint):
-                pi = pi_compare[i, j, jj, :, k]
-                Delta = Delta_compare[i, j, jj, :, k]
-                for m in range(nn):
-                    start = starts[m]
-                    for n in range(Nt_data):
-                        if n < start:
-                            pi_time_series[i, j, jj, m, k, n] = np.nan
-                            Delta_time_series[i, j, jj, m, k, n] = np.nan
+        for k in range(Nconstraint):
+            # Removed jj from indexing
+            pi = pi_compare[i, j, :, k]
+            Delta = Delta_compare[i, j, :, k]
+            for m in range(nn):
+                start = starts[m]
+                for n in range(Nt_data):
+                    if n < start:
+                        pi_time_series[i, j, m, k, n] = np.nan
+                        Delta_time_series[i, j, m, k, n] = np.nan
+                    else:
+                        cohort_rank = Nt - (n - start) - 1
+                        Delta_time_series[i, j, m, k, n] = Delta[n, cohort_rank]
+                        pi_time_series[i, j, m, k, n] = pi[n, cohort_rank]
+
+                        if k == 0:  # the unconstrained
+                            parti_time_series[i, j, m, k, n] = 1
+                            entry_time_series[i, j, m, k, n] = 0
+                            exit_time_series[i, j, m, k, n] = 0
+                        elif k == 1:  # the excluded
+                            parti_time_series[i, j, m, k, n] = 0
+                            entry_time_series[i, j, m, k, n] = 0
+                            exit_time_series[i, j, m, k, n] = 0
                         else:
-                            cohort_rank = Nt - (n - start) - 1
-                            Delta_time_series[i, j, jj, m, k, n] = Delta[n, cohort_rank]
-                            pi_time_series[i, j, jj, m, k, n] = pi[n, cohort_rank]
-                            if k == 0:  # the unconstrained
-                                parti_time_series[i, j, jj, m, k, n] = 1
-                                entry_time_series[i, j, jj, m, k, n] = 0
-                                exit_time_series[i, j, jj, m, k, n] = 0
-                            elif k == 1:  # the excluded
-                                parti_time_series[i, j, jj, m, k, n] = 0
-                                entry_time_series[i, j, jj, m, k, n] = 0
-                                exit_time_series[i, j, jj, m, k, n] = 0
-                            else:
-                                parti_time_series[i, j, jj, m, k, n] = 1 if pi_time_series[i, j, jj, m, k, n] != 0 else 0
-                                switch_PN = 1 if (pi_time_series[i, j, jj, m, k, n - 1] != 0) and (
-                                        pi_time_series[i, j, jj, m, k, n] == 0) else 0
-                                switch_NP = 1 if (pi_time_series[i, j, jj, m, k, n] != 0) and (
-                                        pi_time_series[i, j, jj, m, k, n - 1] == 0) else 0
-                                entry_time_series[i, j, jj, m, k, n] = 1 if switch_NP == 1 else 0
-                                exit_time_series[i, j, jj, m, k, n] = 1 if switch_PN == 1 else 0
-                                exit_time_series[i, j, jj, m, k, start] = 0
-                                if switch_NP == 1:
-                                    parti_time_series[i, j, jj, m, k, n] = 0.5
-                                if switch_PN == 1:
-                                    parti_time_series[i, j, jj, m, k, n - 1] = 0.5
+                            # Using updated indexing for logic checks
+                            parti_time_series[i, j, m, k, n] = 1 if pi_time_series[i, j, m, k, n] != 0 else 0
+
+                            switch_PN = 1 if (pi_time_series[i, j, m, k, n - 1] != 0) and (
+                                    pi_time_series[i, j, m, k, n] == 0) else 0
+
+                            switch_NP = 1 if (pi_time_series[i, j, m, k, n] != 0) and (
+                                    pi_time_series[i, j, m, k, n - 1] == 0) else 0
+
+                            entry_time_series[i, j, m, k, n] = 1 if switch_NP == 1 else 0
+                            exit_time_series[i, j, m, k, n] = 1 if switch_PN == 1 else 0
+                            exit_time_series[i, j, m, k, start] = 0
+
+                            if switch_NP == 1:
+                                parti_time_series[i, j, m, k, n] = 0.5
+                            if switch_PN == 1:
+                                parti_time_series[i, j, m, k, n - 1] = 0.5
+
 
 
 #####################################
