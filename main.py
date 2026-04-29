@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate_SI, simulate_mix_types
+from src.simulation import simulate_mix_types
 from src.param import (rho_i, nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
     cutoffs_age, n_age_cutoffs, colors, Mpath, \
@@ -28,11 +28,11 @@ plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_set = [
-    (0.0, 0.0, 0.0, 1.0),
-    (0.25, 0.25, 0.25, 0.25),
+    (0.3, 0.5, 0.2), #norway
+    # (0.4, 0.5, 0.1), #Germany
 ]
 phi_set = [
-    # 0.0,
+    0.0,
     0.5
 ]
 n_scenarios = len(density_set)

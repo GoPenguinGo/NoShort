@@ -1,7 +1,5 @@
 import numpy as np
 
-from main import entry_bound
-
 # Parameters
 Ntype = 2
 rho_i = np.array([[0.001], [0.005]])  # baseline

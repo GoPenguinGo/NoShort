@@ -3,7 +3,6 @@ from typing import Tuple
 from src.cohort_builder import build_cohorts_SI, build_cohorts_mix_type
 from src.cohort_simulator import simulate_cohorts_SI, simulate_cohorts_mean_vola, simulate_cohorts_mix_type, \
     simulate_mean_vola_mix_type
-from src.param import cutoffs_age
 
 
 def simulate_SI(
