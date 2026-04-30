@@ -1078,9 +1078,6 @@ def simulate_cohorts_mix_type(
     parti_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
     portf_age_group = np.zeros((Nt, len(cutoffs_age) - 1), dtype=np.float16)
     dR_t = 0
-    a_phi = (1 - phi ** 2)
-    phi_sqr_a_phi = phi / np.sqrt(a_phi)
-    a_phi_1 = 1 / a_phi
     sigma_Y_sq = sigma_Y ** 2
 
     append_init = np.ones((Ntype, Nconstraint, 1), dtype=np.int8)

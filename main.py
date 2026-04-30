@@ -16,10 +16,10 @@ from scipy.interpolate import make_interp_spline
 
 # Fig1: Shocks and beliefs
 # Fig2: Distribution of beliefs
-# folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/empirical/'
-folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
+folder_address = r'C:\Users\zeshu\BI Norwegian Business School Dropbox\Zeshu XU\to sync\between_computers\entry_exit/empirical/'
+# folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
-    folder_address + r'realized_shocks_US.xlsx',
+    folder_address + r'realized_shocks_US1.xlsx',
     # sheet_name='Sheet1',
     index_col=0
 )
@@ -28,11 +28,12 @@ plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
 density_set = [
+    # (0.3, 0.4, 0.3),
     (0.3, 0.5, 0.2), #norway
     # (0.4, 0.5, 0.1), #Germany
 ]
 phi_set = [
-    0.0,
+    # 0.0,
     0.5
 ]
 n_scenarios = len(density_set)
@@ -42,12 +43,8 @@ dZ_SI_build = dZ_SI_build_matrix[0]
 dZ = dZ_matrix[0]
 dZ_SI = dZ_SI_matrix[0]
 dZ_actual = data_shocks.to_numpy()[:, 0]
-Nt_data = dZ_actual.size - data_shocks['dZ_SI'].isna().sum()
-filler = np.random.randn(data_shocks['dZ_SI'].isna().sum()) * np.sqrt(dt)
-data_shocks.loc[data_shocks['dZ_SI'].isna(), 'dZ_SI'] = filler
-dZ_SI_actual = data_shocks.to_numpy()[:, 1]
+Nt_data = dZ_actual.size
 dZ[-dZ_actual.size:] = dZ_actual
-dZ_SI[-Nt_data:] = dZ_SI_actual[-Nt_data:]
 theta_compare = np.empty((n_scenarios, n_phi, Nt_data), dtype=np.float32)
 Delta_bar_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float32)
 Delta_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.float16)
@@ -118,7 +115,6 @@ parti_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dty
 for i in range(n_scenarios):
     for j in range(n_phi):
         for k in range(Nconstraint):
-            # Removed jj from indexing
             pi = pi_compare[i, j, :, k]
             Delta = Delta_compare[i, j, :, k]
             for m in range(nn):
@@ -165,9 +161,9 @@ for i in range(n_scenarios):
 #######  belief distribution  #######
 #####################################
 # phi = 0.5, reentry scenario
-y_overall = np.empty((Nt_data, 5))  # overall
-y_P = np.empty((Nt_data, 5))  # participants / long
-y_N = np.empty((Nt_data, 5))  # non-participants / short
+y_overall = np.empty((Nt_data, 6))  # overall
+y_P = np.empty((Nt_data, 6))  # participants / long
+y_N = np.empty((Nt_data, 6))  # non-participants / short
 y_min = np.empty((Nt_data, n_age_cutoffs))
 y_max = np.empty((Nt_data, n_age_cutoffs))
 y_cases = [y_overall, y_P, y_N]
@@ -175,9 +171,9 @@ alpha_constraint = np.ones(
     (1, Nconstraint)) * density_set[0]
 alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
 cohort_type_size_mix = cohort_size * alpha_i_mix
-Delta_focus = Delta_compare[0, 1, :, 3]
-invest_focus = invest_tracker_compare[0, 1, :, 3]
-cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[3]
+Delta_focus = Delta_compare[0, 0, :, -1]
+invest_focus = invest_tracker_compare[0, 0, :, -1]
+cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[-1]
 age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
 n_age_cutoffs = len(age_cutoffs) - 1
 for n in range(n_age_cutoffs):
@@ -207,11 +203,12 @@ for m in range(Nt_data):
         cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
         popu_cumsum = np.cumsum(cohort_size_sorted)
         total_popu = popu_cumsum[-1]
-        Delta_cutoff = np.zeros(5)
+        Delta_cutoff = np.zeros(6)
         cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
         Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
         Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
         Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
+        Delta_cutoff[5] = np.average(Delta_sorted, weights=cohort_size_sorted)
         y_cases[n][m] = Delta_cutoff
 
 x = 1926 + np.arange(Nt_data) * dt
@@ -220,7 +217,50 @@ y2 = np.copy(y_P)
 y3 = np.copy(y_N)
 y4 = np.copy(y_min)
 y5 = np.copy(y_max)
-belief_cutoff_case = -theta_compare[0, 1]
+belief_cutoff_case = -theta_compare[0, 0]
+
+######################################
+###########   Figure 0   #############
+######################################
+# average belief of participants vs. nonparticipants
+
+print('Figure 1')
+N_years = 20
+x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
+fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(10, 10))
+for j, ax in enumerate(axes):
+    if j == 0:
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        # ax.set_ylim(-1.4, 1.3)
+        ax.set_title('(c) Distribution of estimation error, participants vs. non-participants')
+        ax.plot(x, y2[-int(N_years / dt):, -1], color='navy', linewidth=2, label=r'Participants')
+        ax.plot(x, y3[-int(N_years / dt):, -1], color='maroon', linewidth=2, label=r'Nonparticipants')
+        ax.legend(loc='lower left')
+    else:
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        # ax.set_ylim(-1.4, 1.3)
+        ax.set_title('(d) Distribution of estimation error, age groups')
+        # ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
+        #         # label=r'Cutoff $\Delta_{s,t}$'
+        #         )
+        for k in range(n_age_cutoffs):
+            y40 = y4[-int(N_years / dt):, k]
+            y50 = y5[-int(N_years / dt):, k]
+            color_age_group = colors_short[k] if k <= 1 else 'red'
+            ax.fill_between(x, y40, y50, color=color_age_group, linewidth=0., alpha=0.4,
+                            label=age_labels[k])
+            ax.legend(loc='lower left')
+        ax.tick_params(axis='y', labelcolor='black')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'f0_merged.pdf',
+    dpi=200)
+plt.show()
+plt.close()
+
+
 
 ######################################
 ###########   Figure 1   #############
