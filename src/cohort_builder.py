@@ -192,10 +192,10 @@ def build_cohorts_mix_type(
             information = invest[:, -1]
             switch_P_to_N = information_tracker * 0.0
             switch_N_to_P = information_tracker * 0.0
-            switch_P_to_N[:, 2] = (information_tracker[:, 2] - information ==  1)  # switch to nonparti if type R&E & not investing this period
-            switch_N_to_P[:, 2] = (information_tracker[:, 2] - information ==  -1)  # only applicable to the E type
+            switch_P_to_N[:, -1] = (information_tracker[:, -1] - information ==  1)  # switch to nonparti if type R&E & not investing this period
+            switch_N_to_P[:, -1] = (information_tracker[:, -1] - information ==  -1)  # only applicable to the E type
             switch = switch_N_to_P + switch_P_to_N
-            information_tracker[:, 2] = np.copy(information)
+            information_tracker[:, -1] = np.copy(information)
 
             # tau_info and V_hat has to change for the agents who switch
             Vhat_vector = np.append(V_st_P, Vhat * np.ones((Ntype, Nconstraint, 1)), axis=2) * switch_P_to_N + \

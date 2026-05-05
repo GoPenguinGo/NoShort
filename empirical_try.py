@@ -103,16 +103,12 @@ def simulate_path(
     print(i)
     # shocks
     dZ_build = dZ_build_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
     dZ = dZ_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
     filler = np.random.randn(data_shocks['dZ_SI'].isna().sum()) * np.sqrt(dt)
     data_shocks.loc[data_shocks['dZ_SI'].isna(), 'dZ_SI'] = filler
     dZ_actual = data_shocks.to_numpy()[:, 0]
-    dZ_SI_actual = data_shocks.to_numpy()[:, 1]
     Nt_data = dZ_actual.size
     dZ[-Nt_data:] = dZ_actual
-    dZ_SI[-Nt_data:] = dZ_SI_actual
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
     for T_hat in T_hat_set:
         for density_n, density_types in enumerate(density_types_set):
@@ -154,7 +150,7 @@ def simulate_path(
                             beta,
                             invest_tracker,
                             parti_age_group,
-                            portf_age_group,
+                            # portf_age_group,
                             entry_mat,
                             exit_mat
                         ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
@@ -162,7 +158,7 @@ def simulate_path(
                                                phi, Npre, Ninit, T_hat,
                                                entry_bound,
                                                exit_bound,
-                                               dZ_build, dZ, dZ_SI_build, dZ_SI,
+                                               dZ_build, dZ,
                                                age_cutoffs, Ntype,
                                                Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
                                                rho_cohort_type_mix,
