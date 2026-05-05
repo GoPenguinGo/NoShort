@@ -129,20 +129,20 @@ def utility_mu(mu_Y_use, sigma_Y_use):
 #                     need_Delta='False',
 #                     need_pi='False',
 #                     )
-#     # C_mat = np.exp((mu_Y - 1/2 * sigma_Y ** 2) * np.arange(0, Nt_long) * dt + sigma_Y * np.cumsum(dZ))
-#     # C_mat_reshape = np.tile(np.reshape(C_mat, (-1, 1, 1)), (1, 2, 6000))
-#     # C_matrix = f_c * C_mat_reshape / cohort_type_size * dt
-#     # sample = np.arange(0, N_T, 1)
+#     C_mat = np.exp((mu_Y - 1/2 * sigma_Y ** 2) * np.arange(0, Nt_long) * dt + sigma_Y * np.cumsum(dZ))
+#     C_mat_reshape = np.tile(np.reshape(C_mat, (-1, 1, 1)), (1, 2, 6000))
+#     C_matrix = f_c * C_mat_reshape / cohort_type_size * dt
+#     sample = np.arange(0, N_T, 1)
 #
-#     # del C_mat_reshape
+#     del C_mat_reshape
 #
-#     # for j in range(10):
-#     #     t_start = int(100 / dt) + int(10 / dt) * j
-#     #     log_C_mat[j] = np.log(C_matrix[t_start + sample, :, Nt - 1 - sample] / C_matrix[t_start, :, -1])
+#     for j in range(10):
+#         t_start = int(100 / dt) + int(10 / dt) * j
+#         log_C_mat[j] = np.log(C_matrix[t_start + sample, :, Nt - 1 - sample] / C_matrix[t_start, :, -1])
 #
-#     # # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
-#     # E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
-#     # E_util_path = np.sum(E_util_path_t, axis=0)
+#     # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
+#     E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
+#     E_util_path = np.sum(E_util_path_t, axis=0)
 #
 #     f_c_indi = np.average(np.ma.masked_invalid(f_c) / cohort_type_size * dt, axis=0)[:, c_sample]
 #     return (
@@ -175,6 +175,10 @@ def simulate_path(
     beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
     rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
         -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+
+    log_C_mat = np.zeros((10, int(T / dt), 2), dtype=np.float32)
+    sample = np.arange(0, N_T, 1)
+
     (
         r,
         theta,
@@ -228,9 +232,26 @@ def simulate_path(
                 np.sum(np.log(C_share) * cohort_type_size_mix, axis=3), axis=2), axis=1
         )
 
+        C_mat = np.exp((mu_Y - 1 / 2 * sigma_Y ** 2) * np.arange(0, Nt_long) * dt + sigma_Y * np.cumsum(dZ))
+
+        for j in range(10):
+            t_start = int(100 / dt) + int(10 / dt) * j
+            log_C_mat[j] = np.log(
+                C_share[t_start + sample, :, Nt - 1 - sample] / C_share[t_start, :, -1]
+            ) * np.log(
+                C_mat[t_start + sample] / C_mat[t_start]
+            )
+
+        # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
+        E_util_path_t = np.average(log_C_mat, axis=0) * dt * discount_rate_mat
+        E_util_path = np.sum(E_util_path_t, axis=0)
+
+        # todo: do we care about the distribution between types?
+
     return (
         i,
         np.average(flow[-keep:]),
+        E_util_path,
     )
 
 
