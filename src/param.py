@@ -14,8 +14,8 @@ tax = 0.35   # marginal rate of consumption tax
 beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
 
-entry_bound = 0.01
-exit_bound = 0.01
+entry_bound = 0.04
+exit_bound = 0.02
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
@@ -37,8 +37,9 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
-cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
-n_age_cutoffs = 4
+# cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
+# popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
+cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
 Mpath = 10000
@@ -53,7 +54,7 @@ scenario_labels = ['Complete', 'Reentry', 'Mix']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
-age_labels = [r'20 < Age $\leq$ 40, the young', r'40 < Age $\leq$ 60', 'Age > 60, the old']
+age_labels = [r'Experience $\leq$ 15', r'15 < Experience $\leq$ 35', r'35 < Experience $\leq$ 50', r'Experience > 50']
 
 # dZ_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
 # dZ_mat = np.reshape(np.append(dZ_mat1, -dZ_mat1), (-1, Nt)) * dt_root

@@ -5,12 +5,13 @@ from src.simulation import simulate_mix_types
 from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
     cutoffs_age, Ntype, alpha_i, \
-    dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
+    dZ_build_matrix, dZ_matrix, \
     cohort_size
 # from src.param_mix import rho_i_mix
 from concurrent.futures import ProcessPoolExecutor
 # from src.param import rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
 from src.param_mix import Nconstraint
+
 # from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
@@ -33,57 +34,67 @@ density_types_set = [
     # (0.3, 0.4, 0.3),
     # (0.4, 0.4, 0.2),*
     # (0.5, 0.4, 0.1),
-    # (0.1, 0.5, 0.4),
-    # (0.2, 0.5, 0.3),
+    (0.1, 0.5, 0.4),
+    (0.2, 0.5, 0.3),
     (0.3, 0.5, 0.2), #norway
-    # (0.4, 0.5, 0.1), #Germany
+    (0.4, 0.5, 0.1), #Germany
 ]
-T_hat_set = [
-    # 2,
-    # 3,
-    # 4,
-    5,
-    # 10,
-]
+# T_hat_set = [
+#     # 2,
+#     # 3,
+#     # 4,
+#     5,
+#     # 10,
+# ]
+T_hat = 5
 rho_i = np.array([[0.001], [0.005]])
 # rho_i = np.array([[0.01], [0.01]])
 nu = 0.02
 # nu = 0.05
 tax = 0.35
-tax_set = [
-    0.35,
-    # 0.3,
-    # 0.25
-]
+# tax_set = [
+#     0.35,
+#     # 0.3,
+#     # 0.25
+# ]
 
-phi_set = [
-    # 0.0,
-    # 0.2,
-    0.3,
-    0.4,
-    0.5,
-    0.6,
-    # 0.7,
-]
+# phi_set = [
+#     # 0.0,
+#     # 0.2,
+#     # 0.3,
+#     # 0.4,
+#     0.5,
+#     # 0.6,
+#     # 0.7,
+# ]
 
-# phi = 0.5
+phi = 0.5
 
 entry_boundary_set = [
-    # 0.0,
+    0.0,
     0.01,
     0.02,
     0.03,
-    # 0.04,
-    # 0.05,
-    # 0.06,
-    # 0.07,
+    0.04,
+    0.05,
+    0.06,
+    0.07,
 ]
 
 exit_bound_set = [
     0.0,
     0.01,
-    # 0.02,
-    # 0.03,
+    0.02,
+    0.03,
+    0.04,
+    0.05,
+    0.06,
+    0.07,
+]
+
+mode_learn_set = [
+    # 'theta',
+    'invest'
 ]
 
 
@@ -104,17 +115,15 @@ def simulate_path(
     # shocks
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
-    filler = np.random.randn(data_shocks['dZ_SI'].isna().sum()) * np.sqrt(dt)
-    data_shocks.loc[data_shocks['dZ_SI'].isna(), 'dZ_SI'] = filler
     dZ_actual = data_shocks.to_numpy()[:, 0]
     Nt_data = dZ_actual.size
     dZ[-Nt_data:] = dZ_actual
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
-    for T_hat in T_hat_set:
+    for mode in mode_learn_set:
         for density_n, density_types in enumerate(density_types_set):
-            for phi in phi_set:
-                for entry_bound in entry_boundary_set:
-                    for exit_bound in exit_bound_set:
+            for entry_bound in entry_boundary_set:
+                for exit_bound in exit_bound_set:
+                    if entry_bound >= exit_bound:
                         # exit_bound = np.copy(entry_bound)
                         Npre = int(T_hat / dt)
                         Vhat = (sigma_Y ** 2) / T_hat  # prior variance
@@ -131,7 +140,7 @@ def simulate_path(
                         rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                             -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                        col_name = f'{int(T_hat)}_{int(phi * 10)}_{int(density_n)}_{int(entry_bound * 100)}_{int(exit_bound * 100)}'
+                        col_name = f'{mode}_{int(density_n)}_{int(entry_bound * 100)}_{int(exit_bound * 100)}'
 
                         (
                             r,
@@ -148,8 +157,8 @@ def simulate_path(
                             mu_S,
                             sigma_S,
                             beta,
-                            invest_tracker,
                             parti_age_group,
+                            # Delta_popu,
                             # portf_age_group,
                             entry_mat,
                             exit_mat
@@ -166,6 +175,7 @@ def simulate_path(
                                                need_f='False',
                                                need_Delta='True',
                                                need_pi='True',
+                                               mode_learn=mode,
                                                )
 
                         parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
@@ -185,7 +195,9 @@ def simulate_path(
                         # parti_df['portf_young' + col_name] = portf_age_group[-Nt_data:, 0].astype(np.float32)
                         parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                         parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi1.dta')
+                        # parti_df['pd' + col_name] = (1 / beta[-Nt_data:]).astype(np.float32)
+                        # parti_df['vola' + col_name] = sigma_S[-Nt_data:].astype(np.float32)
+                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi0.dta')
 
     return (
         i,

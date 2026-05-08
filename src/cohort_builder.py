@@ -24,6 +24,7 @@ def build_cohorts_mix_type(
     Ninit: int,
     entry_bound: float,
     exit_bound: float,
+    mode_learn: str
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -188,8 +189,13 @@ def build_cohorts_mix_type(
             d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
 
             # the switches are specific to passing the exit_boundary
-            # information = theta_st[:, 2] >= exit_bound
-            information = invest[:, -1]
+            if mode_learn == 'theta':
+                information = theta_st[:, 2] >= exit_bound
+            elif mode_learn == 'invest':
+                information = invest[:, -1]
+            else:
+                print("mode learn not found")
+                exit()
             switch_P_to_N = information_tracker * 0.0
             switch_N_to_P = information_tracker * 0.0
             switch_P_to_N[:, -1] = (information_tracker[:, -1] - information ==  1)  # switch to nonparti if type R&E & not investing this period

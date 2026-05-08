@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Any
 from src.cohort_builder import build_cohorts_mix_type
 from src.cohort_simulator import simulate_cohorts_mix_type, \
     simulate_mean_vola_mix_type
+from pandas import DataFrame
 
 
 
@@ -35,6 +36,7 @@ def simulate_mix_types(
         need_f: str,
         need_Delta: str,
         need_pi: str,
+        mode_learn: str,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -53,7 +55,7 @@ def simulate_mix_types(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
+    # np.ndarray,
     # np.ndarray,
 ]:
     """
@@ -144,7 +146,8 @@ def simulate_mix_types(
         Npre,
         Ninit,
         entry_bound,
-        exit_bound
+        exit_bound,
+        mode_learn
     )
 
     (
@@ -162,8 +165,8 @@ def simulate_mix_types(
         mu_S,
         sigma_S,
         beta,
-        invest_tracker,
         parti_age_group,
+        # Delta_popu,
         entry_mat,
         exit_mat
     ) = simulate_cohorts_mix_type(
@@ -203,6 +206,7 @@ def simulate_mix_types(
         need_f,
         need_Delta,
         need_pi,
+        mode_learn
     )
 
     return (
@@ -220,8 +224,9 @@ def simulate_mix_types(
         mu_S,
         sigma_S,
         beta,
-        invest_tracker,
+        # invest_tracker,
         parti_age_group,
+        # Delta_popu,
         # parti_wealth_group,
         entry_mat,
         exit_mat
@@ -242,10 +247,10 @@ def simulate_mix_mean_vola(
         Npre: int,
         Ninit: int,
         T_hat: int,
+        entry_bound: float,
+        exit_bound: float,
         dZ_build: np.ndarray,
         dZ: np.ndarray,
-        dZ_SI_build: np.ndarray,
-        dZ_SI: np.ndarray,
         Ntype: int,
         Nconstraint: int,
         rho_i: np.ndarray,
@@ -253,22 +258,8 @@ def simulate_mix_mean_vola(
         beta_i: np.ndarray,
         rho_cohort_type: np.ndarray,
         cohort_type_size: np.ndarray,
-        need_invest_matrix: str
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+        need_invest_matrix: str,
+) -> tuple[DataFrame, DataFrame, DataFrame, Any, Any, Any]:
     """
     Bundles the build_mean_vola_mix_type function and the simulate_mean_vola_mix_type function together
         a mixture of 4 different types of agents in each cohort:
@@ -330,13 +321,13 @@ def simulate_mix_mean_vola(
         eta_st_eta_ss,
         X,
         d_eta_st,
-        invest_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        information_tracker,
+        tau_info,
         Vhat_vector,
-        can_short_tracker_build,
+        can_short_tracker,
     ) = build_cohorts_mix_type(
         dZ_build,
-        dZ_SI_build,
         Nc,
         dt,
         Ntype,
@@ -351,26 +342,21 @@ def simulate_mix_mean_vola(
         phi,
         Npre,
         Ninit,
+        entry_bound,
+        exit_bound,
+        mode_learn='invest'
     )
 
     (
-        theta_ave,
-        r_ave,
-        mu_S_ave,
-        sigma_S_ave,
+        table_mean_vola,
+        table_mean,
+        table_parti_cov,
         reentry_time,
-        exit_time,
-        entry_cumu,
-        entry_ave,
-        exit_ave,
-        cov_matrix,
-        parti,
         regression_table1_b,
         regression_table2_b
     ) = simulate_mean_vola_mix_type(
         biasvec,
         dZ,
-        dZ_SI,
         Nt,
         dt,
         Ntype,
@@ -388,30 +374,26 @@ def simulate_mix_mean_vola(
         phi,
         T_hat,
         Npre,
+        entry_bound,
+        exit_bound,
         cohort_type_size,
         Delta_s_t,
         eta_st_eta_ss,
         X,
         d_eta_st,
-        invest_tracker_build,
-        can_short_tracker_build,
-        tau_info_build,
+        invest_tracker,
+        information_tracker,
+        can_short_tracker,
+        tau_info,
         Vhat_vector,
         need_invest_matrix
     )
 
     return (
-        theta_ave,
-        r_ave,
-        mu_S_ave,
-        sigma_S_ave,
+        table_mean_vola,
+        table_mean,
+        table_parti_cov,
         reentry_time,
-        exit_time,
-        entry_cumu,
-        entry_ave,
-        exit_ave,
-        cov_matrix,
-        parti,
         regression_table1_b,
         regression_table2_b
     )

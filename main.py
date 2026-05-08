@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from src.simulation import simulate_mix_types
 from src.param import (rho_i, nu, mu_Y, sigma_Y, tax, phi, \
     dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
-    cutoffs_age, n_age_cutoffs, colors, Mpath, \
+    cutoffs_age, colors, Mpath, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
     cohort_labels, colors_short, PN_labels, age_labels, \
     Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size,
@@ -19,7 +19,7 @@ from scipy.interpolate import make_interp_spline
 folder_address = r'C:\Users\zeshu\BI Norwegian Business School Dropbox\Zeshu XU\to sync\between_computers\entry_exit/empirical/'
 # folder_address = r'C:/Users/A2010290/OneDrive - BI Norwegian Business School (BIEDU)/Documents/GitHub computer 2/NoShort/empirical/'
 data_shocks = pd.read_excel(
-    folder_address + r'realized_shocks_US1.xlsx',
+    folder_address + r'realized_shocks_US.xlsx',
     # sheet_name='Sheet1',
     index_col=0
 )
@@ -27,21 +27,24 @@ data_shocks = pd.read_excel(
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, disappointment, reentry)
-density_set = [
-    # (0.3, 0.4, 0.3),
-    (0.3, 0.5, 0.2), #norway
-    # (0.4, 0.5, 0.1), #Germany
-]
+density = (0.3, 0.5, 0.2)
 phi_set = [
     # 0.0,
-    0.5
+    0.5,
+    1.0
 ]
-n_scenarios = len(density_set)
+n_scenarios = 2
 n_phi = len(phi_set)
+alpha_constraint = np.ones(
+    (1, Nconstraint)) * density
+alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+cohort_type_size_mix = cohort_size * alpha_i_mix
+beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+
 dZ_build = dZ_build_matrix[0]
-dZ_SI_build = dZ_SI_build_matrix[0]
 dZ = dZ_matrix[0]
-dZ_SI = dZ_SI_matrix[0]
 dZ_actual = data_shocks.to_numpy()[:, 0]
 Nt_data = dZ_actual.size
 dZ[-dZ_actual.size:] = dZ_actual
@@ -52,14 +55,13 @@ pi_compare = np.empty((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=np.f
 invest_tracker_compare = np.zeros((n_scenarios, n_phi, Nt_data, Nconstraint, Nc), dtype=int)
 parti_compare = np.zeros((n_scenarios, n_phi, Nt_data), dtype=np.float16)
 for i in range(n_scenarios):
+    if i == 0:
+        entry_bound_use = np.copy(entry_bound)
+        exit_bound_use = np.copy(exit_bound)
+    else:
+        entry_bound_use = 0.0
+        exit_bound_use = 0.0
     for j, phi in enumerate(phi_set):
-        alpha_constraint = np.ones(
-            (1, Nconstraint)) * density_set[i]
-        alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-        cohort_type_size_mix = cohort_size * alpha_i_mix
-        beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-        rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-            -(rho_i_mix + nu) * tau)  # shape(2, 6000)
         (
             r,
             theta,
@@ -75,17 +77,17 @@ for i in range(n_scenarios):
             mu_S,
             sigma_S,
             beta,
-            invest_tracker,
             parti_age_group,
-            parti_wealth_group,
+            # Delta_popu,
+            # parti_wealth_group,
             entry_mat,
             exit_mat
         ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax,
                                beta0,
                                phi, Npre, Ninit, T_hat,
-                               entry_bound,
-                               exit_bound,
-                               dZ_build, dZ, dZ_SI_build, dZ_SI,
+                               entry_bound_use,
+                               exit_bound_use,
+                               dZ_build, dZ,
                                cutoffs_age, Ntype,
                                Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
                                rho_cohort_type_mix,
@@ -93,6 +95,7 @@ for i in range(n_scenarios):
                                need_f='True',
                                need_Delta='True',
                                need_pi='True',
+                               mode_learn='invest',
                                )
         Delta_compare[i, j] = Delta[-Nt_data:]
         pi_compare[i, j] = pi[-Nt_data:]
@@ -106,7 +109,8 @@ for i in range(n_scenarios):
 #######  individual cohorts  #######
 #####################################
 nn = 3  # number of cohorts illustrated
-starts = np.arange(nn) * 240 + 24 * 12
+starts = Nt_data - 43 * 12 + 1 - np.arange(nn) * 240
+# starts = np.arange(nn) * 240 + 24 * 12
 Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 entry_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
@@ -161,137 +165,82 @@ for i in range(n_scenarios):
 #######  belief distribution  #######
 #####################################
 # phi = 0.5, reentry scenario
-y_overall = np.empty((Nt_data, 6))  # overall
-y_P = np.empty((Nt_data, 6))  # participants / long
-y_N = np.empty((Nt_data, 6))  # non-participants / short
-y_min = np.empty((Nt_data, n_age_cutoffs))
-y_max = np.empty((Nt_data, n_age_cutoffs))
-y_cases = [y_overall, y_P, y_N]
-alpha_constraint = np.ones(
-    (1, Nconstraint)) * density_set[0]
-alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-cohort_type_size_mix = cohort_size * alpha_i_mix
-Delta_focus = Delta_compare[0, 0, :, -1]
-invest_focus = invest_tracker_compare[0, 0, :, -1]
+y_overall = np.empty((n_scenarios, n_phi, Nt_data, 6))  # overall
+y_P = np.empty((n_scenarios, n_phi, Nt_data, 6))  # participants / long
+y_N = np.empty((n_scenarios, n_phi, Nt_data, 6))  # non-participants / short
 cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[-1]
-age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
+age_cutoffs = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
 n_age_cutoffs = len(age_cutoffs) - 1
-for n in range(n_age_cutoffs):
-    Delta_age_group = Delta_focus[:, age_cutoffs[n + 1]:age_cutoffs[n]]
-    y_min[:, n] = np.amin(Delta_age_group, axis=1)
-    y_max[:, n] = np.amax(Delta_age_group, axis=1)
-for m in range(Nt_data):
-    Delta = Delta_focus[m]  # ((Nt, Nc))
-    parti_cohorts = invest_focus[m]
-    if np.sum(parti_cohorts) == Nc:
-        cohort_sizes = [cohort_size_flat]
-        Deltas = [Delta]
-        n_var = 1
-    else:
-        Delta1 = parti_cohorts * Delta
-        Delta2 = (1 - parti_cohorts) * Delta
-        cohort_size1 = parti_cohorts * cohort_size_flat
-        cohort_size2 = (1 - parti_cohorts) * cohort_size_flat
-        cohort_sizes = [cohort_size_flat, cohort_size1, cohort_size2]
-        Deltas = [Delta, Delta1, Delta2]
-        n_var = 3
-    for n in range(n_var):
-        Del = Deltas[n]
-        cohort_siz = cohort_sizes[n]
-        Delta_rank = Del.argsort()
-        Delta_sorted = Del[Delta_rank[::-1]]
-        cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
-        popu_cumsum = np.cumsum(cohort_size_sorted)
-        total_popu = popu_cumsum[-1]
-        Delta_cutoff = np.zeros(6)
-        cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
-        Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
-        Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
-        Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
-        Delta_cutoff[5] = np.average(Delta_sorted, weights=cohort_size_sorted)
-        y_cases[n][m] = Delta_cutoff
+y_min = np.empty((n_scenarios, n_phi, Nt_data, n_age_cutoffs))
+y_max = np.empty((n_scenarios, n_phi, Nt_data, n_age_cutoffs))
+belief_cutoff = np.empty((n_scenarios, n_phi, Nt_data))
+for i in range(n_scenarios):
+    for j in range(n_phi):
+        y_cases = [y_overall[i, j], y_P[i, j], y_N[i, j]]
 
-x = 1926 + np.arange(Nt_data) * dt
-y1 = np.copy(y_overall)
-y2 = np.copy(y_P)
-y3 = np.copy(y_N)
-y4 = np.copy(y_min)
-y5 = np.copy(y_max)
-belief_cutoff_case = -theta_compare[0, 0]
+        Delta_focus = Delta_compare[i, j, :, -1]
+        invest_focus = invest_tracker_compare[i, j, :, -1]
+        belief_cutoff[i, j] = -theta_compare[i, j]
 
-######################################
-###########   Figure 0   #############
-######################################
-# average belief of participants vs. nonparticipants
-
-print('Figure 1')
-N_years = 20
-x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
-fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(10, 10))
-for j, ax in enumerate(axes):
-    if j == 0:
-        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        # ax.set_ylim(-1.4, 1.3)
-        ax.set_title('(c) Distribution of estimation error, participants vs. non-participants')
-        ax.plot(x, y2[-int(N_years / dt):, -1], color='navy', linewidth=2, label=r'Participants')
-        ax.plot(x, y3[-int(N_years / dt):, -1], color='maroon', linewidth=2, label=r'Nonparticipants')
-        ax.legend(loc='lower left')
-    else:
-        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        # ax.set_ylim(-1.4, 1.3)
-        ax.set_title('(d) Distribution of estimation error, age groups')
-        # ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
-        #         # label=r'Cutoff $\Delta_{s,t}$'
-        #         )
-        for k in range(n_age_cutoffs):
-            y40 = y4[-int(N_years / dt):, k]
-            y50 = y5[-int(N_years / dt):, k]
-            color_age_group = colors_short[k] if k <= 1 else 'red'
-            ax.fill_between(x, y40, y50, color=color_age_group, linewidth=0., alpha=0.4,
-                            label=age_labels[k])
-            ax.legend(loc='lower left')
-        ax.tick_params(axis='y', labelcolor='black')
-    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig(
-    'f0_merged.pdf',
-    dpi=200)
-plt.show()
-plt.close()
-
+        for n in range(n_age_cutoffs):
+            Delta_age_group = Delta_focus[:, age_cutoffs[n + 1]:age_cutoffs[n]]
+            y_min[i, j, :, n] = np.amin(Delta_age_group, axis=1)
+            y_max[i, j, :, n] = np.amax(Delta_age_group, axis=1)
+        for m in range(Nt_data):
+            Delta = Delta_focus[m]  # ((Nt, Nc))
+            parti_cohorts = invest_focus[m]
+            if np.sum(parti_cohorts) == Nc:
+                cohort_sizes = [cohort_size_flat]
+                Deltas = [Delta]
+                n_var = 1
+            else:
+                Delta1 = parti_cohorts * Delta
+                Delta2 = (1 - parti_cohorts) * Delta
+                cohort_size1 = parti_cohorts * cohort_size_flat
+                cohort_size2 = (1 - parti_cohorts) * cohort_size_flat
+                cohort_sizes = [cohort_size_flat, cohort_size1, cohort_size2]
+                Deltas = [Delta, Delta1, Delta2]
+                n_var = 3
+            for n in range(n_var):
+                Del = Deltas[n]
+                cohort_siz = cohort_sizes[n]
+                Delta_rank = Del.argsort()
+                Delta_sorted = Del[Delta_rank[::-1]]
+                cohort_size_sorted = cohort_siz[Delta_rank[::-1]]
+                popu_cumsum = np.cumsum(cohort_size_sorted)
+                total_popu = popu_cumsum[-1]
+                Delta_cutoff = np.zeros(6)
+                cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
+                Delta_cutoff[1:4] = Delta_sorted[cutoff]  # highest to lowest
+                Delta_cutoff[0] = np.max(Del[np.nonzero(Del)])
+                Delta_cutoff[4] = np.min(Del[np.nonzero(Del)])
+                Delta_cutoff[5] = np.average(Delta_sorted, weights=cohort_size_sorted)
+                y_cases[n][m] = Delta_cutoff
 
 
 ######################################
 ###########   Figure 1   #############
 ######################################
 print('Figure 1')
-x = 1926 + np.arange(Nt_data) * dt
+N_years = 100
+x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
-fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(10, 10))
+fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(10, 8))
 for j, ax in enumerate(axes):
     if j == 0:
-        Z = np.cumsum(dZ_actual[-Nt_data:])
-        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-        ax.plot(x, Z, color='black', linewidth=1.5, label=r'$z^Y_t$')
-        # ax.plot(x, Z_SI, color='gray', linewidth=1.5, label=r'$z^{SI}_t$')
-        ax.tick_params(axis='y', labelcolor='black')
-        ax.tick_params(axis='x', labelcolor='black')
-        ax.set_title(r'(a) Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
-        ax.legend(loc='lower left')
-
-    elif j == 1:
-        Delta_focus = Delta_time_series[0, 1, :, 3]
-        parti_focus = parti_time_series[0, 1, :, 3]
-        entry_focus = entry_time_series[0, 1, :, 3]
-        exit_focus = exit_time_series[0, 1, :, 3]
+        ax.set_title(r'(a) Cohort estimation error')
+        # ax.set_title(r'(a) Shocks to fundamental $z^Y$, and cohort estimation error')
+        Delta_focus = Delta_time_series[0, 0, :, -1]
+        parti_focus = parti_time_series[0, 0, :, -1]
+        entry_focus = entry_time_series[0, 0, :, -1]
+        exit_focus = exit_time_series[0, 0, :, -1]
         y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
         y_max_raw = np.nanmax(Delta_focus)
-        y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim([y_min, y_max])
-        ax.set_title(r'(b) Cohort estimation error')
+        ax.set_ylim([
+            - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+            (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        ])
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -305,54 +254,63 @@ for j, ax in enumerate(axes):
             y_cohort_exit = np.ma.masked_where(
                 exit_focus[m] == 0,
                 y_cohort)
-            ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
-            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-            if j == 1:
-                ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
-                ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
-                        )
-                if m == 2:
-                    ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
-                    ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
-                else:
-                    ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-                    ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
+            ax.vlines(
+                x[starts[m] - (Nt_data - N_years * 12)],
+                ymax=(y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+                ymin=- (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+                color='grey', linestyle='--', linewidth=0.6
+            )
+            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1, label=cohort_labels[m])
+            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1, linestyle='dotted',
+                    )
+            if m == 2:
+                ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o', label='Entry')
+                ax.scatter(x, y_cohort_exit[-int(N_years / dt):], color='orange', s=25, marker='o', label='Exit')
+            else:
+                ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit[-int(N_years / dt):], color='orange', s=25, marker='o')
+
         ax.tick_params(axis='y', labelcolor='black')
         ax.legend(loc='lower left')
 
-    elif j == 2:
+    elif j == 1:
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim(-1.4, 1.3)
-        ax.set_title('(c) Distribution of estimation error, participants vs. non-participants')
-        y20 = y2[:, 0]
-        y21 = y2[:, 1]
-        y22 = y2[:, 2]
-        y23 = y2[:, 3]
-        y24 = np.maximum(belief_cutoff_case, y1[:, 4])
-        y30 = np.maximum(belief_cutoff_case, y3[:, 0])
-        y31 = y3[:, 1]
-        y32 = y3[:, 2]
-        y33 = y3[:, 3]
-        y34 = y3[:, 4]
-        ax.fill_between(x, y20, y24, color='blue', linewidth=0., alpha=0.4, label=PN_labels[0])
-        ax.fill_between(x, y21, y23, color='blue', linewidth=0., alpha=0.7)
-        ax.fill_between(x, y30, y34, color='green', linewidth=0., alpha=0.4, label=PN_labels[1])
-        ax.fill_between(x, y31, y33, color='green', linewidth=0., alpha=0.7)
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
+        ax.set_title('(b) Average estimation error, participants vs. non-participants')
+        ax.plot(
+            x,
+            y_P[0, 0, -int(N_years / dt):, -1],
+            color='navy', linewidth=1, label=r'Participants'
+        )
+        ax.plot(
+            x,
+            y_N[0, 0, -int(N_years / dt):, -1],
+            color='maroon', linewidth=1, label=r'Nonparticipants'
+        )
+        ax.plot(
+            x,
+            belief_cutoff[0, 0, -int(N_years / dt):] + entry_bound,
+            color='black', linewidth=1, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+        )
         ax.legend(loc='lower left')
+
     else:
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_ylim(-1.4, 1.3)
-        ax.set_title('(d) Distribution of estimation error, age groups')
-        ax.plot(x, belief_cutoff_case, color='black', linewidth=2,
+        ax.set_title('(c) Distribution of estimation error, experience groups')
+        ax.plot(x,
+                belief_cutoff[0, 0, -int(N_years / dt):],
+                color='black', linewidth=1,
                 # label=r'Cutoff $\Delta_{s,t}$'
                 )
         for k in range(n_age_cutoffs):
-            y40 = y4[:, k]
-            y50 = y5[:, k]
-            color_age_group = colors_short[k] if k <= 1 else 'red'
-            ax.fill_between(x, y40, y50, color=color_age_group, linewidth=0., alpha=0.4,
-                            label=age_labels[k])
+            color_age_group = colors_short[k]
+            ax.fill_between(
+                x,
+                y_min[0, 0, -int(N_years / dt):, k],
+                y_max[0, 0, -int(N_years / dt):, k],
+                color=color_age_group, linewidth=0., alpha=0.4,
+                label=age_labels[k]
+            )
             ax.legend(loc='lower left')
         ax.tick_params(axis='y', labelcolor='black')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
@@ -364,98 +322,30 @@ plt.show()
 plt.close()
 
 
+
 ######################################
 ######## Figure 1.Appendix   #########
 ######################################
-y_age_group = np.empty((Nt_data, 3, 3))
-alpha_constraint = np.ones(
-    (1, Nconstraint)) * density_set[1]
-alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-cohort_type_size_mix = cohort_size * alpha_i_mix
-Delta_focus = Delta_compare[1, 1]
-invest_focus = invest_tracker_compare[1, 1]
-cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[3]
-age_cutoffs = [int(Nt-1), int(Nt-1-12*20), int(Nt-1-12*40), 0]
-n_age_cutoffs = len(age_cutoffs) - 1
-
-for m in range(Nt_data):
-    # in age groups
-    for n in range(n_age_cutoffs):
-        Delta_age_group = np.reshape(Delta_focus[m, :, age_cutoffs[n + 1]:age_cutoffs[n]], (-1))
-        popu_age_group = np.reshape(cohort_type_size_mix[0, :, age_cutoffs[n + 1]:age_cutoffs[n]], (-1))
-        Delta_rank = Delta_age_group.argsort()
-        Delta_sorted = Delta_age_group[Delta_rank[::-1]]
-        cohort_size_sorted = popu_age_group[Delta_rank[::-1]]
-        popu_cumsum = np.cumsum(cohort_size_sorted)
-        total_popu = popu_cumsum[-1]
-        cutoff = np.searchsorted(popu_cumsum, [0.25 * total_popu, 0.5 * total_popu, 0.75 * total_popu])
-        y_age_group[m, n] = Delta_sorted[cutoff]  # highest to lowest
-
-y_PN = np.zeros((Nt_data, 2, 2))
-for m in range(Nt_data):
-    # participants vs. non-participants
-    parti_cohorts = invest_focus[m]
-    Delta = Delta_focus[m]
-
-    y_PN[m, 0, 0] = np.average(Delta, weights=cohort_type_size_mix[0]*parti_cohorts)
-    y_PN[m, 1, 0] = np.average(Delta, weights=cohort_type_size_mix[0]*(1-parti_cohorts))
-
-x = 1926 + np.arange(Nt_data) * dt
-belief_cutoff_case = -theta_compare[1, 1]
-
-######################################
-###########   Figure 1   #############
-######################################
 print('Figure 1')
-x = 1926 + np.arange(Nt_data) * dt
-fig, axes = plt.subplots(nrows=1, ncols=2, sharex='all', sharey='all', figsize=(10, 5))
+N_years = 100
+x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
+colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
+fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(10, 6))
 for j, ax in enumerate(axes):
-    ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-    color_j = 'maroon' if j == 0 else 'navy'
-    title_j = 'Participants' if j == 0 else 'Nonparticipants'
-    ax.set_title(title_j)
-    # if j == 1:
-    ax.set_ylim(-0.3, 0.3)
-    ax.plot(x, y_PN[:, j, 0], color=color_j, linewidth=2, label=PN_labels[j])
-    # ax.fill_between(x, y_PN[77 * 12:, j, 0]-y_PN[77 * 12:, j, 1], y_PN[77 * 12:, j, 0]+y_PN[77 * 12:, j, 1], color=color_j, linewidth=0., alpha=0.4)
-    # ax.plot(x, belief_cutoff_case, color='black', linewidth=2, label=r'Cutoff $\Delta_{s,t}$')
-    ax.legend(loc='lower left')
-    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig(
-    'IA_f1_merged.pdf',
-    dpi=200)
-plt.show()
-plt.close()
-
-
-x = 1926 + np.arange(Nt_data) * dt
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'saddlebrown']
-fig, axes = plt.subplots(nrows=4, ncols=1, sharex='all', figsize=(10, 10))
-for j, ax in enumerate(axes):
-    if j == 0:
-        Z = np.cumsum(dZ_actual[-Nt_data:])
-        ax.set_ylabel(r'$z^Y_t$ and $z^{SI}_t$', color='black')
-        ax.plot(x, Z, color='black', linewidth=1.5, label=r'$z^Y_t$')
-        ax.tick_params(axis='y', labelcolor='black')
-        ax.tick_params(axis='x', labelcolor='black')
-        ax.set_title(r'(a) Shocks to fundamental $z^Y$, and shocks to the signal $z^{SI}$')
-        ax.legend(loc='lower left')
-
-    elif j <= 2:
-        Delta_focus = Delta_time_series[0, 2 - j, :, 3]
-        parti_focus = parti_time_series[0, 2 - j, :, 3]
-        entry_focus = entry_time_series[0, 2 - j, :, 3]
-        exit_focus = exit_time_series[0, 2 - j, :, 3]
+    if j == 0:  # entry_bound = exit_bound = 0
+        ax.set_title(r'(a) Cohort estimation error, $\vartheta^h = \vartheta^l = 0$')
+        # ax.set_title(r'(a) Shocks to fundamental $z^Y$, and cohort estimation error')
+        Delta_focus = Delta_time_series[1, 0, :, -1]
+        parti_focus = parti_time_series[1, 0, :, -1]
+        entry_focus = entry_time_series[1, 0, :, -1]
+        exit_focus = exit_time_series[1, 0, :, -1]
         y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
         y_max_raw = np.nanmax(Delta_focus)
-        y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim([y_min, y_max])
-        phi_j = r', $\phi=0.5$' if j == 1 else r', $\phi=0.0$'
-        number_j = r'(b) ' if j == 1 else r'(c) '
-        ax.set_title(number_j + r'Cohort estimation error, Reentry scenario, ' + phi_j)
+        ax.set_ylim([
+            - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+            (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
+        ])
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -469,60 +359,48 @@ for j, ax in enumerate(axes):
             y_cohort_exit = np.ma.masked_where(
                 exit_focus[m] == 0,
                 y_cohort)
-            ax.vlines(starts[m]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
-            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-            ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=cohort_labels[m])
-            ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
+            ax.vlines(
+                x[starts[m] - (Nt_data - N_years * 12)],
+                ymax=(y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+                ymin=- (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
+                color='grey', linestyle='--', linewidth=0.6
+            )
+            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1, label=cohort_labels[m])
+            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1, linestyle='dotted',
                     )
             if m == 2:
-                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o', label='Entry')
-                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o', label='Exit')
+                ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o', label='Entry')
+                ax.scatter(x, y_cohort_exit[-int(N_years / dt):], color='orange', s=25, marker='o', label='Exit')
             else:
-                ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-                ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
-            if j == 1:
-                ax.legend(loc='lower left')
-        ax.tick_params(axis='y', labelcolor='black')
+                ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o')
+                ax.scatter(x, y_cohort_exit[-int(N_years / dt):], color='orange', s=25, marker='o')
 
-    else:
+        ax.tick_params(axis='y', labelcolor='black')
+        ax.legend(loc='lower left')
+
+    else:  # varphi = 1 (no reduced attention from nonparticipants)
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_title('(d) Cohort estimation error, Mix scenario, $\phi=0.5$')
-        cohort_j = 1
-        Delta_focus = Delta_time_series[1, 1, cohort_j]
-        parti_focus = parti_time_series[1, 1, cohort_j]
-        entry_focus = entry_time_series[1, 1, cohort_j]
-        exit_focus = exit_time_series[1, 1, cohort_j]
-        y_min_raw = np.nanmin(Delta_focus)  # only the re-entry type
-        y_max_raw = np.nanmax(Delta_focus)
-        y_max = (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        y_min = - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
-        ax.set_ylim([y_min, y_max])
-        types_label = ['Designated P', 'Designated N', 'Disappointment', 'Reentry']
-        for m, type_label in enumerate(types_label):
-            # switch[m, starts[m]] = 1
-            y_cohort = Delta_focus[m]
-            y_cohort_N = np.ma.masked_where(parti_focus[m] == 1,
-                                            y_cohort)
-            y_cohort_P = np.ma.masked_where(parti_focus[m] == 0,
-                                            y_cohort)
-            y_cohort_entry = np.ma.masked_where(
-                entry_focus[m] == 0,
-                y_cohort)
-            y_cohort_exit = np.ma.masked_where(
-                exit_focus[m] == 0,
-                y_cohort)
-            ax.vlines(starts[cohort_j]*dt+1926, ymax=y_max, ymin=y_min, color='grey', linestyle='--', linewidth=0.6)
-            #  ax2.plot(t, y_cohort, label=cohort_labels[m], color=colors_short[m], linewidth=0.4)
-            ax.plot(x, y_cohort_P, color=colors_short[m], linewidth=1.5, label=type_label)
-            ax.plot(x, y_cohort_N, color=colors_short[m], linewidth=1.5, linestyle='dashed',
-                    )
-            ax.scatter(x, y_cohort_entry, color='red', s=25, marker='o')
-            ax.scatter(x, y_cohort_exit, color='orange', s=25, marker='o')
-            ax.legend(loc='lower left')
+        ax.set_title(r'(b) Average estimation error, participants vs. non-participants, $\varphi = 1$')
+        ax.plot(
+            x,
+            y_P[0, 1, -int(N_years / dt):, -1],
+            color='navy', linewidth=1, label=r'Participants'
+        )
+        ax.plot(
+            x,
+            y_N[0, 1, -int(N_years / dt):, -1],
+            color='maroon', linewidth=1, label=r'Nonparticipants'
+        )
+        ax.plot(
+            x,
+            belief_cutoff[0, 1, -int(N_years / dt):],
+            color='black', linewidth=1, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+        )
+        ax.legend(loc='lower left')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.savefig(
-    'IA_f1_merged.pdf',
+    'OA_f1_merged.pdf',
     dpi=200)
 plt.show()
 plt.close()

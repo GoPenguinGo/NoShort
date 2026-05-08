@@ -1,10 +1,13 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Any
+from numpy import ndarray, dtype, float64
+from pandas import DataFrame
 from src.param_mix import cohort_type_size_mix, alpha_i_mix
 from src.stats import post_var, dDelta_st_calculator
 from src.solver import bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
 import statsmodels.api as sm
+import pandas as pd
 
 
 
@@ -45,6 +48,7 @@ def simulate_cohorts_mix_type(
         need_f: str,
         need_Delta: str,
         need_pi: str,
+        mode_learn: str,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -63,7 +67,7 @@ def simulate_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
     np.ndarray,
-    np.ndarray,
+    # np.ndarray,
 ]:
     """ Simulate the economy forward
         a mixture of 4 different types of agents in each cohort:
@@ -143,6 +147,7 @@ def simulate_cohorts_mix_type(
     mu_S = np.zeros(Nt)
     sigma_S = np.zeros(Nt)
     beta = np.zeros(Nt)
+    Delta_popu = np.zeros((Nt, 2))  # participants and nonparticipants, population average
     Delta_bar_parti = np.zeros(Nt,
                                dtype=np.float16)  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros(Nt,
@@ -272,7 +277,13 @@ def simulate_cohorts_mix_type(
         # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
         # the switches are specific to passing the exit_boundary
         # information = theta_st[:, 2] >= exit_bound
-        information = invest[:, -1]
+        if mode_learn == 'theta':
+            information = theta_st[:, 2] >= exit_bound
+        elif mode_learn == 'invest':
+            information = invest[:, -1]
+        else:
+            print("mode learn not found")
+            exit()
         switch_P_to_N = information_tracker * 0.0
         switch_N_to_P = information_tracker * 0.0
         switch_P_to_N[:, -1] = (information_tracker[:, -1] - information == 1)  # switch to nonparti if type R&E & not investing this period
@@ -342,12 +353,14 @@ def simulate_cohorts_mix_type(
             parti_age_group[i, j] = np.ma.average(
                 invest_tracker[:, :, cutoffs_age[j + 1]:cutoffs_age[j]],
                 weights=cohort_type_size[:, :, cutoffs_age[j + 1]:cutoffs_age[j]])
-            # within_group = np.where(
-            # (invest_fw_st >= wealth_cutoffs[j] * cohort_type_size / dt)
-            # * (w_indiv_ist < wealth_cutoffs[j + 1] * cohort_type_size / dt)
-            # )
-            # parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
-            #                                          weights=cohort_type_size[within_group])
+        # for j in range(len(wealth_cutoffs) - 1):
+        #     within_group = np.where(
+        #         (invest_fw_st >= wealth_cutoffs[j] * cohort_type_size / dt)
+        #         * (f_w_ist < wealth_cutoffs[j + 1] * cohort_type_size / dt)
+        #     )
+        #     parti_wealth_group[i, j] = np.ma.average(invest_tracker[within_group],
+        #                                              weights=cohort_type_size[within_group])
+
 
     return (
         r,
@@ -364,7 +377,7 @@ def simulate_cohorts_mix_type(
         mu_S,
         sigma_S,
         beta,
-        invest_mat,
+        # invest_mat,
         parti_age_group,
         entry_mat,
         exit_mat
@@ -404,21 +417,12 @@ def simulate_mean_vola_mix_type(
         tau_info: np.ndarray,
         Vhat_vector: np.ndarray,
         need_invest_matrix: str
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-]:
+) -> tuple[
+    DataFrame, DataFrame, DataFrame, ndarray[Any, dtype[Any]] | int, ndarray[Any, dtype[float64]] | ndarray[Any, Any] |
+                                     ndarray[Any, dtype[Any]] | ndarray[tuple[int, ...], dtype[float64]] | ndarray[
+                                         tuple[int, ...], dtype[Any]], ndarray[Any, dtype[float64]] | ndarray[
+                                         Any, Any] | ndarray[Any, dtype[Any]] | ndarray[
+                                         tuple[int, ...], dtype[float64]] | ndarray[tuple[int, ...], dtype[Any]]]:
     """
     Simulate the economy forward, saving only the mean & std of the results
         a mixture of 4 different types of agents in each cohort:
@@ -494,10 +498,10 @@ def simulate_mean_vola_mix_type(
     mu_S = np.zeros(Nt - keep_when)
     sigma_S = np.zeros(Nt - keep_when)
     beta = np.zeros(Nt - keep_when)
-    # Delta_bar = np.zeros(Nt - keep_when)
-    # Delta_bar_parti = np.zeros(
-    #     (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
-    # Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
+    # Delta_popu = np.zeros((Nt - keep_when, 2))  # participants and nonparticipants, population average
+    Delta_bar_parti = np.zeros(
+        (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
+    Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt - keep_when))  # participation rate
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
@@ -602,13 +606,6 @@ def simulate_mean_vola_mix_type(
         invest = 1 - (invest != 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
         invest[:, 0] = 1  # complete type
-        # switch_P_to_N = invest_tracker * (1 - invest) * (
-        #         can_short_tracker < 1)  # switch to nonparti if type R&E & not investing this period
-        # switch_N_to_P = np.maximum(invest - invest_tracker,
-        #                            0)  # switch to parti if not investing before & investing this period
-        # switch_N_to_P[:, :2] = 0  # only applicable to the E type
-        # switch = switch_N_to_P + switch_P_to_N
-        # invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
         invest_tracker = np.copy(invest)
         d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
 
@@ -654,8 +651,8 @@ def simulate_mean_vola_mix_type(
             theta[ii] = theta_t
             r[ii] = r_t
             # Delta_bar[ii] = np.average(Delta_s_t, weights=cohort_type_size)
-            # Delta_bar_parti[ii] = Delta_bar_parti_t
-            # Delta_tilde_parti[ii] = Delta_tilde_parti_t
+            Delta_bar_parti[ii] = Delta_bar_parti_t
+            Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
             sigma_S[ii] = np.abs(sigma_S_t)  # stock vola = absolute value of sigma
             beta[ii] = beta_t
@@ -688,28 +685,30 @@ def simulate_mean_vola_mix_type(
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, 4,-1)), axis=0))
 
     # save the mean and standard deviation
-    theta_ave = np.array([np.mean(theta), np.std(theta)])
-    r_ave = np.array([np.mean(r), np.std(r)])
-    mu_S_ave = np.array([np.mean(mu_S), np.std(mu_S)])
-    sigma_S_ave = np.array([np.mean(sigma_S), np.std(sigma_S)])
-    entry_ave = np.mean(entry_mat)
-    exit_ave = np.mean(exit_mat)
-    parti_ave = np.mean(parti)
+    data_mean_vola = {
+        'theta': np.array([np.mean(theta), np.std(theta)]),
+        'r': np.array([np.mean(r), np.std(r)]),
+        'mu_S': np.array([np.mean(mu_S), np.std(mu_S)]),
+        'sigma_S': np.array([np.mean(sigma_S), np.std(sigma_S)]),
+        'Delta_bar': np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]),
+        'Phi_bar': np.array([np.mean(1/Phi_bar_parti_1), np.std(1/Phi_bar_parti_1)])
+    }
+    table_mean_vola = pd.DataFrame(data_mean_vola, index=['Mean', 'Std_Dev'])
 
-    cov_theta_z_Y = np.corrcoef(dZ[keep_when:], theta)[0, 1]
-    cov_sigmaS_z_Y = np.corrcoef(dZ[keep_when:], sigma_S)[0, 1]
-    cov_pd_z_Y = np.corrcoef(dZ[keep_when:], 1 / beta)[0, 1]
-    cov_parti_cons_share = np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1]
-    cov_parti_wealth_share = np.corrcoef(parti, Phi_tilde_parti)[0, 1]
+    data_mean = {
+        'entry': np.mean(entry_mat),
+        'exit': np.mean(exit_mat),
+        'parti': np.mean(parti),
+    }
+    table_mean = pd.DataFrame(data_mean, index=['Mean'])
 
-    # results about covariance
-    cov_matrix = np.array([
-        cov_theta_z_Y,
-        cov_sigmaS_z_Y,
-        cov_pd_z_Y,
-        cov_parti_cons_share,
-        cov_parti_wealth_share
-    ])
+    data_parti_cov = {
+        'cons_share': np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1],
+        'wealth_share': np.corrcoef(parti, Phi_tilde_parti)[0, 1],
+        'mu_S': np.corrcoef(parti, mu_S)[0, 1],
+        'theta': np.corrcoef(parti, theta)[0, 1],
+    }
+    table_parti_cov = pd.DataFrame(data_parti_cov, index=['Cov'])
 
     past_annual_return = np.zeros((3, Nt - keep_when))
     future_annual_return = np.zeros((3, Nt - keep_when))
@@ -721,7 +720,7 @@ def simulate_mean_vola_mix_type(
     # run regressions and save results instead of saving the data:
     x_set = np.copy(past_annual_return[:, sample])
     y_set = [
-        parti,
+        entry_mat[sample] - exit_mat[sample],
         entry_mat[sample],
         exit_mat[sample]
     ]
@@ -731,20 +730,23 @@ def simulate_mean_vola_mix_type(
         for jj, y_mat in enumerate(y_set):
             if jj == 1:  # entry on high return
                 y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
-                x_condi = (x > np.percentile(x, 75)) + 0
-                x_regress = sm.add_constant(x_condi)
+                x_regress = sm.add_constant(x)
+                # x_condi = (x > np.percentile(x, 75)) + 0
+                # x_regress = sm.add_constant(x_condi)
                 model = sm.OLS(y, x_regress)
             elif jj == 2:  # exit on low return
                 y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
-                x_condi = (x < np.percentile(x, 25)) + 0
-                x_regress = sm.add_constant(x_condi)
+                x_regress = sm.add_constant(x)
+                # x_condi = (x < np.percentile(x, 25)) + 0
+                # x_regress = sm.add_constant(x_condi)
                 model = sm.OLS(y, x_regress)
             else:
-                y = (y_mat[sample] - np.average(y_mat[sample])) / np.std(y_mat[sample])
+                y = (y_mat[:, ii] - np.average(y_mat[:, ii])) / np.std(y_mat[:, ii])
                 x_regress = sm.add_constant(x)
                 model = sm.OLS(y, x_regress)
             est = model.fit()
             regression_table1_b[ii, jj] = est.params[1]
+
 
     x = np.reshape((parti[sample] - np.average(parti[sample])) / np.std(parti[sample]), (-1, 1))
     y_set = [
@@ -760,12 +762,12 @@ def simulate_mean_vola_mix_type(
             est = model.fit()
             regression_table2_b[ii, jj] = est.params[1]
 
-    cohort_entry_annual = (invest_matrix[1:, :, :-12] - invest_matrix[:-1, :, 12:]) > 0
-    entry_cumu = np.cumsum(
-        np.flip(np.average(
-            np.average(cohort_entry_annual * dt, axis=0), axis=0, weights=alpha_i_mix[0, :, 0]
-        ))
-    )[age_sample]
+    # cohort_entry_annual = (invest_matrix[1:, :, :-12] - invest_matrix[:-1, :, 12:]) > 0
+    # entry_cumu = np.cumsum(
+    #     np.flip(np.average(
+    #         np.average(cohort_entry_annual * dt, axis=0), axis=0, weights=alpha_i_mix[0, :, 0]
+    #     ))
+    # )[age_sample]
 
     # fraction of agents re-entering after exiting the stock market
     if need_invest_matrix == 'True':
@@ -792,13 +794,13 @@ def simulate_mean_vola_mix_type(
                 cohorts_in = invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
                 cohorts_out = (1 - cohorts_in)[:, :-12]
 
-                exit_nn = (
-                        invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
-                        - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] < 0
-                ) if nn != 1 else (
-                        invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
-                        - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] < 0
-                )
+                # exit_nn = (
+                #         invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
+                #         - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):int((-nn + 1) / dt)] < 0
+                # ) if nn != 1 else (
+                #         invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
+                #         - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] < 0
+                # )
 
                 reentry_nn = (
                         invest_matrix[entry_n + nn, :, int((window_bell - nn) / dt):int(-nn / dt)]
@@ -807,34 +809,27 @@ def simulate_mean_vola_mix_type(
                         invest_matrix[entry_n + nn, :, int(window_bell / dt - nn / dt):int(-nn / dt)]
                         - invest_matrix[entry_n + nn - 1, :, int((window_bell - nn + 1) / dt):] > 0
                 )
-                exit_bell = exit_bell + exit_nn > 0
-                parti_bell_entry[nn] = cohorts_in * following_cohorts_entry * (1 - exit_bell)
+                # exit_bell = exit_bell + exit_nn > 0
+                # parti_bell_entry[nn] = cohorts_in * following_cohorts_entry * (1 - exit_bell)
 
                 reentry_bell = reentry_bell + reentry_nn[:, :-12] > 0
                 parti_bell_exit[nn] = cohorts_out * following_cohorts_exit * (1 - reentry_bell)
 
             for m in range(Nconstraint):
                 reentry_time[n, m] = list(map(int, np.sum(parti_bell_exit[:, m], axis=0)))
-                exit_time[n, m] = list(
-                    map(int, np.sum(parti_bell_entry[:, m], axis=0))
-                )
+                # exit_time[n, m] = list(
+                #     map(int, np.sum(parti_bell_entry[:, m], axis=0))
+                # )
 
     else:
         reentry_time = 0
-        exit_time = 0
+        # exit_time = 0
 
     return (
-        theta_ave,
-        r_ave,
-        mu_S_ave,
-        sigma_S_ave,
+        table_mean_vola,
+        table_mean,
+        table_parti_cov,
         reentry_time,
-        exit_time,
-        entry_cumu,
-        entry_ave,
-        exit_ave,
-        cov_matrix,
-        parti_ave,
         regression_table1_b,
         regression_table2_b
     )
