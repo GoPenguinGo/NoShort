@@ -8,7 +8,7 @@ from src.param import (rho_i, nu, mu_Y, sigma_Y, tax, phi, \
     cohort_labels, colors_short, PN_labels, age_labels, \
     Ntype, alpha_i, beta_i, beta0, rho_cohort_type, cohort_type_size,
                        popu_age_groups, entry_bound, exit_bound)
-from src.param_mix import Nconstraint, rho_i_mix
+from src.param_mix import Nconstraint, rho_i_mix, density
 import statsmodels.api as sm
 import pandas as pd
 import tabulate as tab
@@ -26,8 +26,7 @@ data_shocks = pd.read_excel(
 
 plt.rcParams["font.family"] = 'serif'
 
-# (complete, excluded, disappointment, reentry)
-density = (0.3, 0.5, 0.2)
+# (complete, excluded, reentry)
 phi_set = [
     # 0.0,
     0.5,
@@ -160,11 +159,9 @@ for i in range(n_scenarios):
                                 parti_time_series[i, j, m, k, n - 1] = 0.5
 
 
-
 #####################################
 #######  belief distribution  #######
 #####################################
-# phi = 0.5, reentry scenario
 y_overall = np.empty((n_scenarios, n_phi, Nt_data, 6))  # overall
 y_P = np.empty((n_scenarios, n_phi, Nt_data, 6))  # participants / long
 y_N = np.empty((n_scenarios, n_phi, Nt_data, 6))  # non-participants / short
@@ -326,10 +323,7 @@ plt.close()
 ######################################
 ######## Figure 1.Appendix   #########
 ######################################
-print('Figure 1')
-N_years = 100
-x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
+print('Figure 1 - OA')
 fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(10, 6))
 for j, ax in enumerate(axes):
     if j == 0:  # entry_bound = exit_bound = 0
@@ -380,22 +374,32 @@ for j, ax in enumerate(axes):
 
     else:  # varphi = 1 (no reduced attention from nonparticipants)
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_title(r'(b) Average estimation error, participants vs. non-participants, $\varphi = 1$')
+        ax.set_title(r'(b) Average estimation error, participants vs. non-participants, $\varphi = 1$ vs. $\varphi = 0.5$')
         ax.plot(
             x,
             y_P[0, 1, -int(N_years / dt):, -1],
-            color='navy', linewidth=1, label=r'Participants'
+            color='navy', linewidth=1, label=r'Participants, $\varphi = 1$'
         )
         ax.plot(
             x,
             y_N[0, 1, -int(N_years / dt):, -1],
-            color='maroon', linewidth=1, label=r'Nonparticipants'
+            color='maroon', linewidth=1, label=r'Nonparticipants, $\varphi = 1$'
         )
         ax.plot(
             x,
-            belief_cutoff[0, 1, -int(N_years / dt):],
-            color='black', linewidth=1, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+            y_P[0, 0, -int(N_years / dt):, -1],
+            color='navy', linewidth=1, label=r'Participants, $\varphi = 0.5$', linestyle='dotted'
         )
+        ax.plot(
+            x,
+            y_N[0, 0, -int(N_years / dt):, -1],
+            color='maroon', linewidth=1, label=r'Nonparticipants, $\varphi = 0.5$', linestyle='dotted'
+        )
+        # ax.plot(
+        #     x,
+        #     belief_cutoff[0, 1, -int(N_years / dt):] + entry_bound,
+        #     color='black', linewidth=1, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+        # )
         ax.legend(loc='lower left')
     extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 fig.tight_layout()  # otherwise the right y-label is slightly clipped

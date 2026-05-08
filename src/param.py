@@ -48,6 +48,8 @@ t = np.arange(0, T_cohort, dt)
 phi_vector = [0, 0.5, 0.8]
 n_phi = len(phi_vector)
 
+window_bell = 20
+
 # labels:
 cohort_labels = ['Cohort 1', 'Cohort 2', 'Cohort 3']
 scenario_labels = ['Complete', 'Reentry', 'Mix']

@@ -258,6 +258,7 @@ def simulate_mix_mean_vola(
         beta_i: np.ndarray,
         rho_cohort_type: np.ndarray,
         cohort_type_size: np.ndarray,
+        window_bell: int,
         need_invest_matrix: str,
 ) -> tuple[DataFrame, DataFrame, DataFrame, Any, Any, Any]:
     """
@@ -349,7 +350,7 @@ def simulate_mix_mean_vola(
 
     (
         table_mean_vola,
-        table_mean,
+        table_parti,
         table_parti_cov,
         reentry_time,
         regression_table1_b,
@@ -377,6 +378,7 @@ def simulate_mix_mean_vola(
         entry_bound,
         exit_bound,
         cohort_type_size,
+        window_bell,
         Delta_s_t,
         eta_st_eta_ss,
         X,
@@ -391,7 +393,7 @@ def simulate_mix_mean_vola(
 
     return (
         table_mean_vola,
-        table_mean,
+        table_parti,
         table_parti_cov,
         reentry_time,
         regression_table1_b,

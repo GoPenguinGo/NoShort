@@ -1,28 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.simulation import simulate_SI_mean_vola, simulate_mix_mean_vola
-from src.param import mu_Y, sigma_Y, \
+from src.simulation import simulate_mix_mean_vola
+from src.param import (mu_Y, sigma_Y, \
     dt, Ninit, Nt, Nc, tau, tax, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    cohort_type_size, cohort_size, T_hat, Npre, Vhat
-from src.param import phi
-from src.param import nu, rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
-from src.param_mix import Nconstraint
-from src.param_mix import rho_i_mix
+    cohort_type_size, cohort_size, T_hat, Npre, Vhat, nu, rho_i, beta_i,
+                       beta0, rho_cohort_type, beta_cohort,  phi,
+                       window_bell, entry_bound, exit_bound)
+from src.param_mix import Nconstraint, rho_i_mix, density
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 import statsmodels.api as sm
 
 plt.rcParams["font.family"] = 'serif'
-# (complete, excluded, disappointment, reentry)
-density_set = [
-    # (1.0, 0.0, 0.0, 0.0),
-    (0.0, 0.0, 0.0, 1.0),
-    (0.25, 0.25, 0.25, 0.25),
-]
-n_scenarios = len(density_set)
-phi_set = [0.5]
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
@@ -30,186 +21,79 @@ N_sample = len(sample)
 # Nc_cut = int(age_cut / dt)
 age_sample = np.arange(1, int(200 / dt), 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
-window_bell = 20
-Mpath = 2000
+Mpath = 10
+
+alpha_constraint = np.ones(
+    (1, Nconstraint)) * density
+alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+cohort_type_size_mix = cohort_size * alpha_i_mix
+# cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
+beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
 np.seterr(invalid='ignore')
 folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
-# folder_address = r'C:\Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)\Documents\GitHub computer 2\NoShort/simu_results/'
 
 
 def simulate_path(
         i: int,
 ):
     print(i)
-    # shocks
-    # i = 0
 
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
-    dZ_SI_build = dZ_SI_build_matrix[i]
-    dZ_SI = dZ_SI_matrix[i]
-
-    # sample: in time-series
-    theta_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
-    r_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
-    mu_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
-    sigma_S_compare = np.zeros((n_scenarios, 2), dtype=np.float32)
-    parti_compare = np.zeros((n_scenarios), dtype=np.float32)
-    entry_compare = np.zeros(n_scenarios, dtype=np.float32)
-    exit_compare = np.zeros(n_scenarios, dtype=np.float32)
-    Delta_age_compare = np.zeros((2, len(age_sample)), dtype=np.float32)
-    regression_table1 = np.zeros((n_scenarios, 3, 3), dtype=np.float32)
-    regression_table2 = np.zeros((n_scenarios, 3, 2), dtype=np.float32)
-    cov_compare = np.zeros((n_scenarios, 5), dtype=np.float32)
-    parti_age_compare = 0
-    entry_cumu_compare = np.zeros((n_scenarios, 200), dtype=np.float32)
 
     if np.mod(i, 10) == 0:
-        reentry_time_compare = np.zeros((n_scenarios, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-        exit_time_compare = np.zeros((n_scenarios, 14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
+        # reentry_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
+        # exit_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
         need_invest_matrix = 'True'
     else:
-        reentry_time_compare = 0
-        exit_time_compare = 0
+        # reentry_time_compare = 0
+        # exit_time_compare = 0
         need_invest_matrix = 'False'
     # need_invest_matrix = 'False'
     # reentry_time_compare = 0
     # reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
     # need_invest_matrix = 'True'
-    for g, type_density in enumerate(density_set):
-        if type_density[3] == 1:
-            mode_trade = 'w_constraint'
-            mode_learn = 'reentry'
 
-            (
-                theta_ave,
-                r_ave,
-                mu_S_ave,
-                sigma_S_ave,
-                parti_age_ave,
-                Delta_age_ave,
-                reentry_time,
-                exit_time,
-                entry_cumu,
-                entry_ave,
-                exit_ave,
-                cov_matrix,
-                parti_ave,
-                regression_table1_b,
-                regression_table2_b
-            ) = simulate_SI_mean_vola(
-                mode_trade,
-                mode_learn,
-                Nc,
-                Nt,
-                dt,
-                nu,
-                Vhat,
-                mu_Y,
-                sigma_Y,
-                tax,
-                beta0,
-                phi,
-                Npre,
-                Ninit,
-                T_hat,
-                dZ_build,
-                dZ,
-                dZ_SI_build,
-                dZ_SI,
-                tau,
-                Ntype,
-                rho_i,
-                alpha_i,
-                beta_i,
-                rho_cohort_type,
-                cohort_type_size,
-                need_invest_matrix
-            )
-            theta_compare[g] = theta_ave
-            r_compare[g] = r_ave
-            mu_S_compare[g] = mu_S_ave
-            sigma_S_compare[g] = sigma_S_ave
-            Delta_age_compare[g] = Delta_age_ave
-            cov_compare[g] = cov_matrix
-            parti_compare[g] = parti_ave
-            entry_compare[g] = entry_ave
-            exit_compare[g] = exit_ave
-            regression_table1[g] = regression_table1_b
-            regression_table2[g] = regression_table2_b
-            parti_age_compare = parti_age_ave
-            entry_cumu_compare[g] = entry_cumu
-            if need_invest_matrix == 'True':
-                reentry_time_compare[g, :, 1] = reentry_time
-                exit_time_compare[g, :, 1] = exit_time
+    (
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        reentry_time_compare,
+        regression_table1_b,
+        regression_table2_b
+    ) = simulate_mix_mean_vola(
+        Nc,
+        Nt,
+        dt,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        tax,
+        beta0,
+        phi,
+        Npre,
+        Ninit,
+        T_hat,
+        entry_bound,
+        exit_bound,
+        dZ_build,
+        dZ,
+        Ntype,
+        Nconstraint,
+        rho_i_mix,
+        alpha_i_mix,
+        beta_i_mix,
+        rho_cohort_type_mix,
+        cohort_type_size_mix,
+        window_bell,
+        need_invest_matrix
+    )
 
-        else:
-            alpha_constraint = np.ones(
-                (1, Nconstraint)) * type_density
-            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-            cohort_type_size_mix = cohort_size * alpha_i_mix
-            # cohort_size_mix = np.sum(cohort_type_size_mix, axis=0)
-            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-
-            (
-                theta_ave,
-                r_ave,
-                mu_S_ave,
-                sigma_S_ave,
-                reentry_time,
-                exit_time,
-                entry_cumu,
-                entry_ave,
-                exit_ave,
-                cov_matrix,
-                parti_ave,
-                regression_table1_b,
-                regression_table2_b
-            ) = simulate_mix_mean_vola(
-                Nc,
-                Nt,
-                dt,
-                nu,
-                Vhat,
-                mu_Y,
-                sigma_Y,
-                tax,
-                beta0,
-                phi,
-                Npre,
-                Ninit,
-                T_hat,
-                dZ_build,
-                dZ,
-                dZ_SI_build,
-                dZ_SI,
-                Ntype,
-                Nconstraint,
-                rho_i_mix,
-                alpha_i_mix,
-                beta_i_mix,
-                rho_cohort_type_mix,
-                cohort_type_size_mix,
-                need_invest_matrix
-            )
-
-            theta_compare[g] = theta_ave
-            r_compare[g] = r_ave
-            mu_S_compare[g] = mu_S_ave
-            sigma_S_compare[g] = sigma_S_ave
-            cov_compare[g] = cov_matrix
-            parti_compare[g] = parti_ave
-            entry_compare[g] = entry_ave
-            exit_compare[g] = exit_ave
-            regression_table1[g] = regression_table1_b
-            regression_table2[g] = regression_table2_b
-            entry_cumu_compare[g] = entry_cumu
-            if need_invest_matrix == 'True':
-                reentry_time_compare[g] = reentry_time[:, 2:]
-                exit_time_compare[g] = exit_time[:, 2:]
+    reentry_time = reentry_time_compare[:, 2:] if need_invest_matrix == 'True' else reentry_time_compare
 
     if need_invest_matrix == 'True':
         np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
@@ -217,26 +101,19 @@ def simulate_path(
 
     return (
         i,
-        theta_compare,
-        r_compare,
-        mu_S_compare,
-        sigma_S_compare,
-        parti_compare,
-        entry_compare,
-        exit_compare,
-        Delta_age_compare,
-        regression_table1,
-        regression_table2,
-        cov_compare,
-        parti_age_compare,
-        entry_cumu_compare,
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        reentry_time,
+        regression_table1_b,
+        regression_table2_b
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(int(Mpath / 25)):
-        per_path = 25
+    for j in range(int(Mpath / 10)):
+        per_path = 10
         paths_j = j * per_path
 
         with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
@@ -247,35 +124,21 @@ def main():
         # Retrieve results from parallel processes
         for result in results:
             i, \
-                theta_compare, \
-                r_compare, \
-                mu_S_compare, \
-                sigma_S_compare, \
-                parti_compare, \
-                entry_compare, \
-                exit_compare, \
-                Delta_age_compare, \
-                regression_table1, \
-                regression_table2, \
-                cov_compare, \
-                parti_age_compare, \
-                entry_cumu_compare = result.result()
+            table_mean_vola, \
+            table_parti, \
+            table_parti_cov, \
+            reentry_time, \
+            regression_table1_b, \
+            regression_table2_b = result.result()
 
             data = {
                 "i": i,
-                "theta": theta_compare,
-                "r": r_compare,
-                "mu_S": mu_S_compare,
-                "sigma_S": sigma_S_compare,
-                "parti": parti_compare,
-                "entry": entry_compare,
-                "exit": exit_compare,
-                "Delta_age": Delta_age_compare,
-                "reg1": regression_table1,
-                "reg2": regression_table2,
-                "cov_mat": cov_compare,
-                "parti_age": parti_age_compare,
-                "entry_cumu": entry_cumu_compare,
+                "table_mean_vola": table_mean_vola,
+                "table_parti": table_parti,
+                "table_parti_cov": table_parti_cov,
+                "reentry_time": reentry_time,
+                "regression_table1_b": regression_table1_b,
+                "regression_table2_b": regression_table2_b,
             }
             results_list.append(data)
 
