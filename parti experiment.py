@@ -1,17 +1,15 @@
-import numpy as np
+from concurrent.futures import ProcessPoolExecutor
 import matplotlib.pyplot as plt
-from src.simulation import simulate_mix_mean_vola
+import numpy as np
+import pandas as pd
+from src.param import N_workers, Mpath
 from src.param import (mu_Y, sigma_Y, \
-    dt, Ninit, Nt, Nc, tau, tax, \
-    cutoffs_age, Ntype, alpha_i, \
-    dZ_matrix, dZ_SI_matrix, dZ_build_matrix, dZ_SI_build_matrix, \
-    cohort_type_size, cohort_size, T_hat, Npre, Vhat, nu, rho_i, beta_i,
-                       beta0, rho_cohort_type, beta_cohort,  phi,
+                       dt, Ninit, Nt, Nc, tau, tax, \
+                       Ntype, alpha_i, \
+                       dZ_matrix, dZ_build_matrix, cohort_size, T_hat, Npre, Vhat, nu, beta0, phi,
                        window_bell, entry_bound, exit_bound)
 from src.param_mix import Nconstraint, rho_i_mix, density
-from concurrent.futures import ProcessPoolExecutor
-import pandas as pd
-import statsmodels.api as sm
+from src.simulation import simulate_mix_mean_vola
 
 plt.rcParams["font.family"] = 'serif'
 window = 12  # 1-year non-overlapping windows
@@ -21,7 +19,6 @@ N_sample = len(sample)
 # Nc_cut = int(age_cut / dt)
 age_sample = np.arange(1, int(200 / dt), 12)
 cohort_sample = np.arange(Nc, Nc - 1200, -60) - 1
-Mpath = 10
 
 alpha_constraint = np.ones(
     (1, Nconstraint)) * density
@@ -33,7 +30,6 @@ rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
     -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
 np.seterr(invalid='ignore')
-folder_address = r'E:\Users\A2010290\Documents\GitHub\NoShort/simu_results/'
 
 
 def simulate_path(
@@ -61,9 +57,10 @@ def simulate_path(
         table_mean_vola,
         table_parti,
         table_parti_cov,
-        reentry_time_compare,
+        reentry_time,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
+        Delta_diff,
     ) = simulate_mix_mean_vola(
         Nc,
         Nt,
@@ -93,10 +90,8 @@ def simulate_path(
         need_invest_matrix
     )
 
-    reentry_time = reentry_time_compare[:, 2:] if need_invest_matrix == 'True' else reentry_time_compare
-
     if need_invest_matrix == 'True':
-        np.save(folder_address + str(i) + 'reentry_time', reentry_time_compare)
+        np.save(r'simu_results/' + str(i) + 'reentry_time', reentry_time[:, 2:])
     # np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
 
     return (
@@ -104,19 +99,19 @@ def simulate_path(
         table_mean_vola,
         table_parti,
         table_parti_cov,
-        reentry_time,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
+        Delta_diff,
     )
 
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(int(Mpath / 10)):
-        per_path = 10
+    for j in range(int(Mpath / N_workers)):
+        per_path = N_workers
         paths_j = j * per_path
 
-        with ProcessPoolExecutor(max_workers=25) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + per_path)]
         # Initialize a list to store the results
         results_list = []
@@ -127,25 +122,25 @@ def main():
             table_mean_vola, \
             table_parti, \
             table_parti_cov, \
-            reentry_time, \
             regression_table1_b, \
-            regression_table2_b = result.result()
+            regression_table2_b,\
+            Delta_diff, = result.result()
 
             data = {
                 "i": i,
                 "table_mean_vola": table_mean_vola,
                 "table_parti": table_parti,
                 "table_parti_cov": table_parti_cov,
-                "reentry_time": reentry_time,
                 "regression_table1_b": regression_table1_b,
                 "regression_table2_b": regression_table2_b,
+                "Delta_diff": Delta_diff
             }
             results_list.append(data)
 
         # Create a DataFrame from the list of dictionaries
         results_df = pd.DataFrame(results_list)
         results_dict = results_df.to_dict(orient='list')
-        np.savez(folder_address + str(j) + "simulation_new.npz", **results_dict)
+        np.savez(r'simu_results/' + str(j) + "simulation_new.npz", **results_dict)
 
 
 if __name__ == '__main__':

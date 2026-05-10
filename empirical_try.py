@@ -1,18 +1,15 @@
-import pandas as pd
-import numpy as np
+from concurrent.futures import ProcessPoolExecutor
 import matplotlib.pyplot as plt
-from src.simulation import simulate_mix_types
+import numpy as np
+import pandas as pd
 from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
-    cutoffs_age, Ntype, alpha_i, \
+    Ntype, alpha_i, \
     dZ_build_matrix, dZ_matrix, \
     cohort_size
-# from src.param_mix import rho_i_mix
-from concurrent.futures import ProcessPoolExecutor
-# from src.param import rho_i, beta_i, beta0, rho_cohort_type, beta_cohort
 from src.param_mix import Nconstraint
+from src.simulation import simulate_mix_types
 
-# from cupyx.scipy.interpolate import RBFInterpolator
 
 country_names = [
     # 'US',
@@ -20,8 +17,7 @@ country_names = [
     # 'Germany',
     'Norway'
 ]
-folder_address = r'C:\Users\zeshu\BI Norwegian Business School Dropbox\Zeshu XU\to sync\between_computers\entry_exit/empirical/'
-# folder_address = r'C:/Users\A2010290\OneDrive - BI Norwegian Business School (BIEDU)/Documents\GitHub computer 2/NoShort/empirical/'
+
 plt.rcParams["font.family"] = 'serif'
 
 # (complete, excluded, reentry)
@@ -211,7 +207,7 @@ def main():
         # Create a ProcessPoolExecutor for parallel execution
         # run this on a grid of parameters & type densities & signal
         data_shocks = pd.read_excel(
-            f'{folder_address}realized_shocks_{country}.xlsx',
+            f'empirical/realized_shocks_{country}.xlsx',
             sheet_name='Sheet1',
             index_col=0
         )

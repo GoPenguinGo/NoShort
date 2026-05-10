@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # Parameters
 Ntype = 2
 rho_i = np.array([[0.001], [0.005]])  # baseline
@@ -42,7 +43,8 @@ cummu_popu = np.cumsum(cohort_size)
 cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 10000
+Mpath = 20
+N_workers = 10
 t = np.arange(0, T_cohort, dt)
 
 phi_vector = [0, 0.5, 0.8]

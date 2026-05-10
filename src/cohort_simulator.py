@@ -2,7 +2,6 @@ import numpy as np
 from typing import Tuple, Any
 from numpy import ndarray, dtype, float64
 from pandas import DataFrame
-from src.param_mix import cohort_type_size_mix, alpha_i_mix
 from src.stats import post_var, dDelta_st_calculator
 from src.solver import bisection_partial_constraint, solve_theta_partial_constraint
 from tqdm import tqdm
@@ -343,9 +342,9 @@ def simulate_cohorts_mix_type(
             # entry_i = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
             #         j + 1):]  # entry excluding the newborns
             exit_i = invest_tracker[0, :, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
-            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
-            exit_mat[i, j] = (np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) 
-                                     + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):], weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0)) * nu * j
+            entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+            exit_mat[i, j] = (np.average(exit_i, weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)], axis=0))
+                                     + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):], weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)], axis=0)) * nu * j
                                      )
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, Nconstraint, -1)), axis=0))
 
@@ -423,7 +422,8 @@ def simulate_mean_vola_mix_type(
                                      ndarray[Any, dtype[Any]] | ndarray[tuple[int, ...], dtype[float64]] | ndarray[
                                          tuple[int, ...], dtype[Any]], ndarray[Any, dtype[float64]] | ndarray[
                                          Any, Any] | ndarray[Any, dtype[Any]] | ndarray[
-                                         tuple[int, ...], dtype[float64]] | ndarray[tuple[int, ...], dtype[Any]]]:
+                                         tuple[int, ...], dtype[float64]] | ndarray[tuple[int, ...], dtype[Any]],
+    ndarray[tuple[int], dtype[float64]]]:
     """
     Simulate the economy forward, saving only the mean & std of the results
         a mixture of 4 different types of agents in each cohort:
@@ -491,7 +491,7 @@ def simulate_mean_vola_mix_type(
     sigma_S_t = 0
     window = 12  # 1-year non-overlapping windows
     sample = np.arange(600, Nt - keep_when - 600, window)
-    age_sample = np.arange(1, int(200 / dt), 12)
+    # age_sample = np.arange(1, int(200 / dt), 12)
 
     dR = np.zeros(Nt - keep_when)  # stores stock returns
     r = np.zeros(Nt - keep_when)  # interest rate
@@ -499,7 +499,7 @@ def simulate_mean_vola_mix_type(
     mu_S = np.zeros(Nt - keep_when)
     sigma_S = np.zeros(Nt - keep_when)
     beta = np.zeros(Nt - keep_when)
-    # Delta_popu = np.zeros((Nt - keep_when, 2))  # participants and nonparticipants, population average
+    Delta_diff = np.zeros((Nt - keep_when))  # participants and nonparticipants, population average
     Delta_bar_parti = np.zeros(
         (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
@@ -660,6 +660,13 @@ def simulate_mean_vola_mix_type(
             parti[ii] = popu_parti_t
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
+            Delta_diff[ii] = np.average(
+                Delta_s_t[:, -1],
+                weights=cohort_type_size[:, -1] * invest[:, -1]
+            ) - np.average(
+                Delta_s_t[:, -1],
+                weights=cohort_type_size[:, -1] * (1 - invest[:, -1])
+            )
             if np.mod(ii, 12) == 0:
                 invest_matrix[int(ii / 12)] = invest_tracker[0]
             # for l in range(N_wealth_group):
@@ -681,11 +688,11 @@ def simulate_mean_vola_mix_type(
                 # entry_i = invest_tracker[0, :, :-12 * (j + 1)] > invest_mat[-12 * (j + 1), :, 12 * (
                 #         j + 1):]  # entry excluding the newborns
                 exit_i = invest_tracker[0, :, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
-                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size_mix, axis=0))
-                exit_mat[ii, j] = (np.average(exit_i, weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)], axis=0))
+                entry_mat[ii, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
+                exit_mat[ii, j] = (np.average(exit_i, weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)], axis=0))
                                   + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):],
-                                               weights=np.sum(cohort_type_size_mix[:, :, :-12 * (j + 1)],
-                                                              axis=0)) * nu * j
+                                               weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)],
+                                                              axis=0)) * nu * (j + 1)
                                   )
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, Nconstraint, -1)), axis=0))
 
@@ -701,11 +708,11 @@ def simulate_mean_vola_mix_type(
     table_mean_vola = pd.DataFrame(data_mean_vola, index=['Mean', 'Std_Dev'])
 
     data_parti = {
-        'entry': np.array([np.mean(entry_mat)] + list(np.percentile(entry_mat, [10, 50, 90]))),
-        'exit': np.array([np.mean(exit_mat)] + list(np.percentile(exit_mat, [10, 50, 90]))),
-        'parti': np.array([np.mean(parti)] + list(np.percentile(parti, [10, 50, 90]))),
+        'parti': np.array([np.mean(parti)] + [np.std(parti)] + list(np.percentile(parti, [10, 50, 90]))),
+        'entry': np.array([np.mean(entry_mat)] + [np.std(entry_mat)] + list(np.percentile(entry_mat, [10, 50, 90]))),
+        'exit': np.array([np.mean(exit_mat)] + [np.std(exit_mat)] + list(np.percentile(exit_mat, [10, 50, 90]))),
     }
-    table_parti = pd.DataFrame(data_parti, index=['Mean', '10th', '50th', '90th'])
+    table_parti = pd.DataFrame(data_parti, index=['Mean', 'Std_Dev', '10th', '50th', '90th'])
 
     data_parti_cov = {
         'cons_share': np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1],
@@ -767,6 +774,12 @@ def simulate_mean_vola_mix_type(
             est = model.fit()
             regression_table2_b[ii, jj] = est.params[1]
 
+
+    low_return = np.percentile(past_annual_return[0, 12:], 10)
+    Delta_diff_condi = np.zeros(2)
+    Delta_diff_condi[0] = np.average(Delta_diff[12:])
+    Delta_diff_condi[1] = np.average(Delta_diff[12:], weights=(past_annual_return[0, 12:] <= low_return))
+
     # cohort_entry_annual = (invest_matrix[1:, :, :-12] - invest_matrix[:-1, :, 12:]) > 0
     # entry_cumu = np.cumsum(
     #     np.flip(np.average(
@@ -781,11 +794,11 @@ def simulate_mean_vola_mix_type(
         reentry_time = np.zeros((len(sample_bell) - 1, Nconstraint, Nt - int(window_bell / dt) - 12), dtype=int)
         # exit_time = np.zeros((len(sample_bell) - 1, Nconstraint, Nt - int(window_bell / dt)), dtype=int)
         for n, entry_n in enumerate(sample_bell[1:]):  # 20 year non-overlapping windows
-            following_cohorts_entry = (invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] > 0)[
-                                      :, int(window_bell / dt):]
-            following_cohorts_entry = np.append(following_cohorts_entry, invest_matrix[entry_n, :, -12:], axis=1)
-            parti_bell_entry = np.zeros((window_bell, Nconstraint, Nt - int(window_bell / dt)))
-            parti_bell_entry[0] = following_cohorts_entry
+            # following_cohorts_entry = (invest_matrix[entry_n, :, :-12] - invest_matrix[entry_n - 1, :, 12:] > 0)[
+            #                           :, int(window_bell / dt):]
+            # following_cohorts_entry = np.append(following_cohorts_entry, invest_matrix[entry_n, :, -12:], axis=1)
+            # parti_bell_entry = np.zeros((window_bell, Nconstraint, Nt - int(window_bell / dt)))
+            # parti_bell_entry[0] = following_cohorts_entry
             # exit_bell = np.zeros(
             #     (4, Nt - int(window_bell / dt)))  # following the entering cohorts until they exit the first time
 
@@ -836,5 +849,6 @@ def simulate_mean_vola_mix_type(
         table_parti_cov,
         reentry_time,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
+        Delta_diff_condi
     )

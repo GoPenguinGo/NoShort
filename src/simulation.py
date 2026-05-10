@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Tuple, Any
+from numpy import ndarray, dtype, float64
 from src.cohort_builder import build_cohorts_mix_type
 from src.cohort_simulator import simulate_cohorts_mix_type, \
     simulate_mean_vola_mix_type
@@ -260,7 +261,7 @@ def simulate_mix_mean_vola(
         cohort_type_size: np.ndarray,
         window_bell: int,
         need_invest_matrix: str,
-) -> tuple[DataFrame, DataFrame, DataFrame, Any, Any, Any]:
+) -> tuple[DataFrame, DataFrame, DataFrame, Any, Any, Any, ndarray[tuple[int], dtype[float64]]]:
     """
     Bundles the build_mean_vola_mix_type function and the simulate_mean_vola_mix_type function together
         a mixture of 4 different types of agents in each cohort:
@@ -354,7 +355,8 @@ def simulate_mix_mean_vola(
         table_parti_cov,
         reentry_time,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
+        Delta_diff_condi
     ) = simulate_mean_vola_mix_type(
         biasvec,
         dZ,
@@ -397,5 +399,6 @@ def simulate_mix_mean_vola(
         table_parti_cov,
         reentry_time,
         regression_table1_b,
-        regression_table2_b
+        regression_table2_b,
+        Delta_diff_condi
     )
