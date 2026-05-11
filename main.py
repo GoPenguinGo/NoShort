@@ -104,7 +104,7 @@ for i in range(n_scenarios):
 #######  individual cohorts  #######
 #####################################
 nn = 3  # number of cohorts illustrated
-starts = Nt_data - 43 * 12 + 1 - np.arange(nn) * 240
+starts = Nt_data - 33 * 12 + 1 - np.arange(nn) * 240
 # starts = np.arange(nn) * 240 + 24 * 12
 Delta_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
 pi_time_series = np.zeros((n_scenarios, n_phi, nn, Nconstraint, Nt_data), dtype=np.float32)
@@ -443,7 +443,7 @@ for i in range(Mpath):
 
 # ax.set_title('Simulation')
 fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(5, 5))
-cutoffs_return = np.percentile(stock_returns_mat, [10])
+cutoffs_return = np.percentile(stock_returns_mat, [20])
 for j in range(2):
     if j == 0:
         counts_mat = np.zeros((5748, 21))

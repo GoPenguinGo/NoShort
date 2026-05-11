@@ -12,9 +12,9 @@ from src.simulation import simulate_mix_types
 
 
 country_names = [
-    # 'US',
-    # 'Finland',
-    # 'Germany',
+    'US',
+    'Finland',
+    'Germany',
     'Norway'
 ]
 
@@ -30,10 +30,10 @@ density_types_set = [
     # (0.3, 0.4, 0.3),
     # (0.4, 0.4, 0.2),*
     # (0.5, 0.4, 0.1),
-    (0.1, 0.5, 0.4),
-    (0.2, 0.5, 0.3),
+    # (0.1, 0.5, 0.4),
+    # (0.2, 0.5, 0.3),
     (0.3, 0.5, 0.2), #norway
-    (0.4, 0.5, 0.1), #Germany
+    # (0.4, 0.5, 0.1), #Germany
 ]
 # T_hat_set = [
 #     # 2,
@@ -67,25 +67,25 @@ tax = 0.35
 phi = 0.5
 
 entry_boundary_set = [
-    0.0,
+    # 0.0,
     0.01,
     0.02,
     0.03,
     0.04,
-    0.05,
-    0.06,
-    0.07,
+    # 0.05,
+    # 0.06,
+    # 0.07,
 ]
 
 exit_bound_set = [
-    0.0,
+    # 0.0,
     0.01,
     0.02,
     0.03,
-    0.04,
-    0.05,
-    0.06,
-    0.07,
+    # 0.04,
+    # 0.05,
+    # 0.06,
+    # 0.07,
 ]
 
 mode_learn_set = [
@@ -193,7 +193,7 @@ def simulate_path(
                         parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
                         # parti_df['pd' + col_name] = (1 / beta[-Nt_data:]).astype(np.float32)
                         # parti_df['vola' + col_name] = sigma_S[-Nt_data:].astype(np.float32)
-                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi0.dta')
+                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi1.dta')
 
     return (
         i,

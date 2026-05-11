@@ -344,8 +344,10 @@ def simulate_cohorts_mix_type(
             exit_i = invest_tracker[0, :, :-12 * (j + 1)] < invest_mat[-12 * (j + 1), :, 12 * (j + 1):]
             entry_mat[i, j] = np.average(entry_i, weights=np.sum(cohort_type_size, axis=0))
             exit_mat[i, j] = (np.average(exit_i, weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)], axis=0))
-                                     + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):], weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)], axis=0)) * nu * j
-                                     )
+                               + np.average(invest_mat[-12 * (j + 1), :, 12 * (j + 1):],
+                                            weights=np.sum(cohort_type_size[:, :, :-12 * (j + 1)],
+                                                           axis=0)) * nu * (j + 1)
+                               )
         invest_mat = np.copy(np.append(invest_mat[1:], np.reshape(invest_tracker[0], (1, Nconstraint, -1)), axis=0))
 
         for j in range(len(cutoffs_age) - 1):
@@ -660,13 +662,14 @@ def simulate_mean_vola_mix_type(
             parti[ii] = popu_parti_t
             Phi_bar_parti_1[ii] = 1 / fc_parti_t
             Phi_tilde_parti[ii] = fw_parti_t
-            Delta_diff[ii] = np.average(
-                Delta_s_t[:, -1],
-                weights=cohort_type_size[:, -1] * invest[:, -1]
-            ) - np.average(
-                Delta_s_t[:, -1],
-                weights=cohort_type_size[:, -1] * (1 - invest[:, -1])
-            )
+            if np.sum(1 - invest[:, -1]) != 0:
+                Delta_diff[ii] = np.average(
+                    Delta_s_t[:, -1],
+                    weights=cohort_type_size[:, -1] * invest[:, -1]
+                ) - np.average(
+                    Delta_s_t[:, -1],
+                    weights=cohort_type_size[:, -1] * (1 - invest[:, -1])
+                )
             if np.mod(ii, 12) == 0:
                 invest_matrix[int(ii / 12)] = invest_tracker[0]
             # for l in range(N_wealth_group):

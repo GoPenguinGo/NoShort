@@ -16,7 +16,7 @@ beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
 beta0 = np.sum(alpha_i * beta_i).astype(float)
 
 entry_bound = 0.04
-exit_bound = 0.02
+exit_bound = 0.01
 
 # Setting prior variance
 dt = 1 / 12  # time incremental
@@ -43,8 +43,8 @@ cummu_popu = np.cumsum(cohort_size)
 cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 20
-N_workers = 10
+Mpath = 100
+N_workers = 20
 t = np.arange(0, T_cohort, dt)
 
 phi_vector = [0, 0.5, 0.8]
