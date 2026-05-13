@@ -80,7 +80,7 @@ def build_cohorts_mix_type(
     eta_st_eta_ss = eta_st_eta_ss_init
     invest_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
     invest_tracker[:, 1] = 0
-    invest_newborn = np.array([[[1], [0], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    invest_newborn = np.array([[[1], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     information_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)
     information_tracker[:, 1] = 0
     can_short_tracker = np.ones((Ntype, Nconstraint, Ninit), dtype=np.int8)

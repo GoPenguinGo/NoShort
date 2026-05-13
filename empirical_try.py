@@ -28,10 +28,10 @@ density_types_set = [
     # (0.6, 0.3, 0.1),
     # (0.2, 0.4, 0.4)*,
     # (0.3, 0.4, 0.3),
-    # (0.4, 0.4, 0.2),*
+    # (0.4, 0.4, 0.2),
     # (0.5, 0.4, 0.1),
-    # (0.1, 0.5, 0.4),
-    # (0.2, 0.5, 0.3),
+    (0.25, 0.5, 0.25),
+    (0.2, 0.5, 0.3),
     (0.3, 0.5, 0.2), #norway
     # (0.4, 0.5, 0.1), #Germany
 ]
@@ -58,9 +58,9 @@ tax = 0.35
 #     # 0.0,
 #     # 0.2,
 #     # 0.3,
-#     # 0.4,
+#     0.4,
 #     0.5,
-#     # 0.6,
+#     0.6,
 #     # 0.7,
 # ]
 
@@ -82,7 +82,7 @@ exit_bound_set = [
     0.01,
     0.02,
     0.03,
-    # 0.04,
+    0.04,
     # 0.05,
     # 0.06,
     # 0.07,
@@ -119,6 +119,7 @@ def simulate_path(
         for density_n, density_types in enumerate(density_types_set):
             for entry_bound in entry_boundary_set:
                 for exit_bound in exit_bound_set:
+
                     if entry_bound >= exit_bound:
                         # exit_bound = np.copy(entry_bound)
                         Npre = int(T_hat / dt)
@@ -136,7 +137,7 @@ def simulate_path(
                         rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
                             -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-                        col_name = f'{mode}_{int(density_n)}_{int(entry_bound * 100)}_{int(exit_bound * 100)}'
+                        col_name = f'{int(density_n)}_{int(entry_bound * 100)}_{int(exit_bound * 100)}'
 
                         (
                             r,
@@ -193,7 +194,8 @@ def simulate_path(
                         parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
                         # parti_df['pd' + col_name] = (1 / beta[-Nt_data:]).astype(np.float32)
                         # parti_df['vola' + col_name] = sigma_S[-Nt_data:].astype(np.float32)
-                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi1.dta')
+                        parti_df.to_stata(f'stata_dataset/{country}/{i}_phi0.dta')
+
 
     return (
         i,

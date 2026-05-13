@@ -133,7 +133,7 @@ def simulate_cohorts_mix_type(
 
     """
     # Initializing variables
-    invest_newborn = np.array([[[1], [0], [1]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
+    invest_newborn = np.array([[[1], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1), dtype=np.int8)
     # top = np.array([1, 0.75, 0.5, 0.25, 0])
 
     Phi_bar_parti = np.ones(Nt, dtype=np.float16)  # consumption share of the stock market participants
@@ -521,7 +521,7 @@ def simulate_mean_vola_mix_type(
     invest_matrix = np.ones((int((Nt - keep_when) / 12), Nconstraint, Nt), dtype=np.int8)
 
     append_init = np.ones((Ntype, Nconstraint, 1))
-    invest_newborn = np.array([[[1], [0], [1]]]) * np.ones((Ntype, Nconstraint, 1))
+    invest_newborn = np.array([[[1], [0], [0]]]) * np.ones((Ntype, Nconstraint, 1))
 
     for i in tqdm(range(Nt)):
         dZ_t = dZ[i]
