@@ -43,7 +43,7 @@ cutoffs_age_SCF = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt),
 cutoffs_age = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 100
+Mpath = 1000
 N_workers = 20
 t = np.arange(0, T_cohort, dt)
 

@@ -40,7 +40,7 @@ def simulate_path(
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
 
-    if np.mod(i, 10) == 0:
+    if np.mod(i, 20) == 0:
         # reentry_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
         # exit_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
         need_invest_matrix = 'True'
