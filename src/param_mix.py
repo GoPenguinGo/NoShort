@@ -16,4 +16,4 @@ beta_cohort_type_mix = alpha_i_mix * np.exp(-beta_i_mix * tau)  # shape(2, 6000)
 rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(-(rho_i_mix + nu) * tau)  # shape(2, 6000)
 beta_cohort_mix = np.sum(np.exp(-beta_i_mix * tau) * alpha_i_mix, axis=0)
 
-density = (0.3, 0.5, 0.2)
+density = (0.25, 0.5, 0.25)
