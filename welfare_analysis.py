@@ -6,7 +6,7 @@ from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
-    cohort_size, rho_i, tax, beta0, beta_i, nu, Vhat, phi, Npre, \
+    cohort_size, rho_i, tax, beta0, beta_i, nu, Vhat, Npre, \
     T_hat, rho_cohort_type, cohort_type_size, entry_bound, exit_bound, phi_vector
 from concurrent.futures import ProcessPoolExecutor
 from src.param_mix import Nconstraint, rho_i_mix, density
@@ -240,7 +240,7 @@ def main():
     for T_hat_try in T_hat_vec:
         for phi in phi_vector:
             with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
-                results = [executor.submit(simulate_path, i, int(T_hat_try), density, phi) for i in range(Mpath)]
+                results = [executor.submit(simulate_path, i, int(T_hat_try), phi, density) for i in range(Mpath)]
             results_list = []
 
             for result in results:
@@ -290,7 +290,7 @@ def main():
         data = {
             'i': i,
             'flow_welfare': flow_welfare,
-
+            'E_util': E_util,
         }
         results_list.append(data)
 

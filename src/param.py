@@ -47,7 +47,7 @@ Mpath = 100
 N_workers = 20
 t = np.arange(0, T_cohort, dt)
 
-phi_vector = [0, 0.5, 0.8]
+phi_vector = [0.5, 1.0]
 n_phi = len(phi_vector)
 
 window_bell = 20
