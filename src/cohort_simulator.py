@@ -778,11 +778,6 @@ def simulate_mean_vola_mix_type(
             regression_table2_b[ii, jj] = est.params[1]
 
 
-    low_return = np.percentile(past_annual_return[0, 12:], 10)
-    Delta_diff_condi = np.zeros(2)
-    Delta_diff_condi[0] = np.average(Delta_diff[12:])
-    Delta_diff_condi[1] = np.average(Delta_diff[12:], weights=(past_annual_return[0, 12:] <= low_return))
-
     # cohort_entry_annual = (invest_matrix[1:, :, :-12] - invest_matrix[:-1, :, 12:]) > 0
     # entry_cumu = np.cumsum(
     #     np.flip(np.average(
@@ -853,5 +848,5 @@ def simulate_mean_vola_mix_type(
         reentry_time,
         regression_table1_b,
         regression_table2_b,
-        Delta_diff_condi
+        Delta_diff
     )
