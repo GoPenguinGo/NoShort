@@ -38,9 +38,9 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
-# cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*35), int(Nt-1-12*55), 0]  # SCF
+cutoffs_age_SCF = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # SCF
 # popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
-cutoffs_age = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
+cutoffs_age = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
 Mpath = 100

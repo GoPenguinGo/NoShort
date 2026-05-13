@@ -6,7 +6,7 @@ from scipy.interpolate import make_interp_spline
 from src.param import Mpath, N_workers
 from src.param import (nu, mu_Y, sigma_Y, tax, dt, T_hat, Npre, Vhat, Ninit, Nt, Nc, tau, cohort_size, \
                        cutoffs_age, dZ_matrix, dZ_build_matrix, cohort_labels, age_labels, \
-                       Ntype, alpha_i, beta0, entry_bound, exit_bound)
+                       Ntype, alpha_i, beta0, entry_bound, exit_bound, colors_short, PN_labels)
 from src.param_mix import Nconstraint, rho_i_mix, density
 from src.simulation import simulate_mix_types
 
@@ -162,8 +162,7 @@ y_overall = np.empty((n_scenarios, n_phi, Nt_data, 6))  # overall
 y_P = np.empty((n_scenarios, n_phi, Nt_data, 6))  # participants / long
 y_N = np.empty((n_scenarios, n_phi, Nt_data, 6))  # non-participants / short
 cohort_size_flat = np.sum(cohort_type_size_mix, axis=0)[-1]
-age_cutoffs = [int(Nt-1), int(Nt-1-12*15), int(Nt-1-12*40), int(Nt-1-12*55), 0]  # Michigan
-n_age_cutoffs = len(age_cutoffs) - 1
+n_age_cutoffs = len(cutoffs_age) - 1
 y_min = np.empty((n_scenarios, n_phi, Nt_data, n_age_cutoffs))
 y_max = np.empty((n_scenarios, n_phi, Nt_data, n_age_cutoffs))
 belief_cutoff = np.empty((n_scenarios, n_phi, Nt_data))
@@ -176,7 +175,7 @@ for i in range(n_scenarios):
         belief_cutoff[i, j] = -theta_compare[i, j]
 
         for n in range(n_age_cutoffs):
-            Delta_age_group = Delta_focus[:, age_cutoffs[n + 1]:age_cutoffs[n]]
+            Delta_age_group = Delta_focus[:, cutoffs_age[n + 1]:cutoffs_age[n]]
             y_min[i, j, :, n] = np.amin(Delta_age_group, axis=1)
             y_max[i, j, :, n] = np.amax(Delta_age_group, axis=1)
         for m in range(Nt_data):
@@ -222,7 +221,6 @@ recd_starts = np.where((recd[:-1] == 0) & (recd[1:] == 1))[0]
 recd_ends = np.where((recd[:-1] == 1) & (recd[1:] == 0))[0]
 if recd[0] == 1: recd_starts = np.r_[0, recd_starts]
 if recd[-1] == 1: recd_ends = np.r_[recd_ends, -1]
-colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(10, 8))
 for j, ax in enumerate(axes):
     if j == 0:
@@ -281,12 +279,12 @@ for j, ax in enumerate(axes):
         ax.plot(
             x,
             y_P[0, 0, -int(N_years / dt):, -1],
-            color='navy', linewidth=1, label=r'Participants'
+            color='navy', linewidth=1, label=PN_labels[0]
         )
         ax.plot(
             x,
             y_N[0, 0, -int(N_years / dt):, -1],
-            color='maroon', linewidth=1, label=r'Nonparticipants'
+            color='maroon', linewidth=1, label=PN_labels[1]
         )
         ax.plot(
             x,
