@@ -142,63 +142,64 @@ def simulate_path(
                 params = [exit_bound, entry_bound_i, T_hat, phi, density + diff_density]
             exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
 
-            Npre = int(T_hat_use / dt)
-            Vhat = (sigma_Y ** 2) / T_hat_use  # prior variance
+            if entry_bound_use >= exit_bound_use:
+                Npre = int(T_hat_use / dt)
+                Vhat = (sigma_Y ** 2) / T_hat_use  # prior variance
 
-            beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-            beta0 = np.sum(alpha_i * beta_i).astype(float)
-            alpha_constraint = np.ones(
-                (1, Nconstraint)) * density_use
-            alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-            cohort_type_size_mix = cohort_size * alpha_i_mix
+                beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+                beta0 = np.sum(alpha_i * beta_i).astype(float)
+                alpha_constraint = np.ones(
+                    (1, Nconstraint)) * density_use
+                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+                cohort_type_size_mix = cohort_size * alpha_i_mix
 
-            rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-            beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-            rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+                rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-            col_name = f'{column_param[ii]}_{column_vary[jj]}'
+                col_name = f'{column_param[ii]}_{column_vary[jj]}'
 
-            (
-                r,
-                theta,
-                f_c,
-                Delta,
-                pi,
-                parti,
-                Phi_bar_parti,
-                Phi_tilde_parti,
-                Delta_bar_parti,
-                Delta_tilde_parti,
-                dR,
-                mu_S,
-                sigma_S,
-                beta,
-                parti_age_group,
-                # Delta_popu,
-                # portf_age_group,
-                entry_mat,
-                exit_mat
-            ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                                   phi_use,
-                                   Npre, Ninit,
-                                   T_hat_use,
-                                   entry_bound_use,
-                                   exit_bound_use,
-                                   dZ_build, dZ,
-                                   cutoffs_age, Ntype,
-                                   Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                   rho_cohort_type_mix,
-                                   cohort_type_size_mix,
-                                   need_f='False',
-                                   need_Delta='True',
-                                   need_pi='True',
-                                   mode_learn='invest',
-                                   )
+                (
+                    r,
+                    theta,
+                    f_c,
+                    Delta,
+                    pi,
+                    parti,
+                    Phi_bar_parti,
+                    Phi_tilde_parti,
+                    Delta_bar_parti,
+                    Delta_tilde_parti,
+                    dR,
+                    mu_S,
+                    sigma_S,
+                    beta,
+                    parti_age_group,
+                    # Delta_popu,
+                    # portf_age_group,
+                    entry_mat,
+                    exit_mat
+                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+                                       phi_use,
+                                       Npre, Ninit,
+                                       T_hat_use,
+                                       entry_bound_use,
+                                       exit_bound_use,
+                                       dZ_build, dZ,
+                                       cutoffs_age, Ntype,
+                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+                                       rho_cohort_type_mix,
+                                       cohort_type_size_mix,
+                                       need_f='False',
+                                       need_Delta='True',
+                                       need_pi='True',
+                                       mode_learn='invest',
+                                       )
 
-            parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-            parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
-            parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
+                parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+                parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
+                parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
 
     parti_df.to_stata(f'stata_dataset/{country}/{i}.dta')
 
