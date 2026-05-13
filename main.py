@@ -217,6 +217,11 @@ for i in range(n_scenarios):
 print('Figure 1')
 N_years = 100
 x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
+recd = data_shocks['usrecd'].values[-int(N_years / dt):]
+recd_starts = np.where((recd[:-1] == 0) & (recd[1:] == 1))[0]
+recd_ends = np.where((recd[:-1] == 1) & (recd[1:] == 0))[0]
+if recd[0] == 1: recd_starts = np.r_[0, recd_starts]
+if recd[-1] == 1: recd_ends = np.r_[recd_ends, -1]
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 fig, axes = plt.subplots(nrows=3, ncols=1, sharex='all', figsize=(10, 8))
 for j, ax in enumerate(axes):
@@ -234,6 +239,10 @@ for j, ax in enumerate(axes):
             - (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
             (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2
         ])
+
+        for s, e in zip(recd_starts, recd_ends):
+            ax.axvspan(x[s], x[e], color='gray', alpha=0.3, zorder=0, linewidth=0)
+
         for m in range(nn):
             # switch[m, starts[m]] = 1
             y_cohort = Delta_focus[m]
@@ -253,8 +262,8 @@ for j, ax in enumerate(axes):
                 ymin=- (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
                 color='grey', linestyle='--', linewidth=0.6
             )
-            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1, label=cohort_labels[m])
-            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1, linestyle='dotted',
+            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1.3, label=cohort_labels[m])
+            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1.3, linestyle='dotted',
                     )
             if m == 2:
                 ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o', label='Entry')
@@ -282,8 +291,12 @@ for j, ax in enumerate(axes):
         ax.plot(
             x,
             belief_cutoff[0, 0, -int(N_years / dt):] + entry_bound,
-            color='black', linewidth=1, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+            color='black', linewidth=1.3, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
         )
+
+        for s, e in zip(recd_starts, recd_ends):
+            ax.axvspan(x[s], x[e], color='gray', alpha=0.3, zorder=0, linewidth=0)
+
         ax.legend(loc='lower left')
 
     else:
@@ -292,7 +305,7 @@ for j, ax in enumerate(axes):
         ax.set_title('(c) Distribution of estimation error, experience groups')
         ax.plot(x,
                 belief_cutoff[0, 0, -int(N_years / dt):],
-                color='black', linewidth=1,
+                color='black', linewidth=1.3,
                 # label=r'Cutoff $\Delta_{s,t}$'
                 )
         for k in range(n_age_cutoffs):
@@ -369,8 +382,8 @@ for j, ax in enumerate(axes):
                 ymin=- (y_max_raw - y_min_raw) * 0.6 + (y_max_raw + y_min_raw) / 2,
                 color='grey', linestyle='--', linewidth=0.6
             )
-            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1, label=cohort_labels[m])
-            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1, linestyle='dotted',
+            ax.plot(x, y_cohort_P[-int(N_years / dt):], color=colors_short[m], linewidth=1.3, label=cohort_labels[m])
+            ax.plot(x, y_cohort_N[-int(N_years / dt):], color=colors_short[m], linewidth=1.3, linestyle='dotted',
                     )
             if m == 2:
                 ax.scatter(x, y_cohort_entry[-int(N_years / dt):], color='red', s=25, marker='o', label='Entry')
@@ -388,22 +401,22 @@ for j, ax in enumerate(axes):
         ax.plot(
             x,
             y_P[0, 1, -int(N_years / dt):, -1],
-            color='navy', linewidth=1, label=r'Participants, $\varphi = 1$'
+            color='navy', linewidth=1.3, label=r'Participants, $\varphi = 1$'
         )
         ax.plot(
             x,
             y_N[0, 1, -int(N_years / dt):, -1],
-            color='maroon', linewidth=1, label=r'Nonparticipants, $\varphi = 1$'
+            color='maroon', linewidth=1.3, label=r'Nonparticipants, $\varphi = 1$'
         )
         ax.plot(
             x,
             y_P[0, 0, -int(N_years / dt):, -1],
-            color='navy', linewidth=1, label=r'Participants, $\varphi = 0.5$', linestyle='dotted'
+            color='navy', linewidth=1.3, label=r'Participants, $\varphi = 0.5$', linestyle='dotted'
         )
         ax.plot(
             x,
             y_N[0, 0, -int(N_years / dt):, -1],
-            color='maroon', linewidth=1, label=r'Nonparticipants, $\varphi = 0.5$', linestyle='dotted'
+            color='maroon', linewidth=1.3, label=r'Nonparticipants, $\varphi = 0.5$', linestyle='dotted'
         )
         # ax.plot(
         #     x,
