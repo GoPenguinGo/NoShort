@@ -442,6 +442,69 @@ plt.show()
 plt.close()
 
 
+##### For slides:
+N_years = 100
+x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
+recd = data_shocks['usrecd'].values[-int(N_years / dt):]
+recd_starts = np.where((recd[:-1] == 0) & (recd[1:] == 1))[0]
+recd_ends = np.where((recd[:-1] == 1) & (recd[1:] == 0))[0]
+if recd[0] == 1: recd_starts = np.r_[0, recd_starts]
+if recd[-1] == 1: recd_ends = np.r_[recd_ends, -1]
+fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(12, 6))
+for j, ax in enumerate(axes):
+    if j == 0:
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        ax.set_title('(a) Average estimation error, participants vs. non-participants')
+        ax.plot(
+            x,
+            y_P[0, 0, -int(N_years / dt):, -1],
+            color='navy', linewidth=1, label=PN_labels[0]
+        )
+        ax.plot(
+            x,
+            y_N[0, 0, -int(N_years / dt):, -1],
+            color='maroon', linewidth=1, label=PN_labels[1]
+        )
+        ax.plot(
+            x,
+            belief_cutoff[0, 0, -int(N_years / dt):] + entry_bound,
+            color='black', linewidth=1.3, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+        )
+
+        for s, e in zip(recd_starts, recd_ends):
+            ax.axvspan(x[s], x[e], color='gray', alpha=0.3, zorder=0, linewidth=0)
+
+        ax.legend(loc='upper right')
+
+    else:
+        ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
+        ax.set_ylim(-0.5, 0.75)
+        ax.set_title('(b) Distribution of estimation error, experience groups')
+        ax.plot(x,
+                belief_cutoff[0, 0, -int(N_years / dt):],
+                color='black', linewidth=1.3,
+                # label=r'Cutoff $\Delta_{s,t}$'
+                )
+        for k in range(n_age_cutoffs):
+            color_age_group = colors_short[k]
+            ax.fill_between(
+                x,
+                y_min[0, 0, -int(N_years / dt):, k],
+                y_max[0, 0, -int(N_years / dt):, k],
+                color=color_age_group, linewidth=0., alpha=0.4,
+                label=age_labels[k]
+            )
+            ax.legend(loc='upper right')
+        ax.tick_params(axis='y', labelcolor='black')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'figures/f1_merged_slides.pdf',
+    dpi=200)
+plt.show()
+plt.close()
+
+
 ######################################
 ###########   Figure 4   #############
 ######################################
