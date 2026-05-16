@@ -2,11 +2,12 @@ from concurrent.futures import ProcessPoolExecutor
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from src.param import mu_Y, sigma_Y, \
+from src.param import (mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
     Ntype, alpha_i, \
     dZ_build_matrix, dZ_matrix, \
-    cohort_size, cutoffs_age, rho_i, nu, tax, exit_bound, entry_bound, T_hat, phi
+    cohort_size, cutoffs_age, rho_i, nu, tax, phi,
+                       entry_bound, exit_bound, T_hat)
 from src.param_mix import Nconstraint, density
 from src.simulation import simulate_mix_types
 
@@ -24,13 +25,41 @@ plt.rcParams["font.family"] = 'serif'
 # exit_bound, entry_bound, T_hat, phi, density
 total_param = 5
 vary_param = 2
-diff_param = [0.01, 0.01, 1, 0.1, 0.05]
+diff_param = np.array([0.01, 0.01, 2, 0.1, 0.05])
 column_param = ['exitbound', 'entrybound', 'That', 'phi', 'density']
 column_vary = ['up', 'down']
 
 
 Mpath = 10
 np.seterr(invalid='ignore')
+
+# T_hat_mat = np.array([
+#     5,
+#     6,
+#     7,
+#     8,
+#     # 9,
+#     # 10
+#     ])
+#
+# entry_bound_mat = np.array([
+#     0.01,
+#     0.015,
+#     0.02,
+#     0.025,
+#     0.03,
+#     0.035,
+#     0.04
+# ])
+#
+# exit_bound_mat = np.array([
+#     0.005,
+#     0.01,
+#     0.015,
+#     0.02,
+#     # 0.03,
+#     # 0.04
+# ])
 
 
 # noinspection PyTypeChecker
@@ -40,7 +69,8 @@ def simulate_path(
         country: str,
         entry_bound_i,
 ):
-    print(i)
+    if i == 0:
+        print(country)
     # shocks
     dZ_build = dZ_build_matrix[i]
     dZ = dZ_matrix[i]
@@ -68,6 +98,9 @@ def simulate_path(
         -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
     col_name = f'baseline'
+    # col_name = f'{T_hat_use}_{exit_bound_use}_{entry_bound_use}'
+    if i == 0:
+        print(col_name)
 
     (
         r,
@@ -110,6 +143,7 @@ def simulate_path(
     parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
     parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
 
+
     if country == "US":
         age_belief = np.zeros((len(cutoffs_age) - 1, Nt_data))
         for n in range(len(cutoffs_age) - 1):
@@ -128,6 +162,7 @@ def simulate_path(
 
     for ii in range(total_param):
         for jj in range(vary_param):
+            print(f'Parameter: {column_param[ii]}, Varying: {column_vary[jj]}')
             diff_n = diff_param[ii] if jj == 0 else -diff_param[ii]
             if ii == 0:
                 params = [exit_bound + diff_n, entry_bound_i, T_hat, phi, density]
@@ -138,7 +173,7 @@ def simulate_path(
             elif ii == 3:
                 params = [exit_bound, entry_bound_i, T_hat, phi + diff_n, density]
             else:
-                diff_density = (diff_n, 0, -diff_n)
+                diff_density = np.array([diff_n, 0, -diff_n])
                 params = [exit_bound, entry_bound_i, T_hat, phi, density + diff_density]
             exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
 
@@ -220,7 +255,9 @@ def main():
             index_col=0
         )
         entry_bound_i = entry_bound if country != "Finland" else 0.01
+        # entry_bound_i = entry_bound
         with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
+            # results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
             results = [executor.submit(simulate_path, i, data_shocks, country, entry_bound_i) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []

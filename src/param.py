@@ -21,7 +21,7 @@ exit_bound = 0.01
 # Setting prior variance
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
-T_hat = 5  # Pre-trading period
+T_hat = 8  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 Ninit = int(20 / dt)
@@ -43,11 +43,11 @@ cutoffs_age_SCF = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt),
 cutoffs_age = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 1000
+Mpath = 2000
 N_workers = 20
 t = np.arange(0, T_cohort, dt)
 
-phi_vector = [0.5, 1.0]
+phi_vector = np.array([0.5, 1.0])
 n_phi = len(phi_vector)
 
 window_bell = 20
