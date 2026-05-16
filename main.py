@@ -214,6 +214,7 @@ for i in range(n_scenarios):
 ###########   Figure 1   #############
 ######################################
 print('Figure 1')
+
 N_years = 100
 x = 2023 - N_years + np.arange(int(N_years / dt)) * dt
 recd = data_shocks['usrecd'].values[-int(N_years / dt):]
@@ -329,12 +330,22 @@ plt.close()
 
 
 table_var = 'Delta_diff'
-table_data = np.load(r'simu_results/' + str(0) + "simulation_new.npz")[table_var]
-for j in range(1, n_files):
-    table_data = np.append(table_data, np.load(r'simu_results/' + str(j) + "simulation_new.npz")[table_var], axis=0)
+gap = 12
+sample_data = np.arange(0, Nt - 2400, int(5/dt))
+sample_shocks = np.arange(2400 - gap, Nt - gap, int(5/dt))
+stock_returns_mat = ((np.cumsum(dZ_matrix, axis=1)[:, gap:] - np.cumsum(dZ_matrix, axis=1)[:, :-gap]) / (gap / 12))[:, sample_shocks]
 
+table_data = np.load(r'simu_results/' + str(0) + "simulation_new.npz")[table_var][:, sample_data]
+for j in range(1, n_files):
+    table_data = np.append(table_data, np.load(r'simu_results/' + str(j) + "simulation_new.npz")[table_var][:, sample_data], axis=0)
+
+cutoffs_return = np.percentile(stock_returns_mat, [10])
+data_where = np.where(stock_returns_mat <= cutoffs_return)
+ave_diff = np.zeros(2)
+ave_diff[0] = np.average(table_data)
+ave_diff[1] = np.average(table_data[data_where])
 table_diff = pd.DataFrame(
-    np.average(table_data, axis=0),
+    ave_diff,
     index=[r'unconditional mean', r'annual return<10percentile'],
     columns=['Mean']
 )
@@ -440,21 +451,21 @@ plt.close()
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
-spell_mat = np.zeros((int(Mpath / 10), len(sample_shocks), 1, 5748), dtype=int)
-stock_returns_mat = np.zeros((int(Mpath / 10), len(sample_shocks)))
-# todo: save stock return mat from the runs directly
+spell_mat = np.zeros((int(Mpath / 20), len(sample_shocks), 1, 5748), dtype=int)
+stock_returns_mat = np.zeros((int(Mpath / 20), len(sample_shocks)))
+
 gap = 12
 for i in range(Mpath):
-    if np.mod(i, 10) == 0:
-        j = int(i / 10)
+    if np.mod(i, 20) == 0:
+        j = int(i / 20)
         spell_mat[j] = np.load(r'simu_results/' + str(i) + 'reentry_time.npy')
         cumu_returns = np.zeros(Nt)
         cumu_returns[gap:] = (np.cumsum(dZ_matrix[i])[gap:] - np.cumsum(dZ_matrix[i])[:-gap]) / (gap / 12)
         stock_returns_mat[j] = cumu_returns[sample_shocks]
 
 # ax.set_title('Simulation')
-fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(5, 5))
-cutoffs_return = np.percentile(stock_returns_mat, [20])
+fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(4, 4))
+cutoffs_return = np.percentile(stock_returns_mat, [10])
 for j in range(2):
     if j == 0:
         counts_mat = np.zeros((5748, 21))
@@ -463,7 +474,7 @@ for j in range(2):
             for jj, uni_jj in enumerate(unique):
                 counts_mat[ii, uni_jj] = counts[jj]
     else:
-        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 10), -1, 1))
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
         counts_mat = np.zeros((5748, 21))
         for ii in range(5748):
             unique, counts = np.unique(spell_mat[:, :, :, ii] * data_where, return_counts=True)
@@ -484,10 +495,12 @@ for j in range(2):
             linestyle=line_style_i,
             label=label_j, color=color_j)
     ax.legend(loc='lower right')
-ax.set_ylim(0.1, 1.0)
-ax.set_xlim(1, 10)
+ax.set_ylim(0.0, 0.5)
+ax.set_xlim(1, 5)
+ax.set_xticks([1, 2, 3, 4, 5])
 ax.set_xlabel('Years since exiting')
 ax.set_ylabel('Fraction of individuals re-entering')
+fig.tight_layout()
 plt.savefig(f'figures/f5_2.pdf', dpi=200)
 plt.show()
 plt.close()
