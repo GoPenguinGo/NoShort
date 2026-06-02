@@ -21,7 +21,7 @@ exit_bound = 0.01
 # Setting prior variance
 dt = 1 / 12  # time incremental
 dt_root = np.sqrt(dt)
-T_hat = 8  # Pre-trading period
+T_hat = 5  # Pre-trading period
 Npre = int(T_hat / dt)
 Vhat = (sigma_Y ** 2) / T_hat  # prior variance
 Ninit = int(20 / dt)

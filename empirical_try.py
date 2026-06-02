@@ -29,8 +29,7 @@ diff_param = np.array([0.01, 0.01, 2, 0.1, 0.05])
 column_param = ['exitbound', 'entrybound', 'That', 'phi', 'density']
 column_vary = ['up', 'down']
 
-
-Mpath = 10
+Mpath = 30
 np.seterr(invalid='ignore')
 
 # T_hat_mat = np.array([
@@ -68,6 +67,7 @@ def simulate_path(
         data_shocks,
         country: str,
         entry_bound_i,
+        T_hat_i,
 ):
     if i == 0:
         print(country)
@@ -79,7 +79,7 @@ def simulate_path(
     dZ[-Nt_data:] = dZ_actual
     parti_df = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
 
-    params = [exit_bound, entry_bound_i, T_hat, phi, density]
+    params = [exit_bound, entry_bound_i, T_hat_i, phi, density]
     exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
 
     Npre = int(T_hat_use / dt)
@@ -165,16 +165,16 @@ def simulate_path(
             print(f'Parameter: {column_param[ii]}, Varying: {column_vary[jj]}')
             diff_n = diff_param[ii] if jj == 0 else -diff_param[ii]
             if ii == 0:
-                params = [exit_bound + diff_n, entry_bound_i, T_hat, phi, density]
+                params = [exit_bound + diff_n, entry_bound_i, T_hat_i, phi, density]
             elif ii == 1:
-                params = [exit_bound, entry_bound_i + diff_n, T_hat, phi, density]
+                params = [exit_bound, entry_bound_i + diff_n, T_hat_i, phi, density]
             elif ii == 2:
-                params = [exit_bound, entry_bound_i, T_hat + diff_n, phi, density]
+                params = [exit_bound, entry_bound_i, T_hat_i + diff_n, phi, density]
             elif ii == 3:
-                params = [exit_bound, entry_bound_i, T_hat, phi + diff_n, density]
+                params = [exit_bound, entry_bound_i, T_hat_i, phi + diff_n, density]
             else:
                 diff_density = np.array([diff_n, 0, -diff_n])
-                params = [exit_bound, entry_bound_i, T_hat, phi, density + diff_density]
+                params = [exit_bound, entry_bound_i, T_hat_i, phi, density + diff_density]
             exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
 
             if entry_bound_use >= exit_bound_use:
@@ -236,7 +236,7 @@ def simulate_path(
                 parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
                 parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
 
-    parti_df.to_stata(f'stata_dataset/{country}/{i}.dta')
+    parti_df.to_stata(f'stata_dataset/{country}/{i}_5.dta')
 
     return (
         i,
@@ -255,10 +255,11 @@ def main():
             index_col=0
         )
         entry_bound_i = entry_bound if country != "Finland" else 0.01
+        T_hat_i = T_hat if country != "Norway" else 8
         # entry_bound_i = entry_bound
-        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
             # results = [executor.submit(simulate_path, i, data_shocks, country) for i in range(Mpath)]
-            results = [executor.submit(simulate_path, i, data_shocks, country, entry_bound_i) for i in range(Mpath)]
+            results = [executor.submit(simulate_path, i, data_shocks, country, entry_bound_i, T_hat_i) for i in range(Mpath)]
         # Initialize a list to store the results
         results_list = []
 

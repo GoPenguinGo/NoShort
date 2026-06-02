@@ -7,7 +7,7 @@ from src.param import mu_Y, sigma_Y, \
     cutoffs_age, Ntype, alpha_i, \
     dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
     cohort_size, rho_i, tax, beta0, beta_i, nu, Vhat, Npre, \
-    T_hat, rho_cohort_type, cohort_type_size, entry_bound, exit_bound, phi_vector
+    T_hat, rho_cohort_type, cohort_type_size, entry_bound, exit_bound, phi, phi_vector
 from concurrent.futures import ProcessPoolExecutor
 from src.param_mix import Nconstraint, rho_i_mix, density
 from scipy.interpolate import make_interp_spline
@@ -62,7 +62,6 @@ def simulate_path(
     Vhat_use = (sigma_Y ** 2) / T_hat_use  # prior variance
 
     log_C_mat = np.zeros((10, int(T / dt), Ntype, Nconstraint), dtype=np.float32)
-    cohort_size = cohort_type_size_mix[0, 0]
 
     alpha_constraint = np.ones(
         (1, Nconstraint)) * density
@@ -115,7 +114,7 @@ def simulate_path(
     if density[-1] == 0:
         C_share = f_c[:, :, 0] / cohort_type_size_mix[:, 0] * dt
         flow = np.average(np.average(np.log(C_share), weights=cohort_size, axis=2), weights=alpha_i[:, 0], axis=1)
-
+        E_util_path = 0.0
     else:
         C_share = np.maximum(f_c / cohort_type_size_mix * dt, 1e-5)  # per unit of agents
         flow = np.average(np.average(np.log(C_share), weights=cohort_size, axis=3), weights=alpha_i[:, 0], axis=1)
@@ -144,9 +143,9 @@ def simulate_path(
 
 def main():
     for T_hat_try in T_hat_vec:
-        for phi in phi_vector:
+        for phi_try in phi_vector:
             with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
-                results = [executor.submit(simulate_path, i, density, int(T_hat_try), phi) for i in range(Mpath)]
+                results = [executor.submit(simulate_path, i, density, int(T_hat_try), phi_try) for i in range(Mpath)]
             results_list = []
 
             for result in results:
