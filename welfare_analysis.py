@@ -23,7 +23,7 @@ c_rho_bar = alpha_i[0, 0] * tax * beta_i[0, 0] * (rho_i[0, 0] - rho_i[1, 0]) + r
 rho_bar = (-b_rho_bar - np.sqrt(b_rho_bar ** 2 - 4 * a_rho_bar * c_rho_bar)) / (2 * a_rho_bar)
 T = 400
 N_T = int(T / dt)
-Mpath = 200  # is enough as the results are averages already
+Mpath = 400  # is enough as the results are averages already
 c_sample = np.arange(-1, -int(200/dt), -24)
 
 fc_init = tax / (1 + tax) * (1 + rho_i / nu)
@@ -275,7 +275,7 @@ def main():
 
         results_df = pd.DataFrame(results_list)
         results_dict = results_df.to_dict(orient='list')
-        np.savez("simu_results/welfare.npz", **results_dict)
+        np.savez(f"simu_results/welfare{T_hat_use}.npz", **results_dict)
 
 
 if __name__ == '__main__':
