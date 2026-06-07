@@ -508,6 +508,7 @@ def simulate_mean_vola_mix_type(
     parti = np.ones((Nt - keep_when))  # participation rate
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
     Phi_tilde_parti = np.ones((Nt - keep_when))
+    dDelta_PN = np.ones((Nt - keep_when, 2))
 
     # parti_age_group = np.ones((Nt - keep_when, 4))
     # N_wealth_group = 4
@@ -572,6 +573,10 @@ def simulate_mean_vola_mix_type(
 
         Delta_s_t = Delta_s_t[:, :, 1:] + dDelta_s_t[:, :, 1:]
         Delta_s_t = np.append(Delta_s_t, init_bias, axis=2)
+
+        if i - keep_when >= 0:
+            dDelta_PN[i - keep_when, 0] = np.average(dDelta_s_t[:, 1:], weights=invest[:, 1:] * cohort_type_size[:, 1:])
+            dDelta_PN[i - keep_when, 1] = np.average(dDelta_s_t[:, 1:], weights=(1 - invest[:, 1:]) * cohort_type_size[:, 1:])
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         invest_tracker = np.append(invest_tracker[:, :, 1:], invest_newborn,
@@ -706,7 +711,8 @@ def simulate_mean_vola_mix_type(
         'mu_S': np.array([np.mean(mu_S), np.std(mu_S)]),
         'sigma_S': np.array([np.mean(sigma_S), np.std(sigma_S)]),
         'Delta_bar': np.array([np.mean(Delta_bar_parti), np.std(Delta_bar_parti)]),
-        'Phi_bar': np.array([np.mean(1/Phi_bar_parti_1), np.std(1/Phi_bar_parti_1)])
+        'Phi_bar': np.array([np.mean(1/Phi_bar_parti_1), np.std(1/Phi_bar_parti_1)]),
+        'dDelta_PN': np.average(dDelta_PN, axis=0)
     }
     table_mean_vola = pd.DataFrame(data_mean_vola, index=['Mean', 'Std_Dev'])
 

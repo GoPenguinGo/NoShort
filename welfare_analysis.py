@@ -5,16 +5,16 @@ from src.simulation import simulate_mix_types
 from src.param import mu_Y, sigma_Y, \
     dt, Ninit, Nc, Nt, tau, \
     cutoffs_age, Ntype, alpha_i, \
-    dZ_build_matrix, dZ_SI_build_matrix, dZ_SI_matrix, dZ_matrix, \
-    cohort_size, rho_i, tax, beta0, beta_i, nu, Vhat, Npre, \
-    T_hat, rho_cohort_type, cohort_type_size, entry_bound, exit_bound, phi, phi_vector
+    dZ_build_matrix, dZ_matrix, \
+    cohort_size, rho_i, tax, beta0, beta_i, nu, \
+    T_hat, entry_bound, exit_bound, phi
 from concurrent.futures import ProcessPoolExecutor
 from src.param_mix import Nconstraint, rho_i_mix, density
-from scipy.interpolate import make_interp_spline
 
 
 plt.rcParams["font.family"] = 'serif'
 
+T_hat_vec = [2, 5, 10, 20]
 
 a_rho_bar = 1
 b_rho_bar = -(tax * beta0 + rho_i[0, 0] + rho_i[1, 0])
@@ -23,15 +23,15 @@ c_rho_bar = alpha_i[0, 0] * tax * beta_i[0, 0] * (rho_i[0, 0] - rho_i[1, 0]) + r
 rho_bar = (-b_rho_bar - np.sqrt(b_rho_bar ** 2 - 4 * a_rho_bar * c_rho_bar)) / (2 * a_rho_bar)
 T = 400
 N_T = int(T / dt)
-Mpath = 2000
+Mpath = 200  # is enough as the results are averages already
 c_sample = np.arange(-1, -int(200/dt), -24)
 
 fc_init = tax / (1 + tax) * (1 + rho_i / nu)
 growth_c_i = nu - tax * beta0 + rho_bar - rho_i
 f_c_benchmark = (fc_init * np.exp(growth_c_i * tau))[:, c_sample]
 keep = int(200 / dt)
-sample = np.arange(0, N_T, 1)
-T_hat_vec = [2, 5, 10, 20]
+flow_sample = np.arange(keep, Nt, 12)
+sample = -np.arange(1, Nt + 1, 12)
 t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
 rho_i_mat = np.reshape(rho_i, (1, -1))
 discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)[:N_T]
@@ -47,6 +47,16 @@ def utility_mu(mu_Y_use, sigma_Y_use):
     return E_util
 
 
+def E_log_C_growth_calculator(
+        pi_W,
+        r,
+        mu_S,
+        sigma_S,
+):
+    return r + pi_W * (mu_S - r) - 1 / 2 * (pi_W * sigma_S) ** 2
+
+
+
 def simulate_path(
         i: int,
         density,
@@ -56,12 +66,10 @@ def simulate_path(
     print(i)
     # shocks
     dZ_build = dZ_build_matrix[i]
-    dZ = np.random.randn(Nt) * np.sqrt(dt)
+    dZ = dZ_matrix[i]
 
     Npre_use = int(T_hat_use / dt)
     Vhat_use = (sigma_Y ** 2) / T_hat_use  # prior variance
-
-    log_C_mat = np.zeros((10, int(T / dt), Ntype, Nconstraint), dtype=np.float32)
 
     alpha_constraint = np.ones(
         (1, Nconstraint)) * density
@@ -111,80 +119,163 @@ def simulate_path(
                            mode_learn='invest',
                            )
 
-    if density[-1] == 0:
-        C_share = f_c[:, :, 0] / cohort_type_size_mix[:, 0] * dt
-        flow = np.average(np.average(np.log(C_share), weights=cohort_size, axis=2), weights=alpha_i[:, 0], axis=1)
-        E_util_path = 0.0
-    else:
-        C_share = np.maximum(f_c / cohort_type_size_mix * dt, 1e-5)  # per unit of agents
-        flow = np.average(np.average(np.log(C_share), weights=cohort_size, axis=3), weights=alpha_i[:, 0], axis=1)
+    ave_r = np.average(r[keep:])
+    ave_mu_S = np.average(mu_S[keep:])
+    ave_sigma_S = np.average(sigma_S[keep:])
 
-        C_mat = np.exp((mu_Y - 1 / 2 * sigma_Y ** 2) * np.arange(0, Nt) * dt + sigma_Y * np.cumsum(dZ))
+    benchmark_log_C_growth1 = E_log_C_growth_calculator(1.0,
+                                                        ave_r,
+                                                        ave_mu_S,
+                                                        ave_sigma_S) - rho_i[0]
 
-        for j in range(10):
-            t_start = int(10 / dt) * j
-            log_C_mat[j] = np.log(
-                C_share[t_start + sample, :, :, Nt - 1 - sample] / C_share[t_start, :, :, -1]
-            ) * np.reshape(np.log(
-                C_mat[t_start + sample] / C_mat[t_start]
-            ), (-1, 1, 1))
+    benchmark_log_C_growth2 = E_log_C_growth_calculator(0.0,
+                                                        ave_r,
+                                                        ave_mu_S,
+                                                        ave_sigma_S) - rho_i[0]
 
-        # np.save(folder_address + str(i) + ".npy", np.average(log_C_mat, axis=0))
-        E_util_path_t = np.average(log_C_mat, axis=0) * np.reshape(discount_rate_mat, (-1, Ntype, 1))
-        E_util_path = np.sum(E_util_path_t * dt, axis=0)
+    pi_focus = pi[keep:, -1]
+
+    # beliefs-driven entry and exit in GE
+    g_log_C_mat = (np.reshape(r - rho_i[0] + 1 / 2 * theta ** 2, (-1, 1)) - 1 / 2 * Delta[:, -1] ** 2)[keep:]
+    g_log_C_mat_N = np.tile(np.reshape(r - rho_i[0], (-1, 1)), (1, Nc))[keep:]
+    nonparti = np.where(pi_focus <= 0)
+    g_log_C_mat[nonparti] = g_log_C_mat_N[nonparti]
+
+    # beliefs-driven entry and exit, using unconditional average returns
+    g_log_C_experience = E_log_C_growth_calculator(pi_focus,
+                                                   ave_r,
+                                                   ave_mu_S,
+                                                   ave_sigma_S) - rho_i[0]
+
+    # average entry and exit
+    uncon_pi = np.average(
+        pi_focus[np.where(pi_focus > 0)],
+        weights=np.tile(cohort_size, (Nt - keep, 1))[np.where(pi_focus > 0)]
+    )
+    uncon_parti = np.average(
+        pi_focus > 0,
+        weights=np.tile(cohort_size, (Nt - keep, 1))
+    )
+    g_log_C_ave_ee = (
+                             E_log_C_growth_calculator(
+                                 uncon_pi,
+                                 ave_r,
+                                 ave_mu_S,
+                                 ave_sigma_S) - rho_i[0]) * uncon_parti + (
+                             E_log_C_growth_calculator(
+                                 0.0,
+                                 ave_r,
+                                 ave_mu_S,
+                                 ave_sigma_S) - rho_i[0]) * (1 - uncon_parti)
+
+    # g_log_C_ave_ee_endo = np.tile(np.reshape(r + uncon_pi * (mu_S - r) - 1 / 2 * (uncon_pi * sigma_S) ** 2, (-1, 1)), (1, Nc))[keep:] - rho_i[0]
+    # g_log_C_ave_ee_endo[nonparti] = g_log_C_mat_N[nonparti]
+
+    ave_pi = np.average(
+        pi_focus,
+        weights=np.tile(cohort_size, (Nt - keep, 1))
+    )
+    g_log_C_no_ee = E_log_C_growth_calculator(ave_pi,
+                                              ave_r,
+                                              ave_mu_S,
+                                              ave_sigma_S) - rho_i[0]
+
+    # # # unconditional * unconditional
+    # # uncon_lev = np.average(pi_focus[np.where(pi_focus > 0)])
+    # # uncon_parti = np.average(pi_focus > 0)
+    # # log_C_growth_mat_uncon = np.average(
+    # #     E_log_C_growth_calculator(uncon_lev,
+    # #                               r,
+    # #                               mu_S,
+    # #                               sigma_S)[keep:] - rho_i[0]
+    # # ) * uncon_parti + benchmark_log_C_growth2 * (1 - uncon_parti)
+    #
+    # # actual pi, conditional parti
+    # masked_pi = (pi_focus > 0)
+    # average_parti = np.average(masked_pi, axis=0)
+    # average_parti_mat = np.reshape(average_parti, (1, -1))
+    #
+    # log_C_growth_timing_mat = (
+    #         np.reshape(r, (-1, 1))
+    #         + pi_focus * np.reshape(mu_S - r, (-1, 1))
+    #         - 1 / 2 * (pi_focus * np.reshape(sigma_S, (-1, 1))) ** 2
+    #         - rho_i[0]
+    # )
+    # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
+    #
+    # # conditional pi, actual parti
+    # masked_pi = (pi_focus > 0)
+    # non_zero_sum = np.sum(pi_focus * masked_pi, axis=0)
+    # non_zero_count = np.sum(masked_pi, axis=0)
+    # average_pi = np.divide(non_zero_sum, non_zero_count, out=np.zeros_like(non_zero_sum, dtype=float),
+    #                     where=non_zero_count != 0)
+    # average_pi_mat = np.reshape(average_pi, (1, -1))
+    #
+    # log_C_growth_timing_mat = (
+    #         np.reshape(r, (-1, 1))
+    #         + average_pi_mat * np.reshape(mu_S - r, (-1, 1))
+    #         - 1 / 2 * (average_pi_mat * np.reshape(sigma_S, (-1, 1))) ** 2
+    #         - rho_i[0]
+    # )
+    # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
+    #
+    # # conditional pi, conditional parti
+    # log_C_growth_timing_exo_mat = np.tile((
+    #         np.average(r[keep:])
+    #         + average_pi_mat * np.average(mu_S[keep:] - r[keep:])
+    #         - 1 / 2 * (average_pi_mat * np.average(sigma_S[keep:])) ** 2
+    #         - rho_i[0]
+    # ), (Nt, 1))
+    # log_C_growth_timing_exo_mat[nonparti] = benchmark_log_C_growth2
+    #
+    # # log_C_growth_timing_mat = np.tile(np.reshape(
+    # #     mu_S - rho_i[0] - 1 / 2 * sigma_S ** 2, (-1, 1)), (1, Nc))
+    # # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
+    #
+    # # log_C_growth_timing_exo_mat = np.ones((Nt, Nc)) * benchmark_log_C_growth1
+    # # log_C_growth_timing_exo_mat[nonparti] = benchmark_log_C_growth3
 
     return (
         i,
-        flow[-keep:],
-        E_util_path,
+        # flow[flow_sample],
+        np.average(g_log_C_mat, axis=0)[sample],
+        np.average(g_log_C_experience, axis=0)[sample],
+        # np.average(g_log_C_ave_ee_endo, axis=0)[sample],
+        np.array([
+            np.average(np.average(g_log_C_mat, axis=0), weights=cohort_size[0]),
+            np.average(np.average(g_log_C_experience, axis=0), weights=cohort_size[0]),
+            g_log_C_ave_ee[0], g_log_C_no_ee[0]
+            # np.average(np.average(g_log_C_ave_ee_endo, axis=0), weights=cohort_size[0]),
+        ]),
+        np.array([benchmark_log_C_growth1[0], benchmark_log_C_growth2[0]])
     )
 
 
-
 def main():
-    for T_hat_try in T_hat_vec:
-        for phi_try in phi_vector:
-            with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
-                results = [executor.submit(simulate_path, i, density, int(T_hat_try), phi_try) for i in range(Mpath)]
-            results_list = []
+    for T_hat_use in T_hat_vec:
+        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
+            results = [executor.submit(simulate_path, i, density, T_hat_use) for i in range(Mpath)]
+        results_list = []
 
-            for result in results:
-                i, \
-                    flow_welfare, \
-                    E_util = result.result()
+        for result in results:
+            i, \
+                g_log_C_mat, \
+                g_log_C_experience, \
+                g_log_C_ave, \
+                g_log_C_benchmark = result.result()
 
-                data = {
-                    'i': i,
-                    'flow_welfare': flow_welfare,
-                    'E_util': E_util,
-                }
-                results_list.append(data)
+            data = {
+                'i': i,
+                'g_log_C_mat': g_log_C_mat,
+                'g_log_C_experience': g_log_C_experience,
+                'g_log_C_ave': g_log_C_ave,
+                'g_log_C_benchmark': g_log_C_benchmark,
+            }
+            results_list.append(data)
 
-            results_df = pd.DataFrame(results_list)
-            results_dict = results_df.to_dict(orient='list')
-            np.savez(f"welfare/{int(T_hat_try)}_{phi}_wel_flow.npz", **results_dict)
-
-
-    ### the complete one
-    with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
-        results = [executor.submit(simulate_path, i, (1, 0, 0)) for i in range(Mpath)]
-    results_list = []
-
-    for result in results:
-        i, \
-            flow_welfare, \
-            E_util = result.result()
-
-        data = {
-            'i': i,
-            'flow_welfare': flow_welfare,
-            'E_util': E_util,
-        }
-        results_list.append(data)
-
-    results_df = pd.DataFrame(results_list)
-    results_dict = results_df.to_dict(orient='list')
-    np.savez("welfare/benchmark_wel_flow.npz", **results_dict)
+        results_df = pd.DataFrame(results_list)
+        results_dict = results_df.to_dict(orient='list')
+        np.savez("simu_results/welfare.npz", **results_dict)
 
 
 if __name__ == '__main__':

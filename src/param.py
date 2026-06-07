@@ -38,9 +38,7 @@ beta_cohort = np.sum(np.exp(-beta_i * tau) * alpha_i, axis=0)
 
 # create age quartiles for analysis
 cummu_popu = np.cumsum(cohort_size)
-cutoffs_age_SCF = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # SCF
-# popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
-cutoffs_age = [int(Nt-1), int(Nt-1-15/dt), int(Nt-1-35/dt), int(Nt-1-50/dt), 0]  # Michigan
+cutoffs_age = [int(Nt-1), int(Nt-1-10/dt), int(Nt-1-30/dt), int(Nt-1-50/dt), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
 Mpath = 2000
@@ -58,31 +56,22 @@ scenario_labels = ['Complete', 'Reentry', 'Mix']
 colors_short = ['midnightblue', 'darkgreen', 'darkviolet', 'red']
 colors_short2 = ['mediumblue', 'saddlebrown', 'darkmagenta']
 PN_labels = ['Participant (P)', 'Nonparticipant (N)']
-age_labels = [r'Experience $\leq$ 15', r'15 < Experience $\leq$ 35', r'35 < Experience $\leq$ 50', r'Experience > 50']
+age_labels = [r'Experience $\leq$ 10', r'10 < Experience $\leq$ 30', r'30 < Experience $\leq$ 50', r'Experience > 50']
 
 # dZ_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
 # dZ_mat = np.reshape(np.append(dZ_mat1, -dZ_mat1), (-1, Nt)) * dt_root
-# dZ_SI_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
-# dZ_SI_mat = np.reshape(np.append(dZ_SI_mat1, -dZ_SI_mat1), (-1, Nt)) * dt_root
 # dZ_build_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
 # dZ_build_mat = np.reshape(np.append(dZ_build_mat1, -dZ_build_mat1), (-1, Nt)) * dt_root
-# dZ_SI_build_mat1 = np.random.randn(int(Mpath / 2 * Nt)).astype(np.float16)
-# dZ_SI_build_mat = np.reshape(np.append(dZ_SI_build_mat1, -dZ_SI_build_mat1), (-1, Nt)) * dt_root
 # np.save('shocks/dZ_matrix', dZ_mat)
-# np.save('shocks/dZ_SI_matrix', dZ_SI_mat)
 # np.save('shocks/dZ_build_matrix', dZ_build_mat)
-# np.save('shocks/dZ_SI_build_matrix', dZ_SI_build_mat)
+
 
 dZ_matrix = np.load('shocks/dZ_matrix.npy')
 dZ_build_matrix = np.load('shocks/dZ_build_matrix.npy')
-dZ_SI_matrix = np.load('shocks/dZ_SI_matrix.npy')
-dZ_SI_build_matrix = np.load('shocks/dZ_SI_build_matrix.npy')
 
 # the shocks in the time-series
 dZ_build_case = np.load('shocks/dZ_build_case.npy')
-dZ_SI_build_case = np.load('shocks/dZ_SI_build_case.npy')
 dZ_Y_cases = np.load('shocks/Z_Y_cases.npy')
-dZ_SI_cases = np.load('shocks/Z_SI_cases.npy')
 
 # top_wealth = 0.05
 # old_age_limit = 100

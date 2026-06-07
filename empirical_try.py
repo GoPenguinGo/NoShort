@@ -14,9 +14,9 @@ from src.simulation import simulate_mix_types
 
 country_names = [
     'US',
-    'Finland',
-    'Germany',
-    'Norway'
+    # 'Finland',
+    # 'Germany',
+    # 'Norway'
 ]
 
 plt.rcParams["font.family"] = 'serif'
@@ -154,89 +154,102 @@ def simulate_path(
                 weights=density_use,
                 axis=1)
         parti_df_Michigan = pd.DataFrame(data_shocks.index.astype(str), columns=['yyyymm'])
-        parti_df_Michigan['belief_old'] = age_belief[-2].astype(np.float32)
+        parti_df_Michigan['belief_old'] = age_belief[-1].astype(np.float32)
         parti_df_Michigan['belief_young'] = age_belief[0].astype(np.float32)
-        parti_df_Michigan['parti_old'] = parti_age_group[-Nt_data:, -2].astype(np.float32)
+        parti_df_Michigan['parti_old'] = parti_age_group[-Nt_data:, -1].astype(np.float32)
         parti_df_Michigan['parti_young'] = parti_age_group[-Nt_data:, 0].astype(np.float32)
+
+
+        parti_dividend = np.zeros(Nt_data)
+        for ii in range(Nt_data):
+            parti_dividend_ii = np.zeros((12, Nc - 12))
+            for jj in range(12):
+                parti_dividend_ii[jj] = pi[ii - Nt_data - jj, -1, jj:jj - 12]
+
+            parti_dividend[ii] = (np.sum((np.sum(parti_dividend_ii, axis=0) > 0) * cohort_size[0, :-12]) +
+                                  np.sum(pi[ii - Nt_data, -1, -12:] * cohort_size[0, -12:])) * density[-1] + density[0]
+
+        parti_df_Michigan['parti_dividend'] = parti_dividend.astype(np.float32)
         parti_df_Michigan.to_stata(f'stata_dataset/{country}/{i}_Michigan.dta')
 
-    for ii in range(total_param):
-        for jj in range(vary_param):
-            print(f'Parameter: {column_param[ii]}, Varying: {column_vary[jj]}')
-            diff_n = diff_param[ii] if jj == 0 else -diff_param[ii]
-            if ii == 0:
-                params = [exit_bound + diff_n, entry_bound_i, T_hat_i, phi, density]
-            elif ii == 1:
-                params = [exit_bound, entry_bound_i + diff_n, T_hat_i, phi, density]
-            elif ii == 2:
-                params = [exit_bound, entry_bound_i, T_hat_i + diff_n, phi, density]
-            elif ii == 3:
-                params = [exit_bound, entry_bound_i, T_hat_i, phi + diff_n, density]
-            else:
-                diff_density = np.array([diff_n, 0, -diff_n])
-                params = [exit_bound, entry_bound_i, T_hat_i, phi, density + diff_density]
-            exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
 
-            if entry_bound_use >= exit_bound_use:
-                Npre = int(T_hat_use / dt)
-                Vhat = (sigma_Y ** 2) / T_hat_use  # prior variance
-
-                beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
-                beta0 = np.sum(alpha_i * beta_i).astype(float)
-                alpha_constraint = np.ones(
-                    (1, Nconstraint)) * density_use
-                alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
-                cohort_type_size_mix = cohort_size * alpha_i_mix
-
-                rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
-                beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
-                rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
-                    -(rho_i_mix + nu) * tau)  # shape(2, 6000)
-
-                col_name = f'{column_param[ii]}_{column_vary[jj]}'
-
-                (
-                    r,
-                    theta,
-                    f_c,
-                    Delta,
-                    pi,
-                    parti,
-                    Phi_bar_parti,
-                    Phi_tilde_parti,
-                    Delta_bar_parti,
-                    Delta_tilde_parti,
-                    dR,
-                    mu_S,
-                    sigma_S,
-                    beta,
-                    parti_age_group,
-                    # Delta_popu,
-                    # portf_age_group,
-                    entry_mat,
-                    exit_mat
-                ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
-                                       phi_use,
-                                       Npre, Ninit,
-                                       T_hat_use,
-                                       entry_bound_use,
-                                       exit_bound_use,
-                                       dZ_build, dZ,
-                                       cutoffs_age, Ntype,
-                                       Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
-                                       rho_cohort_type_mix,
-                                       cohort_type_size_mix,
-                                       need_f='False',
-                                       need_Delta='True',
-                                       need_pi='True',
-                                       mode_learn='invest',
-                                       )
-
-                parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
-                parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
-                parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
-
-    parti_df.to_stata(f'stata_dataset/{country}/{i}_5.dta')
+    # for ii in range(total_param):
+    #     for jj in range(vary_param):
+    #         print(f'Parameter: {column_param[ii]}, Varying: {column_vary[jj]}')
+    #         diff_n = diff_param[ii] if jj == 0 else -diff_param[ii]
+    #         if ii == 0:
+    #             params = [exit_bound + diff_n, entry_bound_i, T_hat_i, phi, density]
+    #         elif ii == 1:
+    #             params = [exit_bound, entry_bound_i + diff_n, T_hat_i, phi, density]
+    #         elif ii == 2:
+    #             params = [exit_bound, entry_bound_i, T_hat_i + diff_n, phi, density]
+    #         elif ii == 3:
+    #             params = [exit_bound, entry_bound_i, T_hat_i, phi + diff_n, density]
+    #         else:
+    #             diff_density = np.array([diff_n, 0, -diff_n])
+    #             params = [exit_bound, entry_bound_i, T_hat_i, phi, density + diff_density]
+    #         exit_bound_use, entry_bound_use, T_hat_use, phi_use, density_use = params
+    #
+    #         if entry_bound_use >= exit_bound_use:
+    #             Npre = int(T_hat_use / dt)
+    #             Vhat = (sigma_Y ** 2) / T_hat_use  # prior variance
+    #
+    #             beta_i = (nu + rho_i) / (1 + tax)  # consumption wealth ratio
+    #             beta0 = np.sum(alpha_i * beta_i).astype(float)
+    #             alpha_constraint = np.ones(
+    #                 (1, Nconstraint)) * density_use
+    #             alpha_i_mix = np.reshape(alpha_i * alpha_constraint, (Ntype, Nconstraint, 1))
+    #             cohort_type_size_mix = cohort_size * alpha_i_mix
+    #
+    #             rho_i_mix = np.tile(np.reshape(rho_i, (-1, 1, 1)), (1, Nconstraint, 1))
+    #             beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
+    #             rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
+    #                 -(rho_i_mix + nu) * tau)  # shape(2, 6000)
+    #
+    #             col_name = f'{column_param[ii]}_{column_vary[jj]}'
+    #
+    #             (
+    #                 r,
+    #                 theta,
+    #                 f_c,
+    #                 Delta,
+    #                 pi,
+    #                 parti,
+    #                 Phi_bar_parti,
+    #                 Phi_tilde_parti,
+    #                 Delta_bar_parti,
+    #                 Delta_tilde_parti,
+    #                 dR,
+    #                 mu_S,
+    #                 sigma_S,
+    #                 beta,
+    #                 parti_age_group,
+    #                 # Delta_popu,
+    #                 # portf_age_group,
+    #                 entry_mat,
+    #                 exit_mat
+    #             ) = simulate_mix_types(Nc, Nt, dt, nu, Vhat, mu_Y, sigma_Y, tax, beta0,
+    #                                    phi_use,
+    #                                    Npre, Ninit,
+    #                                    T_hat_use,
+    #                                    entry_bound_use,
+    #                                    exit_bound_use,
+    #                                    dZ_build, dZ,
+    #                                    cutoffs_age, Ntype,
+    #                                    Nconstraint, rho_i_mix, alpha_i_mix, beta_i_mix,
+    #                                    rho_cohort_type_mix,
+    #                                    cohort_type_size_mix,
+    #                                    need_f='False',
+    #                                    need_Delta='True',
+    #                                    need_pi='True',
+    #                                    mode_learn='invest',
+    #                                    )
+    #
+    #             parti_df['parti' + col_name] = parti[-Nt_data:].astype(np.float32)
+    #             parti_df['entry' + col_name] = entry_mat[-Nt_data:, 0].astype(np.float32)
+    #             parti_df['exit' + col_name] = exit_mat[-Nt_data:, 0].astype(np.float32)
+    #
+    # parti_df.to_stata(f'stata_dataset/{country}/{i}_5.dta')
 
     return (
         i,
