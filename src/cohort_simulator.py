@@ -575,8 +575,8 @@ def simulate_mean_vola_mix_type(
         Delta_s_t = np.append(Delta_s_t, init_bias, axis=2)
 
         if i - keep_when >= 0:
-            dDelta_PN[i - keep_when, 0] = np.average(np.abs(dDelta_s_t[:, 1:]), weights=invest[:, 1:] * cohort_type_size[:, 1:])
-            dDelta_PN[i - keep_when, 1] = np.average(np.abs(dDelta_s_t[:, 1:]), weights=(1 - invest[:, 1:]) * cohort_type_size[:, 1:])
+            dDelta_PN[i - keep_when, 0] = np.average(V_st_P[:, -1], weights=invest[:, -1] * cohort_type_size[:, -1])
+            dDelta_PN[i - keep_when, 1] = np.average(phi * V_st_N[:, -1], weights=(1 - invest[:, -1]) * cohort_type_size[:, -1])
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         invest_tracker = np.append(invest_tracker[:, :, 1:], invest_newborn,
