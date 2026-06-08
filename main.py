@@ -589,6 +589,22 @@ table_mean_vola = pd.DataFrame(
 print(tab.tabulate(table_mean_vola.transpose(), headers=['Mean', 'Std_Dev'], floatfmt=".4f",
                    tablefmt='latex_raw'))
 
+######### Complete market benchmark
+
+table_var = 'table_mean_vola'
+table1_data = np.average(np.load(r'simu_results/simulation_complete_market.npz')[table_var], axis=0)
+
+table_mean_vola = pd.DataFrame(
+    table1_data,
+    index=['Mean', 'Std_Dev'],
+    columns=[r'$\theta$', r'$r$', r'$\mu_S$', r'$\sigma_S$', r'$\bar{\Delta}$', r'$\tilde{\Delta}$']
+)
+
+print(tab.tabulate(table_mean_vola.transpose(), headers=['Mean', 'Std_Dev'], floatfmt=".4f",
+                   tablefmt='latex_raw'))
+
+
+################################
 
 table_var = 'table_parti'
 table2_data = np.load(r'simu_results/' + str(0) + "simulation_new.npz")[table_var]
