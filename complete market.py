@@ -1,10 +1,8 @@
 import numpy as np
 from tqdm import tqdm
 from typing import Tuple
-
-from main import dZ_build
 from src.param import (dZ_matrix, dZ_build_matrix, Nt, Nc, dt, rho_i,
-                       alpha_i, beta_i, beta0, nu, Vhat, mu_Y, sigma_Y, tax, phi, T_hat, Npre,
+                       alpha_i, beta0, nu, Vhat, mu_Y, sigma_Y, tax, phi, T_hat, Npre,
                        Ninit, Ntype, cohort_size, tau, Mpath)
 from src.stats import post_var, dDelta_st_calculator
 import pandas as pd
@@ -27,7 +25,7 @@ beta_cohort_mix = np.sum(np.exp(-beta_i_mix * tau) * alpha_i_mix, axis=0)
 
 
 def build_cohorts_mix_type(
-    i,
+    i_path,
 ) -> Tuple[
     np.ndarray,
     np.ndarray,
@@ -36,7 +34,7 @@ def build_cohorts_mix_type(
     np.ndarray,
     np.ndarray,
 ]:
-    dZ_build = dZ_build_matrix[i]
+    dZ_build = dZ_build_matrix[i_path]
 
     Delta_s_t = np.zeros((Ntype, Nconstraint, 1), dtype=np.float32)
     d_eta_st = np.zeros((Ntype, Nconstraint, 1), dtype=np.float32)
@@ -117,10 +115,10 @@ def build_cohorts_mix_type(
 
 
 def simulate_path_complete(
-        i: int
+        i_path: int
 ) -> tuple:
 
-    dZ = dZ_matrix[i]
+    dZ = dZ_matrix[i_path]
 
     # Initializing variables
     (Delta_s_t,
@@ -130,10 +128,10 @@ def simulate_path_complete(
     tau_info,
     Vhat_vector
      ) = build_cohorts_mix_type(
-        i
+        i_path
     )
 
-    biasvec = np.copy(dZ_build)
+    biasvec = dZ_build_matrix[i_path]
 
     keep_when = int(200 / dt)
     sigma_Y_sq = sigma_Y ** 2
@@ -174,8 +172,8 @@ def simulate_path_complete(
         f_c_ist = X_parts / X_t / dt
         f_c_ist = np.append(f_c_ist[:, :, 1:], tax * alpha_i_mix * beta_i_mix, axis=2)
 
-        beta_t = 1 / np.sum(f_c_ist / beta_i * dt)
-        f_w_ist = f_c_ist / beta_i * beta_t
+        beta_t = 1 / np.sum(f_c_ist / beta_i_mix * dt)
+        f_w_ist = f_c_ist / beta_i_mix * beta_t
         if i > 0:
             dR_t = mu_S_t * dt + sigma_S_t * dZ_t
         else:
@@ -237,7 +235,7 @@ def simulate_path_complete(
 
 
     return (
-        i,
+        i_path,
         table_mean_vola,
     )
 

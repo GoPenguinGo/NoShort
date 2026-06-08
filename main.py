@@ -641,3 +641,89 @@ table_reg2 = pd.DataFrame(
 print(tab.tabulate(table_reg2.transpose(), headers=['12m', '24m', '36m'], floatfmt=".4f",
                    tablefmt='latex_raw'))
 
+
+
+
+######################################
+##############  Welfare  #############
+######################################
+from welfare_analysis import T_hat_vec, sample
+
+welfare_T_hat = np.zeros((len(T_hat_vec), 4))
+for n, T_hat_use in enumerate(T_hat_vec):
+    welfare_T_hat[n] = np.average(np.load(f"simu_results/welfare{T_hat_use}.npz")['g_log_C_ave'], axis=0)
+label_welfare = [
+    'Beliefs-driven entry and exit, GE',
+    'Beliefs-driven entry and exit',
+    'Average entry and exit',
+    'Average "buy and hold"',
+]
+colors_welfare = [
+    'maroon',
+    'mediumblue',
+    'black',
+    'gray'
+]
+
+fig, ax = plt.subplots(nrows=1, ncols=1, sharex='all', figsize=(6, 4))
+ax.set_ylabel(r'Average log consumption growth', color='black')
+ax.set_xlabel(r'Pre-entry learning window, $n$', color='black')
+for i in range(4):
+    line_style_i = 'solid' if i == 0 else (0, (1, 1))
+    X_Y_Spline = make_interp_spline(T_hat_vec, welfare_T_hat[:, i], k=2)
+    X_ = np.arange(0, 21, 1)
+    Y_ = X_Y_Spline(X_)
+    ax.plot(
+        X_,
+        Y_,
+        color=colors_welfare[i], linewidth=2, label=label_welfare[i],
+        linestyle=line_style_i
+    )
+# ax.set_ylim(0.015, 0.04)
+ax.set_xticks([0, 5, 10, 15, 20])
+ax.set_yticks([0.02, 0.025, 0.03, 0.035])
+ax.legend(loc='lower right')
+extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig(
+    'figures/welfare_T_hat.pdf',
+    dpi=200)
+plt.show()
+plt.close()
+
+
+
+for n, T_hat_use in enumerate(T_hat_vec):
+    welfare_exp = np.zeros((2, sample.size))
+    welfare_exp[0] = np.average(np.load(f"simu_results/welfare{T_hat_use}.npz")['g_log_C_mat'], axis=0)
+    welfare_exp[1] = np.average(np.load(f"simu_results/welfare{T_hat_use}.npz")['g_log_C_experience'], axis=0)
+
+    x = np.log(np.arange(1, sample.size, 1))
+    fig, ax = plt.subplots(nrows=1, ncols=1, sharex='all', figsize=(5, 5))
+    ax.set_ylabel(r'Average drift of log consumption growth', color='black')
+    ax.set_xlabel(r'Log(Experience)', color='black')
+    for i in range(4):
+        line_style_i = 'solid' if i == 0 else 'dotted'
+        if i <= 1:
+            ax.plot(
+                x,
+                welfare_exp[i, 1:len(x) + 1],
+                color=colors_welfare[i], linewidth=2, label=label_welfare[i],
+                linestyle=line_style_i
+            )
+        else:
+            ax.axhline(welfare_T_hat[n, i], 0.05, 0.95,
+                       color=colors_welfare[i], linewidth=2, label=label_welfare[i],
+                       linestyle=line_style_i
+                       )
+    # ax.set_ylim(0.015, 0.04)
+    ax.legend(loc='lower right')
+    extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.savefig(
+        f'figures/welfare_exp{T_hat_use}.pdf',
+        dpi=200)
+    plt.show()
+    plt.close()
+
+
