@@ -263,19 +263,9 @@ def simulate_cohorts_mix_type(
         invest = 1 - (invest != 1)  # not invest if a<0 and can not short
         invest[:, 1] = 0  # exclusion type
         invest[:, 0] = 1  # complete type
-        # switch_P_to_N = invest_tracker * (1 - invest) * (
-        #         can_short_tracker < 1)  # switch to nonparti if type R&E & not investing this period
-        # switch_N_to_P = np.maximum(invest - invest_tracker,
-        #                            0)  # switch to parti if not investing before & investing this period
-        # switch_N_to_P[:, :2] = 0  # only applicable to the E type
-        # switch = switch_N_to_P + switch_P_to_N
-        # invest_tracker = invest_tracker + switch_N_to_P - switch_P_to_N
         invest_tracker = np.copy(invest)
         d_eta_st = (Delta_s_t + theta_t) * invest_tracker - theta_t
 
-        # tau_info and V_hat has to change for the agents who switch (either P to N or vice versa)
-        # the switches are specific to passing the exit_boundary
-        # information = theta_st[:, 2] >= exit_bound
         if mode_learn == 'theta':
             information = theta_st[:, 2] >= exit_bound
         elif mode_learn == 'invest':
@@ -575,8 +565,8 @@ def simulate_mean_vola_mix_type(
         Delta_s_t = np.append(Delta_s_t, init_bias, axis=2)
 
         if i - keep_when >= 0:
-            dDelta_PN[i - keep_when, 0] = np.average(1 / sigma_Y * V_st_P[:, -1], weights=invest[:, -1] * cohort_type_size[:, -1])
-            dDelta_PN[i - keep_when, 1] = np.average(phi / sigma_Y * V_st_N[:, -1], weights=(1 - invest[:, -1]) * cohort_type_size[:, -1])
+            dDelta_PN[i - keep_when, 0] = np.average(1 / sigma_Y * V_st_P[:, 1:], weights=invest[:, 1:] * cohort_type_size[:, -1])
+            dDelta_PN[i - keep_when, 1] = np.average(phi / sigma_Y * V_st_N[:, 1:], weights=(1 - invest[:, 1:]) * cohort_type_size[:, -1])
 
         # find the market clearing theta, given beliefs and consumption shares of cohorts in the economy
         invest_tracker = np.append(invest_tracker[:, :, 1:], invest_newborn,

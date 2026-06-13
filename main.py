@@ -308,7 +308,7 @@ for j, ax in enumerate(axes):
                 # label=r'Cutoff $\Delta_{s,t}$'
                 )
         for k in range(n_age_cutoffs):
-            color_age_group = colors_short[k]
+            color_age_group = colors_short[k] if k < 2 else 'red'
             ax.fill_between(
                 x,
                 y_min[0, 0, -int(N_years / dt):, k],
@@ -453,6 +453,7 @@ if recd[-1] == 1: recd_ends = np.r_[recd_ends, -1]
 fig, axes = plt.subplots(nrows=2, ncols=1, sharex='all', figsize=(12, 6))
 for j, ax in enumerate(axes):
     if j == 0:
+        ax.set_yticks([-0.2, 0.0, 0.2, 0.4])
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
         ax.set_title('(a) Average estimation error, participants vs. non-participants')
         ax.plot(
@@ -477,8 +478,9 @@ for j, ax in enumerate(axes):
         ax.legend(loc='upper right')
 
     else:
+        ax.set_yticks([-1, -0.5, 0.0, 0.5, 1])
         ax.set_ylabel(r'Estimation error $\Delta_{s,t}$', color='black')
-        ax.set_ylim(-0.5, 0.75)
+        ax.set_ylim(-1, 1)
         ax.set_title('(b) Distribution of estimation error, experience groups')
         ax.plot(x,
                 belief_cutoff[0, 0, -int(N_years / dt):],
@@ -486,7 +488,7 @@ for j, ax in enumerate(axes):
                 # label=r'Cutoff $\Delta_{s,t}$'
                 )
         for k in range(n_age_cutoffs):
-            color_age_group = colors_short[k]
+            color_age_group = colors_short[k] if k < 2 else "red"
             ax.fill_between(
                 x,
                 y_min[0, 0, -int(N_years / dt):, k],
