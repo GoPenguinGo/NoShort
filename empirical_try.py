@@ -260,8 +260,6 @@ def simulate_path(
 
     return (
         i,
-        # popu_parti_compare,
-        # dR_compare,
     )
 
 
@@ -292,8 +290,6 @@ def main():
             }
             results_list.append(data)
 
-        # Create a DataFrame from the list of dictionaries
-        # results_df = pd.DataFrame(results_list)
 
 if __name__ == '__main__':
     main()
