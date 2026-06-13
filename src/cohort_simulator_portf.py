@@ -334,7 +334,7 @@ def simulate_cohorts_mix_type(
         tax: float,
         phi: float,
         T_hat: float,
-        Npre: float,
+        Npre: int,
         Ninit: int,
         entry_bound: float,
         exit_bound: float,
