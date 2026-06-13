@@ -274,6 +274,7 @@ def build_cohorts_mix_type(
                 lev_bound,
                 )
             theta_st = np.minimum(Delta_s_t + theta_t, lev_bound)
+            theta_st[:, 0] = Delta_s_t + theta_t  # doesn't apply to the first type
             invest = (
                              theta_st >= exit_bound
                      ) * invest_tracker + (
@@ -582,6 +583,7 @@ def simulate_cohorts_mix_type(
             lev_bound,
         )
         theta_st = np.minimum(Delta_s_t + theta_t, lev_bound)
+        theta_st[:, 0] = Delta_s_t + theta_t  # doesn't apply to the first type
         Delta_s_t_cap = theta_st - theta_t
         invest = (
                          theta_st >= exit_bound
