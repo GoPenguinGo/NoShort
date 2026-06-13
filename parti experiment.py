@@ -29,6 +29,8 @@ beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
 rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
     -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
+phi_benchmark = 1.0
+
 np.seterr(invalid='ignore')
 
 
@@ -37,21 +39,17 @@ def simulate_path(
 ):
     print(i)
 
-    dZ_build = dZ_build_matrix[i]
-    dZ = dZ_matrix[i]
+    if i < Mpath:
+        dZ_build = dZ_build_matrix[i]
+        dZ = dZ_matrix[i]
+    else:
+        dZ_build = np.random.randn(Nc) * np.sqrt(dt)
+        dZ = np.random.randn(Nc) * np.sqrt(dt)
 
     if np.mod(i, 20) == 0:
-        # reentry_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-        # exit_time_compare = np.zeros((14, 2, Nt - int(window_bell / dt)), dtype=np.int8)
         need_invest_matrix = 'True'
     else:
-        # reentry_time_compare = 0
-        # exit_time_compare = 0
         need_invest_matrix = 'False'
-    # need_invest_matrix = 'False'
-    # reentry_time_compare = 0
-    # reentry_time_compare = np.zeros((n_scenarios - 1, 14, 2, Nt - int(window_bell / dt) - 12), dtype=np.int8)
-    # need_invest_matrix = 'True'
 
     (
         table_mean_vola,
@@ -92,7 +90,45 @@ def simulate_path(
 
     if need_invest_matrix == 'True':
         np.save(r'simu_results/' + str(i) + 'reentry_time', reentry_time[:, 2:])
-    # np.save(folder_address + str(i) + str(phi_i) + 'parti_age', parti_age_compare)
+
+        (
+            table_mean_vola,
+            table_parti,
+            table_parti_cov,
+            reentry_time_benchmark,
+            regression_table1_b,
+            regression_table2_b,
+            Delta_diff,
+        ) = simulate_mix_mean_vola(
+            Nc,
+            Nt,
+            dt,
+            nu,
+            Vhat,
+            mu_Y,
+            sigma_Y,
+            tax,
+            beta0,
+            phi_benchmark,
+            Npre,
+            Ninit,
+            T_hat,
+            entry_bound,
+            exit_bound,
+            dZ_build,
+            dZ,
+            Ntype,
+            Nconstraint,
+            rho_i_mix,
+            alpha_i_mix,
+            beta_i_mix,
+            rho_cohort_type_mix,
+            cohort_type_size_mix,
+            window_bell,
+            need_invest_matrix
+        )
+
+        np.save(r'simu_results/' + str(i) + 'reentry_time_benchmark', reentry_time_benchmark[:, 2:])
 
     return (
         i,
@@ -107,7 +143,10 @@ def simulate_path(
 
 def main():
     # Create a ProcessPoolExecutor for parallel execution
-    for j in range(int(Mpath / N_workers)):
+    for j in range(
+            int(Mpath / N_workers),
+            int(5000 / N_workers)
+    ):
         per_path = N_workers
         paths_j = j * per_path
 
