@@ -517,6 +517,7 @@ plt.close()
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
 spell_mat = np.zeros((int(Mpath / 20), len(sample_shocks), 1, 5748), dtype=int)
+spell_mat_benchmark = np.zeros((int(Mpath / 20), len(sample_shocks), 1, 5748), dtype=int)
 stock_returns_mat = np.zeros((int(Mpath / 20), len(sample_shocks)))
 
 gap = 12
@@ -524,6 +525,7 @@ for i in range(Mpath):
     if np.mod(i, 20) == 0:
         j = int(i / 20)
         spell_mat[j] = np.load(r'simu_results/' + str(i) + 'reentry_time.npy')
+        spell_mat_benchmark[j] = np.load(r'simu_results/' + str(i) + 'reentry_time_benchmark.npy')
         cumu_returns = np.zeros(Nt)
         cumu_returns[gap:] = (np.cumsum(dZ_matrix[i])[gap:] - np.cumsum(dZ_matrix[i])[:-gap]) / (gap / 12)
         stock_returns_mat[j] = cumu_returns[sample_shocks]
@@ -567,6 +569,78 @@ ax.set_xlabel('Years since exiting')
 ax.set_ylabel('Fraction of individuals re-entering')
 fig.tight_layout()
 plt.savefig(f'figures/f5_2.pdf', dpi=200)
+plt.show()
+plt.close()
+
+
+
+fig, ax = plt.subplots(nrows=1, ncols=1, sharey='all', sharex='all', figsize=(5, 5))
+cutoffs_return = np.percentile(stock_returns_mat, [10])
+for j in range(2):
+    if j == 0:
+        counts_mat = np.zeros((5748, 21))
+        for ii in range(5748):
+            unique, counts = np.unique(spell_mat[:, :, :, ii], return_counts=True)
+            for jj, uni_jj in enumerate(unique):
+                counts_mat[ii, uni_jj] = counts[jj]
+
+        counts_mat_benchmark = np.zeros((5748, 21))
+        for ii in range(5748):
+            unique, counts = np.unique(spell_mat_benchmark[:, :, :, ii], return_counts=True)
+            for jj, uni_jj in enumerate(unique):
+                counts_mat_benchmark[ii, uni_jj] = counts[jj]
+    else:
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
+        counts_mat = np.zeros((5748, 21))
+        for ii in range(5748):
+            unique, counts = np.unique(spell_mat[:, :, :, ii] * data_where, return_counts=True)
+            for jj, uni_jj in enumerate(unique):
+                counts_mat[ii, uni_jj] = counts[jj]
+
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
+        counts_mat_benchmark = np.zeros((5748, 21))
+        for ii in range(5748):
+            unique, counts = np.unique(spell_mat_benchmark[:, :, :, ii] * data_where, return_counts=True)
+            for jj, uni_jj in enumerate(unique):
+                counts_mat_benchmark[ii, uni_jj] = counts[jj]
+
+    popu_average_counts = np.average(counts_mat, axis=0, weights=cohort_size[0, -5748:])
+    counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
+    counts_percentage_cum = np.cumsum(counts_percentage)
+    x = np.arange(1, 20)
+    data_inter = np.arange(0, len(counts_percentage) - 1, 2)
+    X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage_cum[data_inter], k=3)
+    X_ = np.linspace(1, 19, 100)
+    Y_ = X_Y_Spline(X_)
+    color_j = 'red' if j == 1 else 'navy'
+    label_j = r'$dR_{t-1,t}$ bottom decile, $\varphi=0.5$' if j == 1 else r'Unconditional, $\varphi=0.5$'
+    line_style_i = 'solid'
+    ax.plot(X_, Y_, linewidth=2,
+            linestyle=line_style_i,
+            label=label_j, color=color_j)
+
+    popu_average_counts = np.average(counts_mat_benchmark, axis=0, weights=cohort_size[0, -5748:])
+    counts_percentage = popu_average_counts[1:] / np.sum(popu_average_counts[1:])
+    counts_percentage_cum = np.cumsum(counts_percentage)
+    x = np.arange(1, 20)
+    data_inter = np.arange(0, len(counts_percentage) - 1, 2)
+    X_Y_Spline = make_interp_spline(x[data_inter], counts_percentage_cum[data_inter], k=3)
+    X_ = np.linspace(1, 19, 100)
+    Y_ = X_Y_Spline(X_)
+    color_j = 'red' if j == 1 else 'navy'
+    label_j = r'$dR_{t-1,t}$ bottom decile, $\varphi=1$' if j == 1 else r'Unconditional, $\varphi=1$'
+    line_style_i = 'dotted'
+    ax.plot(X_, Y_, linewidth=2,
+            linestyle=line_style_i,
+            label=label_j, color=color_j)
+    ax.legend(loc='lower right')
+ax.set_ylim(0.0, 0.6)
+ax.set_xlim(1, 5)
+ax.set_xticks([1, 2, 3, 4, 5])
+ax.set_xlabel('Years since exiting')
+ax.set_ylabel('Fraction of individuals re-entering')
+fig.tight_layout()
+plt.savefig(f'figures/f5_2_benchmark.pdf', dpi=200)
 plt.show()
 plt.close()
 
