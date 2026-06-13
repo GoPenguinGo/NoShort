@@ -206,99 +206,99 @@ def find_the_rich_mix(
 
 
 
-def bisection(
-        optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float, float, float], np.float64],
-        xlow: np.float64,
-        xhigh: np.float64,
-        arg1: np.ndarray,
-        arg2: np.ndarray,
-        arg3: np.ndarray,
-        arg4: float,
-        arg5: float,
-        arg6: float,
-        eps: float = 1e-9,
-) -> np.float64:
-    """Bisection method to solve x (theta)
-
-    Args:
-        optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
-        xlow (float): lower bound for x
-        xhigh (float): upper bound for x
-        arg1 (np.ndarray): second input for optimfun
-        arg2 (np.ndarray): third input for optimfun
-        eps (float, optional): converging criteria. Precision of estimation. Defaults to 1e-6.
-
-    Returns:
-        xmid: the estimated value that makes the optimfun close to 0
-
-    """
-    flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6)
-    fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6)
-    diff = 1
-    iter = 0
-    xmid = 100000
-
-    while diff > eps:
-        xmid = (xlow + xhigh) / 2
-        fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6)
-        if flow * fmid < 0:  # root between flow and fmid
-            xhigh = xmid
-            fhigh = fmid
-        elif fmid * fhigh < 0:  # root between fmid and fhigh
-            xlow = xmid
-            flow = fmid
-        diff = abs(fhigh - flow)
-        iter += 1
-        # if iter > 30:
-            # print("Warning! It takes more than 50 iteration to converge.")
-            # print(xhigh - xlow)
-        if iter > 50:
-            break
-    return xmid
-
-
-
-
-def solve_theta(
-        theta_guess: np.float64,
-        consumption_share: np.ndarray,
-        invest_tracker: np.ndarray,
-        Delta_s_t: np.ndarray,
-        sigma_Y: float,
-        entry_bound: float,
-        exit_bound: float,
-) -> np.float64:
-    """RHS - LHS of the eq(22), used to iteratively solve theta
-
-    Args:
-        theta_guess (np.float64): any potential value of theta
-        consumption_share (np.ndarray): shape (T, ), fst as in the def for the experience component of eq(24)
-        Delta_s_t (np.ndarray): shape (T, ), delta_s_t as in the def for the experience component of eq(24)
-        sigma_Y (float): sigma_Y in eq(1)
-
-    Returns:
-        np.float64: RHS - LHS
-    """
-    theta_st = Delta_s_t + theta_guess
-    invest = (
-                     theta_st >= exit_bound
-             ) * invest_tracker + (
-                     theta_st >= entry_bound
-             ) * (1 - invest_tracker)
-    invest_consumption_share = invest * consumption_share
-    Delta_bar_parti = np.sum(
-        Delta_s_t * invest_consumption_share
-    )  # Experience component, as defined below eq(24)
-    total_invest_c_share = np.sum(
-        invest_consumption_share
-    )  # Constraint component, as defined below eq(24)
-    if total_invest_c_share == 0:
-        diff = 10000
-    else:
-        diff = (
-                       sigma_Y - Delta_bar_parti
-               ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
-    return diff
+# def bisection(
+#         optimfun: Callable[[float, np.ndarray, np.ndarray, np.ndarray, float, float, float], np.float64],
+#         xlow: np.float64,
+#         xhigh: np.float64,
+#         arg1: np.ndarray,
+#         arg2: np.ndarray,
+#         arg3: np.ndarray,
+#         arg4: float,
+#         arg5: float,
+#         arg6: float,
+#         eps: float = 1e-9,
+# ) -> np.float64:
+#     """Bisection method to solve x (theta)
+#
+#     Args:
+#         optimfun (Callable[[float, np.ndarray, np.ndarray], float]): the function we want to find the root for
+#         xlow (float): lower bound for x
+#         xhigh (float): upper bound for x
+#         arg1 (np.ndarray): second input for optimfun
+#         arg2 (np.ndarray): third input for optimfun
+#         eps (float, optional): converging criteria. Precision of estimation. Defaults to 1e-6.
+#
+#     Returns:
+#         xmid: the estimated value that makes the optimfun close to 0
+#
+#     """
+#     flow = optimfun(xlow, arg1, arg2, arg3, arg4, arg5, arg6)
+#     fhigh = optimfun(xhigh, arg1, arg2, arg3, arg4, arg5, arg6)
+#     diff = 1
+#     iter = 0
+#     xmid = 100000
+#
+#     while diff > eps:
+#         xmid = (xlow + xhigh) / 2
+#         fmid = optimfun(xmid, arg1, arg2, arg3, arg4, arg5, arg6)
+#         if flow * fmid < 0:  # root between flow and fmid
+#             xhigh = xmid
+#             fhigh = fmid
+#         elif fmid * fhigh < 0:  # root between fmid and fhigh
+#             xlow = xmid
+#             flow = fmid
+#         diff = abs(fhigh - flow)
+#         iter += 1
+#         # if iter > 30:
+#             # print("Warning! It takes more than 50 iteration to converge.")
+#             # print(xhigh - xlow)
+#         if iter > 50:
+#             break
+#     return xmid
+#
+#
+#
+#
+# def solve_theta(
+#         theta_guess: np.float64,
+#         consumption_share: np.ndarray,
+#         invest_tracker: np.ndarray,
+#         Delta_s_t: np.ndarray,
+#         sigma_Y: float,
+#         entry_bound: float,
+#         exit_bound: float,
+# ) -> np.float64:
+#     """RHS - LHS of the eq(22), used to iteratively solve theta
+#
+#     Args:
+#         theta_guess (np.float64): any potential value of theta
+#         consumption_share (np.ndarray): shape (T, ), fst as in the def for the experience component of eq(24)
+#         Delta_s_t (np.ndarray): shape (T, ), delta_s_t as in the def for the experience component of eq(24)
+#         sigma_Y (float): sigma_Y in eq(1)
+#
+#     Returns:
+#         np.float64: RHS - LHS
+#     """
+#     theta_st = Delta_s_t + theta_guess
+#     invest = (
+#                      theta_st >= exit_bound
+#              ) * invest_tracker + (
+#                      theta_st >= entry_bound
+#              ) * (1 - invest_tracker)
+#     invest_consumption_share = invest * consumption_share
+#     Delta_bar_parti = np.sum(
+#         Delta_s_t * invest_consumption_share
+#     )  # Experience component, as defined below eq(24)
+#     total_invest_c_share = np.sum(
+#         invest_consumption_share
+#     )  # Constraint component, as defined below eq(24)
+#     if total_invest_c_share == 0:
+#         diff = 10000
+#     else:
+#         diff = (
+#                        sigma_Y - Delta_bar_parti
+#                ) / total_invest_c_share - theta_guess  # RHS - LHS, equals to 0 if find the right theta
+#     return diff
 
 
 
