@@ -274,7 +274,7 @@ def build_cohorts_mix_type(
                 lev_bound,
                 )
             theta_st = np.minimum(Delta_s_t + theta_t, lev_bound)
-            theta_st[:, 0] = Delta_s_t + theta_t  # doesn't apply to the first type
+            theta_st[:, 0] = theta_t  # doesn't apply to the first type
             invest = (
                              theta_st >= exit_bound
                      ) * invest_tracker + (
@@ -315,7 +315,6 @@ def build_cohorts_mix_type(
 
 
 def simulate_cohorts_mix_type(
-        biasvec: np.ndarray,
         dZ: np.ndarray,
         dZ_build: np.ndarray,
         Nt: int,
@@ -548,7 +547,7 @@ def simulate_cohorts_mix_type(
         Vhat_vector[:, 0] = 0.0
 
         if i < Npre - 1:
-            init_bias = (np.sum(biasvec[i + 1:]) + np.sum(dZ[:i + 1])) / T_hat * append_init
+            init_bias = (np.sum(dZ_build[i + 1:]) + np.sum(dZ[:i + 1])) / T_hat * append_init
         else:
             init_bias = np.sum(dZ[i + 1 - Npre:i + 1]) / T_hat * append_init
         init_bias[:, 0] = 0.0
@@ -583,7 +582,7 @@ def simulate_cohorts_mix_type(
             lev_bound,
         )
         theta_st = np.minimum(Delta_s_t + theta_t, lev_bound)
-        theta_st[:, 0] = Delta_s_t + theta_t  # doesn't apply to the first type
+        theta_st[:, 0] = theta_t  # doesn't apply to the first type
         Delta_s_t_cap = theta_st - theta_t
         invest = (
                          theta_st >= exit_bound
