@@ -168,8 +168,10 @@ def simulate_path(
                                  ave_mu_S,
                                  ave_sigma_S) - rho_i[0]) * (1 - uncon_parti)
 
-    # g_log_C_ave_ee_endo = np.tile(np.reshape(r + uncon_pi * (mu_S - r) - 1 / 2 * (uncon_pi * sigma_S) ** 2, (-1, 1)), (1, Nc))[keep:] - rho_i[0]
-    # g_log_C_ave_ee_endo[nonparti] = g_log_C_mat_N[nonparti]
+    g_log_C_ave_ee_endo = np.tile(
+        np.reshape(r + uncon_pi * (mu_S - r) - 1 / 2 * (uncon_pi * sigma_S) ** 2, (-1, 1)), (1, Nc)
+    )[keep:] - rho_i[0]
+    g_log_C_ave_ee_endo[nonparti] = g_log_C_mat_N[nonparti]
 
     ave_pi = np.average(
         pi_focus,
@@ -244,8 +246,8 @@ def simulate_path(
         np.array([
             np.average(np.average(g_log_C_mat, axis=0), weights=cohort_size[0]),
             np.average(np.average(g_log_C_experience, axis=0), weights=cohort_size[0]),
-            g_log_C_ave_ee[0], g_log_C_no_ee[0]
-            # np.average(np.average(g_log_C_ave_ee_endo, axis=0), weights=cohort_size[0]),
+            np.average(np.average(g_log_C_ave_ee_endo, axis=0), weights=cohort_size[0]),
+            g_log_C_ave_ee[0], g_log_C_no_ee[0],
         ]),
         np.array([benchmark_log_C_growth1[0], benchmark_log_C_growth2[0]])
     )
