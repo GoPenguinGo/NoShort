@@ -143,7 +143,7 @@ def main():
         )
         entry_bound_i = entry_bound if country != "Finland" else 0.01
         T_hat_i = T_hat if country != "Norway" else 8
-        with ProcessPoolExecutor(max_workers=20) as executor:  # Adjust the number of workers as needed
+        with ProcessPoolExecutor(max_workers=10) as executor:  # Adjust the number of workers as needed
             results = [executor.submit(
                 simulate_path,
                 i,
