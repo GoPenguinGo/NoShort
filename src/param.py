@@ -41,7 +41,7 @@ cummu_popu = np.cumsum(cohort_size)
 cutoffs_age = [int(Nt-1), int(Nt-1-25/dt), int(Nt-1-50/dt), 0]  # Michigan
 popu_age_groups = cummu_popu[cutoffs_age[:-1]] - cummu_popu[cutoffs_age[1:]]
 
-Mpath = 2000
+Mpath = 5000
 N_workers = 20
 t = np.arange(0, T_cohort, dt)
 
@@ -70,8 +70,6 @@ dZ_matrix = np.load('shocks/dZ_matrix.npy')
 dZ_build_matrix = np.load('shocks/dZ_build_matrix.npy')
 
 # the shocks in the time-series
-dZ_build_case = np.load('shocks/dZ_build_case.npy')
-dZ_Y_cases = np.load('shocks/Z_Y_cases.npy')
 
 # top_wealth = 0.05
 # old_age_limit = 100

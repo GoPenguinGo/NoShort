@@ -494,6 +494,8 @@ def simulate_mean_vola_mix_type(
     Delta_diff = np.zeros((Nt - keep_when))  # participants and nonparticipants, population average
     Delta_bar_parti = np.zeros(
         (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
+    Delta_popu_parti = np.zeros(
+        (Nt - keep_when))  # consumption weighted estimation error of the stock market participants
     Delta_tilde_parti = np.zeros((Nt - keep_when))  # wealth weighted estimation error of the stock market participants
     parti = np.ones((Nt - keep_when))  # participation rate
     Phi_bar_parti_1 = np.ones((Nt - keep_when))
@@ -630,6 +632,8 @@ def simulate_mean_vola_mix_type(
         fw_parti_t = np.sum(invest_fw_st)
         Delta_bar_parti_t = np.sum(Delta_s_t * invest_fc_st) / fc_parti_t
         Delta_tilde_parti_t = np.sum(Delta_s_t * invest_fw_st) / fw_parti_t
+        Delta_popu_t = np.sum(Delta_s_t * invest_fc_st * cohort_type_size) / np.sum(cohort_type_size * invest_tracker)
+
         sigma_S_t = fw_parti_t * (theta_t + Delta_tilde_parti_t)
         rho_bar_t = np.sum(rho_i * f_c_ist) / np.sum(f_c_ist)
 
@@ -649,6 +653,7 @@ def simulate_mean_vola_mix_type(
             theta[ii] = theta_t
             r[ii] = r_t
             # Delta_bar[ii] = np.average(Delta_s_t, weights=cohort_type_size)
+            Delta_popu_parti[ii] = Delta_popu_t
             Delta_bar_parti[ii] = Delta_bar_parti_t
             Delta_tilde_parti[ii] = Delta_tilde_parti_t
             mu_S[ii] = mu_S_t
@@ -714,10 +719,11 @@ def simulate_mean_vola_mix_type(
     table_parti = pd.DataFrame(data_parti, index=['Mean', 'Std_Dev', '10th', '50th', '90th'])
 
     data_parti_cov = {
-        'cons_share': np.corrcoef(parti, 1 / Phi_bar_parti_1)[0, 1],
-        'wealth_share': np.corrcoef(parti, Phi_tilde_parti)[0, 1],
-        'mu_S': np.corrcoef(parti, mu_S)[0, 1],
-        'theta': np.corrcoef(parti, theta)[0, 1],
+        'cons_share': np.corrcoef(parti[sample], 1 / Phi_bar_parti_1[sample])[0, 1],
+        'wealth_share': np.corrcoef(parti[sample], Phi_tilde_parti[sample])[0, 1],
+        'mu_S': np.corrcoef(parti[sample], mu_S[sample])[0, 1],
+        'theta': np.corrcoef(parti[sample], theta[sample])[0, 1],
+        'belief_P': np.corrcoef(parti[sample], Delta_popu_parti[sample])[0, 1],
     }
     table_parti_cov = pd.DataFrame(data_parti_cov, index=['Cov'])
 

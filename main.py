@@ -38,8 +38,8 @@ beta_i_mix = (nu + rho_i_mix) / (1 + tax)  # consumption wealth ratio
 rho_cohort_type_mix = alpha_i_mix * beta_i_mix * np.exp(
     -(rho_i_mix + nu) * tau)  # shape(2, 6000)
 
-dZ_build = dZ_build_matrix[0]
-dZ = dZ_matrix[0]
+dZ_build = np.load('shocks/dZ_build_path.npy')
+dZ = np.load('shocks/dZ_path.npy')
 dZ_actual = data_shocks.to_numpy()[:, 0]
 Nt_data = dZ_actual.size
 dZ[-dZ_actual.size:] = dZ_actual
@@ -328,7 +328,7 @@ for j, ax in enumerate(axes):
         ax.plot(
             x,
             belief_cutoff[0, 0, -int(N_years / dt):] + entry_bound,
-            color='black', linewidth=1.3, label=r'Cutoff $\Delta$ for entry', linestyle='dotted'
+            color='black', linewidth=1.3, label=r'Threshold $\Delta$ for entry', linestyle='dotted'
         )
 
         for s, e in zip(recd_starts, recd_ends):
@@ -680,9 +680,9 @@ plt.close()
 ## Table 10 in the Online Appendix: asset pricing moments
 ## Panel A
 table_var = 'table_mean_vola'
-table1_data = np.load(r'simu_results/' + str(0) + "simulation_new.npz")[table_var]
+table1_data = np.load(r'simu_results/' + str(0) + "simulation_new.npz")[table_var][:, :, :6]
 for j in range(1, n_files):
-    table1_data = np.append(table1_data, np.load(r'simu_results/' + str(j) + "simulation_new.npz")[table_var], axis=0)
+    table1_data = np.append(table1_data, np.load(r'simu_results/' + str(j) + "simulation_new.npz")[table_var][:, :, :6], axis=0)
 
 table_mean_vola = pd.DataFrame(
     np.average(table1_data, axis=0),
@@ -729,7 +729,7 @@ for j in range(1, n_files):
 table_parti_cov = pd.DataFrame(
     np.average(table3_data, axis=0),
     index=['Cov'],
-    columns=['cons_share', 'wealth_share', 'mu_S', 'theta']
+    columns=['cons_share', 'wealth_share', 'mu_S', 'theta', 'ave_beliefs']
 )
 print(tab.tabulate(table_parti_cov.transpose(), headers=['Cov'], floatfmt=".4f",
                    tablefmt='latex_raw'))
@@ -769,29 +769,40 @@ print(tab.tabulate(table_reg2.transpose(), headers=['12m', '24m', '36m'], floatf
 ######################################
 from welfare_analysis import T_hat_vec, sample
 
-welfare_T_hat = np.zeros((len(T_hat_vec), 4))
+welfare_T_hat = np.zeros((len(T_hat_vec), 7))
+welfare_benchmark_T_hat = np.zeros((len(T_hat_vec), 2))
 for n, T_hat_use in enumerate(T_hat_vec):
     welfare_T_hat[n] = np.average(np.load(f"simu_results/welfare{T_hat_use}.npz")['g_log_C_ave'], axis=0)
+    welfare_benchmark_T_hat[n] = np.average(np.load(f"simu_results/welfare{T_hat_use}.npz")['g_log_C_benchmark'], axis=0)
 label_welfare = [
     'Beliefs-driven entry and exit, GE',
     'Beliefs-driven entry and exit',
-    'Average entry and exit',
-    'Average "buy and hold"',
+    'Entry and exit, GE',
+    'Entry and exit',
+    # 'Entry and exit, GE',
+    # 'Entry and exit',
+    # 'Average "buy and hold"',
+]
+label_welfare_benchmark = [
+    '"Buy and hold"',
+    'Bond investor',
 ]
 colors_welfare = [
     'maroon',
+    'maroon',
     'mediumblue',
-    'black',
-    'gray'
+    'mediumblue',
+    # 'black',
+    # 'black'
 ]
 
 fig, ax = plt.subplots(nrows=1, ncols=1, sharex='all', figsize=(6, 4))
 ax.set_ylabel(r'Average log consumption growth', color='black')
 ax.set_xlabel(r'Pre-entry learning window, $n$', color='black')
 for i in range(4):
-    line_style_i = 'solid' if i == 0 else (0, (1, 1))
+    line_style_i = 'solid' if np.mod(i, 2) == 0 else (0, (1, 1))
     X_Y_Spline = make_interp_spline(T_hat_vec, welfare_T_hat[:, i], k=2)
-    X_ = np.arange(0, 21, 1)
+    X_ = np.arange(1, 21, 1)
     Y_ = X_Y_Spline(X_)
     ax.plot(
         X_,
@@ -799,9 +810,20 @@ for i in range(4):
         color=colors_welfare[i], linewidth=2, label=label_welfare[i],
         linestyle=line_style_i
     )
-# ax.set_ylim(0.015, 0.04)
+# for i in range(2):
+#     linestyle_jj = 'solid' if i == 0 else 'dashed'
+#     X_Y_Spline = make_interp_spline(T_hat_vec, welfare_benchmark_T_hat[:, i], k=2)
+#     X_ = np.arange(0, 21, 1)
+#     Y_ = X_Y_Spline(X_)
+#     ax.plot(
+#         X_,
+#         Y_,
+#         color='gray', linewidth=2, label=label_welfare_benchmark[i],
+#         linestyle=linestyle_jj
+#     )
+ax.set_ylim(0.015, 0.035)
 ax.set_xticks([0, 5, 10, 15, 20])
-ax.set_yticks([0.02, 0.025, 0.03, 0.035])
+ax.set_yticks([0.015, 0.02, 0.025, 0.03, 0.035])
 ax.legend(loc='lower right')
 extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 fig.tight_layout()  # otherwise the right y-label is slightly clipped

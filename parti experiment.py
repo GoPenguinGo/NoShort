@@ -39,149 +39,169 @@ def simulate_path(
 ):
     print(i)
 
-    if i < Mpath:
-        dZ_build = dZ_build_matrix[i]
-        dZ = dZ_matrix[i]
-    else:
-        dZ_build = np.random.randn(Nc) * np.sqrt(dt)
-        dZ = np.random.randn(Nc) * np.sqrt(dt)
+    dZ_build = dZ_build_matrix[i]
+    dZ = dZ_matrix[i]
 
-    if np.mod(i, 20) == 0:
+    if np.mod(i, N_workers) == 0:
         need_invest_matrix = 'True'
     else:
         need_invest_matrix = 'False'
 
+    (
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        reentry_time,
+        regression_table1_b,
+        regression_table2_b,
+        Delta_diff,
+    ) = simulate_mix_mean_vola(
+        Nc,
+        Nt,
+        dt,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        tax,
+        beta0,
+        phi,
+        Npre,
+        Ninit,
+        T_hat,
+        entry_bound,
+        exit_bound,
+        dZ_build,
+        dZ,
+        Ntype,
+        Nconstraint,
+        rho_i_mix,
+        alpha_i_mix,
+        beta_i_mix,
+        rho_cohort_type_mix,
+        cohort_type_size_mix,
+        window_bell,
+        need_invest_matrix
+    )
+
     if need_invest_matrix == 'True':
-        (
-            table_mean_vola,
-            table_parti,
-            table_parti_cov,
-            reentry_time,
-            regression_table1_b,
-            regression_table2_b,
-            Delta_diff,
-        ) = simulate_mix_mean_vola(
-            Nc,
-            Nt,
-            dt,
-            nu,
-            Vhat,
-            mu_Y,
-            sigma_Y,
-            tax,
-            beta0,
-            phi,
-            Npre,
-            Ninit,
-            T_hat,
-            entry_bound,
-            exit_bound,
-            dZ_build,
-            dZ,
-            Ntype,
-            Nconstraint,
-            rho_i_mix,
-            alpha_i_mix,
-            beta_i_mix,
-            rho_cohort_type_mix,
-            cohort_type_size_mix,
-            window_bell,
-            need_invest_matrix
-        )
         np.save(r'simu_results/' + str(i) + 'reentry_time', reentry_time[:, 2:])
-
-        (
-            table_mean_vola,
-            table_parti,
-            table_parti_cov,
-            reentry_time_benchmark,
-            regression_table1_b,
-            regression_table2_b,
-            Delta_diff,
-        ) = simulate_mix_mean_vola(
-            Nc,
-            Nt,
-            dt,
-            nu,
-            Vhat,
-            mu_Y,
-            sigma_Y,
-            tax,
-            beta0,
-            phi_benchmark,
-            Npre,
-            Ninit,
-            T_hat,
-            entry_bound,
-            exit_bound,
-            dZ_build,
-            dZ,
-            Ntype,
-            Nconstraint,
-            rho_i_mix,
-            alpha_i_mix,
-            beta_i_mix,
-            rho_cohort_type_mix,
-            cohort_type_size_mix,
-            window_bell,
-            need_invest_matrix
-        )
-
-        np.save(r'simu_results/' + str(i) + 'reentry_time_benchmark', reentry_time_benchmark[:, 2:])
 
     return (
         i,
-        # table_mean_vola,
-        # table_parti,
-        # table_parti_cov,
-        # regression_table1_b,
-        # regression_table2_b,
-        # Delta_diff,
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        regression_table1_b,
+        regression_table2_b,
+        Delta_diff,
     )
 
 
+def simulate_path_benchmark(
+        i: int,
+):
+    print(i)
+    j = i * N_workers
+    dZ_build = dZ_build_matrix[j]
+    dZ = dZ_matrix[j]
+
+    (
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        reentry_time_benchmark,
+        regression_table1_b,
+        regression_table2_b,
+        Delta_diff,
+    ) = simulate_mix_mean_vola(
+        Nc,
+        Nt,
+        dt,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        tax,
+        beta0,
+        phi_benchmark,
+        Npre,
+        Ninit,
+        T_hat,
+        entry_bound,
+        exit_bound,
+        dZ_build,
+        dZ,
+        Ntype,
+        Nconstraint,
+        rho_i_mix,
+        alpha_i_mix,
+        beta_i_mix,
+        rho_cohort_type_mix,
+        cohort_type_size_mix,
+        window_bell,
+        'True'
+    )
+
+    np.save(r'simu_results/' + str(j) + 'reentry_time_benchmark', reentry_time_benchmark[:, 2:])
+
+    return (
+        j,
+    )
+
+
+
 def main():
-    # Create a ProcessPoolExecutor for parallel execution
+    for j in range(
+            int(Mpath / N_workers)
+    ):
+        paths_j = j * N_workers
+
+        with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
+            results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + N_workers)]
+
+        results_list = []
+
+        # Retrieve results from parallel processes
+        for result in results:
+            i, \
+            table_mean_vola, \
+            table_parti, \
+            table_parti_cov, \
+            regression_table1_b, \
+            regression_table2_b,\
+            Delta_diff, = result.result()
+
+            data = {
+                "i": i,
+                "table_mean_vola": table_mean_vola,
+                "table_parti": table_parti,
+                "table_parti_cov": table_parti_cov,
+                "regression_table1_b": regression_table1_b,
+                "regression_table2_b": regression_table2_b,
+                "Delta_diff": Delta_diff
+            }
+            results_list.append(data)
+
+        results_df = pd.DataFrame(results_list)
+        results_dict = results_df.to_dict(orient='list')
+        np.savez(r'simu_results/' + str(j) + "simulation_new.npz", **results_dict)
+
+
     with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
-        results = [executor.submit(simulate_path, i) for i in range(0, Mpath, 20)]
+        results = [executor.submit(simulate_path_benchmark, j) for j in range(int(Mpath / N_workers))]
 
-    # for j in range(
-    #         int(Mpath / N_workers),
-    #         # int(5000 / N_workers)
-    # ):
-    #     per_path = N_workers
-    #     paths_j = j * per_path
-    #
-    #     with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
-    #         results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + per_path)]
-        # Initialize a list to store the results
-        # results_list = []
+    results_list = []
 
-        # # Retrieve results from parallel processes
-        # for result in results:
-        #     i, \
-        #     table_mean_vola, \
-        #     table_parti, \
-        #     table_parti_cov, \
-        #     regression_table1_b, \
-        #     regression_table2_b,\
-        #     Delta_diff, = result.result()
+    # Retrieve results from parallel processes
+    for result in results:
+        i,  = result.result()
 
-        #     data = {
-        #         "i": i,
-        #         "table_mean_vola": table_mean_vola,
-        #         "table_parti": table_parti,
-        #         "table_parti_cov": table_parti_cov,
-        #         "regression_table1_b": regression_table1_b,
-        #         "regression_table2_b": regression_table2_b,
-        #         "Delta_diff": Delta_diff
-        #     }
-        #     results_list.append(data)
+        data = {
+            "i": i,
+        }
+        results_list.append(data)
 
-        # Create a DataFrame from the list of dictionaries
-        # results_df = pd.DataFrame(results_list)
-        # results_dict = results_df.to_dict(orient='list')
-        # np.savez(r'simu_results/' + str(j) + "simulation_new.npz", **results_dict)
 
 
 if __name__ == '__main__':

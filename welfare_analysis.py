@@ -14,7 +14,7 @@ from src.param_mix import Nconstraint, rho_i_mix, density
 
 plt.rcParams["font.family"] = 'serif'
 
-T_hat_vec = [2, 5, 10, 20]
+T_hat_vec = [2, 5, 10, 15, 20]
 
 a_rho_bar = 1
 b_rho_bar = -(tax * beta0 + rho_i[0, 0] + rho_i[1, 0])
@@ -173,6 +173,23 @@ def simulate_path(
     )[keep:] - rho_i[0]
     g_log_C_ave_ee_endo[nonparti] = g_log_C_mat_N[nonparti]
 
+    g_log_C_ave_ee_nolev = (
+                             E_log_C_growth_calculator(
+                                 1.0,
+                                 ave_r,
+                                 ave_mu_S,
+                                 ave_sigma_S) - rho_i[0]) * uncon_parti + (
+                             E_log_C_growth_calculator(
+                                 0.0,
+                                 ave_r,
+                                 ave_mu_S,
+                                 ave_sigma_S) - rho_i[0]) * (1 - uncon_parti)
+
+    g_log_C_ave_ee_nolev_endo = np.tile(
+        np.reshape(r + 1.0 * (mu_S - r) - 1 / 2 * (1.0 * sigma_S) ** 2, (-1, 1)), (1, Nc)
+    )[keep:] - rho_i[0]
+    g_log_C_ave_ee_nolev_endo[nonparti] = g_log_C_mat_N[nonparti]
+
     ave_pi = np.average(
         pi_focus,
         weights=np.tile(cohort_size, (Nt - keep, 1))
@@ -181,61 +198,6 @@ def simulate_path(
                                               ave_r,
                                               ave_mu_S,
                                               ave_sigma_S) - rho_i[0]
-
-    # # # unconditional * unconditional
-    # # uncon_lev = np.average(pi_focus[np.where(pi_focus > 0)])
-    # # uncon_parti = np.average(pi_focus > 0)
-    # # log_C_growth_mat_uncon = np.average(
-    # #     E_log_C_growth_calculator(uncon_lev,
-    # #                               r,
-    # #                               mu_S,
-    # #                               sigma_S)[keep:] - rho_i[0]
-    # # ) * uncon_parti + benchmark_log_C_growth2 * (1 - uncon_parti)
-    #
-    # # actual pi, conditional parti
-    # masked_pi = (pi_focus > 0)
-    # average_parti = np.average(masked_pi, axis=0)
-    # average_parti_mat = np.reshape(average_parti, (1, -1))
-    #
-    # log_C_growth_timing_mat = (
-    #         np.reshape(r, (-1, 1))
-    #         + pi_focus * np.reshape(mu_S - r, (-1, 1))
-    #         - 1 / 2 * (pi_focus * np.reshape(sigma_S, (-1, 1))) ** 2
-    #         - rho_i[0]
-    # )
-    # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
-    #
-    # # conditional pi, actual parti
-    # masked_pi = (pi_focus > 0)
-    # non_zero_sum = np.sum(pi_focus * masked_pi, axis=0)
-    # non_zero_count = np.sum(masked_pi, axis=0)
-    # average_pi = np.divide(non_zero_sum, non_zero_count, out=np.zeros_like(non_zero_sum, dtype=float),
-    #                     where=non_zero_count != 0)
-    # average_pi_mat = np.reshape(average_pi, (1, -1))
-    #
-    # log_C_growth_timing_mat = (
-    #         np.reshape(r, (-1, 1))
-    #         + average_pi_mat * np.reshape(mu_S - r, (-1, 1))
-    #         - 1 / 2 * (average_pi_mat * np.reshape(sigma_S, (-1, 1))) ** 2
-    #         - rho_i[0]
-    # )
-    # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
-    #
-    # # conditional pi, conditional parti
-    # log_C_growth_timing_exo_mat = np.tile((
-    #         np.average(r[keep:])
-    #         + average_pi_mat * np.average(mu_S[keep:] - r[keep:])
-    #         - 1 / 2 * (average_pi_mat * np.average(sigma_S[keep:])) ** 2
-    #         - rho_i[0]
-    # ), (Nt, 1))
-    # log_C_growth_timing_exo_mat[nonparti] = benchmark_log_C_growth2
-    #
-    # # log_C_growth_timing_mat = np.tile(np.reshape(
-    # #     mu_S - rho_i[0] - 1 / 2 * sigma_S ** 2, (-1, 1)), (1, Nc))
-    # # log_C_growth_timing_mat[nonparti] = log_C_growth_N_mat[nonparti]
-    #
-    # # log_C_growth_timing_exo_mat = np.ones((Nt, Nc)) * benchmark_log_C_growth1
-    # # log_C_growth_timing_exo_mat[nonparti] = benchmark_log_C_growth3
 
     return (
         i,
@@ -247,7 +209,10 @@ def simulate_path(
             np.average(np.average(g_log_C_mat, axis=0), weights=cohort_size[0]),
             np.average(np.average(g_log_C_experience, axis=0), weights=cohort_size[0]),
             np.average(np.average(g_log_C_ave_ee_endo, axis=0), weights=cohort_size[0]),
-            g_log_C_ave_ee[0], g_log_C_no_ee[0],
+            g_log_C_ave_ee[0],
+            np.average(np.average(g_log_C_ave_ee_nolev_endo, axis=0), weights=cohort_size[0]),
+            g_log_C_ave_ee_nolev[0],
+            g_log_C_no_ee[0],
         ]),
         np.array([benchmark_log_C_growth1[0], benchmark_log_C_growth2[0]])
     )
@@ -282,75 +247,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-    #
-    # N_points = 1000
-    # mu_vec = np.linspace(0, mu_Y, N_points)
-    # E_util_mu = np.zeros((N_points, 2))
-    # E_util_t_mu = np.zeros((N_points, 2, len(c_sample)))
-    # for i, mu_try in enumerate(mu_vec):
-    #     E_util_mu[i] = utility_mu(mu_try, sigma_Y)
-    #
-    # sigma_vec = np.flip(np.linspace(sigma_Y, 0.5, N_points))
-    # E_util_sigma = np.zeros((N_points, 2))
-    # for i, sigma_try in enumerate(sigma_vec):
-    #     E_util_sigma[i] = utility_mu(mu_Y, sigma_try)
-    #
-    # t_s_mat = np.tile(np.reshape(np.cumsum(np.ones(N_T) * dt) - dt, (-1, 1)), (1, 2))
-    # rho_i_mat = np.reshape(rho_i, (1, -1))
-    # discount_rate_mat = np.exp(-(nu + rho_i_mat) * t_s_mat)
-    #
-    # equiv_mu = np.zeros((len(T_hat_vec), 2))
-    # equiv_sigma = np.zeros((len(T_hat_vec), 2))
-    #
-    # for i, T_hat_try in enumerate(T_hat_vec):
-    #     E_util_learn_path = np.load(folder_address + str(int(T_hat_try)) + ".npz")['E_util']
-    #     E_util_learn = np.average(np.ma.masked_invalid(E_util_learn_path), axis=0)
-    #     for j in range(2):
-    #         equiv_mu[i, j] = mu_vec[np.searchsorted(E_util_mu[:, j], E_util_learn[j])]
-    #         equiv_sigma[i, j] = sigma_vec[np.searchsorted(E_util_sigma[:, j], E_util_learn[j])]
-    #
-    #
-    # # E_util_vola10 = utility_mu(mu_Y, 0.15)
-    # # equiv_mu_vola10 = np.zeros(2)
-    # # for i in range(2):
-    # #     equiv_mu_vola10[i] = mu_vec[np.searchsorted(E_util_mu[:, i], E_util_vola10[i])]
-    #
-    # X_Y_Spline = make_interp_spline(T_hat_vec, equiv_mu, k=3)
-    # X_ = np.linspace(1, 25, 100)
-    # Y_ = X_Y_Spline(X_)
-    #
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
-    # ax.set_xlabel('Pre-entry learning window')
-    # ax.set_ylabel(r'Equivalent $\mu^Y$')
-    # # ax.set_ylim(0, 0.02)
-    # ax.plot(X_, Y_[:, 0], color='navy', linewidth=1.5, label=r'Type a, $\rho=0.1\%$')
-    # ax.plot(X_, Y_[:, 1], color='red', linewidth=1.5, label=r'Type b, $\rho=0.5\%$')
-    # plt.axhline(y=0.02, color='gray', linestyle='dashed', label=r'Actual $\mu^Y$')
-    # plt.legend(loc='lower right')
-    # ax.tick_params(axis='y', labelcolor='black')
-    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    # plt.savefig('Welfare.png', dpi=100)
-    # plt.show()
-    # plt.close()
-
-    # line_styles = ['dashed', 'solid', 'dotted', 'dashdot']
-    # x = np.arange(0, int(200/dt), 24) * dt
-    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 6))
-    # ax.set_xlabel('Age')
-    # ax.set_ylabel(r'Consumption relative to the benchmark economy')
-    # for i, T_hat_try in enumerate(T_hat_vec):
-    #     f_c_indi_mat = np.load(folder_address + str(int(T_hat_try)) + ".npz")['f_c_indi']
-    #     f_c_indi = np.average(f_c_indi_mat, axis=0)
-    #     ax.plot(x, f_c_indi[0] / f_c_benchmark[0], color='navy', linewidth=2, linestyle= line_styles[i], label=f'Learning window = {T_hat_try}')
-    # ax.plot(x, f_c_benchmark[0] / f_c_benchmark[0], color='gray', linewidth=2, linestyle='dashed', label=r'Benchmark OLG economy')
-    # plt.legend(loc='lower right')
-    # ax.tick_params(axis='y', labelcolor='black')
-    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    # plt.savefig('Welfare_1.png', dpi=100)
-    # plt.show()
-    # plt.close()
-
-
 
 
 
