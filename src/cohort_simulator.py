@@ -724,6 +724,9 @@ def simulate_mean_vola_mix_type(
         'mu_S': np.corrcoef(parti[sample], mu_S[sample])[0, 1],
         'theta': np.corrcoef(parti[sample], theta[sample])[0, 1],
         'belief_P': np.corrcoef(parti[sample], Delta_popu_parti[sample])[0, 1],
+        'cons_share_Delta': np.corrcoef(Delta_bar_parti[sample], 1 / Phi_bar_parti_1[sample])[0, 1],
+        'Delta': np.corrcoef(parti[sample], Delta_bar_parti[sample])[0, 1],
+        'Delta_Delta': np.corrcoef(Delta_bar_parti[sample], Delta_popu_parti[sample])[0, 1],
     }
     table_parti_cov = pd.DataFrame(data_parti_cov, index=['Cov'])
 
