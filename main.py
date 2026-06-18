@@ -729,7 +729,7 @@ for j in range(1, n_files):
 table_parti_cov = pd.DataFrame(
     np.average(table3_data, axis=0),
     index=['Cov'],
-    columns=['cons_share', 'wealth_share', 'mu_S', 'theta', 'ave_beliefs']
+    columns=['cons_share', 'wealth_share', 'mu_S', 'theta', 'ave_beliefs', 'cons_share_Delta',  'Delta', 'Delta_Delta']
 )
 print(tab.tabulate(table_parti_cov.transpose(), headers=['Cov'], floatfmt=".4f",
                    tablefmt='latex_raw'))

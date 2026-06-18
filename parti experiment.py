@@ -15,6 +15,7 @@ plt.rcParams["font.family"] = 'serif'
 window = 12  # 1-year non-overlapping windows
 sample = np.arange(600, Nt - 600, window)
 N_sample = len(sample)
+sample_path = 5
 # age_cut = 100
 # Nc_cut = int(age_cut / dt)
 age_sample = np.arange(1, int(200 / dt), 12)
@@ -102,9 +103,49 @@ def simulate_path_benchmark(
         i: int,
 ):
     print(i)
-    j = i * N_workers
+    j = i * sample_path
     dZ_build = dZ_build_matrix[j]
     dZ = dZ_matrix[j]
+
+    (
+        table_mean_vola,
+        table_parti,
+        table_parti_cov,
+        reentry_time,
+        regression_table1_b,
+        regression_table2_b,
+        Delta_diff,
+    ) = simulate_mix_mean_vola(
+        Nc,
+        Nt,
+        dt,
+        nu,
+        Vhat,
+        mu_Y,
+        sigma_Y,
+        tax,
+        beta0,
+        phi,
+        Npre,
+        Ninit,
+        T_hat,
+        entry_bound,
+        exit_bound,
+        dZ_build,
+        dZ,
+        Ntype,
+        Nconstraint,
+        rho_i_mix,
+        alpha_i_mix,
+        beta_i_mix,
+        rho_cohort_type_mix,
+        cohort_type_size_mix,
+        window_bell,
+        'True'
+    )
+
+    np.save(r'simu_results/' + str(j) + 'reentry_time', reentry_time[:, 2:])
+
 
     (
         table_mean_vola,
@@ -152,44 +193,44 @@ def simulate_path_benchmark(
 
 
 def main():
-    for j in range(
-            int(Mpath / N_workers)
-    ):
-        paths_j = j * N_workers
-
-        with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
-            results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + N_workers)]
-
-        results_list = []
-
-        # Retrieve results from parallel processes
-        for result in results:
-            i, \
-            table_mean_vola, \
-            table_parti, \
-            table_parti_cov, \
-            regression_table1_b, \
-            regression_table2_b,\
-            Delta_diff, = result.result()
-
-            data = {
-                "i": i,
-                "table_mean_vola": table_mean_vola,
-                "table_parti": table_parti,
-                "table_parti_cov": table_parti_cov,
-                "regression_table1_b": regression_table1_b,
-                "regression_table2_b": regression_table2_b,
-                "Delta_diff": Delta_diff
-            }
-            results_list.append(data)
-
-        results_df = pd.DataFrame(results_list)
-        results_dict = results_df.to_dict(orient='list')
-        np.savez(r'simu_results/' + str(j) + "simulation_new.npz", **results_dict)
+    # for j in range(
+    #         int(Mpath / N_workers)
+    # ):
+    #     paths_j = j * N_workers
+    #
+    #     with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
+    #         results = [executor.submit(simulate_path, i) for i in range(paths_j, paths_j + N_workers)]
+    #
+    #     results_list = []
+    #
+    #     # Retrieve results from parallel processes
+    #     for result in results:
+    #         i, \
+    #         table_mean_vola, \
+    #         table_parti, \
+    #         table_parti_cov, \
+    #         regression_table1_b, \
+    #         regression_table2_b,\
+    #         Delta_diff, = result.result()
+    #
+    #         data = {
+    #             "i": i,
+    #             "table_mean_vola": table_mean_vola,
+    #             "table_parti": table_parti,
+    #             "table_parti_cov": table_parti_cov,
+    #             "regression_table1_b": regression_table1_b,
+    #             "regression_table2_b": regression_table2_b,
+    #             "Delta_diff": Delta_diff
+    #         }
+    #         results_list.append(data)
+    #
+    #     results_df = pd.DataFrame(results_list)
+    #     results_dict = results_df.to_dict(orient='list')
+    #     np.savez(r'simu_results/' + str(j) + "simulation_new.npz", **results_dict)
 
 
     with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
-        results = [executor.submit(simulate_path_benchmark, j) for j in range(int(Mpath / N_workers))]
+        results = [executor.submit(simulate_path_benchmark, j) for j in range(int(Mpath / sample_path))]
 
     results_list = []
 
