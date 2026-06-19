@@ -543,15 +543,16 @@ plt.close()
 # how long before exiting upon entry &
 # how long before entering upon exit
 # Analysis of the bell length: Distribution of participation bells, ignoring 0
+sample_path = 5
 sample_shocks = np.arange(2400 + 240, Nt, int(20/dt))
-spell_mat = np.zeros((int(Mpath / 20), len(sample_shocks), 1, 5748), dtype=int)
-spell_mat_benchmark = np.zeros((int(Mpath / 20), len(sample_shocks), 1, 5748), dtype=int)
-stock_returns_mat = np.zeros((int(Mpath / 20), len(sample_shocks)))
+spell_mat = np.zeros((int(Mpath / sample_path), len(sample_shocks), 1, 5748), dtype=int)
+spell_mat_benchmark = np.zeros((int(Mpath / sample_path), len(sample_shocks), 1, 5748), dtype=int)
+stock_returns_mat = np.zeros((int(Mpath / sample_path), len(sample_shocks)))
 
 gap = 12
 for i in range(Mpath):
-    if np.mod(i, 20) == 0:
-        j = int(i / 20)
+    if np.mod(i, sample_path) == 0:
+        j = int(i / sample_path)
         spell_mat[j] = np.load(r'simu_results/' + str(i) + 'reentry_time.npy')
         spell_mat_benchmark[j] = np.load(r'simu_results/' + str(i) + 'reentry_time_benchmark.npy')
         cumu_returns = np.zeros(Nt)
@@ -569,7 +570,7 @@ for j in range(2):
             for jj, uni_jj in enumerate(unique):
                 counts_mat[ii, uni_jj] = counts[jj]
     else:
-        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / sample_path), -1, 1))
         counts_mat = np.zeros((5748, 21))
         for ii in range(5748):
             unique, counts = np.unique(spell_mat[:, :, :, ii] * data_where, return_counts=True)
@@ -618,14 +619,14 @@ for j in range(2):
             for jj, uni_jj in enumerate(unique):
                 counts_mat_benchmark[ii, uni_jj] = counts[jj]
     else:
-        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / sample_path), -1, 1))
         counts_mat = np.zeros((5748, 21))
         for ii in range(5748):
             unique, counts = np.unique(spell_mat[:, :, :, ii] * data_where, return_counts=True)
             for jj, uni_jj in enumerate(unique):
                 counts_mat[ii, uni_jj] = counts[jj]
 
-        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / 20), -1, 1))
+        data_where = np.reshape(stock_returns_mat <= cutoffs_return, (int(Mpath / sample_path), -1, 1))
         counts_mat_benchmark = np.zeros((5748, 21))
         for ii in range(5748):
             unique, counts = np.unique(spell_mat_benchmark[:, :, :, ii] * data_where, return_counts=True)

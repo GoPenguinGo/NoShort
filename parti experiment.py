@@ -230,7 +230,7 @@ def main():
 
 
     with ProcessPoolExecutor(max_workers=N_workers) as executor:  # Adjust the number of workers as needed
-        results = [executor.submit(simulate_path_benchmark, j) for j in range(int(Mpath / sample_path))]
+        results = [executor.submit(simulate_path_benchmark, j) for j in range(int(3520 / sample_path), int(Mpath / sample_path))]
 
     results_list = []
 
